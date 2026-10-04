@@ -1,0 +1,43 @@
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.fleet/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Xcode / iOS
+xcuserdata/
+*.xcuserstate
+DerivedData/
+Pods/
+iosApp/build/
+
+# Sırlar ve imzalama (asla repoya girmez)
+.env
+.env.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+secrets.properties
+
+# Supabase yerel
+supabase/.temp/
+supabase/.branches/
