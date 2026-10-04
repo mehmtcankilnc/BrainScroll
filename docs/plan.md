@@ -7,13 +7,13 @@ Kararlar için bkz. [decisions.md](decisions.md). Kutucukları ilerledikçe işa
 
 ## Faz 0 - Hesaplar ve hazırlık
 Amaç: Kod yazmadan önce dış bağımlılıkları sıraya koymak (onay süreleri uzun olabilir).
-- [ ] GitHub public repo, MIT lisansı, `README`, `.gitignore`
-- [ ] Apple Developer: App ID `com.mehmtcan.brainscroll`, Sign in with Apple yeteneği, App Store Connect'te uygulama kaydı
-- [ ] App Store Connect API anahtarı (CI imzalama/yükleme için) ve imzalama sertifikası (Mac'siz, `openssl` ile CSR)
-- [ ] Google Cloud / Play Console: OAuth istemcileri (Android + iOS + web), Google ile giriş yapılandırması
-- [ ] Supabase projesi oluştur (bölge seç), Auth sağlayıcıları aç (Anonymous, Google, Apple)
-- [ ] `playbrainscroll.com`: basit açılış sayfası, gizlilik politikası, destek e-postası
-- [ ] Kelime listesi kaynakları: TR ve EN için lisansı public repoya uygun listeleri belirle
+- [x] GitHub public repo, MIT lisansı, `README`, `.gitignore`
+- [x] Apple Developer: App ID `com.mehmtcan.brainscroll`, Sign in with Apple yeteneği, App Store Connect'te uygulama kaydı
+- [x] App Store Connect API anahtarı (BrainScroll CI, App Manager). İmzalama sertifikası Faz 1'de (öneri: API anahtarıyla bulut yönetimli imzalama)
+- [ ] Google Cloud / Play Console: OAuth istemcileri (Android + iOS + web), Google ile giriş yapılandırması. **Faz 5'e ertelendi** (Android imza parmak izi gerekiyor)
+- [x] Supabase projesi (Frankfurt), Anonymous girişi, manuel bağlama ve Apple sağlayıcısı (yalnızca native iOS, Client ID = bundle ID). Google Faz 5'te
+- [x] `playbrainscroll.com`: basit açılış sayfası, gizlilik politikası (Cloudflare Workers statik varlıklar, `site/`), destek e-postası yönlendirmesi
+- [x] Kelime listesi kaynakları: bkz. [word-lists.md](word-lists.md). **EN: SCOWL v2. TR: hunspell-tr (MPL-2.0, değiştirilmeden) geçerli tahminler için + kendi derlediğimiz cevap havuzu**
 **Çıkış:** Tüm hesaplar ve anahtarlar hazır, sırlar GitHub Secrets'a girmeye hazır.
 
 ## Faz 1 - İskelet ve CI
@@ -30,7 +30,7 @@ Amaç: UI'dan bağımsız, test edilebilir oyun mantığı.
 - [ ] Ortak `Game` arayüzü (yeni oyunlar eklemeye açık)
 - [ ] Wordle motoru: tahmin değerlendirme (tekrarlı harf kuralları dahil), kazanma/kaybetme durumu
 - [ ] TR harf kuralları (`ç ğ ı ö ş ü`, `İ/I` büyük-küçük harf tuzağı), EN kuralları
-- [ ] Kelime listesi yükleme (geçerli tahmin sözlüğü + sonsuz akış için cevap havuzu)
+- [ ] Kelime listesi yükleme (geçerli tahmin sözlüğü + sonsuz akış için cevap havuzu). Üretim betikleri ve TR cevap havuzu inceleme süreci için bkz. [word-lists.md](word-lists.md), `THIRD_PARTY_NOTICES.md` ile birlikte
 - [ ] Birim testleri (kenar durumlar: çift harf, TR harfleri)
 **Çıkış:** Testleri geçen, platformdan bağımsız Wordle motoru.
 

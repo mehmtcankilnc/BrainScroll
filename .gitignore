@@ -23,6 +23,12 @@ xcuserdata/
 DerivedData/
 Pods/
 iosApp/build/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
 
 # Sırlar ve imzalama (asla repoya girmez)
 .env
