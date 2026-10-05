@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BrainScroll</string>
+    <string name="tagline">Swipe, solve, keep your streak</string>
+    <string name="legend_correct">Correct</string>
+    <string name="legend_pending">Close</string>
+    <string name="legend_absent">Not in word</string>
+    <string name="glyph_test_label">Turkish letters</string>
+</resources>

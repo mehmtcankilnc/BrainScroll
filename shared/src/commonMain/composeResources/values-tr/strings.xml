@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BrainScroll</string>
+    <string name="tagline">Kaydır, çöz, seri tut</string>
+    <string name="legend_correct">Doğru</string>
+    <string name="legend_pending">Yakın</string>
+    <string name="legend_absent">Kelimede yok</string>
+    <string name="glyph_test_label">Türkçe harfler</string>
+</resources>

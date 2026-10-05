@@ -90,7 +90,7 @@ Faz 8'de eklenir. Kural: yalnızca §2.2'deki anlamsal tokenların açık değer
 
 - **Aile:** Yuvarlak, geometrik bir sans. Uygulamaya **gömülü** (Compose'ta platform fontuna güvenmeyiz). Açık lisanslı (OFL).
 - **Zorunlu kriter:** Türkçe harfler (`ç ğ ı İ ö ş ü` ve büyük halleri) **doğrulanmış olmalı**. Seçim yapılmadan önce her aday için bir test ekranı çizilir.
-- **Geçici seçim:** Nunito. Adaylar: Nunito, Quicksand, Baloo 2. Nihai karar Faz 1'de ekran testiyle verilir.
+- **Seçim:** **Nunito** (OFL). Dosya düzeyinde tüm Türkçe harfler doğrulandı (`ç ğ ı İ ö ş ü` ve büyük halleri) ve Desktop'ta ekranda iyi göründü. iOS ve Android'de görünümü TestFlight/emülatörde doğrulanacak. Statik Regular (400), Medium (500), Bold (700) ağırlıkları değişken fonttan üretildi, bkz. `THIRD_PARTY_NOTICES.md`.
 - Büyük-küçük harf dönüşümlerinde `İ/I` tuzağına karşı `Locale.ROOT` yerine açık TR kuralı kullanılır (bkz. plan Faz 2).
 
 | Stil | Boyut (sp) | Ağırlık | Kullanım |
@@ -198,7 +198,7 @@ Hepsi §2.2 ve §4'teki tokenlarla tanımlanır.
 - **Palet:** N1 aktif ama değerler **geçici**. Sudoku, Hafıza ve Satranç taslakları N1 ile çizildi ve sarının "bekleyen" rolü üç oyunda da ayırt edici göründü. Mockup'taki gözlem, gerçek cihaz doğrulaması değil. Nihai karar Faz 3'te gerçek ekranla verilir.
 - **Satranç noktaları:** Gidebileceği kare noktaları (`yellow.500`) açık karelerde biraz sönük kalabiliyor. Nokta opaklığı artırılabilir, uygulamada ayarlanacak.
 - **Oyun başına vurgu rengi:** Şimdilik hiç yok, tüm oyunlar aynı paleti paylaşır. Oyun sayısı artınca ihtiyaç doğarsa ayrı karar.
-- **Font:** Nunito geçici (§3). Türkçe glif testi Faz 1'de.
+- **Font:** Nunito seçildi (§3). Kalan: iOS ve Android ekranında Türkçe harflerin görünümünü doğrulamak.
 - **İkon seti:** Mock'larda Tabler (outline, MIT) kullanıldı. Compose Multiplatform'a hangi biçimde (vektör/ImageVector) gireceği Faz 1'de belirlenir.
 - **Logo/ikon:** Yön seçildi: **beyin maskotu** (yeşil, gülümseyen, yanaklı bir beyin karakteri, koyu zeminde). Taslak: [assets/logo-mascot-draft.svg](assets/logo-mascot-draft.svg). Bu taslak elle yapılmış basit geometridir, nihai illüstrasyon değildir. Açık işler:
   - Beyin şeklinin, yüzün ve oranların rafine edilmesi (gerekirse bir illüstratörle).

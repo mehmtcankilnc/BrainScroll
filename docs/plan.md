@@ -18,11 +18,13 @@ Amaç: Kod yazmadan önce dış bağımlılıkları sıraya koymak (onay sürele
 
 ## Faz 1 - İskelet ve CI
 Amaç: Boş uygulama üç hedefte derlensin, iOS CI + TestFlight hattı çalışsın.
-- [ ] KMP + Compose Multiplatform proje iskeleti (Android, iOS, Desktop), Gradle sürüm kataloğu
-- [ ] Klasör yapısı, paket adı `com.mehmtcan.brainscroll`
-- [ ] Temel tema, TR/EN string altyapısı (Compose resources)
-- [ ] GitHub Actions: Android + Desktop derleme, birim testleri, lint
-- [ ] GitHub Actions: iOS derleme (macOS runner), imzalama, TestFlight'a yükleme (fastlane veya `xcodebuild` + API anahtarı)
+- [x] KMP + Compose Multiplatform proje iskeleti (Android, iOS, Desktop), Gradle sürüm kataloğu
+- [x] Klasör yapısı, paket adı `com.mehmtcan.brainscroll`
+- [x] Temel tema (tokenlar, `BrainScrollTheme`, ilk bileşen `LetterTile`), TR/EN string altyapısı (Compose resources), Nunito fontu. Desktop'ta doğrulandı, iOS/Android ekranı TestFlight/emülatörde kontrol edilecek
+- [x] GitHub Actions: Android + Desktop derleme ve birim testleri (`ci.yml`). Lint henüz yok
+- [x] GitHub Actions: iOS derleme (macOS runner), imzalama, TestFlight'a yükleme (`ios.yml`, `xcodebuild` + API anahtarı)
+
+> CI notları: iOS imzalama için Apple'ın bulut imzalaması kullanılıyor. **API anahtarı Admin rolünde olmalı** (App Manager yetmiyor, "Cloud signing permission error" veriyor). Archive imzasız alınır, imzalama export adımında yapılır (geliştirme profili için kayıtlı cihaz gerekmesin diye). Admin anahtarının secret'ları yalnızca `testflight` GitHub Environment'ında tutulur.
 **Çıkış:** Telefonumda TestFlight'tan açılan "Merhaba BrainScroll" uygulaması.
 
 ## Faz 2 - Wordle çekirdeği (saf Kotlin)
