@@ -1,0 +1,64 @@
+# English words that must never be an answer in the endless feed. They stay valid as guesses.
+# Applied by build_en.py. Reviewed by hand against the full answer pool; add words here, re-run the script.
+
+# Vulgar, sexual, insults and slurs (SCOWL's usage notes miss most of these)
+bitch
+pussy
+whore
+booty
+booby
+horny
+kinky
+semen
+sperm
+enema
+spunk
+fagot
+queer
+chink
+gayer
+sissy
+pansy
+moron
+lynch
+
+# Colloquial contractions that are not real dictionary words
+dunno
+gonna
+gimme
+lemme
+kinda
+sorta
+wanna
+
+# Odd comparatives, plurals and participles nobody would recognise
+weest
+apter
+direr
+rifer
+wryer
+sager
+muter
+nuder
+haler
+coyer
+genii
+uteri
+octal
+halon
+fiche
+awing
+eking
+axing
+cuing
+ruing
+flied
+kneed
+treed
+
+# Look like proper nouns or prefixes
+china
+roman
+maria
+peter
+multi

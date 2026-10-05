@@ -6,4 +6,26 @@
     <string name="legend_pending">Yakın</string>
     <string name="legend_absent">Kelimede yok</string>
     <string name="glyph_test_label">Türkçe harfler</string>
+    <string name="game_word_puzzle">Kelime bulmacası</string>
+    <string name="skip_label">Atla %1$d</string>
+    <string name="notice_too_short">Eksik harf var</string>
+    <string name="notice_not_in_list">Kelime listesinde yok</string>
+    <string name="notice_finish_first">Önce bu bulmacayı bitir</string>
+    <string name="notice_skipped">Atlandı, atlama hakkın bitti</string>
+    <string name="result_won">%1$d tahminde çözüldü</string>
+    <string name="result_lost">Cevap: %1$s</string>
+    <string name="swipe_hint">Sıradaki bulmaca için yukarı kaydır</string>
+    <string name="key_enter">GİR</string>
+    <string name="tab_feed">Akış</string>
+    <string name="tab_profile">Profil</string>
+    <string name="stats_title">İstatistikler</string>
+    <string name="stat_played">Oynanan</string>
+    <string name="stat_win_rate">Kazanma</string>
+    <string name="stat_streak">Seri</string>
+    <string name="stat_best_streak">En iyi seri</string>
+    <string name="guess_distribution">Kazanılan oyunlarda tahmin sayısı</string>
+    <string name="favorites_title">Favoriler</string>
+    <string name="favorites_empty">Henüz favori yok. Biten bir bulmacadaki kalbe dokun.</string>
+    <string name="favorite_won">%1$d tahminde çözüldü</string>
+    <string name="favorite_lost">Çözülemedi</string>
 </resources>

@@ -40,6 +40,7 @@ jobs:
         run: >
           ./gradlew
           :shared:jvmTest
+          :shared:compileIosMainKotlinMetadata
           :shared:testAndroidHostTest
           :androidApp:assembleDebug
           :desktopApp:compileKotlin

@@ -9,18 +9,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 
-/** The three guess states of a word-puzzle tile. Shapes differ, not only colors (docs/design.md section 9). */
-enum class TileState { Correct, Pending, Absent }
+/**
+ * Tile states of a word-puzzle grid. Shapes differ, not only colors (docs/design.md section 9).
+ * [Empty] and [Filled] are the typing states, the other three are guess results.
+ */
+enum class TileState { Empty, Filled, Correct, Pending, Absent }
 
 @Composable
 fun LetterTile(
     letter: String,
     state: TileState,
     modifier: Modifier = Modifier,
+    size: Dp = 56.dp,
 ) {
     val colors = BrainScrollTheme.colors
 
@@ -29,6 +34,18 @@ fun LetterTile(
     val border: Color
     val borderWidth: Float
     when (state) {
+        TileState.Empty -> {
+            fill = Color.Transparent
+            content = colors.textPrimary
+            border = colors.borderSubtle
+            borderWidth = 2f
+        }
+        TileState.Filled -> {
+            fill = Color.Transparent
+            content = colors.textPrimary
+            border = colors.borderStrong
+            borderWidth = 2f
+        }
         TileState.Correct -> {
             fill = colors.correctFill
             content = colors.correctOn
@@ -51,7 +68,7 @@ fun LetterTile(
 
     Box(
         modifier = modifier
-            .size(56.dp)
+            .size(size)
             .background(fill, Radius.tile)
             .border(borderWidth.dp, border, Radius.tile),
         contentAlignment = Alignment.Center,

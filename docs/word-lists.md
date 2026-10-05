@@ -62,8 +62,8 @@ Türkçe tarafı İngilizceden çok daha belirsiz.
 
 ## Sonraki adımlar
 
-- [ ] `THIRD_PARTY_NOTICES.md` oluştur (SCOWL ve diğer kaynaklar için telif metinleri).
+- [x] `THIRD_PARTY_NOTICES.md`: SCOWL bildirimi eklendi (hunspell-tr bildirimi TR listesiyle gelecek).
 - [ ] ~~hunspell-tr kaynağı hakkında depoya issue aç~~ (isteğe bağlı, risk kabul edildi, yapılmayacak).
-- [ ] SCOWL'den 5 harfli alt kümeleri üreten betik (Faz 2).
-- [ ] hunspell-tr köklerini ek kurallarıyla açan betik ve 5 harf süzgeci (Faz 2).
-- [ ] Türkçe cevap havuzunu elle incele ve işaretle (Faz 2-3).
+- [x] SCOWL'den 5 harfli alt kümeleri üreten betik: `tools/wordlists/build_en.py` (Faz 2). Geçerli tahmin: boyut ≤80 (8813 kelime). Cevap havuzu: boyut ≤35, çekim/romen rakamı/engel listesi ayıklanmış (1986 kelime). Elle engel listesi: `tools/wordlists/blocklist_en.txt`.
+- [x] hunspell-tr'yi açan betik ve 5 harf süzgeci: `tools/wordlists/build_tr.py` (Faz 2). Her son ek bayrağı tek bir ekle eşleştiği için yalnızca 5 harfli biçimler üretilir: 25.160 kelime. Bu liste hunspell-tr'den türetildiği için MPL-2.0 olarak kalır, `THIRD_PARTY_NOTICES.md`'de belirtildi. Not: sözlük gürültülü (ör. `ojcik`), bu bilinçli kabul edilen riskin parçası.
+- [x] Türkçe cevap havuzu: 6 parçada okunan 10.663 aday kökten 1.102 kelime kaldı (2026-10-05: Mehmetcan tamamını 100'erli parçalarla gözden geçirdi, onaylandı; emir kipleri ve `depre` çıkarıldı. Kural: emir kipi cevap olmaz) (`tools/wordlists/tr_answers_curated.txt`). Sonradan itiraz çıkarsa kelime bu dosyadan silinip betik yeniden çalıştırılır.

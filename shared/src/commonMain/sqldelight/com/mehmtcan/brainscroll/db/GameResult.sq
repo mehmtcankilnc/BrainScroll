@@ -1,0 +1,24 @@
+-- Finished puzzles. Append-only: streaks and statistics are derived from these rows (docs/decisions.md).
+-- `id` is a random id created on the device, so the same result can be synced later without duplicates.
+CREATE TABLE game_result (
+    id TEXT NOT NULL PRIMARY KEY,
+    game TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    language TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    guesses TEXT NOT NULL,          -- accepted guesses, comma separated
+    outcome TEXT NOT NULL,          -- WON or LOST
+    was_skipped INTEGER NOT NULL,   -- 1 if the player left the puzzle once before finishing it
+    finished_at INTEGER NOT NULL,   -- epoch millis
+    day_index INTEGER NOT NULL      -- Istanbul day of finished_at (IstanbulDay.dayIndex)
+);
+
+insertResult:
+INSERT OR IGNORE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAll:
+SELECT * FROM game_result ORDER BY finished_at ASC, id ASC;
+
+selectById:
+SELECT * FROM game_result WHERE id = ?;

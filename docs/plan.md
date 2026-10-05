@@ -25,35 +25,37 @@ Amaç: Boş uygulama üç hedefte derlensin, iOS CI + TestFlight hattı çalış
 - [x] GitHub Actions: iOS derleme (macOS runner), imzalama, TestFlight'a yükleme (`ios.yml`, `xcodebuild` + API anahtarı)
 
 > CI notları: iOS imzalama için Apple'ın bulut imzalaması kullanılıyor. **API anahtarı Admin rolünde olmalı** (App Manager yetmiyor, "Cloud signing permission error" veriyor). Archive imzasız alınır, imzalama export adımında yapılır (geliştirme profili için kayıtlı cihaz gerekmesin diye). Admin anahtarının secret'ları yalnızca `testflight` GitHub Environment'ında tutulur.
-**Çıkış:** Telefonumda TestFlight'tan açılan "Merhaba BrainScroll" uygulaması.
+**Çıkış:** Telefonumda TestFlight'tan açılan "Merhaba BrainScroll" uygulaması. **Tamamlandı (2026-10-05):** Desktop, Android emülatörü ve iPhone'da (TestFlight) doğrulandı.
 
 ## Faz 2 - Wordle çekirdeği (saf Kotlin)
 Amaç: UI'dan bağımsız, test edilebilir oyun mantığı.
-- [ ] Ortak `Game` arayüzü (yeni oyunlar eklemeye açık)
-- [ ] Wordle motoru: tahmin değerlendirme (tekrarlı harf kuralları dahil), kazanma/kaybetme durumu
-- [ ] TR harf kuralları (`ç ğ ı ö ş ü`, `İ/I` büyük-küçük harf tuzağı), EN kuralları
-- [ ] Kelime listesi yükleme (geçerli tahmin sözlüğü + sonsuz akış için cevap havuzu). Üretim betikleri ve TR cevap havuzu inceleme süreci için bkz. [word-lists.md](word-lists.md), `THIRD_PARTY_NOTICES.md` ile birlikte
-- [ ] Birim testleri (kenar durumlar: çift harf, TR harfleri)
-**Çıkış:** Testleri geçen, platformdan bağımsız Wordle motoru.
+- [x] Ortak `Game` arayüzü (yeni oyunlar eklemeye açık)
+- [x] Wordle motoru: tahmin değerlendirme (tekrarlı harf kuralları dahil), kazanma/kaybetme durumu
+- [x] TR harf kuralları (`ç ğ ı ö ş ü`, `İ/I` büyük-küçük harf tuzağı), EN kuralları
+- [x] Kelime listesi yükleme (geçerli tahmin sözlüğü + sonsuz akış için cevap havuzu). Üretim betikleri ve TR cevap havuzu inceleme süreci için bkz. [word-lists.md](word-lists.md), `THIRD_PARTY_NOTICES.md` ile birlikte
+- [x] Birim testleri (kenar durumlar: çift harf, TR harfleri)
+**Çıkış:** Testleri geçen, platformdan bağımsız Wordle motoru. **Tamamlandı (2026-10-05).** EN listeleri SCOWL v2'den (`build_en.py`), TR geçerli tahmin listesi hunspell-tr'den (`build_tr.py`), TR cevap havuzu elle seçilip gözden geçirildi (1.102 kelime).
 
 ## Faz 3 - Arayüz ve kaydırma akışı
 Amaç: İlk oynanabilir sürüm (sadece yerel).
-- [ ] `VerticalPager` akışı, yalnızca mevcut + sonraki sayfa canlı
-- [ ] Wordle arayüzü: ızgara, ekran klavyesi (TR/EN düzeni), harf çevirme animasyonları
-- [ ] Sonsuz akış üreteci (yerel)
-- [ ] Yarım kalan oyunun korunması (kaydırıp geri dönünce devam)
-- [ ] Atlama hakkı (akış başına 1) ve doğru cevap serisi mantığı
-- [ ] TR + EN yerelleştirme
-**Çıkış:** Android/Desktop'ta tam oynanabilir akış. **TestFlight doğrulaması.**
+- [x] `VerticalPager` akışı, yalnızca mevcut + sonraki sayfa canlı
+- [x] Wordle arayüzü: ızgara, ekran klavyesi (TR/EN düzeni), harf çevirme animasyonları
+- [x] Sonsuz akış üreteci (yerel)
+- [x] Yarım kalan oyunun korunması (kaydırıp geri dönünce devam)
+- [x] Atlama hakkı (akış başına 1) ve doğru cevap serisi mantığı
+- [x] TR + EN yerelleştirme
+> Faz 3 notları (2026-10-05): Kod ve başsız UI testleri (`FeedScreenTest`, ekran görüntüleri `shared/build/screenshots`) tamam, Android debug derlemesi başarılı. **Android emülatöründe doğrulandı (2026-10-05):** klavyede dikey sürükleme sayfayı kaydırmıyor, harf çevirme akıcı, İ/I tuşları çalışıyor. Sonradan düzeltilenler: hak bitince ileri kaydırma baştan engellenir, dil akış başlayınca kilitlenir, hata sonrası sonraki satır sallanmaz. **iPhone'da (TestFlight) doğrulanacak.** Henüz yapılmayanlar: "hareketi azalt" ayarı, ekran okuyucu etiketleri (Faz 8), kazanma kutlaması, 30 dk hareketsizlikte akışın sıfırlanması (şimdilik akış = uygulama oturumu), yarım oyunun uygulama kapanınca korunması (Faz 4, SQLDelight).
+**Çıkış:** Android/Desktop'ta tam oynanabilir akış. **TestFlight doğrulaması bekliyor.**
 
 ## Faz 4 - Yerel veri
 Amaç: Offline-first temeli.
-- [ ] SQLDelight şeması: oyun sonuçları, yarım oyunlar, favoriler, ayarlar
-- [ ] Seri ve istatistikleri kayıtlardan türetme (gün serisi, doğru cevap serisi, doğruluk, tamamlama)
-- [ ] İstatistik ve favoriler ekranları
-- [ ] Gün sınırı yardımcıları (Europe/Istanbul) + testler
-- [ ] Seri dondurma (yerel kural taslağı)
-**Çıkış:** Uygulama kapanıp açılınca her şey yerinde, istatistikler doğru.
+- [x] SQLDelight şeması: oyun sonuçları, yarım oyunlar, favoriler, ayarlar
+- [x] Seri ve istatistikleri kayıtlardan türetme (gün serisi, doğru cevap serisi, doğruluk, tamamlama)
+- [x] İstatistik ve favoriler ekranları
+- [x] Gün sınırı yardımcıları (Europe/Istanbul) + testler
+- [x] Seri dondurma (yerel kural taslağı)
+> Faz 4 notları (2026-10-05): Şema `shared/src/commonMain/sqldelight/` (game_result, in_progress_round, favorite, setting). Seri/istatistik kayıtlardan türetilir (`stats/`). Favori = bitmiş bulmaca (sonuç kartındaki kalp), Profil sekmesinde listelenir. Gün sınırı `IstanbulDay`. Seri dondurma yalnızca taslak (`DayStreaks`, her 7 günde 1 hak, en fazla 1), günlük bulmaca Faz 6'da gelince ekrana bağlanır, kesin kurallar o zaman. Uygulama yeniden başlayınca yarım oyunlar, seri ve dil geri yüklenir; atlama hakkı yeni oturumda yenilenir. Testler: 135 (JVM, gerçek SQLite bellekte + başsız UI). CI'a `compileIosMainKotlinMetadata` eklendi (commonMain'de JVM'e özgü API'yi yakalar). **Cihazda doğrulanacak:** Android'de uygulamayı kapatıp açınca yarım oyun/seri/favori, iPhone'da (NativeSqliteDriver derlemesi dahil, CI + TestFlight).
+**Çıkış:** Uygulama kapanıp açılınca her şey yerinde, istatistikler doğru. **Cihaz doğrulaması bekliyor.**
 
 ## Faz 5 - Supabase, kimlik ve senkron
 Amaç: Hesaplar ve outbox ile bulut yedek.

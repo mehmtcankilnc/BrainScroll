@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -42,7 +43,14 @@ kotlin {
     }
     
     sourceSets {
+        iosMain.dependencies {
+            implementation(libs.sqldelight.nativeDriver)
+        }
+        jvmMain.dependencies {
+            implementation(libs.sqldelight.sqliteDriver)
+        }
         androidMain.dependencies {
+            implementation(libs.sqldelight.androidDriver)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
         }
@@ -54,13 +62,36 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.coroutinesCore)
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        jvmTest.dependencies {
+            // Headless Compose UI tests (render the real screens on the JVM and take screenshots).
+            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutinesSwing) // provides Dispatchers.Main for viewModelScope
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            implementation(compose.uiTest)
         }
     }
 }
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+sqldelight {
+    databases {
+        create("BrainScrollDatabase") {
+            packageName.set("com.mehmtcan.brainscroll.db")
+        }
+    }
+}
+
+// Tests must never touch the real database in the home folder.
+tasks.withType<Test>().configureEach {
+    systemProperty("brainscroll.database", ":memory:")
 }

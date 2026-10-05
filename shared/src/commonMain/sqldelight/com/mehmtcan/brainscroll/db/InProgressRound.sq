@@ -1,0 +1,22 @@
+-- Puzzles that were started but not finished, so they survive closing the app.
+CREATE TABLE in_progress_round (
+    id TEXT NOT NULL PRIMARY KEY,
+    game TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    language TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    guesses TEXT NOT NULL,          -- accepted guesses, comma separated
+    input TEXT NOT NULL,            -- letters typed for the next guess
+    was_skipped INTEGER NOT NULL,
+    position INTEGER NOT NULL       -- order in the feed
+);
+
+upsert:
+INSERT OR REPLACE INTO in_progress_round(id, game, mode, language, answer, guesses, input, was_skipped, position)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAll:
+SELECT * FROM in_progress_round ORDER BY position ASC, id ASC;
+
+deleteById:
+DELETE FROM in_progress_round WHERE id = ?;

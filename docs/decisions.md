@@ -1,6 +1,6 @@
 # BrainScroll - Karar Belgesi
 
-Son güncelleme: 2026-10-04
+Son güncelleme: 2026-10-05
 
 ## Ürün
 - Ad: **BrainScroll** | Alan adı: `playbrainscroll.com` | Paket kimliği: `com.mehmtcan.brainscroll`
@@ -19,6 +19,8 @@ Son güncelleme: 2026-10-04
 ## Backend: Supabase
 - **Offline-first:** Kendi outbox'ımız. Yerel DB kaynak, kuyruk internet gelince Supabase'e gönderilir. PowerSync kullanılmaz.
 - Veri çoğunlukla eklemeli (oyun sonuçları); seri/istatistik bu kayıtlardan türetilir. Favoriler: son yazan kazanır.
+- **Favori = bitmiş bulmaca** (sonuç kartındaki kalp). Favoriler Profil sekmesinde listelenir (2026-10-05). Silmek yerine `is_favorite` bayrağı + `updated_at` tutulur, sonra senkron için.
+- **Yarım oyunlar** uygulama kapanınca korunur ve açılışta ilk sayfalar olarak geri yüklenir. Atlama hakkı ve oturum her soğuk başlangıçta yenilenir, doğru cevap serisi kayıtlardan geri hesaplanır.
 - Lider tabloları sadece online okunur, son görüntü önbelleğe alınır.
 - Sırlar GitHub Secrets'ta. Service-role anahtarı hiçbir yerde yok. Anon anahtarı public olabilir.
 
@@ -33,6 +35,7 @@ Son güncelleme: 2026-10-04
 - **Sonsuz akış:** yerelde üretilir, tamamen offline, sıfır gecikme.
 - Yarım kalan oyun **korunur** (devam ettirilir).
 - Sadece **5 harf** ile başlanır, sonra genişletilir.
+- **Dil seçimi (TR/EN) akış başlamadan yapılır**, ilk harf yazılınca ya da ilk atlamada kilitlenir (2026-10-05). Akış boyunca tek dil.
 - Doğrulama sözlüğü (geçerli tahminler) repoda olabilir, **cevap listesi repoda olmaz**.
 
 ## "Gün" tanımı

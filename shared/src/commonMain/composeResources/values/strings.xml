@@ -6,4 +6,26 @@
     <string name="legend_pending">Close</string>
     <string name="legend_absent">Not in word</string>
     <string name="glyph_test_label">Turkish letters</string>
+    <string name="game_word_puzzle">Word puzzle</string>
+    <string name="skip_label">Skip %1$d</string>
+    <string name="notice_too_short">Not enough letters</string>
+    <string name="notice_not_in_list">Not in word list</string>
+    <string name="notice_finish_first">Finish this puzzle first</string>
+    <string name="notice_skipped">Skipped, no skips left</string>
+    <string name="result_won">Solved in %1$d</string>
+    <string name="result_lost">The word was %1$s</string>
+    <string name="swipe_hint">Swipe up for the next puzzle</string>
+    <string name="key_enter">ENTER</string>
+    <string name="tab_feed">Feed</string>
+    <string name="tab_profile">Profile</string>
+    <string name="stats_title">Statistics</string>
+    <string name="stat_played">Played</string>
+    <string name="stat_win_rate">Win rate</string>
+    <string name="stat_streak">Streak</string>
+    <string name="stat_best_streak">Best streak</string>
+    <string name="guess_distribution">Guesses per win</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty">No favorites yet. Tap the heart on a finished puzzle.</string>
+    <string name="favorite_won">Solved in %1$d</string>
+    <string name="favorite_lost">Not solved</string>
 </resources>

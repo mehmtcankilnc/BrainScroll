@@ -1,0 +1,18 @@
+-- A favorite is a finished puzzle the player marked with the heart. Last writer wins (docs/decisions.md):
+-- instead of deleting a row we flip is_favorite and bump updated_at, so a later sync can pick the newest.
+CREATE TABLE favorite (
+    result_id TEXT NOT NULL PRIMARY KEY REFERENCES game_result(id),
+    is_favorite INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+setFavorite:
+INSERT OR REPLACE INTO favorite(result_id, is_favorite, updated_at) VALUES (?, ?, ?);
+
+isFavorite:
+SELECT is_favorite FROM favorite WHERE result_id = ?;
+
+-- Favorite puzzles, newest first.
+selectFavoriteResults:
+SELECT r.* FROM game_result r JOIN favorite f ON f.result_id = r.id
+WHERE f.is_favorite = 1 ORDER BY r.finished_at DESC, r.id DESC;
