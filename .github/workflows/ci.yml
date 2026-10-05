@@ -41,6 +41,7 @@ jobs:
           ./gradlew
           :shared:jvmTest
           :shared:compileIosMainKotlinMetadata
+          :shared:compileKotlinIosSimulatorArm64
           :shared:testAndroidHostTest
           :androidApp:assembleDebug
           :desktopApp:compileKotlin

@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
+import com.mehmtcan.brainscroll.cloud.supabaseServices
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.data.rememberDriverProvider
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
@@ -17,7 +19,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 @Composable
 @Preview
-fun App() {
+fun App(cloudServices: CloudServicesFactory = ::supabaseServices) {
     BrainScrollTheme {
         // The puzzles start in the device language (Turkish or English) unless the player chose one before.
         val deviceLanguage = if (Locale.current.language == "tr") Language.TR else Language.EN
@@ -27,6 +29,7 @@ fun App() {
                 repository = GameRepository(BrainScrollDatabase(driverProvider.create())),
                 deviceLanguage = deviceLanguage,
                 now = { Clock.System.now().toEpochMilliseconds() },
+                cloudServices = cloudServices,
             )
         }
         AppShell(viewModel)

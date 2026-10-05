@@ -1,6 +1,11 @@
 package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -19,6 +24,11 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.App
+import com.mehmtcan.brainscroll.account.AccountState
+import com.mehmtcan.brainscroll.account.FakeAccountService
+import com.mehmtcan.brainscroll.cloud.CloudServices
+import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
+import com.mehmtcan.brainscroll.sync.FakeCloud
 import java.io.File
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -35,10 +45,36 @@ private fun shot(name: String, image: ImageBitmap) {
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.snap(name: String) = shot(name, onRoot().captureToImage())
 
-/** Starts the app in a 390x740 dp window and waits until the word lists have loaded and the keyboard is drawn. */
+/** The cloud and the account of a test run. The tests keep a reference to look at what the app did with them. */
+internal class TestCloud(
+    val account: FakeAccountService = FakeAccountService(),
+    val api: FakeCloud = FakeCloud(),
+) {
+    val factory: CloudServicesFactory = { CloudServices(account, api) }
+
+    init {
+        // The fake cloud stores data under the account of the "session": make it the same one as the fake account.
+        (account.state.value as? AccountState.SignedIn)?.let { api.currentUser = it.userId }
+    }
+}
+
+/**
+ * Starts the app in a 390x740 dp window and waits until the word lists have loaded and the keyboard is drawn.
+ * Nothing here talks to the real network: the account and the cloud are fakes.
+ */
 @OptIn(ExperimentalTestApi::class)
-internal fun ComposeUiTest.start() {
-    setContent { Box(Modifier.requiredSize(390.dp, 740.dp)) { App() } }
+internal fun ComposeUiTest.start(cloud: TestCloud = TestCloud()) {
+    // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
+    // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
+    val owner = object : ViewModelStoreOwner {
+        override val viewModelStore = ViewModelStore()
+    }
+    setContent {
+        DisposableEffect(Unit) { onDispose { owner.viewModelStore.clear() } }
+        CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+            Box(Modifier.requiredSize(390.dp, 740.dp)) { App(cloudServices = cloud.factory) }
+        }
+    }
     waitForIdle()
     waitUntil(timeoutMillis = 10_000) { hasKeyboard() }
 }

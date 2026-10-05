@@ -28,4 +28,16 @@
     <string name="favorites_empty">Henüz favori yok. Biten bir bulmacadaki kalbe dokun.</string>
     <string name="favorite_won">%1$d tahminde çözüldü</string>
     <string name="favorite_lost">Çözülemedi</string>
+    <string name="account_title">Hesap</string>
+    <string name="account_offline">Çevrimdışı. İlerlemen bu cihazda saklanıyor.</string>
+    <string name="account_anonymous">Anonim hesap. İlerlemeni yedeklemek ve başka cihazlarda kullanmak için giriş yap.</string>
+    <string name="account_google">Google ile giriş yapıldı</string>
+    <string name="account_apple">Apple ile giriş yapıldı</string>
+    <string name="sign_in_google">Google ile giriş yap</string>
+    <string name="sign_in_apple">Apple ile giriş yap</string>
+    <string name="sign_out">Çıkış yap</string>
+    <string name="backup_pending">%1$d kayıt yedeklenmeyi bekliyor</string>
+    <string name="backup_done">Her şey yedeklendi</string>
+    <string name="notice_signed_in">Giriş yapıldı</string>
+    <string name="notice_sign_in_failed">Giriş yapılamadı, tekrar dene</string>
 </resources>

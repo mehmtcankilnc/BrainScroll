@@ -22,3 +22,6 @@ SELECT * FROM game_result ORDER BY finished_at ASC, id ASC;
 
 selectById:
 SELECT * FROM game_result WHERE id = ?;
+
+selectByIds:
+SELECT * FROM game_result WHERE id IN ?;

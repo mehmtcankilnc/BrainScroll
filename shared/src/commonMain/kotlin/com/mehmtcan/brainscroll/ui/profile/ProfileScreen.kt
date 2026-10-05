@@ -42,7 +42,7 @@ import kotlin.math.roundToInt
 
 /** Statistics and favorites (docs/plan.md phase 4). Everything shown is derived from the saved results. */
 @Composable
-fun ProfileScreen(profile: ProfileState, modifier: Modifier = Modifier) {
+fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
 
@@ -51,6 +51,8 @@ fun ProfileScreen(profile: ProfileState, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         item { Spacer(Modifier.height(Spacing.md)) }
+        item { AccountSection(account) }
+        item { Spacer(Modifier.height(Spacing.sm)) }
         item {
             BasicText(stringResource(Res.string.stats_title), style = type.title.copy(color = colors.textPrimary))
         }

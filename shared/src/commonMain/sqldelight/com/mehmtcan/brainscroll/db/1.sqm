@@ -1,0 +1,8 @@
+-- Migration from database version 1 to 2 (phase 5): the upload queue for cloud sync.
+-- Never edit this file once a build that contains it has reached a device. A change is a new migration file.
+CREATE TABLE sync_queue (
+    kind TEXT NOT NULL,
+    key TEXT NOT NULL,
+    seq INTEGER NOT NULL,
+    PRIMARY KEY (kind, key)
+);

@@ -118,6 +118,14 @@ class EndlessFeed(
         return true
     }
 
+    /**
+     * Sets the answer streak from outside. Used after a cloud sync brought in results from another device:
+     * the streak is always derived from the saved history, so it is recomputed there and applied here.
+     */
+    fun setAnswerStreak(streak: Int) {
+        answerStreak = streak
+    }
+
     fun snapshot() = FeedSnapshot(
         rounds = rounds.map { it.snapshot() },
         language = language,

@@ -2,6 +2,10 @@ package com.mehmtcan.brainscroll.ui.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mehmtcan.brainscroll.account.AccountEvent
+import com.mehmtcan.brainscroll.account.AccountState
+import com.mehmtcan.brainscroll.account.DeepLinkInbox
+import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
@@ -11,8 +15,14 @@ import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.Stats
 import com.mehmtcan.brainscroll.stats.Streaks
 import com.mehmtcan.brainscroll.stats.computeStats
+import com.mehmtcan.brainscroll.sync.SyncCoordinator
+import com.mehmtcan.brainscroll.sync.SyncEngine
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed interface FeedUiState {
@@ -28,6 +38,8 @@ sealed interface FeedUiState {
 data class ProfileState(
     val stats: Stats,
     val favorites: List<FinishedRound>,
+    /** How many results and favorites still wait to be uploaded to the cloud. */
+    val backupPending: Int = 0,
 )
 
 /**
@@ -36,11 +48,13 @@ data class ProfileState(
  *
  * It also connects the feed to the database: at start it restores unfinished puzzles, the answer streak
  * and the chosen language, and from then on the feed saves its progress through the [repository].
+ * The account and the cloud backup run in the background; the game never waits for them.
  */
 class FeedViewModel(
     private val repository: GameRepository,
     deviceLanguage: Language,
     private val now: () -> Long,
+    cloudServices: CloudServicesFactory,
 ) : ViewModel() {
     private var feed: EndlessFeed? = null
     private var favoriteIds: Set<String> = emptySet()
@@ -54,6 +68,24 @@ class FeedViewModel(
     /** The page the feed was on, so switching tabs and coming back does not jump to the first puzzle. */
     var page: Int = 0
         private set
+
+    // --- Account and cloud backup ---
+
+    private val services = cloudServices(viewModelScope)
+    private val account = services.account
+
+    val accountState: StateFlow<AccountState> = account.state
+    val accountEvents: SharedFlow<AccountEvent> = account.events
+    val canSignInWithApple: Boolean get() = account.canSignInWithApple
+
+    private val sync = SyncCoordinator(
+        scope = viewModelScope,
+        engine = SyncEngine(repository, services.cloud),
+        signedInUser = account.state
+            .map { (it as? AccountState.SignedIn)?.userId?.takeIf { id -> id.isNotEmpty() } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null),
+        onSynced = ::afterSync,
+    )
 
     init {
         viewModelScope.launch {
@@ -71,6 +103,15 @@ class FeedViewModel(
             publish()
             refreshProfile()
         }
+        viewModelScope.launch { account.start() }
+        viewModelScope.launch {
+            // The browser (Google) or the system hands the app a login link; the account service reads it.
+            DeepLinkInbox.urls.collect { url ->
+                account.handleCallbackUrl(url)
+                DeepLinkInbox.consumed()
+            }
+        }
+        sync.start()
     }
 
     fun type(page: Int, letter: Char) = act { it.type(page, letter) }
@@ -80,6 +121,7 @@ class FeedViewModel(
     fun submit(page: Int) {
         act { it.submit(page) }
         refreshProfile()
+        requestSyncIfNeeded()
     }
 
     /** Called when the pager settles on [page]: keeps the current and the next puzzle ready. */
@@ -107,13 +149,39 @@ class FeedViewModel(
         favoriteIds = if (nowFavorite) favoriteIds + resultId else favoriteIds - resultId
         publish()
         refreshProfile()
+        requestSyncIfNeeded()
     }
 
     fun refreshProfile() {
         _profile.value = ProfileState(
             stats = computeStats(repository.history()),
             favorites = repository.favoriteResults(),
+            backupPending = repository.pendingCount(),
         )
+    }
+
+    fun signInWithGoogle() {
+        viewModelScope.launch { account.signInWithGoogle() }
+    }
+
+    fun signInWithApple() {
+        viewModelScope.launch { account.signInWithApple() }
+    }
+
+    fun signOut() {
+        viewModelScope.launch { account.signOut() }
+    }
+
+    private fun requestSyncIfNeeded() {
+        if (repository.pendingCount() > 0) sync.request()
+    }
+
+    /** The cloud may have brought in results and favorites from another device: reload what depends on them. */
+    private fun afterSync() {
+        favoriteIds = repository.favoriteResults().map { it.id }.toSet()
+        feed?.setAnswerStreak(Streaks.current(repository.history()))
+        if (feed != null) publish()
+        refreshProfile()
     }
 
     private fun act(action: (EndlessFeed) -> Unit) {

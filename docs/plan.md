@@ -10,7 +10,7 @@ Amaç: Kod yazmadan önce dış bağımlılıkları sıraya koymak (onay sürele
 - [x] GitHub public repo, MIT lisansı, `README`, `.gitignore`
 - [x] Apple Developer: App ID `com.mehmtcan.brainscroll`, Sign in with Apple yeteneği, App Store Connect'te uygulama kaydı
 - [x] App Store Connect API anahtarı (BrainScroll CI, App Manager). İmzalama sertifikası Faz 1'de (öneri: API anahtarıyla bulut yönetimli imzalama)
-- [ ] Google Cloud / Play Console: OAuth istemcileri (Android + iOS + web), Google ile giriş yapılandırması. **Faz 5'e ertelendi** (Android imza parmak izi gerekiyor)
+- [x] Google Cloud: OAuth onay ekranı + **web** istemcisi, Supabase'de Google sağlayıcısı (2026-10-05). Android/iOS istemcisi ve imza parmak izi **gerekmedi**: Google girişi tarayıcı OAuth'uyla yapılıyor (Faz 5)
 - [x] Supabase projesi (Frankfurt), Anonymous girişi, manuel bağlama ve Apple sağlayıcısı (yalnızca native iOS, Client ID = bundle ID). Google Faz 5'te
 - [x] `playbrainscroll.com`: basit açılış sayfası, gizlilik politikası (Cloudflare Workers statik varlıklar, `site/`), destek e-postası yönlendirmesi
 - [x] Kelime listesi kaynakları: bkz. [word-lists.md](word-lists.md). **EN: SCOWL v2. TR: hunspell-tr (MPL-2.0, değiştirilmeden) geçerli tahminler için + kendi derlediğimiz cevap havuzu**
@@ -59,13 +59,14 @@ Amaç: Offline-first temeli.
 
 ## Faz 5 - Supabase, kimlik ve senkron
 Amaç: Hesaplar ve outbox ile bulut yedek.
-- [ ] Veritabanı şeması + RLS politikaları (kullanıcı yalnızca kendi verisini yazar/okur)
-- [ ] Anonim oturum (ilk açılış), oturumun kalıcı saklanması
-- [ ] Google ve Apple ile giriş / anonim hesabı bağlama
-- [ ] Var olan hesaba bağlamada ilerleme birleştirme
-- [ ] Outbox senkron: yerel kayıtlar -> Supabase, yeniden deneme, çevrimdışı dayanıklılık
-- [ ] Yeni cihazda geri yükleme
-**Çıkış:** İki cihazda aynı hesapla veri tutarlı. **TestFlight doğrulaması** (Apple girişi gerçek cihazda).
+- [x] Veritabanı şeması + RLS politikaları (kullanıcı yalnızca kendi verisini yazar/okur) (`supabase/migrations/`, PGlite ile doğrulandı; projeye `npx supabase db push` ile uygulanacak)
+- [x] Anonim oturum (ilk açılış), oturumun kalıcı saklanması (supabase-kt oturum yöneticisi)
+- [x] Google (tarayıcı OAuth, PKCE) ve Apple (iOS yerel) ile giriş / anonim hesabı bağlama (Android'de Google girişi doğrulandı 2026-10-05; Apple iPhone'da doğrulanacak)
+- [x] Var olan hesaba bağlamada ilerleme birleştirme (kimlik zaten varsa o hesaba giriş yapılır, yerel geçmiş o hesaba yüklenir)
+- [x] Outbox senkron: yerel kayıtlar -> Supabase, yeniden deneme, çevrimdışı dayanıklılık (`SyncEngine`, `SyncCoordinator`)
+- [x] Yeni cihazda geri yükleme (giriş sonrası ilk senkron buluttan çeker)
+> Faz 5 notları (2026-10-05): Veritabanı v2 (`sync_queue`, migration `1.sqm`). Günlük (DAILY) sonuçlar istemciden yüklenmez, Faz 6'da sunucu yazar. Google girişi tarayıcıdan olduğu için Android SHA-1 / iOS Google istemcisi gerekmedi. Açık nokta: anonim hesap bir Google hesabına bağlanamazsa (kimlik başka kullanıcıda) o hesaba giriş yapılır, anonim hesaba sunucuda yazılmış DAILY sonuçlar yetim kalır (Faz 6'da birleştirme RPC'si düşünülmeli). Testler: 176 JVM testi (sahte bulut, PGlite ile SQL).
+**Çıkış:** İki cihazda aynı hesapla veri tutarlı. **TestFlight doğrulaması** (Apple girişi gerçek cihazda) bekliyor.
 
 ## Faz 6 - Günlük bulmaca (sunucu doğrulamalı)
 Amaç: Adil, hile korumalı günlük bulmaca.

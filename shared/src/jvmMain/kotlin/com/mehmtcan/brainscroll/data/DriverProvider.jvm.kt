@@ -3,7 +3,6 @@ package com.mehmtcan.brainscroll.data
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import java.io.File
 
 /**
@@ -17,7 +16,9 @@ private const val DATABASE_PROPERTY = "brainscroll.database"
 actual fun rememberDriverProvider(): DriverProvider = remember {
     DriverProvider {
         when (val override = System.getProperty(DATABASE_PROPERTY)) {
-            ":memory:" -> JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).also { BrainScrollDatabase.Schema.create(it) }
+            // A throw-away database. It is a temporary file, not SQLite's in-memory mode, because the JDBC
+            // driver gives every thread its own private in-memory database, and the app uses several threads.
+            ":memory:" -> openFile(File.createTempFile("brainscroll-throwaway", ".db").also { it.deleteOnExit() })
             else -> openFile(File(override ?: File(System.getProperty("user.home"), ".brainscroll/$DATABASE_FILE").path))
         }
     }
@@ -25,8 +26,5 @@ actual fun rememberDriverProvider(): DriverProvider = remember {
 
 private fun openFile(file: File): JdbcSqliteDriver {
     file.absoluteFile.parentFile.mkdirs()
-    val isNew = !file.exists() || file.length() == 0L
-    return JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}").also { driver ->
-        if (isNew) BrainScrollDatabase.Schema.create(driver)
-    }
+    return JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}").also { prepareDatabase(it) }
 }

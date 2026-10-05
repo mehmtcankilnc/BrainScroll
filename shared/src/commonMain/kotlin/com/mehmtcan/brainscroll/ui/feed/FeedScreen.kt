@@ -1,6 +1,5 @@
 package com.mehmtcan.brainscroll.ui.feed
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,9 +39,7 @@ import brainscroll.shared.generated.resources.notice_too_short
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.GuessError
 import com.mehmtcan.brainscroll.game.wordle.Language
-import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
-import com.mehmtcan.brainscroll.ui.theme.Radius
-import com.mehmtcan.brainscroll.ui.theme.Spacing
+import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.StringResource
@@ -179,20 +175,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 )
             }
             // Sits under the page title so it never covers it.
-            notice?.let { NoticePill(it, Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
+            notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
         }
     }
-}
-
-@Composable
-private fun NoticePill(notice: Notice, modifier: Modifier = Modifier) {
-    val colors = BrainScrollTheme.colors
-    BasicText(
-        text = stringResource(notice.text),
-        style = BrainScrollTheme.typography.label.copy(color = colors.textPrimary),
-        modifier = modifier
-            .padding(top = Spacing.xs)
-            .background(colors.bgRaised, Radius.pill)
-            .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
-    )
 }

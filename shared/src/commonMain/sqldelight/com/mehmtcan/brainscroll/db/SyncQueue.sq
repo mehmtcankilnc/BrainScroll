@@ -1,0 +1,24 @@
+-- Things that still have to be uploaded to the cloud. The queue only stores WHICH item changed; the content is
+-- read from the real tables at upload time, so the newest state is always what gets sent (a favorite that was
+-- toggled three times offline is uploaded once, as it is now).
+CREATE TABLE sync_queue (
+    kind TEXT NOT NULL,             -- 'result' or 'favorite'
+    key TEXT NOT NULL,              -- the result id (a favorite is identified by its result id too)
+    seq INTEGER NOT NULL,           -- grows with every change, so an upload can tell if the item changed meanwhile
+    PRIMARY KEY (kind, key)
+);
+
+enqueue:
+INSERT OR REPLACE INTO sync_queue(kind, key, seq)
+VALUES (?, ?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM sync_queue));
+
+-- The oldest changes first.
+selectBatch:
+SELECT kind, key, seq FROM sync_queue ORDER BY seq ASC LIMIT ?;
+
+-- Only removes the entry if it did not change after it was read (same seq).
+removeIfUnchanged:
+DELETE FROM sync_queue WHERE kind = ? AND key = ? AND seq = ?;
+
+countPending:
+SELECT COUNT(*) FROM sync_queue;

@@ -25,6 +25,7 @@ Son güncelleme: 2026-10-05
 - Sırlar GitHub Secrets'ta. Service-role anahtarı hiçbir yerde yok. Anon anahtarı public olabilir.
 
 ## Kimlik
+- **Google girişi tarayıcı üzerinden OAuth (PKCE)**, derin bağlantı `com.mehmtcan.brainscroll://login-callback`. Apple girişi yalnızca iOS'ta yerel (kimlik jetonu + nonce). Anonim hesaptan girişte önce kimlik **bağlanır**, kimlik başka hesaba aitse o hesaba giriş yapılır (2026-10-05).
 - İlk açılışta **anonim hesap**. İsteğe bağlı olarak **Google** ve **Apple** hesabına bağlama (Apple zorunlu, çünkü Google sunuyoruz).
 - Anonim hesap, zaten var olan bir hesaba bağlanırsa ilerleme **birleştirilir** (kayıtlar eklemeli olduğu için güvenli).
 

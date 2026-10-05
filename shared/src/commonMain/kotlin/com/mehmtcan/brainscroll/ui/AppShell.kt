@@ -3,31 +3,46 @@ package com.mehmtcan.brainscroll.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.notice_sign_in_failed
+import brainscroll.shared.generated.resources.notice_signed_in
 import brainscroll.shared.generated.resources.tab_feed
 import brainscroll.shared.generated.resources.tab_profile
+import com.mehmtcan.brainscroll.account.AccountEvent
+import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.ui.feed.FeedScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
+import com.mehmtcan.brainscroll.ui.profile.AccountUi
 import com.mehmtcan.brainscroll.ui.profile.ProfileScreen
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.Radius
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -42,45 +57,103 @@ fun AppShell(viewModel: FeedViewModel) {
     val colors = BrainScrollTheme.colors
     var tab by remember { mutableStateOf(Tab.Feed) }
 
-    Column(modifier = Modifier.fillMaxSize().background(colors.bgPage).safeContentPadding()) {
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+    // Sign-in results are shown in a short message above whatever tab is open.
+    var accountNotice by remember { mutableStateOf<StringResource?>(null) }
+    LaunchedEffect(viewModel) {
+        viewModel.accountEvents.collect { event ->
+            accountNotice = when (event) {
+                AccountEvent.SignedIn -> Res.string.notice_signed_in
+                AccountEvent.SignInFailed -> Res.string.notice_sign_in_failed
+            }
+            delay(ACCOUNT_NOTICE_MILLIS)
+            accountNotice = null
+        }
+    }
+
+    // Only the content is pushed away from the status bar. The tab bar below handles the bottom edge itself,
+    // so its background can reach the screen edges and sit under the home indicator.
+    Column(modifier = Modifier.fillMaxSize().background(colors.bgPage)) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
+        ) {
             when (tab) {
                 Tab.Feed -> FeedScreen(viewModel)
                 Tab.Profile -> {
                     val profile by viewModel.profile.collectAsStateWithLifecycle()
-                    ProfileScreen(profile)
+                    val accountState by viewModel.accountState.collectAsStateWithLifecycle()
+                    ProfileScreen(
+                        profile = profile,
+                        account = AccountUi(
+                            state = accountState,
+                            canSignInWithApple = viewModel.canSignInWithApple,
+                            backupPending = profile.backupPending,
+                            onSignInWithGoogle = viewModel::signInWithGoogle,
+                            onSignInWithApple = viewModel::signInWithApple,
+                            onSignOut = viewModel::signOut,
+                        ),
+                    )
                 }
             }
+            accountNotice?.let { NoticePill(stringResource(it), Modifier.align(Alignment.TopCenter)) }
         }
         TabBar(selected = tab, onSelect = { tab = it })
     }
 }
 
+private const val ACCOUNT_NOTICE_MILLIS = 2_500L
+
+/**
+ * Full-width bar. The background is drawn first and covers the whole width and the bottom safe area
+ * (home indicator); only afterwards is the content padded, so the labels stay in the safe area.
+ */
 @Composable
 private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
     val colors = BrainScrollTheme.colors
-    Row(modifier = Modifier.fillMaxWidth().height(64.dp).background(colors.bgSurface)) {
-        Tab.entries.forEach { tab ->
-            val active = tab == selected
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        role = Role.Tab,
-                        onClick = { onSelect(tab) },
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                BasicText(
-                    text = stringResource(tab.label),
-                    style = BrainScrollTheme.typography.label.copy(
-                        color = if (active) colors.textPrimary else colors.textSecondary,
-                    ),
-                )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.bgSurface)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
+    ) {
+        // Thin line on top, so the bar reads as its own surface even where the tones are close.
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+        Row(modifier = Modifier.fillMaxWidth().height(TAB_BAR_HEIGHT)) {
+            Tab.entries.forEach { tab ->
+                val active = tab == selected
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = { onSelect(tab) },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        BasicText(
+                            text = stringResource(tab.label),
+                            style = BrainScrollTheme.typography.label.copy(
+                                color = if (active) colors.textPrimary else colors.textSecondary,
+                            ),
+                        )
+                        // A short bar under the active label: the selected tab is not shown by color alone.
+                        Box(
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(3.dp)
+                                .background(if (active) colors.correctFill else Color.Transparent, Radius.pill),
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+private val TAB_BAR_HEIGHT = 56.dp

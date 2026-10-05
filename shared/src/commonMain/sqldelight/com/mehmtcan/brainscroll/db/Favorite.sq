@@ -16,3 +16,9 @@ SELECT is_favorite FROM favorite WHERE result_id = ?;
 selectFavoriteResults:
 SELECT r.* FROM game_result r JOIN favorite f ON f.result_id = r.id
 WHERE f.is_favorite = 1 ORDER BY r.finished_at DESC, r.id DESC;
+
+selectFavorite:
+SELECT result_id, is_favorite, updated_at FROM favorite WHERE result_id = ?;
+
+selectAllFavorites:
+SELECT result_id, is_favorite, updated_at FROM favorite;

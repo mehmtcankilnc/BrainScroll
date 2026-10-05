@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -48,12 +49,15 @@ kotlin {
     sourceSets {
         iosMain.dependencies {
             implementation(libs.sqldelight.nativeDriver)
+            implementation(libs.ktor.client.darwin)
         }
         jvmMain.dependencies {
             implementation(libs.sqldelight.sqliteDriver)
+            implementation(libs.ktor.client.okhttp)
         }
         androidMain.dependencies {
             implementation(libs.sqldelight.androidDriver)
+            implementation(libs.ktor.client.okhttp)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
         }
@@ -68,9 +72,13 @@ kotlin {
             implementation(libs.kotlinx.coroutinesCore)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.supabase.auth)
+            implementation(libs.supabase.postgrest)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutinesTest)
         }
         jvmTest.dependencies {
             // Headless Compose UI tests (render the real screens on the JVM and take screenshots).
