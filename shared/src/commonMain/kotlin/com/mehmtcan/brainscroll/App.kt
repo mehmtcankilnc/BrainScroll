@@ -11,6 +11,7 @@ import com.mehmtcan.brainscroll.data.rememberDriverProvider
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.AppShell
+import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import kotlin.time.Clock
@@ -24,7 +25,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices) {
         // The puzzles start in the device language (Turkish or English) unless the player chose one before.
         val deviceLanguage = if (Locale.current.language == "tr") Language.TR else Language.EN
         val driverProvider = rememberDriverProvider()
-        val viewModel = viewModel {
+        val feedViewModel = viewModel {
             FeedViewModel(
                 repository = GameRepository(BrainScrollDatabase(driverProvider.create())),
                 deviceLanguage = deviceLanguage,
@@ -32,6 +33,16 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices) {
                 cloudServices = cloudServices,
             )
         }
-        AppShell(viewModel)
+        // The daily puzzle shares the database and the account with the feed, so it is built from what the feed owns.
+        val dailyViewModel = viewModel {
+            DailyViewModel(
+                api = feedViewModel.dailyApi,
+                repository = feedViewModel.repository,
+                signedIn = feedViewModel.signedIn,
+                initialLanguage = feedViewModel.repository.savedLanguage() ?: deviceLanguage,
+                now = { Clock.System.now().toEpochMilliseconds() },
+            )
+        }
+        AppShell(feedViewModel, dailyViewModel)
     }
 }

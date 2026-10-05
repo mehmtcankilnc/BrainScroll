@@ -18,15 +18,6 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class AccountUiTest {
 
-    /** True if any of the texts is on screen. The texts follow the device language, so both are given. */
-    private fun ComposeUiTest.hasAnyText(vararg texts: String) =
-        texts.any { onAllNodesWithText(it, substring = true).fetchSemanticsNodes().isNotEmpty() }
-
-    private fun ComposeUiTest.clickAny(vararg texts: String) {
-        val text = texts.first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
-        onNodeWithText(text).performClick()
-    }
-
     private fun ComposeUiTest.openProfile() {
         openTab("Profil", "Profile")
         waitForIdle()

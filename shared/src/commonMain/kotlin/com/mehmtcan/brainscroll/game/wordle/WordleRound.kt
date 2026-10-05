@@ -20,6 +20,8 @@ data class RoundSnapshot(
     /** Best known result per keyboard letter: Correct beats Present beats Absent. */
     val letterStates: Map<Char, LetterResult>,
     val skipped: Boolean,
+    /** A guess that was typed and sent but not answered yet (daily puzzle: the server colors it). Drawn as a row. */
+    val pending: String? = null,
 ) {
     val isFinished: Boolean get() = status != WordleStatus.Playing
 }
@@ -110,22 +112,9 @@ class WordleRound(
             answer = state.answer,
             error = error,
             errorTick = errorTick,
-            letterStates = keyStates(state.rows),
+            letterStates = keyStatesOf(state.rows),
             skipped = skipped,
         )
-    }
-
-    private fun keyStates(rows: List<GuessRow>): Map<Char, LetterResult> {
-        val best = mutableMapOf<Char, LetterResult>()
-        for (row in rows) {
-            row.word.forEachIndexed { i, letter ->
-                val result = row.results[i]
-                val current = best[letter]
-                // LetterResult is declared Correct, Present, Absent: a smaller ordinal is a better result.
-                if (current == null || result.ordinal < current.ordinal) best[letter] = result
-            }
-        }
-        return best
     }
 
     companion object {
@@ -138,4 +127,18 @@ class WordleRound(
             return round
         }
     }
+}
+
+/** Best known result per keyboard letter: Correct beats Present beats Absent. Shared with the daily puzzle. */
+fun keyStatesOf(rows: List<GuessRow>): Map<Char, LetterResult> {
+    val best = mutableMapOf<Char, LetterResult>()
+    for (row in rows) {
+        row.word.forEachIndexed { i, letter ->
+            val result = row.results[i]
+            val current = best[letter]
+            // LetterResult is declared Correct, Present, Absent: a smaller ordinal is a better result.
+            if (current == null || result.ordinal < current.ordinal) best[letter] = result
+        }
+    }
+    return best
 }

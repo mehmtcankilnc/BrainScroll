@@ -40,4 +40,17 @@
     <string name="backup_done">Her şey yedeklendi</string>
     <string name="notice_signed_in">Giriş yapıldı</string>
     <string name="notice_sign_in_failed">Giriş yapılamadı, tekrar dene</string>
+    <string name="tab_daily">Günlük</string>
+    <string name="daily_title">Günün bulmacası</string>
+    <string name="daily_intro">Her gün herkes için aynı kelime. Süren Başla'ya bastığın an başlar.</string>
+    <string name="daily_start">Başla</string>
+    <string name="daily_loading">Yükleniyor…</string>
+    <string name="daily_offline">Günlük bulmaca için internet bağlantısı gerekir.</string>
+    <string name="daily_unavailable">Günlük bulmaca şu an açılamıyor. Biraz sonra tekrar dene.</string>
+    <string name="daily_retry">Tekrar dene</string>
+    <string name="daily_time">Süre %1$s</string>
+    <string name="daily_next">Sıradaki bulmaca: %1$s</string>
+    <string name="daily_streak_label">Gün serisi</string>
+    <string name="notice_daily_offline">İnternet yok, tahmin gönderilemedi</string>
+    <string name="notice_daily_unavailable">Tahmin gönderilemedi, tekrar dene</string>
 </resources>

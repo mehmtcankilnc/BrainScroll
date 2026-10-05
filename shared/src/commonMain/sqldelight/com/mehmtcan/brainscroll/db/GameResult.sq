@@ -10,12 +10,13 @@ CREATE TABLE game_result (
     outcome TEXT NOT NULL,          -- WON or LOST
     was_skipped INTEGER NOT NULL,   -- 1 if the player left the puzzle once before finishing it
     finished_at INTEGER NOT NULL,   -- epoch millis
-    day_index INTEGER NOT NULL      -- Istanbul day of finished_at (IstanbulDay.dayIndex)
+    day_index INTEGER NOT NULL,     -- Istanbul day of finished_at (IstanbulDay.dayIndex)
+    duration_ms INTEGER             -- daily puzzles only: how long it took, measured by the server
 );
 
 insertResult:
-INSERT OR IGNORE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM game_result ORDER BY finished_at ASC, id ASC;

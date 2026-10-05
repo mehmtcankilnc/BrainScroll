@@ -39,6 +39,13 @@ Son güncelleme: 2026-10-05
 - **Dil seçimi (TR/EN) akış başlamadan yapılır**, ilk harf yazılınca ya da ilk atlamada kilitlenir (2026-10-05). Akış boyunca tek dil.
 - Doğrulama sözlüğü (geçerli tahminler) repoda olabilir, **cevap listesi repoda olmaz**.
 
+## Günlük bulmaca (karar: 2026-10-06)
+- **Dil başına ayrı bulmaca:** her gün biri TR biri EN. İkisi de oynanabilir. Gün serisi o gün herhangi birini bitirmekle sayılır. Sıralamalar (Faz 7) dil başına ayrı.
+- **Cevap yalnızca veritabanında.** Hangi gün hangi kelime olduğu, o günün ilk isteğinde veritabanı tarafından rastgele seçilir ve repoya hiç yazılmaz. Havuz bitene kadar kelime tekrar etmez.
+- **Süre sunucu saatiyle**, Başla düğmesine basıldığı an başlar. Başlatmayı tekrar çağırmak saati sıfırlamaz. Bir bulmaca gece yarısından önce başlayıp sonra bitirilirse başladığı güne sayılır.
+- Tahmin renklendirmesi sunucuda, uygulamadaki `evaluateGuess` ile aynı kural. Sözlük denetimi önce uygulamada (yazım hatası hak yemez).
+- **Seri dondurma:** serinin her 7'nin katına ulaşması 1 hak kazandırır, en fazla 1 birikir, kaçırılan bir gün hak varsa otomatik harcanır.
+
 ## "Gün" tanımı
 - Tüm gün sınırları **Europe/Istanbul** saat dilimine göre (UTC+3, yaz saati yok). Seri ve lider tabloları aynı sınırı kullanır.
 

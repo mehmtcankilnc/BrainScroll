@@ -1,9 +1,6 @@
 package com.mehmtcan.brainscroll.ui.feed
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +19,7 @@ import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.skip_label
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
-import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,28 +47,6 @@ fun Hud(
             textColor = if (onToggleLanguage != null) colors.textPrimary else colors.textDisabled,
             onClick = onToggleLanguage,
         )
-    }
-}
-
-@Composable
-private fun Chip(
-    text: String,
-    textColor: Color,
-    onClick: (() -> Unit)? = null,
-    icon: (@Composable () -> Unit)? = null,
-) {
-    val colors = BrainScrollTheme.colors
-    val base = Modifier.background(colors.bgSurface, Radius.pill)
-    val clickable = if (onClick == null) base else
-        base.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
-
-    Row(
-        modifier = clickable.padding(horizontal = Spacing.md, vertical = Spacing.xs + 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-    ) {
-        icon?.invoke()
-        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = textColor))
     }
 }
 

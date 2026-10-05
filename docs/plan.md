@@ -70,13 +70,14 @@ Amaç: Hesaplar ve outbox ile bulut yedek.
 
 ## Faz 6 - Günlük bulmaca (sunucu doğrulamalı)
 Amaç: Adil, hile korumalı günlük bulmaca.
-- [ ] Cevap tablosu (sadece sunucuda, istemciye RLS ile kapalı), günlük cevap zamanlaması
-- [ ] Postgres RPC: `start_daily`, `submit_guess` (renk geri bildirimi), bitiş ve süre hesabı (sunucu saati)
-- [ ] İstemci: günlük oyun akışı, isteği animasyonla maskeleme, `start` ön yükleme
-- [ ] Online-only davranışı ve çevrimdışı mesajı
-- [ ] Gün serisi sunucu tarafı (günlük sonuç kaydı), seri dondurma kesin kuralları
-- [ ] Kötüye kullanım testleri (tekrar gönderim, saat oynama, eşzamanlı oturum)
-**Çıkış:** Günlük bulmaca çalışıyor, süre ve skor sunucuda. **TestFlight doğrulaması.**
+- [x] Cevap tablosu (sadece sunucuda, istemciye RLS ile kapalı), günlük cevap zamanlaması (`daily_puzzle`: o günün ilk isteğinde veritabanı rastgele seçer, havuz bitmeden tekrar etmez, program repoda yok)
+- [x] Postgres RPC: `start_daily`, `get_daily_state`, `submit_daily_guess` (renk geri bildirimi uygulamadaki `evaluateGuess` ile aynı kural), bitiş ve süre hesabı (sunucu saati) (`supabase/migrations/20261006090000_daily_puzzle.sql`, PGlite'ta 62 kontrolle doğrulandı)
+- [x] İstemci: günlük oyun akışı (Günlük sekmesi), isteği animasyonla maskeleme (gönderilen satır nabız atar, cevap gelince çevrilir). `start` ön yüklemesi yerine **Başla düğmesi**: süre yanlışlıkla başlamasın diye sunucu saati düğmeye basınca başlar
+- [x] Online-only davranışı ve çevrimdışı mesajı (tekrar dene düğmesiyle)
+- [x] Gün serisi (günlük sonuç sunucuda yazılır, istemci kayıtlardan hesaplar), seri dondurma kesin kuralı: **7 günde 1 hak, otomatik, en fazla 1 birikir** (`DayStreaks`)
+- [x] Kötüye kullanım testleri (tekrar gönderim, saat oynama, eşzamanlı oturum): tekrar gönderim, tekrar başlatma, istemci saatinin etkisizliği ve istemcinin günlük sonuç yazamaması test edildi. Canlı projede 10 eşzamanlı tahmin (tam 6'sı kabul edildi, tek sonuç satırı) ve 8 eşzamanlı başlatma (tek saat) denendi, hepsi geçti (2026-10-06).
+> Faz 6 notları (2026-10-06): Günlük bulmaca dil başına ayrı (TR ve EN), ikisi de oynanabilir, gün serisi herhangi birini bitirmekle sayılır. Tahmin sözlüğü sunucuda denetlenmez, uygulama kendi listesiyle önce kontrol eder (yazım hatası tahmin hakkı yemez). Sonuç yerelde de hemen kaydedilir (seri anında güncellenir), sonra buluttan gelen aynı sonuç yok sayılır. Veritabanı v3 (`duration_ms`). 218 JVM testi.
+**Çıkış:** Günlük bulmaca çalışıyor, süre ve skor sunucuda. **Migration'lar canlı projede, canlı doğrulama geçti. iPhone (TestFlight) doğrulaması bekliyor.**
 
 ## Faz 7 - Lider tabloları ve arkadaşlar
 Amaç: Rekabet.

@@ -2,6 +2,10 @@ package com.mehmtcan.brainscroll.ui.wordle
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -69,13 +73,33 @@ fun WordleGrid(round: RoundSnapshot, modifier: Modifier = Modifier) {
                         }
                     }
                     rowIndex == round.rows.size && !round.isFinished ->
-                        InputRow(round, tileSize)
+                        if (round.pending != null) PendingRow(round.pending, tileSize) else InputRow(round, tileSize)
                     else -> Row(horizontalArrangement = Arrangement.spacedBy(TileGap)) {
                         repeat(round.wordLength) { LetterTile("", TileState.Empty, size = tileSize) }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * A guess that was sent and is waiting for the server to color it. The letters pulse softly, so the wait feels like
+ * part of the game instead of a frozen screen. When the answer arrives the row flips like any other.
+ */
+@Composable
+private fun PendingRow(word: String, tileSize: Dp) {
+    val pulse = rememberInfiniteTransition()
+    val alpha by pulse.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(550), RepeatMode.Reverse),
+    )
+    Row(
+        modifier = Modifier.graphicsLayer { this.alpha = alpha }.testTag("pendingRow"),
+        horizontalArrangement = Arrangement.spacedBy(TileGap),
+    ) {
+        word.forEach { LetterTile(it.toString(), TileState.Filled, size = tileSize) }
     }
 }
 

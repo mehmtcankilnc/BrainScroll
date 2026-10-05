@@ -32,10 +32,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.notice_sign_in_failed
 import brainscroll.shared.generated.resources.notice_signed_in
+import brainscroll.shared.generated.resources.tab_daily
 import brainscroll.shared.generated.resources.tab_feed
 import brainscroll.shared.generated.resources.tab_profile
 import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.ui.components.NoticePill
+import com.mehmtcan.brainscroll.ui.daily.DailyScreen
+import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.feed.FeedScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.profile.AccountUi
@@ -48,12 +51,13 @@ import org.jetbrains.compose.resources.stringResource
 
 private enum class Tab(val label: StringResource) {
     Feed(Res.string.tab_feed),
+    Daily(Res.string.tab_daily),
     Profile(Res.string.tab_profile),
 }
 
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
 @Composable
-fun AppShell(viewModel: FeedViewModel) {
+fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
     val colors = BrainScrollTheme.colors
     var tab by remember { mutableStateOf(Tab.Feed) }
 
@@ -81,6 +85,7 @@ fun AppShell(viewModel: FeedViewModel) {
         ) {
             when (tab) {
                 Tab.Feed -> FeedScreen(viewModel)
+                Tab.Daily -> DailyScreen(dailyViewModel)
                 Tab.Profile -> {
                     val profile by viewModel.profile.collectAsStateWithLifecycle()
                     val accountState by viewModel.accountState.collectAsStateWithLifecycle()

@@ -124,6 +124,14 @@ class GameRepositoryTest {
     }
 
     @Test
+    fun theDurationOfADailyResultSurvivesARoundTrip() {
+        val repo = newRepository()
+        repo.finish(finished("d").copy(mode = Mode.DAILY, durationMs = 61_234L))
+        assertEquals(61_234L, repo.history().single().durationMs)
+        assertEquals(0, repo.pendingCount()) // daily results are written by the server, never uploaded
+    }
+
+    @Test
     fun aLostResultKeepsItsOutcome() {
         val repo = newRepository()
         repo.finish(finished("a", outcome = Outcome.LOST, guesses = listOf("A", "B")))

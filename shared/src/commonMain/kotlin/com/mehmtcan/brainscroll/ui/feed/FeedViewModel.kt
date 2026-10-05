@@ -6,6 +6,7 @@ import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.DeepLinkInbox
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
+import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
@@ -51,7 +52,8 @@ data class ProfileState(
  * The account and the cloud backup run in the background; the game never waits for them.
  */
 class FeedViewModel(
-    private val repository: GameRepository,
+    /** Shared with the daily puzzle screen, so both write to the same database. */
+    val repository: GameRepository,
     deviceLanguage: Language,
     private val now: () -> Long,
     cloudServices: CloudServicesFactory,
@@ -78,12 +80,22 @@ class FeedViewModel(
     val accountEvents: SharedFlow<AccountEvent> = account.events
     val canSignInWithApple: Boolean get() = account.canSignInWithApple
 
+    private val signedInUser: StateFlow<String?> = account.state
+        .map { (it as? AccountState.SignedIn)?.userId?.takeIf { id -> id.isNotEmpty() } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The daily puzzle screen needs an account to know who is playing. */
+    val signedIn: StateFlow<Boolean> = signedInUser
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** The daily puzzle on the server, created together with the account so both use one Supabase client. */
+    val dailyApi: DailyApi = services.daily
+
     private val sync = SyncCoordinator(
         scope = viewModelScope,
         engine = SyncEngine(repository, services.cloud),
-        signedInUser = account.state
-            .map { (it as? AccountState.SignedIn)?.userId?.takeIf { id -> id.isNotEmpty() } }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null),
+        signedInUser = signedInUser,
         onSynced = ::afterSync,
     )
 

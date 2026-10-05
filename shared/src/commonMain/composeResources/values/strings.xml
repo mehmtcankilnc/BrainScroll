@@ -40,4 +40,17 @@
     <string name="backup_done">Everything is backed up</string>
     <string name="notice_signed_in">Signed in</string>
     <string name="notice_sign_in_failed">Couldn't sign in, try again</string>
+    <string name="tab_daily">Daily</string>
+    <string name="daily_title">Today's puzzle</string>
+    <string name="daily_intro">The same word for everyone, every day. Your time starts the moment you press Start.</string>
+    <string name="daily_start">Start</string>
+    <string name="daily_loading">Loading…</string>
+    <string name="daily_offline">The daily puzzle needs an internet connection.</string>
+    <string name="daily_unavailable">The daily puzzle can't be opened right now. Try again in a moment.</string>
+    <string name="daily_retry">Try again</string>
+    <string name="daily_time">Time %1$s</string>
+    <string name="daily_next">Next puzzle in %1$s</string>
+    <string name="daily_streak_label">Day streak</string>
+    <string name="notice_daily_offline">No connection, guess not sent</string>
+    <string name="notice_daily_unavailable">Couldn't send the guess, try again</string>
 </resources>

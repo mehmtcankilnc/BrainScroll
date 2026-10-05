@@ -27,6 +27,7 @@ import com.mehmtcan.brainscroll.App
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.cloud.CloudServices
+import com.mehmtcan.brainscroll.daily.FakeDailyApi
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.sync.FakeCloud
 import java.io.File
@@ -49,8 +50,9 @@ internal fun ComposeUiTest.snap(name: String) = shot(name, onRoot().captureToIma
 internal class TestCloud(
     val account: FakeAccountService = FakeAccountService(),
     val api: FakeCloud = FakeCloud(),
+    val daily: FakeDailyApi = FakeDailyApi(),
 ) {
-    val factory: CloudServicesFactory = { CloudServices(account, api) }
+    val factory: CloudServicesFactory = { CloudServices(account, api, daily) }
 
     init {
         // The fake cloud stores data under the account of the "session": make it the same one as the fake account.
@@ -131,4 +133,16 @@ internal fun ComposeUiTest.switchToEnglish() {
 internal fun ComposeUiTest.openTab(turkish: String, english: String) {
     val label = if (onAllNodesWithText(turkish).fetchSemanticsNodes().isNotEmpty()) turkish else english
     onNodeWithText(label).performClick()
+}
+
+/** True if any of the texts is on screen. Texts follow the device language, so callers give Turkish and English. */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.hasAnyText(vararg texts: String) =
+    texts.any { onAllNodesWithText(it, substring = true).fetchSemanticsNodes().isNotEmpty() }
+
+/** Clicks the first of the texts that is on screen (exact match). */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.clickAny(vararg texts: String) {
+    val text = texts.first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
+    onNodeWithText(text).performClick()
 }

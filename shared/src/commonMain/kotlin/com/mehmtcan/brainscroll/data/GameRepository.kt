@@ -72,7 +72,8 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             outcome = result.outcome.name,
             was_skipped = if (result.wasSkipped) 1 else 0,
             finished_at = result.finishedAt,
-            day_index = IstanbulDay.dayIndex(result.finishedAt),
+            day_index = result.dayIndex,
+            duration_ms = result.durationMs,
         )
     }
 
@@ -107,6 +108,8 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
                 outcome = Outcome.valueOf(it.outcome),
                 wasSkipped = it.was_skipped == 1L,
                 finishedAt = it.finished_at,
+                durationMs = it.duration_ms,
+                puzzleDay = it.day_index.takeIf { day -> day != IstanbulDay.dayIndex(it.finished_at) },
             )
         }
 
@@ -198,6 +201,8 @@ private fun Game_result.toFinished() = FinishedRound(
     outcome = Outcome.valueOf(outcome),
     wasSkipped = was_skipped == 1L,
     finishedAt = finished_at,
+    durationMs = duration_ms,
+    puzzleDay = day_index.takeIf { it != IstanbulDay.dayIndex(finished_at) },
 )
 
 private fun In_progress_round.toStored() = StoredRound(

@@ -96,6 +96,7 @@ private data class ResultRow(
     @SerialName("was_skipped") val wasSkipped: Boolean,
     @SerialName("finished_at") val finishedAt: Long,
     @SerialName("day_index") val dayIndex: Int,
+    @SerialName("duration_ms") val durationMs: Long? = null,
 )
 
 @Serializable
@@ -118,6 +119,7 @@ private fun FinishedRound.toRow() = ResultRow(
     wasSkipped = wasSkipped,
     finishedAt = finishedAt,
     dayIndex = dayIndex.toInt(),
+    durationMs = durationMs,
 )
 
 /** A row this version of the app does not understand (a newer game or language) is skipped, not fatal. */
@@ -132,6 +134,8 @@ private fun ResultRow.toFinishedRoundOrNull(): FinishedRound? {
         outcome = Outcome.entries.firstOrNull { it.name == outcome } ?: return null,
         wasSkipped = wasSkipped,
         finishedAt = finishedAt,
+        durationMs = durationMs,
+        puzzleDay = this.dayIndex.toLong().takeIf { it != com.mehmtcan.brainscroll.time.IstanbulDay.dayIndex(finishedAt) },
     )
 }
 

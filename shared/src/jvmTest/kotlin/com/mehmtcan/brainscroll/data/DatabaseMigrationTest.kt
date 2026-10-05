@@ -99,4 +99,48 @@ class DatabaseMigrationTest {
         val repo = GameRepository(BrainScrollDatabase(driver))
         assertEquals(2, repo.history().size)
     }
+
+    /** The database as phase 5 left it: version 1 plus the upload queue, `user_version` 2. */
+    private fun versionTwoDatabase(): SqlDriver {
+        val driver = versionOneDatabase()
+        driver.execute(null, "CREATE TABLE sync_queue (kind TEXT NOT NULL, key TEXT NOT NULL, seq INTEGER NOT NULL, PRIMARY KEY (kind, key))", 0)
+        driver.execute(null, "INSERT INTO sync_queue VALUES ('result', 'r1', 1)", 0)
+        driver.execute(null, "PRAGMA user_version = 2", 0)
+        return driver
+    }
+
+    @Test
+    fun aVersionTwoDatabaseKeepsItsDataAndItsUploadQueue() {
+        val driver = versionTwoDatabase()
+        prepareDatabase(driver)
+        val repo = GameRepository(BrainScrollDatabase(driver))
+
+        assertEquals(listOf("r1", "r2"), repo.history().map { it.id })
+        assertEquals(1, repo.pendingCount()) // the item that was waiting for upload is still waiting
+        assertEquals(BrainScrollDatabase.Schema.version, userVersion(driver))
+    }
+
+    @Test
+    fun oldResultsHaveNoDurationAndNewDailyResultsCanStoreOne() {
+        val driver = versionTwoDatabase()
+        prepareDatabase(driver)
+        val repo = GameRepository(BrainScrollDatabase(driver))
+
+        assertEquals(listOf(null, null), repo.history().map { it.durationMs }) // endless results never had one
+
+        repo.finish(
+            com.mehmtcan.brainscroll.game.wordle.FinishedRound(
+                id = "daily1",
+                mode = com.mehmtcan.brainscroll.game.wordle.Mode.DAILY,
+                language = com.mehmtcan.brainscroll.game.wordle.Language.EN,
+                answer = "CRANE",
+                guesses = listOf("CRANE"),
+                outcome = com.mehmtcan.brainscroll.game.wordle.Outcome.WON,
+                wasSkipped = false,
+                finishedAt = 3_000L,
+                durationMs = 92_500L,
+            ),
+        )
+        assertEquals(92_500L, repo.history().last { it.id == "daily1" }.durationMs)
+    }
 }

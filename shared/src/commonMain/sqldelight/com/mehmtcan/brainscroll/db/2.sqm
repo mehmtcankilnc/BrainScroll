@@ -1,0 +1,3 @@
+-- Migration from database version 2 to 3 (phase 6): daily puzzle results carry the time the server measured.
+-- Never edit this file once a build that contains it has reached a device. A change is a new migration file.
+ALTER TABLE game_result ADD COLUMN duration_ms INTEGER;

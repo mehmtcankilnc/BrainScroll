@@ -28,9 +28,16 @@ data class FinishedRound(
     /** True if the player left this puzzle once before finishing it. */
     val wasSkipped: Boolean,
     val finishedAt: Long,
+    /** Daily puzzles only: how long it took, from the server's clock. Null for endless puzzles. */
+    val durationMs: Long? = null,
+    /**
+     * The day of the puzzle itself, when it differs from the day it was finished on: a daily puzzle started just
+     * before midnight and finished just after belongs to the day it was started. Null means "the day it ended".
+     */
+    val puzzleDay: Long? = null,
 ) {
-    /** The Istanbul day this puzzle was finished on (docs/decisions.md). */
-    val dayIndex: Long get() = IstanbulDay.dayIndex(finishedAt)
+    /** The Istanbul day this result counts for (docs/decisions.md). */
+    val dayIndex: Long get() = puzzleDay ?: IstanbulDay.dayIndex(finishedAt)
 }
 
 /**

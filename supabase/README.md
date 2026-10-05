@@ -20,3 +20,16 @@ Dashboard -> Table Editor, or run `npx supabase db diff --linked` to compare it 
 - Every table has Row Level Security on and policies for `authenticated` only (anonymous users are `authenticated`).
 - `config.toml` mirrors the dashboard's auth settings (site URL, redirect URL, anonymous sign-ins, manual linking).
   The dashboard is the real setting; we do not run `supabase config push`.
+
+## Testing the SQL without a database
+
+`supabase/tests` runs the real migrations in a Postgres engine that needs no Docker and no project (PGlite), and
+checks the rules: who can see what, the hidden daily answer, the server clock, the coloring of guesses.
+
+```bash
+cd supabase/tests
+npm install
+npm test
+```
+
+Run it after every change to a migration, before `db push`.
