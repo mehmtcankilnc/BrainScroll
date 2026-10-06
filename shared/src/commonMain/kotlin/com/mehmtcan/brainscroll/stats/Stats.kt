@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.stats
 
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
@@ -62,11 +63,16 @@ fun computeStats(
     language: Language? = null,
     maxAttempts: Int = 6,
     mode: Mode = Mode.ENDLESS,
+    /** Null counts every game (the endless streak spans all games); a game counts only that one. */
+    game: GameKind? = null,
 ): Stats {
-    val results = history.filter { it.mode == mode && (language == null || it.language == language) }
+    val results = history.filter {
+        it.mode == mode && (language == null || it.language == language) && (game == null || it.game == game)
+    }
     val wins = results.filter { it.outcome == Outcome.WON }
     val distribution = MutableList(maxAttempts) { 0 }
-    for (win in wins) {
+    // Guesses per win only means something for word puzzles.
+    for (win in wins.filter { it.game == GameKind.Word }) {
         val attempts = win.guesses.size
         if (attempts in 1..maxAttempts) distribution[attempts - 1]++
     }
@@ -78,6 +84,30 @@ fun computeStats(
         bestStreak = if (endless) Streaks.best(results) else 0,
         guessDistribution = distribution,
         finishedAfterSkip = results.count { it.wasSkipped },
+        bestTimeMs = wins.filter { it.game == GameKind.Word }.mapNotNull { it.durationMs }.minOrNull(),
+    )
+}
+
+/** What the statistics screen shows for memory match. */
+data class MemoryStats(
+    val played: Int,
+    val won: Int,
+    /** The fastest win (see MemoryRound for how the time is counted). Null until one was won. */
+    val bestTimeMs: Long?,
+    /** The fewest moves (pairs turned over) in a win. Null until one was won. */
+    val fewestMoves: Int?,
+) {
+    val winRate: Float get() = if (played == 0) 0f else won.toFloat() / played
+}
+
+/** Memory statistics from the saved history. A move is two flipped cards, and the flips are saved in the guesses. */
+fun computeMemoryStats(history: List<FinishedRound>): MemoryStats {
+    val results = history.filter { it.game == GameKind.Memory && it.mode == Mode.ENDLESS }
+    val wins = results.filter { it.outcome == Outcome.WON }
+    return MemoryStats(
+        played = results.size,
+        won = wins.size,
         bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = wins.minOfOrNull { it.guesses.size / 2 },
     )
 }

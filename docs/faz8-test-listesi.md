@@ -153,15 +153,8 @@ from app_event order by at desc limit 30;
 - [ ] Uygulamada sekmeler gez, bulmaca çöz, 15 sn bekle. Sayıyı tekrar bak. Beklenen: **artmadı**.
 - [ ] Anahtarı geri **Aç**, birkaç sekme gez. Beklenen: yeniden artıyor.
 
-### 6d. Çökme raporu (geçici "çökert" düğmesiyle)
-Profil'deki gizlilik kartının en altında geçici bir **"TEST: crash the app"** düğmesi var. Test bitince kaldırılacak (kodda `TEMP-CRASH-BUTTON` ile işaretli).
-- [ ] Anahtar **açıkken** düğmeye bas. Beklenen: uygulama kapanır (çöker).
-- [ ] Uygulamayı yeniden aç, internet açık, ~10 sn bekle. Supabase SQL: `select at, platform, app_version, kind, message, left(stack, 300) from crash_report order by at desc limit 5;` Beklenen: yeni satır, `message` "Test crash from the TEMP crash button", `kind` `kotlin.IllegalStateException`, `stack` Kotlin yığın izi.
-- [ ] Aynı raporun **ikinci kez gelmediğini** kontrol et (uygulamayı bir daha aç, satır sayısı artmasın).
-- [ ] Anahtarı **kapat**, düğmeye bas, uygulamayı aç, 10 sn bekle. Beklenen: **yeni satır yok**.
-- [ ] Çevrimdışı çökme: anahtar açık, uçak modu açık, düğmeye bas, uygulamayı uçak modundayken aç (rapor gitmez), sonra uçak modunu kapat, 10 sn bekle. Beklenen: rapor bu sefer gelir (sonraki açılışta gönderilir).
-- [ ] Platform ve sürüm doğru (`ios`/`android`, TestFlight sürümü).
-- [ ] Not: Kotlin dışı (yerel) çökmeler burada görünmez, onları App Store Connect > TestFlight > Çökmeler ve Play Console gösterir.
+### 6d. Çökme raporu (test edildi, düğme kaldırıldı)
+Geçici "çökert" düğmesi kaldırıldı. Çökme yolunu yeniden denemek istersen düğmeyi tekrar ekletmen gerekir (kodda önceki işaret: `TEMP-CRASH-BUTTON`).
 
 ### 6e. Gizlilik politikası (web)
 - [ ] `https://playbrainscroll.com/privacy` (TR) ve `/en/privacy` açılıyor, "Son güncelleme: 9 Ekim 2026".
@@ -248,4 +241,4 @@ Her başarısız adım için: **kaçıncı madde**, **cihaz ve sürüm** (ör. i
 1. TestFlight'ta konfeti ve çevirmenin akıcılığı (düşük güçlü cihazlarda).
 2. VoiceOver / TalkBack ile bir bulmacanın baştan sona çözülebilmesi.
 3. Birleştirmenin gerçek Google hesabıyla (9c, 9d).
-4. Çökme raporunun gerçekten gelmesi (6d, geçici düğmeyle).
+4. Çökme raporunun gerçekten gelmesi (düğme kaldırıldı, 6d tamamlandıysa geç).

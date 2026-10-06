@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.game.wordle
 
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.time.IstanbulDay
 
 enum class Outcome { WON, LOST }
@@ -15,6 +16,8 @@ data class StoredRound(
     val input: String,
     val skipped: Boolean,
     val position: Int,
+    /** Which game this round belongs to. For memory, [answer] is the board and [guesses] the order of the flips. */
+    val game: GameKind = GameKind.Word,
 )
 
 /** A puzzle that is over. These rows are append-only history; streaks and statistics are derived from them. */
@@ -35,6 +38,7 @@ data class FinishedRound(
      * before midnight and finished just after belongs to the day it was started. Null means "the day it ended".
      */
     val puzzleDay: Long? = null,
+    val game: GameKind = GameKind.Word,
 ) {
     /** The Istanbul day this result counts for (docs/decisions.md). */
     val dayIndex: Long get() = puzzleDay ?: IstanbulDay.dayIndex(finishedAt)

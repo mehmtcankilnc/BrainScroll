@@ -40,12 +40,17 @@ import brainscroll.shared.generated.resources.stat_day_streak
 import brainscroll.shared.generated.resources.stat_played
 import brainscroll.shared.generated.resources.stat_streak
 import brainscroll.shared.generated.resources.stat_win_rate
+import brainscroll.shared.generated.resources.favorite_memory_result
+import brainscroll.shared.generated.resources.favorite_memory_tag
+import brainscroll.shared.generated.resources.stat_fewest_moves
 import brainscroll.shared.generated.resources.stats_daily
+import brainscroll.shared.generated.resources.stats_memory
 import brainscroll.shared.generated.resources.stats_filter_all
 import brainscroll.shared.generated.resources.stats_streak_note
 import brainscroll.shared.generated.resources.stats_endless
 import brainscroll.shared.generated.resources.stats_title
 import com.mehmtcan.brainscroll.daily.formatDuration
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
@@ -92,6 +97,20 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi,
             )
         }
         item { GuessDistribution(profile.stats.guessDistribution) }
+        item { Spacer(Modifier.height(Spacing.sm)) }
+
+        // Memory match: it has no guesses, so its numbers are the results, the fastest win and the fewest moves.
+        item { BasicText(stringResource(Res.string.stats_memory), style = type.heading.copy(color = colors.textPrimary)) }
+        item {
+            TileGrid(
+                listOf(
+                    profile.memory.played.toString() to stringResource(Res.string.stat_played),
+                    "${(profile.memory.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
+                    (profile.memory.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    (profile.memory.fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
+                ),
+            )
+        }
         item { Spacer(Modifier.height(Spacing.sm)) }
 
         // The daily puzzle: its streak counts days, not answers, and it has a time. The numbers can be shown for
@@ -159,12 +178,19 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi,
 
 @Composable
 private fun StatTiles(played: Int, winRate: Float, streak: Int, best: Int, streakLabel: String) {
-    val tiles = listOf(
-        played.toString() to stringResource(Res.string.stat_played),
-        "${(winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
-        streak.toString() to streakLabel,
-        best.toString() to stringResource(Res.string.stat_best_streak),
+    TileGrid(
+        listOf(
+            played.toString() to stringResource(Res.string.stat_played),
+            "${(winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
+            streak.toString() to streakLabel,
+            best.toString() to stringResource(Res.string.stat_best_streak),
+        ),
     )
+}
+
+/** Value and label pairs as tiles: four in a row, two by two when the player chose big text. */
+@Composable
+private fun TileGrid(tiles: List<Pair<String, String>>) {
     // Four tiles side by side do not fit when the player chose big text: then two rows of two.
     val perRow = if (LocalDensity.current.fontScale > LARGE_TEXT_SCALE) 2 else 4
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -236,11 +262,20 @@ private fun FavoriteRow(round: FinishedRound) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        BasicText(round.answer, style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+        val memory = round.game == GameKind.Memory
+        // A memory result has no word: its board is a list of shape numbers, so the game's name is shown instead.
+        BasicText(
+            text = if (memory) stringResource(Res.string.favorite_memory_tag) else round.answer,
+            style = type.heading.copy(color = colors.textPrimary),
+            modifier = Modifier.weight(1f),
+        )
         Column(horizontalAlignment = Alignment.End) {
             BasicText(
-                text = if (round.outcome == Outcome.WON) stringResource(Res.string.favorite_won, round.guesses.size)
-                else stringResource(Res.string.favorite_lost),
+                text = when {
+                    round.outcome != Outcome.WON -> stringResource(Res.string.favorite_lost)
+                    memory -> stringResource(Res.string.favorite_memory_result, round.guesses.size / 2, formatDuration(round.durationMs ?: 0L))
+                    else -> stringResource(Res.string.favorite_won, round.guesses.size)
+                },
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),
             )
             val date = IstanbulDay.format(round.dayIndex)

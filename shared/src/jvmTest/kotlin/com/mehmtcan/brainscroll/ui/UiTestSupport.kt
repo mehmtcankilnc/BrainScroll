@@ -30,6 +30,7 @@ import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.FakeAccountMergeApi
 import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.cloud.CloudServices
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.daily.FakeDailyApi
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.social.FakeSocialApi
@@ -82,6 +83,8 @@ internal fun ComposeUiTest.start(
     highContrast: Boolean? = null,
     /** The system font size setting: 2.0 is the largest steps phones offer. */
     fontScale: Float = 1f,
+    /** Only word puzzles unless a test asks for more: most tests were written for a feed of word puzzles. */
+    games: List<GameKind> = listOf(GameKind.Word),
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -95,7 +98,7 @@ internal fun ComposeUiTest.start(
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
         ) {
             Box(Modifier.requiredSize(390.dp, 740.dp)) {
-                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast)
+                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games)
             }
         }
     }

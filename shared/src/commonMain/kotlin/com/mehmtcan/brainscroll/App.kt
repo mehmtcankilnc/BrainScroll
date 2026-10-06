@@ -10,6 +10,7 @@ import com.mehmtcan.brainscroll.cloud.supabaseServices
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.data.rememberDriverProvider
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.AppShell
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
@@ -29,7 +30,12 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 @Composable
 @Preview
-fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Haptics? = null, reduceMotion: Boolean? = null, highContrast: Boolean? = null) {
+fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Haptics? = null,
+    reduceMotion: Boolean? = null,
+    highContrast: Boolean? = null,
+    /** The games in the feed, in order. Tests can ask for just one. */
+    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory),
+) {
     // Tests pass their own haptics to see when the phone would buzz.
     CompositionLocalProvider(
         LocalHaptics provides (haptics ?: rememberPlatformHaptics()),
@@ -47,6 +53,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 now = { Clock.System.now().toEpochMilliseconds() },
                 cloudServices = cloudServices,
                 platformInfo = platformInfo,
+                games = games,
             )
         }
         // The daily puzzle shares the database and the account with the feed, so it is built from what the feed owns.

@@ -4,6 +4,7 @@ import com.mehmtcan.brainscroll.account.MergeTicket
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.db.Game_result
 import com.mehmtcan.brainscroll.db.In_progress_round
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.FeedStore
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -14,7 +15,6 @@ import com.mehmtcan.brainscroll.time.IstanbulDay
 
 internal const val DATABASE_FILE = "brainscroll.db"
 
-private const val GAME_WORD = "word"
 private const val SETTING_LANGUAGE = "word_language"
 private const val SETTING_SYNCED_USER = "synced_user_id"
 private const val SETTING_TELEMETRY = "telemetry_enabled"
@@ -38,7 +38,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
     override fun saveProgress(round: StoredRound) {
         progress.upsert(
             id = round.id,
-            game = GAME_WORD,
+            game = round.game.id,
             mode = Mode.ENDLESS.name,
             language = round.language.name,
             answer = round.answer,
@@ -72,7 +72,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
     private fun insertResultRow(result: FinishedRound) {
         results.insertResult(
             id = result.id,
-            game = GAME_WORD,
+            game = result.game.id,
             mode = result.mode.name,
             language = result.language.name,
             answer = result.answer,
@@ -85,12 +85,13 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
         )
     }
 
-    fun unfinishedRounds(): List<StoredRound> = progress.selectAll().executeAsList().map { it.toStored() }
+    /** Rows of a game this version of the app does not know (written by a newer one) are left out. */
+    fun unfinishedRounds(): List<StoredRound> = progress.selectAll().executeAsList().mapNotNull { it.toStoredOrNull() }
 
     // --- History ---
 
     /** Every finished puzzle, oldest first. */
-    fun history(): List<FinishedRound> = results.selectAll().executeAsList().map { it.toFinished() }
+    fun history(): List<FinishedRound> = results.selectAll().executeAsList().mapNotNull { it.toFinishedOrNull() }
 
     // --- Favorites ---
 
@@ -106,8 +107,9 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     /** Favorite puzzles, newest first. */
     fun favoriteResults(): List<FinishedRound> =
-        favorites.selectFavoriteResults().executeAsList().map {
+        favorites.selectFavoriteResults().executeAsList().mapNotNull {
             FinishedRound(
+                game = GameKind.fromId(it.game) ?: return@mapNotNull null,
                 id = it.id,
                 mode = Mode.valueOf(it.mode),
                 language = Language.valueOf(it.language),
@@ -203,7 +205,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
     }
 
     fun resultsByIds(ids: List<String>): List<FinishedRound> =
-        if (ids.isEmpty()) emptyList() else results.selectByIds(ids).executeAsList().map { it.toFinished() }
+        if (ids.isEmpty()) emptyList() else results.selectByIds(ids).executeAsList().mapNotNull { it.toFinishedOrNull() }
 
     fun favoriteRecord(resultId: String): FavoriteRecord? =
         favorites.selectFavorite(resultId).executeAsOneOrNull()
@@ -259,7 +261,8 @@ const val KIND_FAVORITE = "favorite"
 
 private fun String.toGuessList(): List<String> = if (isEmpty()) emptyList() else split(",")
 
-private fun Game_result.toFinished() = FinishedRound(
+private fun Game_result.toFinishedOrNull(): FinishedRound? = FinishedRound(
+    game = GameKind.fromId(game) ?: return null,
     id = id,
     mode = Mode.valueOf(mode),
     language = Language.valueOf(language),
@@ -272,7 +275,8 @@ private fun Game_result.toFinished() = FinishedRound(
     puzzleDay = day_index.takeIf { it != IstanbulDay.dayIndex(finished_at) },
 )
 
-private fun In_progress_round.toStored() = StoredRound(
+private fun In_progress_round.toStoredOrNull(): StoredRound? = StoredRound(
+    game = GameKind.fromId(game) ?: return null,
     id = id,
     language = Language.valueOf(language),
     answer = answer,

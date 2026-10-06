@@ -112,12 +112,19 @@ Faz 8'den çıkarıldı (2026-10-07), vakti gelince ayrı faz olarak ele alını
 - [ ] App Store ve Google Play gönderimi
 **Çıkış:** Mağazalarda yayında v1.0.
 
-## Faz 9+ - Yeni oyunlar
-Her oyun `Game` arayüzünü uygular: Sudoku, hafıza eşleştirme, satranç bulmacası, örüntü tanıma. Her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
+## Faz 9 - Hafıza eşleştirme ve karışık akış
+Amaç: İkinci oyun ve akışın çok oyunlu hale gelmesi. Kararlar `docs/decisions.md` "Hafıza eşleştirme ve karışık akış".
+- [x] 9a Alan mantığı: `GameKind`, `MemoryGame` (kurallar: 12 kart, 6 çift, 6. hatada kayıp), `MemoryRound` (süre = hamle araları toplamı, her aralık en fazla 10 sn; kayıt/geri yükleme), ortak `FeedRound`/`PageSnapshot`, `EndlessFeed` çok oyunlu (her sayfadan sonra `games` listesindeki sıradaki oyun; yeniden başlatmada sıra korunur), kalıcılık (mevcut `in_progress_round` ve `game_result` tabloları, `game` sütunu; şema değişikliği yok, hafıza için `answer` = kart dizilimi, `guesses` = açılan kartlar), senkron (bilinmeyen oyun satırları atlanır), istatistik (`computeStats(game=...)`, `computeMemoryStats`). Testler: `MemoryGameTest` (16), `MemoryRoundTest` (12), `MixedFeedTest` (19), `MemoryStatsTest` (6), `MemoryPersistenceTest` (7)
+- [x] 9b Arayüz: `ui/memory` (`CardShapes` 8 şekil koddan çizilir, `MemoryCard` yatay eksende çevirme, `MemoryPage` tahta/sayaçlar/sonuç kartı), akış sayfası oyuna göre (`FeedScreen`), haptik (açma hafif, eşleşme orta, hata uyarı, bitiş), hareketi azalt, erişilebilirlik ("Kapalı kart, 7. konum", şekil adları TR/EN), yanlış çift ~1 sn görünür ya da sonraki dokunuşla kapanır. `MemoryUiTest` (7, ekran görüntüleri 80-85)
+- [x] 9c Profil (Hafıza eşleştirme bölümü: oynanan, kazanma, en iyi süre, en az hamle), favori satırı, telemetri (`game`, `moves`), `docs/faz9-test-listesi.md`. Sunucu tarafı değişmedi (yeni migration yok). **Cihazda test bekliyor**
+**Çıkış:** Akışta kelime ve hafıza dönüşümlü geliyor, ikisi de kaydediliyor ve TestFlight'ta doğrulandı.
+
+## Faz 10+ - Diğer oyunlar
+Sudoku, örüntü tanıma, satranç bulmacası. Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
 
 ### Satranç bulmacası - teknik notlar
 
-Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 9c gibi) ele alınmalı.
+Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 10c gibi) ele alınmalı.
 
 **Bulmaca kaynağı**
 - [ ] Lichess açık bulmaca veritabanı (CC0, CSV). Alanlar: `PuzzleId, FEN, Moves, Rating, RatingDeviation, Popularity, NbPlays, Themes, GameUrl, OpeningTags`. Lisans ve alan şemasını başlamadan resmi sayfadan doğrula.
@@ -133,7 +140,7 @@ Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 9
 
 **Çözüm doğrulama**
 - [ ] Oyuncunun hamlesi bulmacanın çözüm hamlesiyle karşılaştırılır. Mat bulmacalarında Lichess gibi **alternatif matlar da doğru sayılır**. Çok hamleli bulmacada her doğru hamleden sonra rakibin karşılığı otomatik oynanır.
-- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 9c başında netleştirilecek).
+- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 10c başında netleştirilecek).
 - [ ] İpucu: kaynak karesini vurgular. İpucu kullanılan çözüm sıralamaya girmez, seriyi bozmaz (öneri).
 
 **Günlük bulmaca ve adalet**

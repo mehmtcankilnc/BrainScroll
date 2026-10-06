@@ -42,6 +42,9 @@ import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.GuessError
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.components.NoticePill
+import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
+import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
+import com.mehmtcan.brainscroll.ui.memory.MemoryPage
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 import kotlinx.coroutines.delay
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
@@ -71,8 +74,8 @@ fun FeedScreen(viewModel: FeedViewModel, modifier: Modifier = Modifier) {
 @Composable
 private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel: FeedViewModel) {
     // Start on the page the player was on (it matters when coming back from another tab).
-    val startPage = viewModel.page.coerceIn(0, feed.rounds.size - 1)
-    val pagerState = rememberPagerState(initialPage = startPage) { feed.rounds.size }
+    val startPage = viewModel.page.coerceIn(0, feed.pages.size - 1)
+    val pagerState = rememberPagerState(initialPage = startPage) { feed.pages.size }
     var notice by remember { mutableStateOf<Notice?>(null) }
     var noticeCounter by remember { mutableIntStateOf(0) }
     fun show(text: StringResource) {
@@ -88,7 +91,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
         viewModel.onPageSettled(last)
         snapshotFlow { pagerState.settledPage }.collect { page ->
             if (page > last) {
-                val lastRound = latestFeed.rounds[last]
+                val lastRound = latestFeed.pages[last]
                 val wasUnfinished = !lastRound.isFinished && !lastRound.skipped
                 if (viewModel.leave(last)) {
                     if (wasUnfinished) show(Res.string.notice_skipped)
@@ -106,14 +109,16 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     }
 
     val page = pagerState.currentPage
-    val current = feed.rounds[page]
+    val current = feed.pages[page]
+    val currentWord = current as? RoundSnapshot
 
-    // Rejected guesses show a message. The tick makes the same error show again.
+    // Rejected guesses show a message. The tick makes the same error show again. (Only word puzzles have guesses.)
     val haptics = LocalHaptics.current
-    LaunchedEffect(current.index, current.errorTick) {
-        if (current.errorTick == 0) return@LaunchedEffect
+    LaunchedEffect(currentWord?.index, currentWord?.errorTick) {
+        val word = currentWord ?: return@LaunchedEffect
+        if (word.errorTick == 0) return@LaunchedEffect
         haptics.perform(HapticKind.Warning)
-        when (current.error) {
+        when (word.error) {
             GuessError.WrongLength -> show(Res.string.notice_too_short)
             GuessError.NotInDictionary, GuessError.InvalidLetters -> show(Res.string.notice_not_in_list)
             else -> Unit
@@ -183,14 +188,24 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 beyondViewportPageCount = 1,
                 key = { it },
             ) { index ->
-                WordlePage(
-                    round = feed.rounds[index],
-                    onLetter = { viewModel.type(index, it) },
-                    onBackspace = { viewModel.backspace(index) },
-                    onEnter = { viewModel.submit(index) },
-                    isFavorite = feed.rounds[index].id in favoriteIds,
-                    onToggleFavorite = { viewModel.toggleFavorite(feed.rounds[index].id) },
-                )
+                when (val item = feed.pages[index]) {
+                    is RoundSnapshot -> WordlePage(
+                        round = item,
+                        onLetter = { viewModel.type(index, it) },
+                        onBackspace = { viewModel.backspace(index) },
+                        onEnter = { viewModel.submit(index) },
+                        isFavorite = item.id in favoriteIds,
+                        onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                    )
+                    is MemorySnapshot -> MemoryPage(
+                        page = item,
+                        onFlip = { card -> viewModel.flip(index, card) },
+                        onCloseMismatch = { viewModel.closeMismatch(index) },
+                        isFavorite = item.id in favoriteIds,
+                        onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                    )
+                    else -> Unit
+                }
             }
             // Sits under the page title so it never covers it.
             notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }

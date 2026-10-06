@@ -18,12 +18,16 @@ import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
+import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.DayStreak
+import com.mehmtcan.brainscroll.stats.MemoryStats
+import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.stats.Stats
 import com.mehmtcan.brainscroll.stats.Streaks
@@ -57,6 +61,8 @@ data class ProfileState(
     val backupPending: Int = 0,
     /** Statistics of the daily puzzle (both languages together). */
     val daily: Stats = computeStats(emptyList(), mode = Mode.DAILY),
+    /** Memory match, from the endless feed. */
+    val memory: MemoryStats = computeMemoryStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -78,6 +84,8 @@ class FeedViewModel(
     cloudServices: CloudServicesFactory,
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
+    /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory),
 ) : ViewModel() {
     private var feed: EndlessFeed? = null
     private var favoriteIds: Set<String> = emptySet()
@@ -150,6 +158,7 @@ class FeedViewModel(
             restored = restored,
             startStreak = Streaks.current(repository.history()),
             now = now,
+            games = games,
         ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
         favoriteIds = repository.favoriteResults().map { it.id }.toSet()
         page = 0
@@ -163,7 +172,12 @@ class FeedViewModel(
         CrashHandler.install { crash -> telemetry.recordCrash(crash) }
         repository.onFinished = { result ->
             val mode = if (result.mode == Mode.DAILY) TelemetryEvent.DailyFinished else TelemetryEvent.EndlessFinished
-            telemetry.event(mode, mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name))
+            val props = when (result.game) {
+                GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
+                // Memory has no language; its guesses are card flips, two to a move.
+                GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to (result.guesses.size / 2).toString())
+            }
+            telemetry.event(mode, props + ("game" to result.game.id))
         }
         viewModelScope.launch {
             account.events.collect { event ->
@@ -191,6 +205,25 @@ class FeedViewModel(
     fun type(page: Int, letter: Char) = act { it.type(page, letter) }
 
     fun backspace(page: Int) = act { it.backspace(page) }
+
+    /** Turns over a card of the memory board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    fun flip(page: Int, card: Int): FlipResult {
+        val f = feed ?: return FlipResult.Ignored
+        val result = f.flip(page, card)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result != FlipResult.Ignored && (_state.value as FeedUiState.Ready).feed.pages[page].isFinished) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** The two wrong cards of the memory board on [page] turn back. */
+    fun closeMismatch(page: Int) {
+        feed?.closeMismatch(page)
+        publish()
+    }
 
     fun submit(page: Int) {
         act { it.submit(page) }
@@ -233,6 +266,7 @@ class FeedViewModel(
             favorites = repository.favoriteResults(),
             backupPending = repository.pendingCount(),
             daily = computeStats(history, mode = Mode.DAILY),
+            memory = computeMemoryStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

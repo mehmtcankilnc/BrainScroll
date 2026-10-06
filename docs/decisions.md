@@ -65,6 +65,17 @@ Son güncelleme: 2026-10-05
   - Günlük hız tablosu: **bugün** ve **tüm zamanlar** (kişinin tüm günlerdeki en iyi tek sonucu: az tahmin, eşitlikte kısa süre). Dil başına ayrı.
   - Arkadaşlık: davet kodu/bağlantısıyla **anında ve karşılıklı**, onay adımı yok. Kullanıcı adı ile ekleme **istek + kabul** ile olur (kullanıcı adı herkese açık olduğu için).
 
+## Hafıza eşleştirme ve karışık akış (karar: 2026-10-10)
+- İkinci oyun **hafıza eşleştirme**. Akış artık **karışık**: sayfalar **dönüşümlü** gelir (kelime, hafıza, kelime...). Sıralama sonra değişebilir, bu yüzden oyun sırası tek bir yerde (`EndlessFeed.games`) tanımlıdır.
+- **Tahta:** tek boyut, **4x3 = 12 kart, 6 çift**. Zorluk kademeleri (4x4, 4x5) sonra, oyuncunun başarısına göre.
+- **Kart içeriği:** koddan çizilen vektör şekiller (daire, üçgen, yıldız, kalp, elmas, kare, artı, ay), her biri farklı şekil **ve** farklı renkte, içerik renkle değil şekille ayırt edilir. Emoji yok.
+- **Kurallar:** her hamle iki kart açmak. Eşleşirse kartlar kalır, eşleşmezse **hata** sayılır ve kartlar kısa süre sonra (ya da sonraki dokunuşta) kapanır. **6. hatada oyun kaybedilir.** Tüm çiftler bulunursa kazanılır. Ölçüt: hamle sayısı ve süre.
+- **Süre cihazda ölçülür** (günlük bulmaca gibi sunucuda değil, çünkü sonsuz akışta sıralama yok). Süre, art arda iki hamle arasındaki sürelerin toplamıdır (her aralık en fazla 10 sn sayılır), yani uygulama arka planda kalsa şişmez.
+- **Seri:** doğru cevap serisi (şimşek) **tüm oyunları birlikte** sayar: her galibiyet +1, her kayıp sıfırlar. Atlama hakkı oturum başına bir tane ve oyunlar arasında ortaktır.
+- **Dil:** hafızada dil yoktur. Akıştaki dil seçimi yalnızca kelime sayfalarını etkiler.
+- **Veri:** hafıza sonuçları mevcut `game_result` tablosuna `game = 'memory'` ile yazılır, sunucu şemasında değişiklik gerekmez (`answer` = kart dizilimi, `guesses` = açılan kartların sırası). Yarım kalan hafıza oyunu da korunur (mevcut `in_progress_round` tablosunda).
+- Hafıza için günlük mod **yok** (ilk sürüm), sıralama yok.
+
 ## Açık / sonraya kalan
 - Supabase ücretsiz plan duraklatma davranışı: yayın öncesi plan kararı.
 - Gizlilik politikası ve destek sayfası `playbrainscroll.com` üzerinde yayınlanacak (App Store için gerekli).

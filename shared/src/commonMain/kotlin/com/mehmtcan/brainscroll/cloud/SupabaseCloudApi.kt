@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.cloud
 
 import com.mehmtcan.brainscroll.data.FavoriteRecord
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
@@ -85,7 +86,7 @@ private suspend inline fun <T> guarded(block: () -> T): T = try {
 private val PERMANENT_STATUS_CODES = setOf(400, 403, 404, 409, 413, 422)
 
 @Serializable
-private data class ResultRow(
+internal data class ResultRow(
     val id: String,
     val game: String,
     val mode: String,
@@ -106,11 +107,9 @@ private data class FavoriteRow(
     @SerialName("updated_at") val updatedAt: Long,
 )
 
-private const val GAME_WORD = "word"
-
-private fun FinishedRound.toRow() = ResultRow(
+internal fun FinishedRound.toRow() = ResultRow(
     id = id,
-    game = GAME_WORD,
+    game = game.id,
     mode = mode.name,
     language = language.name,
     answer = answer,
@@ -123,9 +122,10 @@ private fun FinishedRound.toRow() = ResultRow(
 )
 
 /** A row this version of the app does not understand (a newer game or language) is skipped, not fatal. */
-private fun ResultRow.toFinishedRoundOrNull(): FinishedRound? {
-    if (game != GAME_WORD) return null
+internal fun ResultRow.toFinishedRoundOrNull(): FinishedRound? {
+    val kind = GameKind.fromId(game) ?: return null
     return FinishedRound(
+        game = kind,
         id = id,
         mode = Mode.entries.firstOrNull { it.name == mode } ?: return null,
         language = Language.entries.firstOrNull { it.name == language } ?: return null,

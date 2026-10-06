@@ -1,10 +1,14 @@
 package com.mehmtcan.brainscroll.game.wordle
 
+import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.PageSnapshot
+
 /** Immutable picture of one round for the UI. The UI never touches the mutable [WordleRound]. */
 data class RoundSnapshot(
     /** Stable id of the puzzle; also the id of its saved result (favorites use it). */
-    val id: String,
-    val index: Int,
+    override val id: String,
+    override val index: Int,
     val language: Language,
     val wordLength: Int,
     val maxAttempts: Int,
@@ -19,11 +23,12 @@ data class RoundSnapshot(
     val errorTick: Int,
     /** Best known result per keyboard letter: Correct beats Present beats Absent. */
     val letterStates: Map<Char, LetterResult>,
-    val skipped: Boolean,
+    override val skipped: Boolean,
     /** A guess that was typed and sent but not answered yet (daily puzzle: the server colors it). Drawn as a row. */
     val pending: String? = null,
-) {
-    val isFinished: Boolean get() = status != WordleStatus.Playing
+) : PageSnapshot {
+    override val isFinished: Boolean get() = status != WordleStatus.Playing
+    override val kind: GameKind get() = GameKind.Word
 }
 
 /**
@@ -31,23 +36,29 @@ data class RoundSnapshot(
  * Mutable on purpose (it is the single owner of its state); [snapshot] hands out immutable copies.
  */
 class WordleRound(
-    val index: Int,
+    override val index: Int,
     private val game: WordleGame,
     private val wordList: WordList,
-    val id: String = "round-$index",
-) {
+    override val id: String = "round-$index",
+) : FeedRound {
     private val language = wordList.language
     private var input = ""
     private var error: GuessError? = null
     private var errorTick = 0
 
-    var skipped = false
+    override val kind: GameKind get() = GameKind.Word
+
+    override var skipped = false
         internal set
 
-    /** True while nothing has been typed or guessed, so the round can still be swapped for another one. */
-    val isUntouched: Boolean get() = input.isEmpty() && game.state.rows.isEmpty()
+    override fun markSkipped() {
+        skipped = true
+    }
 
-    val isFinished: Boolean get() = game.isFinished
+    /** True while nothing has been typed or guessed, so the round can still be swapped for another one. */
+    override val isUntouched: Boolean get() = input.isEmpty() && game.state.rows.isEmpty()
+
+    override val isFinished: Boolean get() = game.isFinished
 
     fun type(letter: Char) {
         if (isFinished || input.length >= wordList.wordLength) return
@@ -77,7 +88,7 @@ class WordleRound(
     }
 
     /** What has to be saved to rebuild this round later. */
-    fun toStored() = StoredRound(
+    override fun toStored() = StoredRound(
         id = id,
         language = language,
         answer = game.secretAnswer,
@@ -87,7 +98,9 @@ class WordleRound(
         position = index,
     )
 
-    fun toFinished(finishedAt: Long, mode: Mode = Mode.ENDLESS) = FinishedRound(
+    override fun toFinished(finishedAt: Long) = toFinished(finishedAt, Mode.ENDLESS)
+
+    fun toFinished(finishedAt: Long, mode: Mode) = FinishedRound(
         id = id,
         mode = mode,
         language = language,
@@ -98,7 +111,7 @@ class WordleRound(
         finishedAt = finishedAt,
     )
 
-    fun snapshot(): RoundSnapshot {
+    override fun snapshot(): RoundSnapshot {
         val state = game.state
         return RoundSnapshot(
             id = id,
