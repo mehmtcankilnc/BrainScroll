@@ -19,7 +19,8 @@ sealed interface AccountState {
 /** One-off things the UI should tell the player about. */
 sealed interface AccountEvent {
     data object SignedIn : AccountEvent
-    data object SignInFailed : AccountEvent
+    /** [detail] is a short technical hint (an error code), shown in small print so a failure can be diagnosed. */
+    data class SignInFailed(val detail: String? = null) : AccountEvent
 }
 
 interface AccountService {

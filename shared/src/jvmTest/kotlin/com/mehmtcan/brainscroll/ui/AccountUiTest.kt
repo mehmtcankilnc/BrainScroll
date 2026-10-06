@@ -83,8 +83,10 @@ class AccountUiTest {
         start(cloud)
         openProfile()
 
-        cloud.account.events.tryEmit(AccountEvent.SignInFailed)
+        cloud.account.events.tryEmit(AccountEvent.SignInFailed("apple error 1000"))
         waitUntil(timeoutMillis = 5_000) { hasAnyText("Giriş yapılamadı", "sign in, try again") }
+        // The small print tells what went wrong, so a failure can be diagnosed from a screenshot.
+        assertTrue(hasAnyText("apple error 1000"))
         snap("12_sign_in_failed")
     }
 

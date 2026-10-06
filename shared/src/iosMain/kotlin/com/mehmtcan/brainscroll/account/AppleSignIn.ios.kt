@@ -76,14 +76,14 @@ private class AppleSheet(
         val token = credential?.identityToken?.let(::utf8String)
         finish(
             if (token != null) Result.success(AppleCredential(token, rawNonce))
-            else Result.failure(IllegalStateException("Apple returned no identity token")),
+            else Result.failure(IllegalStateException("apple: no identity token")),
         )
     }
 
     override fun authorizationController(controller: ASAuthorizationController, didCompleteWithError: NSError) {
         // Closing the sheet is not a failure; anything else is.
         if (didCompleteWithError.code == ASAuthorizationErrorCanceled) finish(Result.success(null))
-        else finish(Result.failure(IllegalStateException("Apple sign-in failed: ${didCompleteWithError.localizedDescription}")))
+        else finish(Result.failure(IllegalStateException("apple error ${didCompleteWithError.code}")))
     }
 
     override fun presentationAnchorForAuthorizationController(controller: ASAuthorizationController): ASPresentationAnchor {

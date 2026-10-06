@@ -93,4 +93,37 @@ class StatsTest {
         val history = listOf(round(Outcome.WON, skipped = true), won(), round(Outcome.LOST, skipped = true))
         assertEquals(2, computeStats(history).finishedAfterSkip)
     }
+
+    @Test
+    fun dailyStatsCountOnlyDailyResultsAndFindTheBestTime() {
+        fun daily(outcome: Outcome, guesses: Int, durationMs: Long?) =
+            round(outcome, guesses, mode = Mode.DAILY).copy(durationMs = durationMs)
+
+        val history = listOf(
+            won(), won(), // endless, must not count
+            daily(Outcome.WON, 3, 90_000),
+            daily(Outcome.WON, 5, 45_000),
+            daily(Outcome.LOST, 6, 30_000), // a loss is never the "best time"
+        )
+        val stats = computeStats(history, mode = Mode.DAILY)
+        assertEquals(3, stats.played)
+        assertEquals(2, stats.won)
+        assertEquals(45_000L, stats.bestTimeMs)
+        assertEquals(listOf(0, 0, 1, 0, 1, 0), stats.guessDistribution)
+        assertEquals(0, stats.currentStreak) // the day streak lives in DayStreaks, not here
+    }
+
+    @Test
+    fun endlessStatsIgnoreDailyResultsAndHaveNoBestTime() {
+        val history = listOf(won(), round(Outcome.WON, 2, mode = Mode.DAILY).copy(durationMs = 10_000))
+        val stats = computeStats(history)
+        assertEquals(1, stats.played)
+        assertEquals(null, stats.bestTimeMs)
+    }
+
+    @Test
+    fun noWinsMeansNoBestTime() {
+        assertEquals(null, computeStats(listOf(lost()), mode = Mode.ENDLESS).bestTimeMs)
+        assertEquals(null, computeStats(emptyList(), mode = Mode.DAILY).bestTimeMs)
+    }
 }

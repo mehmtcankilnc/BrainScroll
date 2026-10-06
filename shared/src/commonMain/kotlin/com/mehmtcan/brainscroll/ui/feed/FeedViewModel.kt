@@ -12,11 +12,15 @@ import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
+import com.mehmtcan.brainscroll.stats.DayStreak
+import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.stats.Stats
 import com.mehmtcan.brainscroll.stats.Streaks
 import com.mehmtcan.brainscroll.stats.computeStats
 import com.mehmtcan.brainscroll.sync.SyncCoordinator
+import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.sync.SyncEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -41,6 +45,9 @@ data class ProfileState(
     val favorites: List<FinishedRound>,
     /** How many results and favorites still wait to be uploaded to the cloud. */
     val backupPending: Int = 0,
+    /** Statistics of the daily puzzle (both languages together). */
+    val daily: Stats = computeStats(emptyList(), mode = Mode.DAILY),
+    val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
 )
 
 /**
@@ -165,12 +172,21 @@ class FeedViewModel(
     }
 
     fun refreshProfile() {
+        val history = repository.history()
         _profile.value = ProfileState(
-            stats = computeStats(repository.history()),
+            stats = computeStats(history),
             favorites = repository.favoriteResults(),
             backupPending = repository.pendingCount(),
+            daily = computeStats(history, mode = Mode.DAILY),
+            dayStreak = DayStreaks.compute(
+                finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },
+                today = IstanbulDay.dayIndex(now()),
+            ),
         )
     }
+
+    /** Called by the daily puzzle screen after it changed something that should be backed up (a favorite). */
+    fun requestSync() = requestSyncIfNeeded()
 
     fun signInWithGoogle() {
         viewModelScope.launch { account.signInWithGoogle() }

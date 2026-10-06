@@ -41,6 +41,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices) {
                 signedIn = feedViewModel.signedIn,
                 initialLanguage = feedViewModel.repository.savedLanguage() ?: deviceLanguage,
                 now = { Clock.System.now().toEpochMilliseconds() },
+                onLocalChange = feedViewModel::requestSync,
             )
         }
         AppShell(feedViewModel, dailyViewModel)

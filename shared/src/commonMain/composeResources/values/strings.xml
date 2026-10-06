@@ -53,4 +53,10 @@
     <string name="daily_streak_label">Day streak</string>
     <string name="notice_daily_offline">No connection, guess not sent</string>
     <string name="notice_daily_unavailable">Couldn't send the guess, try again</string>
+    <string name="stats_endless">Endless feed</string>
+    <string name="stats_daily">Daily puzzle</string>
+    <string name="stat_day_streak">Day streak</string>
+    <string name="stat_best_time">Best time</string>
+    <string name="daily_freeze">Streak freezes: %1$d</string>
+    <string name="favorite_daily_tag">Daily puzzle</string>
 </resources>

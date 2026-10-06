@@ -77,7 +77,7 @@ class SupabaseAccountService(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            _events.tryEmit(AccountEvent.SignInFailed)
+            _events.tryEmit(AccountEvent.SignInFailed(describe(e)))
             return
         }
         guardedSignIn {
@@ -118,7 +118,7 @@ class SupabaseAccountService(
             callback.errorCode == CallbackUrl.IDENTITY_ALREADY_EXISTS ->
                 // The Google account is somebody else's already: sign in to it instead of linking.
                 guardedSignIn { auth.signInWith(Google) }
-            callback.isError -> _events.tryEmit(AccountEvent.SignInFailed)
+            callback.isError -> _events.tryEmit(AccountEvent.SignInFailed(callback.errorCode ?: callback.error))
             callback.code != null -> guardedSignIn {
                 auth.exchangeCodeForSession(callback.code)
                 _events.tryEmit(AccountEvent.SignedIn)
@@ -132,9 +132,18 @@ class SupabaseAccountService(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            _events.tryEmit(AccountEvent.SignInFailed)
+            _events.tryEmit(AccountEvent.SignInFailed(describe(e)))
         }
     }
+}
+
+/** A short, safe-to-show description of why a sign-in failed: the server's error code if there is one. */
+internal fun describe(e: Throwable): String {
+    val text = when (e) {
+        is AuthRestException -> e.errorCode?.value ?: e.error
+        else -> e.message?.lineSequence()?.firstOrNull() ?: e::class.simpleName
+    }
+    return (text ?: "unknown").take(90)
 }
 
 private fun toAccountState(status: SessionStatus): AccountState = when (status) {

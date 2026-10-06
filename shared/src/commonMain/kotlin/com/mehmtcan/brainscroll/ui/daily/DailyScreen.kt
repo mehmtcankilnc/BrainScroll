@@ -64,6 +64,7 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.components.AppButton
 import com.mehmtcan.brainscroll.ui.components.Chip
+import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -240,7 +241,7 @@ private fun Puzzle(ui: DailyUiState, viewModel: DailyViewModel) {
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (state.isFinished) {
-                DailyResult(state)
+                DailyResult(state, ui.isFavorite, viewModel::toggleFavorite)
             } else {
                 WordleKeyboard(
                     language = round.language,
@@ -275,25 +276,28 @@ private fun ElapsedTime(state: DailyState, receivedAtMs: Long) {
 }
 
 @Composable
-private fun DailyResult(state: DailyState) {
+private fun DailyResult(state: DailyState, isFavorite: Boolean, onToggleFavorite: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val won = state.status == DailyStatus.Won
 
-    Column(
-        modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-    ) {
-        BasicText(
-            text = if (won) stringResource(Res.string.result_won, state.guesses.size)
-            else stringResource(Res.string.result_lost, state.answer.orEmpty()),
-            style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
-        )
-        state.durationMs?.let {
-            BasicText(stringResource(Res.string.daily_time, formatDuration(it)), style = type.body.copy(color = colors.textPrimary))
+    Box(modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            BasicText(
+                text = if (won) stringResource(Res.string.result_won, state.guesses.size)
+                else stringResource(Res.string.result_lost, state.answer.orEmpty()),
+                style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
+            )
+            state.durationMs?.let {
+                BasicText(stringResource(Res.string.daily_time, formatDuration(it)), style = type.body.copy(color = colors.textPrimary))
+            }
+            NextPuzzleCountdown(state)
         }
-        NextPuzzleCountdown(state)
+        HeartButton(filled = isFavorite, onClick = onToggleFavorite, modifier = Modifier.align(Alignment.TopEnd))
     }
 }
 

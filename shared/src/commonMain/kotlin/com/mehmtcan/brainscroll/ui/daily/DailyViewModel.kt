@@ -51,6 +51,8 @@ data class DailyUiState(
     val round: RoundSnapshot?,
     val state: DailyState?,
     val dayStreak: DayStreak,
+    /** Whether the finished attempt is a favorite (the heart on the result card). */
+    val isFavorite: Boolean,
     /** The phone's clock when [state] arrived. With the server clock in [state] it gives a ticking timer. */
     val receivedAtMs: Long,
 )
@@ -73,6 +75,8 @@ class DailyViewModel(
     initialLanguage: Language,
     private val now: () -> Long,
     private val loadWords: suspend (Language) -> WordList = ::loadWordList,
+    /** Called after something changed that should be backed up (a favorite), so a sync can be scheduled. */
+    private val onLocalChange: () -> Unit = {},
 ) : ViewModel() {
 
     private var language = initialLanguage
@@ -204,6 +208,14 @@ class DailyViewModel(
         }
     }
 
+    /** The heart on the result card. Daily results can be favorites like endless ones. */
+    fun toggleFavorite() {
+        val id = states[language]?.resultId ?: return
+        repository.setFavorite(id, !repository.isFavorite(id), now())
+        publish()
+        onLocalChange()
+    }
+
     // --- Internals ---
 
     /** Runs a request that decides the phase of the whole screen, and turns failures into Offline or Unavailable. */
@@ -283,6 +295,7 @@ class DailyViewModel(
             round = if (showRound) roundOf(state!!) else null,
             state = state,
             dayStreak = dayStreak,
+            isFavorite = state?.resultId?.let { repository.isFavorite(it) } ?: false,
             receivedAtMs = receivedAtMs,
         )
     }

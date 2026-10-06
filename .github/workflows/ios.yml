@@ -124,6 +124,24 @@ jobs:
           DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
           CURRENT_PROJECT_VERSION="${{ github.run_number }}"
 
+      # Information only (it never stops the upload): shows which entitlements the archive carries. The archive is
+      # unsigned, so this is where we can see whether "Sign in with Apple" made it in before the export step signs it.
+      - name: Show entitlements in the archive
+        continue-on-error: true
+        run: |
+          ARCHIVE="$RUNNER_TEMP/BrainScroll.xcarchive"
+          APP=$(find "$ARCHIVE/Products" -maxdepth 3 -name "*.app" | head -1)
+          echo "App bundle: $APP"
+          echo "--- entitlement files in the archive ---"
+          find "$ARCHIVE" -name "*.xcent" -print -exec cat {} \;
+          echo "--- entitlements embedded in the binary ---"
+          codesign -d --entitlements :- "$APP" 2>&1 || true
+          if find "$ARCHIVE" -name "*.xcent" -exec grep -l "com.apple.developer.applesignin" {} + | grep -q .; then
+            echo "OK: the Sign in with Apple entitlement is in the archive."
+          else
+            echo "::warning::The Sign in with Apple entitlement is NOT in the archive. Apple sign-in will fail on devices."
+          fi
+
       - name: Create export options
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF

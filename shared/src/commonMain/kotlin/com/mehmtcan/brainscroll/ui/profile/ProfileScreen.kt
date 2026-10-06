@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,19 +21,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.daily_freeze
+import brainscroll.shared.generated.resources.favorite_daily_tag
 import brainscroll.shared.generated.resources.favorite_lost
 import brainscroll.shared.generated.resources.favorite_won
 import brainscroll.shared.generated.resources.favorites_empty
 import brainscroll.shared.generated.resources.favorites_title
 import brainscroll.shared.generated.resources.guess_distribution
 import brainscroll.shared.generated.resources.stat_best_streak
+import brainscroll.shared.generated.resources.stat_best_time
+import brainscroll.shared.generated.resources.stat_day_streak
 import brainscroll.shared.generated.resources.stat_played
 import brainscroll.shared.generated.resources.stat_streak
 import brainscroll.shared.generated.resources.stat_win_rate
+import brainscroll.shared.generated.resources.stats_daily
+import brainscroll.shared.generated.resources.stats_endless
 import brainscroll.shared.generated.resources.stats_title
+import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
+import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.Outcome
-import com.mehmtcan.brainscroll.stats.Stats
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.feed.ProfileState
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -56,12 +65,49 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier 
         item {
             BasicText(stringResource(Res.string.stats_title), style = type.title.copy(color = colors.textPrimary))
         }
-        item { StatTiles(profile.stats) }
-        item { Spacer(Modifier.height(Spacing.sm)) }
+
+        // The endless feed.
+        item { BasicText(stringResource(Res.string.stats_endless), style = type.heading.copy(color = colors.textPrimary)) }
         item {
-            BasicText(stringResource(Res.string.guess_distribution), style = type.heading.copy(color = colors.textPrimary))
+            StatTiles(
+                played = profile.stats.played,
+                winRate = profile.stats.winRate,
+                streak = profile.stats.currentStreak,
+                best = profile.stats.bestStreak,
+                streakLabel = stringResource(Res.string.stat_streak),
+            )
         }
         item { GuessDistribution(profile.stats.guessDistribution) }
+        item { Spacer(Modifier.height(Spacing.sm)) }
+
+        // The daily puzzle: its streak counts days, not answers, and it has a time.
+        item { BasicText(stringResource(Res.string.stats_daily), style = type.heading.copy(color = colors.textPrimary)) }
+        item {
+            StatTiles(
+                played = profile.daily.played,
+                winRate = profile.daily.winRate,
+                streak = profile.dayStreak.current,
+                best = profile.dayStreak.best,
+                streakLabel = stringResource(Res.string.stat_day_streak),
+            )
+        }
+        profile.daily.bestTimeMs?.let { best ->
+            item {
+                BasicText(
+                    text = stringResource(Res.string.stat_best_time) + ": " + formatDuration(best),
+                    style = type.body.copy(color = colors.textPrimary),
+                )
+            }
+        }
+        if (profile.dayStreak.freezesAvailable > 0) {
+            item {
+                BasicText(
+                    text = stringResource(Res.string.daily_freeze, profile.dayStreak.freezesAvailable),
+                    style = type.caption.copy(color = colors.textSecondary),
+                )
+            }
+        }
+        item { GuessDistribution(profile.daily.guessDistribution) }
         item { Spacer(Modifier.height(Spacing.md)) }
         item {
             BasicText(stringResource(Res.string.favorites_title), style = type.title.copy(color = colors.textPrimary))
@@ -81,12 +127,13 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier 
 }
 
 @Composable
-private fun StatTiles(stats: Stats) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
-        StatTile(stats.played.toString(), stringResource(Res.string.stat_played), Modifier.weight(1f))
-        StatTile("${(stats.winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate), Modifier.weight(1f))
-        StatTile(stats.currentStreak.toString(), stringResource(Res.string.stat_streak), Modifier.weight(1f))
-        StatTile(stats.bestStreak.toString(), stringResource(Res.string.stat_best_streak), Modifier.weight(1f))
+private fun StatTiles(played: Int, winRate: Float, streak: Int, best: Int, streakLabel: String) {
+    // IntrinsicSize.Max makes the four tiles as tall as the tallest one, even if one uses a smaller number size.
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
+        StatTile(played.toString(), stringResource(Res.string.stat_played), Modifier.weight(1f))
+        StatTile("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate), Modifier.weight(1f))
+        StatTile(streak.toString(), streakLabel, Modifier.weight(1f))
+        StatTile(best.toString(), stringResource(Res.string.stat_best_streak), Modifier.weight(1f))
     }
 }
 
@@ -95,11 +142,14 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     Column(
-        modifier = modifier.background(colors.bgSurface, Radius.control).padding(vertical = Spacing.md),
+        modifier = modifier.fillMaxHeight().background(colors.bgSurface, Radius.control).padding(vertical = Spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        BasicText(value, style = type.display.copy(color = colors.textPrimary))
-        BasicText(label, style = type.caption.copy(color = colors.textSecondary))
+        // "100%" does not fit the tile at the big size and would break into two lines: longer values use a smaller size.
+        val valueStyle = if (value.length <= 3) type.display else type.title
+        BasicText(value, style = valueStyle.copy(color = colors.textPrimary), maxLines = 1, softWrap = false)
+        BasicText(label, style = type.caption.copy(color = colors.textSecondary), maxLines = 1, softWrap = false)
     }
 }
 
@@ -149,7 +199,13 @@ private fun FavoriteRow(round: FinishedRound) {
                 else stringResource(Res.string.favorite_lost),
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),
             )
-            BasicText(IstanbulDay.format(round.dayIndex), style = type.caption.copy(color = colors.textSecondary))
+            val date = IstanbulDay.format(round.dayIndex)
+            val detail = if (round.mode == Mode.DAILY) {
+                listOfNotNull(stringResource(Res.string.favorite_daily_tag), round.durationMs?.let(::formatDuration), date).joinToString(" · ")
+            } else {
+                date
+            }
+            BasicText(detail, style = type.caption.copy(color = colors.textSecondary))
         }
     }
 }

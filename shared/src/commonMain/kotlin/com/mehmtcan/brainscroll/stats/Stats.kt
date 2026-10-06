@@ -43,29 +43,41 @@ data class Stats(
     val guessDistribution: List<Int>,
     /** Puzzles that were finished after the player had left them once. */
     val finishedAfterSkip: Int,
+    /** The fastest win that has a time. Only daily puzzles are timed (by the server), so it is null for endless. */
+    val bestTimeMs: Long? = null,
 ) {
     /** Share of puzzles that were won, from 0.0 to 1.0. Zero when nothing was played. */
     val winRate: Float get() = if (played == 0) 0f else won.toFloat() / played
 }
 
 /**
- * Statistics of the endless feed, optionally for one [language]. Everything is computed from [history],
- * so the numbers can never drift away from the saved results.
+ * Statistics for one [mode], optionally for one [language]. Everything is computed from [history], so the numbers
+ * can never drift away from the saved results.
+ *
+ * The answer streak ([Stats.currentStreak], [Stats.bestStreak]) only exists for the endless feed. The daily puzzle has
+ * a day streak instead, see [DayStreaks].
  */
-fun computeStats(history: List<FinishedRound>, language: Language? = null, maxAttempts: Int = 6): Stats {
-    val endless = history.filter { it.mode == Mode.ENDLESS && (language == null || it.language == language) }
-    val wins = endless.filter { it.outcome == Outcome.WON }
+fun computeStats(
+    history: List<FinishedRound>,
+    language: Language? = null,
+    maxAttempts: Int = 6,
+    mode: Mode = Mode.ENDLESS,
+): Stats {
+    val results = history.filter { it.mode == mode && (language == null || it.language == language) }
+    val wins = results.filter { it.outcome == Outcome.WON }
     val distribution = MutableList(maxAttempts) { 0 }
     for (win in wins) {
         val attempts = win.guesses.size
         if (attempts in 1..maxAttempts) distribution[attempts - 1]++
     }
+    val endless = mode == Mode.ENDLESS
     return Stats(
-        played = endless.size,
+        played = results.size,
         won = wins.size,
-        currentStreak = Streaks.current(endless),
-        bestStreak = Streaks.best(endless),
+        currentStreak = if (endless) Streaks.current(results) else 0,
+        bestStreak = if (endless) Streaks.best(results) else 0,
         guessDistribution = distribution,
-        finishedAfterSkip = endless.count { it.wasSkipped },
+        finishedAfterSkip = results.count { it.wasSkipped },
+        bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull(),
     )
 }

@@ -53,4 +53,10 @@
     <string name="daily_streak_label">Gün serisi</string>
     <string name="notice_daily_offline">İnternet yok, tahmin gönderilemedi</string>
     <string name="notice_daily_unavailable">Tahmin gönderilemedi, tekrar dene</string>
+    <string name="stats_endless">Sonsuz akış</string>
+    <string name="stats_daily">Günlük bulmaca</string>
+    <string name="stat_day_streak">Gün serisi</string>
+    <string name="stat_best_time">En iyi süre</string>
+    <string name="daily_freeze">Seri dondurma hakkı: %1$d</string>
+    <string name="favorite_daily_tag">Günlük bulmaca</string>
 </resources>

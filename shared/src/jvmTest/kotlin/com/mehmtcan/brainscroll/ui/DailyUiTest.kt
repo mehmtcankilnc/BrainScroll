@@ -2,7 +2,12 @@ package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.daily.DailyException
 import com.mehmtcan.brainscroll.daily.FakeDailyApi
@@ -15,6 +20,12 @@ import kotlin.test.assertTrue
 /** The daily puzzle tab, driven through the real screen with a fake server. */
 @OptIn(ExperimentalTestApi::class)
 class DailyUiTest {
+
+    /** Scrolls the profile list until one of the texts is on screen. */
+    private fun ComposeUiTest.scrollProfileTo(vararg texts: String) {
+        onNode(hasScrollAction()).performScrollToNode(texts.map { hasText(it, substring = true) }.reduce { a, b -> a or b })
+        waitForIdle()
+    }
 
     private fun ComposeUiTest.openDaily() {
         openTab("Günlük", "Daily")
@@ -104,6 +115,30 @@ class DailyUiTest {
         waitForIdle()
         // The flame chip shows the streak: one day.
         assertTrue(onAllNodesWithText("1").fetchSemanticsNodes().isNotEmpty())
+    }
+
+    @Test
+    fun aSolvedDailyPuzzleShowsUpInTheProfileWithItsTimeAndAsAFavorite() = runComposeUiTest {
+        val cloud = TestCloud()
+        startDaily(cloud)
+        cloud.daily.clock += 83_000 // took 1:23 on the server's clock
+        typeWord(if (puzzleLanguage() == Language.TR) "KİTAP" else "CRANE")
+        waitUntil(timeoutMillis = 5_000) { hasAnyText("Sıradaki bulmaca", "Next puzzle in") }
+        waitForIdle()
+
+        onAllNodesWithTag("favoriteHeart")[0].performClick() // heart the daily result
+        waitForIdle()
+
+        openTab("Profil", "Profile")
+        waitForIdle()
+        snap("18_profile_with_daily")
+
+        // The profile is a long list: only what is on screen exists, so scroll to each thing before looking for it.
+        scrollProfileTo("En iyi süre: 01:23", "Best time: 01:23")
+        assertTrue(hasAnyText("En iyi süre: 01:23", "Best time: 01:23"), "the best daily time is shown")
+        scrollProfileTo("Günlük bulmaca · 01:23", "Daily puzzle · 01:23")
+        assertTrue(hasAnyText("Günlük bulmaca · 01:23", "Daily puzzle · 01:23"), "the favorite row is marked as daily")
+        assertFalse(hasAnyText("Henüz favori yok", "No favorites yet"))
     }
 
     @Test

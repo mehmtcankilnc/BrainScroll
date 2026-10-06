@@ -62,14 +62,15 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
     var tab by remember { mutableStateOf(Tab.Feed) }
 
     // Sign-in results are shown in a short message above whatever tab is open.
-    var accountNotice by remember { mutableStateOf<StringResource?>(null) }
+    var accountNotice by remember { mutableStateOf<Pair<StringResource, String?>?>(null) }
     LaunchedEffect(viewModel) {
         viewModel.accountEvents.collect { event ->
             accountNotice = when (event) {
-                AccountEvent.SignedIn -> Res.string.notice_signed_in
-                AccountEvent.SignInFailed -> Res.string.notice_sign_in_failed
+                AccountEvent.SignedIn -> Res.string.notice_signed_in to null
+                is AccountEvent.SignInFailed -> Res.string.notice_sign_in_failed to event.detail
             }
-            delay(ACCOUNT_NOTICE_MILLIS)
+            // A failure stays a little longer so the small print can be read.
+            delay(if (event is AccountEvent.SignInFailed) ACCOUNT_NOTICE_FAILED_MILLIS else ACCOUNT_NOTICE_MILLIS)
             accountNotice = null
         }
     }
@@ -87,6 +88,8 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
                 Tab.Feed -> FeedScreen(viewModel)
                 Tab.Daily -> DailyScreen(dailyViewModel)
                 Tab.Profile -> {
+                    // A daily result or a favorite may have changed while another tab was open.
+                    LaunchedEffect(Unit) { viewModel.refreshProfile() }
                     val profile by viewModel.profile.collectAsStateWithLifecycle()
                     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
                     ProfileScreen(
@@ -102,13 +105,14 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
                     )
                 }
             }
-            accountNotice?.let { NoticePill(stringResource(it), Modifier.align(Alignment.TopCenter)) }
+            accountNotice?.let { (text, detail) -> NoticePill(stringResource(text), Modifier.align(Alignment.TopCenter), detail) }
         }
         TabBar(selected = tab, onSelect = { tab = it })
     }
 }
 
 private const val ACCOUNT_NOTICE_MILLIS = 2_500L
+private const val ACCOUNT_NOTICE_FAILED_MILLIS = 6_000L
 
 /**
  * Full-width bar. The background is drawn first and covers the whole width and the bottom safe area

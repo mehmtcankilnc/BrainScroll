@@ -350,6 +350,39 @@ class DailyViewModelTest {
     }
 
     @Test
+    fun theHeartOnADailyResultIsSavedAndScheduledForBackup() = runTest {
+        var changes = 0
+        val repo = repository()
+        val vm = DailyViewModel(
+            api, repo, signedIn, Language.EN, now = { api.clock }, loadWords = { lists.getValue(it) },
+            onLocalChange = { changes++ },
+        )
+        advanceUntilIdle()
+        vm.start()
+        advanceUntilIdle()
+        play(vm, "crane")
+        assertFalse(vm.ui.value.isFavorite)
+
+        vm.toggleFavorite()
+        assertTrue(vm.ui.value.isFavorite)
+        assertEquals(1, changes) // the screen asked for a sync
+        assertEquals(1, repo.pendingCount()) // the favorite is queued (the daily result itself is not: the server has it)
+        assertEquals(listOf(Mode.DAILY), repo.favoriteResults().map { it.mode })
+
+        vm.toggleFavorite()
+        assertFalse(vm.ui.value.isFavorite)
+        assertTrue(repo.favoriteResults().isEmpty())
+        assertEquals(2, changes)
+    }
+
+    @Test
+    fun theHeartDoesNothingBeforeTheAttemptIsOver() = runTest {
+        val vm = started()
+        vm.toggleFavorite() // there is no result yet
+        assertFalse(vm.ui.value.isFavorite)
+    }
+
+    @Test
     fun theAnswerIsNeverPartOfTheScreenStateWhilePlaying() = runTest {
         val vm = started()
         play(vm, "slate")

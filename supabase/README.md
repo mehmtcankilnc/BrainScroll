@@ -33,3 +33,11 @@ npm test
 ```
 
 Run it after every change to a migration, before `db push`.
+
+## Live check of the daily puzzle
+
+After pushing a migration that touches the daily puzzle, run the real-project smoke test (it creates anonymous test users):
+
+```bash
+PYTHONUTF8=1 python supabase/tests/live_daily_check.py
+```
