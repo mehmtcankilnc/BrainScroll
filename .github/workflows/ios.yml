@@ -109,10 +109,8 @@ jobs:
           printf '%s\n' "$APPSTORE_API_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${APPSTORE_KEY_ID}.p8"
           chmod 600 "$RUNNER_TEMP/keys/AuthKey_${APPSTORE_KEY_ID}.p8"
 
-      # The archive is signed ad hoc ("-"), not with a real certificate: a development profile would need a
-      # registered device, which TestFlight does not need. Ad hoc signing still embeds the entitlements
-      # (Sign in with Apple) into the binary; a fully unsigned archive drops them and Apple login fails with
-      # error 1000. The export step then re-signs with the real distribution profile.
+      # The archive is built unsigned. A development profile would need a registered
+      # device, which TestFlight does not need. Signing happens in the export step.
       - name: Archive
         run: >
           xcodebuild archive
@@ -121,13 +119,21 @@ jobs:
           -configuration Release
           -destination 'generic/platform=iOS'
           -archivePath "$RUNNER_TEMP/BrainScroll.xcarchive"
-          CODE_SIGN_STYLE=Manual
-          CODE_SIGN_IDENTITY="-"
-          CODE_SIGNING_ALLOWED=YES
+          CODE_SIGNING_ALLOWED=NO
           CODE_SIGNING_REQUIRED=NO
-          PROVISIONING_PROFILE_SPECIFIER=""
           DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
           CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      # An unsigned archive carries no entitlements, so the export step has nothing to keep and Sign in with
+      # Apple fails with error 1000. Xcode forbids ad hoc signing for iOS builds, but plain codesign allows it:
+      # sign the app ad hoc with the entitlements file so they are embedded. Export re-signs with the real profile.
+      - name: Embed entitlements in the archive
+        run: |
+          APP=$(find "$RUNNER_TEMP/BrainScroll.xcarchive/Products" -maxdepth 3 -name "*.app" | head -1)
+          if [ -d "$APP/Frameworks" ]; then
+            find "$APP/Frameworks" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) -exec codesign --force --sign - {} \;
+          fi
+          codesign --force --sign - --entitlements iosApp/iosApp/iosApp.entitlements "$APP"
 
       # Information only (it never stops the upload): shows which entitlements the archive carries. The archive is
       # unsigned, so this is where we can see whether "Sign in with Apple" made it in before the export step signs it.
@@ -141,7 +147,7 @@ jobs:
           find "$ARCHIVE" -name "*.xcent" -print -exec cat {} \;
           echo "--- entitlements embedded in the binary ---"
           codesign -d --entitlements :- "$APP" 2>&1 || true
-          if find "$ARCHIVE" -name "*.xcent" -exec grep -l "com.apple.developer.applesignin" {} + | grep -q .; then
+          if codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q "com.apple.developer.applesignin"; then
             echo "OK: the Sign in with Apple entitlement is in the archive."
           else
             echo "::warning::The Sign in with Apple entitlement is NOT in the archive. Apple sign-in will fail on devices."
