@@ -22,3 +22,6 @@ DELETE FROM sync_queue WHERE kind = ? AND key = ? AND seq = ?;
 
 countPending:
 SELECT COUNT(*) FROM sync_queue;
+
+deleteAll:
+DELETE FROM sync_queue;

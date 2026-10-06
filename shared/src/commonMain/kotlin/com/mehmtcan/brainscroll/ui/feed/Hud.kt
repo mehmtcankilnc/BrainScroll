@@ -2,6 +2,7 @@ package com.mehmtcan.brainscroll.ui.feed
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,8 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_answer_streak
 import brainscroll.shared.generated.resources.skip_label
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.ui.motion.popOnIncrease
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -39,7 +42,13 @@ fun Hud(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        Chip(text = answerStreak.toString(), textColor = colors.streakAnswer) { BoltIcon(colors.streakAnswer) }
+        Box(Modifier.popOnIncrease(answerStreak)) {
+            Chip(
+                text = answerStreak.toString(),
+                textColor = colors.streakAnswer,
+                description = stringResource(Res.string.a11y_answer_streak, answerStreak),
+            ) { BoltIcon(colors.streakAnswer) }
+        }
         Chip(text = stringResource(Res.string.skip_label, skipsLeft), textColor = colors.textSecondary)
         Spacer(Modifier.weight(1f))
         Chip(

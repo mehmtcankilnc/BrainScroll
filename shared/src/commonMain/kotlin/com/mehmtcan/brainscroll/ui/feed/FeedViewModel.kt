@@ -117,22 +117,28 @@ class FeedViewModel(
         onSynced = ::afterSync,
     )
 
+    private val startLanguage = deviceLanguage
+
+    /** Builds the feed from what the device remembers: unfinished puzzles, the streak, the favorites. */
+    private suspend fun loadFeed() {
+        val lists = Language.entries.associateWith { loadWordList(it) }
+        val restored = repository.unfinishedRounds()
+        feed = EndlessFeed(
+            wordLists = lists,
+            startLanguage = repository.savedLanguage() ?: startLanguage,
+            store = repository,
+            restored = restored,
+            startStreak = Streaks.current(repository.history()),
+            now = now,
+        ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
+        favoriteIds = repository.favoriteResults().map { it.id }.toSet()
+        page = 0
+        publish()
+        refreshProfile()
+    }
+
     init {
-        viewModelScope.launch {
-            val lists = Language.entries.associateWith { loadWordList(it) }
-            val restored = repository.unfinishedRounds()
-            feed = EndlessFeed(
-                wordLists = lists,
-                startLanguage = repository.savedLanguage() ?: deviceLanguage,
-                store = repository,
-                restored = restored,
-                startStreak = Streaks.current(repository.history()),
-                now = now,
-            ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
-            favoriteIds = repository.favoriteResults().map { it.id }.toSet()
-            publish()
-            refreshProfile()
-        }
+        viewModelScope.launch { loadFeed() }
         viewModelScope.launch { account.start() }
         viewModelScope.launch {
             // The browser (Google) or the system hands the app a login link; the account service reads it.
@@ -210,6 +216,19 @@ class FeedViewModel(
 
     fun signOut() {
         viewModelScope.launch { account.signOut() }
+    }
+
+    /**
+     * Deletes the account on the server, then everything on the device, then starts over with a fresh feed and a new
+     * anonymous account. If the server cannot be reached nothing is touched.
+     */
+    fun deleteAccount() {
+        viewModelScope.launch {
+            if (!account.deleteAccount()) return@launch
+            repository.wipeLocalData()
+            loadFeed()
+            account.start()
+        }
     }
 
     private fun requestSyncIfNeeded() {

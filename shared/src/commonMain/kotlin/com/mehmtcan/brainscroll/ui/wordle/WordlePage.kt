@@ -27,6 +27,9 @@ import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
+import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
+import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import org.jetbrains.compose.resources.stringResource
 
 /** Height reserved for the keyboard (3 keys of 48 dp plus gaps), reused by the result card so the grid does not jump. */
@@ -45,6 +48,9 @@ fun WordlePage(
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    OutcomeHaptics(round.status)
+    // Only a puzzle that ends while it is shown gets the arrival animation; a finished one appears at once.
+    val justFinished = rememberJustFinished(round.status)
 
     Column(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
@@ -62,7 +68,7 @@ fun WordlePage(
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (round.isFinished) {
-                ResultCard(round, isFavorite, onToggleFavorite)
+                ResultCard(round, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 WordleKeyboard(
                     language = round.language,
@@ -79,13 +85,13 @@ fun WordlePage(
 }
 
 @Composable
-private fun ResultCard(round: RoundSnapshot, isFavorite: Boolean, onToggleFavorite: () -> Unit) {
+private fun ResultCard(round: RoundSnapshot, isFavorite: Boolean, onToggleFavorite: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val won = round.status == WordleStatus.Won
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(colors.bgSurface, Radius.card)
             .padding(Spacing.lg),

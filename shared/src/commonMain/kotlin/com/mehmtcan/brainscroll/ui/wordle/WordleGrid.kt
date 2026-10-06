@@ -1,7 +1,6 @@
 package com.mehmtcan.brainscroll.ui.wordle
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -30,15 +29,15 @@ import com.mehmtcan.brainscroll.game.wordle.LetterResult
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.components.LetterTile
 import com.mehmtcan.brainscroll.ui.components.TileState
+import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
+import com.mehmtcan.brainscroll.ui.motion.Motion
+import com.mehmtcan.brainscroll.ui.motion.popOnAppear
 import kotlinx.coroutines.delay
 
 private val TileGap = 6.dp
 private val MaxTile = 56.dp
 
 /** docs/design.md section 6: motion.flip is 500 ms with a 100 ms stagger per tile. */
-private const val FlipMillis = 500
-private const val FlipStaggerMillis = 100
-private val StandardEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
 /**
  * The guess grid: submitted rows, the row being typed, and empty rows.
@@ -49,6 +48,7 @@ private val StandardEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 fun WordleGrid(round: RoundSnapshot, modifier: Modifier = Modifier) {
     // Rows present when we first appear (e.g. swiping back to a half-finished puzzle) must not replay the flip.
     val initialRows = remember { round.rows.size }
+    val reduceMotion = LocalReduceMotion.current
 
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val byWidth = (maxWidth - TileGap * (round.wordLength - 1)) / round.wordLength
@@ -65,8 +65,8 @@ fun WordleGrid(round: RoundSnapshot, modifier: Modifier = Modifier) {
                                 RevealTile(
                                     letter = letter.toString(),
                                     result = row.results[i],
-                                    animate = rowIndex >= initialRows,
-                                    delayMillis = i * FlipStaggerMillis,
+                                    animate = rowIndex >= initialRows && !reduceMotion,
+                                    delayMillis = i * Motion.FLIP_STAGGER,
                                     size = tileSize,
                                 )
                             }
@@ -90,11 +90,13 @@ fun WordleGrid(round: RoundSnapshot, modifier: Modifier = Modifier) {
 @Composable
 private fun PendingRow(word: String, tileSize: Dp) {
     val pulse = rememberInfiniteTransition()
-    val alpha by pulse.animateFloat(
+    val pulsing by pulse.animateFloat(
         initialValue = 0.45f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(550), RepeatMode.Reverse),
     )
+    // With reduced motion the waiting row just stays dimmed.
+    val alpha = if (LocalReduceMotion.current) 0.7f else pulsing
     Row(
         modifier = Modifier.graphicsLayer { this.alpha = alpha }.testTag("pendingRow"),
         horizontalArrangement = Arrangement.spacedBy(TileGap),
@@ -112,9 +114,11 @@ private fun InputRow(round: RoundSnapshot, tileSize: Dp) {
     // This row is created fresh after every accepted guess. The round may already have had rejected guesses
     // (errorTick > 0), so only a tick that changes while we are on screen means "shake".
     var seenTick by remember { mutableIntStateOf(round.errorTick) }
+    val reduceMotion = LocalReduceMotion.current
     LaunchedEffect(round.errorTick) {
         if (round.errorTick == seenTick) return@LaunchedEffect
         seenTick = round.errorTick
+        if (reduceMotion) return@LaunchedEffect // the message and the buzz say it; no shaking
         for (target in listOf(-10f, 10f, -8f, 8f, 0f)) shake.animateTo(target, tween(50))
     }
 
@@ -130,6 +134,7 @@ private fun InputRow(round: RoundSnapshot, tileSize: Dp) {
             LetterTile(
                 letter = letter?.toString() ?: "",
                 state = if (letter != null) TileState.Filled else TileState.Empty,
+                modifier = Modifier.popOnAppear(letter != null),
                 size = tileSize,
             )
         }
@@ -156,7 +161,7 @@ private fun RevealTile(letter: String, result: LetterResult, animate: Boolean, d
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         delay(delayMillis.toLong())
-        progress.animateTo(1f, tween(FlipMillis, easing = StandardEasing))
+        progress.animateTo(1f, tween(Motion.FLIP, easing = Motion.Standard))
     }
 
     val p = progress.value

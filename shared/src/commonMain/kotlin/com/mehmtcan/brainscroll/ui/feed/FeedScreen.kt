@@ -42,6 +42,8 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 import kotlinx.coroutines.delay
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -104,8 +106,10 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val current = feed.rounds[page]
 
     // Rejected guesses show a message. The tick makes the same error show again.
+    val haptics = LocalHaptics.current
     LaunchedEffect(current.index, current.errorTick) {
         if (current.errorTick == 0) return@LaunchedEffect
+        haptics.perform(HapticKind.Warning)
         when (current.error) {
             GuessError.WrongLength -> show(Res.string.notice_too_short)
             GuessError.NotInDictionary, GuessError.InvalidLetters -> show(Res.string.notice_not_in_list)

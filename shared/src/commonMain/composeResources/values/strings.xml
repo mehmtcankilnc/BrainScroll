@@ -116,4 +116,22 @@
     <string name="notice_social_unavailable">Something went wrong, try again</string>
     <string name="notice_invite_sign_in">Sign in first, then the invite is used</string>
     <string name="notice_invite_username">Choose a username first, then the invite is used</string>
+    <string name="a11y_letter">Letter %1$s</string>
+    <string name="a11y_state_correct">correct place</string>
+    <string name="a11y_state_present">in the word, wrong place</string>
+    <string name="a11y_state_absent">not in the word</string>
+    <string name="a11y_state_typed">typed</string>
+    <string name="a11y_key_enter">Submit guess</string>
+    <string name="a11y_key_backspace">Delete</string>
+    <string name="a11y_answer_streak">Correct answer streak: %1$d</string>
+    <string name="a11y_day_streak">Day streak: %1$d</string>
+    <string name="a11y_favorite_add">Add to favorites</string>
+    <string name="a11y_favorite_remove">Remove from favorites</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_title">Delete your account?</string>
+    <string name="delete_text">This permanently deletes your account and everything backed up in the cloud: results, favorites, streaks, your username and your friends. The progress on this device is deleted too. This can't be undone.</string>
+    <string name="delete_confirm">Delete permanently</string>
+    <string name="delete_cancel">Cancel</string>
+    <string name="notice_account_deleted">Account deleted</string>
+    <string name="notice_delete_failed">Couldn't delete the account. Check your connection and try again</string>
 </resources>

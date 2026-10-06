@@ -84,5 +84,20 @@ object Radius {
     val pill = RoundedCornerShape(percent = 50)
 }
 
+/**
+ * The same palette with brighter secondary text and stronger outlines, for players who turned on the system's
+ * contrast setting (docs/design.md section 9). Fill colors keep their meaning, so nothing is learned twice.
+ */
+fun BrainScrollColors.highContrast() = copy(
+    textSecondary = Palette.Neutral100,
+    textDisabled = Palette.Neutral200,
+    absentOn = Palette.Neutral200,
+    borderSubtle = Palette.Neutral200,
+    borderStrong = Palette.Neutral50,
+)
+
+/** True when the high-contrast setting is on: outlines get thicker too. */
+val LocalHighContrast = staticCompositionLocalOf { false }
+
 val LocalBrainScrollColors = staticCompositionLocalOf { DarkColors }
 val LocalBrainScrollTypography = staticCompositionLocalOf { BrainScrollTypography() }

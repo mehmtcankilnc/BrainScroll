@@ -14,6 +14,8 @@ internal object Palette {
     val Neutral400 = Color(0xFF6B6B6B)
     val Neutral300 = Color(0xFF8C8C8C)
     val Neutral50 = Color(0xFFF5F5F5)
+    val Neutral100 = Color(0xFFE0E0E0)
+    val Neutral200 = Color(0xFFC4C4C4)
 
     val Green500 = Color(0xFF7ED957)
     val Green900 = Color(0xFF10240A)

@@ -8,3 +8,7 @@ INSERT OR REPLACE INTO setting(key, value) VALUES (?, ?);
 
 get:
 SELECT value FROM setting WHERE key = ?;
+
+-- Everything except one setting (the puzzle language the player chose is not about the account).
+deleteAllExcept:
+DELETE FROM setting WHERE key <> ?;

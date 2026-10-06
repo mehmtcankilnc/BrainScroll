@@ -21,6 +21,12 @@ sealed interface AccountEvent {
     data object SignedIn : AccountEvent
     /** [detail] is a short technical hint (an error code), shown in small print so a failure can be diagnosed. */
     data class SignInFailed(val detail: String? = null) : AccountEvent
+
+    /** The account and everything in the cloud is gone. */
+    data object AccountDeleted : AccountEvent
+
+    /** The deletion did not happen (no connection, or the server refused). Nothing was changed. */
+    data object DeleteFailed : AccountEvent
 }
 
 interface AccountService {
@@ -44,6 +50,13 @@ interface AccountService {
 
     /** Back to a fresh anonymous account. Everything stays on the device, it is offered to that account again. */
     suspend fun signOut()
+
+    /**
+     * Deletes the account and everything stored for it in the cloud, then signs out of it. Returns false (and nothing
+     * is changed) if the server could not be reached. The caller clears the data on the device and then calls
+     * [start] for a new anonymous account.
+     */
+    suspend fun deleteAccount(): Boolean
 
     /** The app was opened through its login link after the browser finished. */
     suspend fun handleCallbackUrl(url: String)

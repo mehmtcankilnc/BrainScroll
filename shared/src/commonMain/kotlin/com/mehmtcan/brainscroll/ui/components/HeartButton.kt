@@ -15,6 +15,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_favorite_add
+import brainscroll.shared.generated.resources.a11y_favorite_remove
+import org.jetbrains.compose.resources.stringResource
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 
 /**
@@ -27,16 +35,22 @@ fun HeartButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = LocalHaptics.current
+    val description = stringResource(if (filled) Res.string.a11y_favorite_remove else Res.string.a11y_favorite_add)
     val color = if (filled) BrainScrollTheme.colors.error else BrainScrollTheme.colors.textSecondary
     Box(
         modifier = modifier
             .testTag("favoriteHeart")
+            .semantics { contentDescription = description }
             .size(48.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    haptics.perform(HapticKind.Light)
+                    onClick()
+                },
             ),
         contentAlignment = Alignment.Center,
     ) {

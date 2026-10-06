@@ -22,6 +22,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.App
 import com.mehmtcan.brainscroll.account.AccountState
@@ -31,6 +33,8 @@ import com.mehmtcan.brainscroll.daily.FakeDailyApi
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.social.FakeSocialApi
 import com.mehmtcan.brainscroll.sync.FakeCloud
+import com.mehmtcan.brainscroll.ui.haptics.Haptics
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import java.io.File
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -67,7 +71,14 @@ internal class TestCloud(
  * Nothing here talks to the real network: the account and the cloud are fakes.
  */
 @OptIn(ExperimentalTestApi::class)
-internal fun ComposeUiTest.start(cloud: TestCloud = TestCloud()) {
+internal fun ComposeUiTest.start(
+    cloud: TestCloud = TestCloud(),
+    haptics: Haptics? = null,
+    reduceMotion: Boolean? = null,
+    highContrast: Boolean? = null,
+    /** The system font size setting: 2.0 is the largest steps phones offer. */
+    fontScale: Float = 1f,
+) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
     val owner = object : ViewModelStoreOwner {
@@ -75,8 +86,13 @@ internal fun ComposeUiTest.start(cloud: TestCloud = TestCloud()) {
     }
     setContent {
         DisposableEffect(Unit) { onDispose { owner.viewModelStore.clear() } }
-        CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-            Box(Modifier.requiredSize(390.dp, 740.dp)) { App(cloudServices = cloud.factory) }
+        CompositionLocalProvider(
+            LocalViewModelStoreOwner provides owner,
+            LocalDensity provides Density(LocalDensity.current.density, fontScale),
+        ) {
+            Box(Modifier.requiredSize(390.dp, 740.dp)) {
+                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast)
+            }
         }
     }
     waitForIdle()
@@ -147,4 +163,10 @@ internal fun ComposeUiTest.hasAnyText(vararg texts: String) =
 internal fun ComposeUiTest.clickAny(vararg texts: String) {
     val text = texts.first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
     onNodeWithText(text).performClick()
+}
+
+/** Remembers every buzz, so a test can say what the phone would have felt. */
+internal class RecordingHaptics : Haptics {
+    val kinds = mutableListOf<HapticKind>()
+    override fun perform(kind: HapticKind) { kinds += kind }
 }

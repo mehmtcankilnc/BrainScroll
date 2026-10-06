@@ -8,8 +8,10 @@ import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -110,6 +112,27 @@ class SupabaseAccountService(
             // for as long as it takes, so it runs on its own and does not hold up the caller.
             scope.launch { start() }
         }
+    }
+
+    override suspend fun deleteAccount(): Boolean {
+        try {
+            client.pluginManager.getPlugin(Postgrest).rpc("delete_my_account")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _events.tryEmit(AccountEvent.DeleteFailed)
+            return false
+        }
+        // The account is gone, so the server cannot sign the session out any more: forget it on this device only.
+        try {
+            auth.signOut(SignOutScope.LOCAL)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The session is useless now anyway; the next start() replaces it.
+        }
+        _events.tryEmit(AccountEvent.AccountDeleted)
+        return true
     }
 
     override suspend fun handleCallbackUrl(url: String) {

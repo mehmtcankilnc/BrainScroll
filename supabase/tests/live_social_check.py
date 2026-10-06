@@ -4,8 +4,8 @@
 
 Uses only the public publishable key, exactly like the app. It can only sign in as NEW anonymous users (a Google or
 Apple login cannot be scripted), so it checks what an anonymous player must and must not be able to do: look at the
-tables, but not take a username, add friends or see the friends tables; and that nothing can be read or written
-around the functions. The full rules (usernames, ranking, friends) are checked offline by `npm test`
+tables, but not take a username, add friends or see the friends tables; that nothing can be read or written
+around the functions; and that an account can delete itself. The full rules (usernames, ranking, friends) are checked offline by `npm test`
 (verify_leaderboards.mjs). Run it after `npx supabase db push` of the leaderboards migration.
 """
 import json, urllib.request, urllib.error
@@ -94,6 +94,16 @@ for fn, params in (("streak_apply", {"p_user": "00000000-0000-0000-0000-00000000
                    ("friend_scope", {"p_user": "00000000-0000-0000-0000-000000000000"})):
     s, b = rpc(fn, token, **params)
     check(f"helper {fn} is not callable", s >= 400, (s, b))
+
+# ---- account deletion (needs the delete_account migration): the throwaway user deletes itself ----
+s, b = call("/auth/v1/user", token=token, method="GET")
+check("before deleting, the session belongs to a user", s == 200 and b.get("id"), (s, b))
+s, b = rpc("delete_my_account", token)
+check("an account can delete itself", s in (200, 204), (s, b))
+s, b = call("/auth/v1/user", token=token, method="GET")
+check("afterwards the user no longer exists", s in (401, 403, 404), (s, b))
+s, b = rpc("delete_my_account", None)
+check("a visitor without a session cannot delete anything", s >= 400, (s, b))
 
 print("\nALL CHECKS PASSED" if failures == 0 else f"\n{failures} CHECK(S) FAILED")
 raise SystemExit(0 if failures == 0 else 1)

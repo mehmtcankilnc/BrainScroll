@@ -21,8 +21,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_key_backspace
+import brainscroll.shared.generated.resources.a11y_key_enter
+import brainscroll.shared.generated.resources.a11y_letter
+import brainscroll.shared.generated.resources.a11y_state_absent
+import brainscroll.shared.generated.resources.a11y_state_correct
+import brainscroll.shared.generated.resources.a11y_state_present
 import com.mehmtcan.brainscroll.game.wordle.Language
+import org.jetbrains.compose.resources.stringResource
 import com.mehmtcan.brainscroll.game.wordle.LetterResult
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 
@@ -49,6 +62,8 @@ fun WordleKeyboard(
     modifier: Modifier = Modifier,
 ) {
     val rows = remember(language) { keyboardRows(language) }
+    val enterDescription = stringResource(Res.string.a11y_key_enter)
+    val backspaceDescription = stringResource(Res.string.a11y_key_backspace)
     // Every key gets the same width: shorter rows are padded with empty space on both sides.
     // The last row also holds the two wider special keys (1.5 units each).
     val unitsPerRow = rows.mapIndexed { i, letters -> letters.length + if (i == rows.lastIndex) 3f else 0f }
@@ -69,11 +84,16 @@ fun WordleKeyboard(
                 val isLast = rowIndex == rows.lastIndex
                 val pad = (widest - unitsPerRow[rowIndex]) / 2f
                 if (pad > 0f) Spacer(Modifier.weight(pad))
-                if (isLast) Key(label = enterLabel, weight = 1.5f, onClick = onEnter, small = true)
+                if (isLast) Key(label = enterLabel, description = enterDescription, weight = 1.5f, onClick = onEnter, small = true)
                 letters.forEach { letter ->
-                    Key(label = letter.toString(), result = letterStates[letter], onClick = { onLetter(letter) })
+                    Key(
+                        label = letter.toString(),
+                        description = letterKeyDescription(letter.toString(), letterStates[letter]),
+                        result = letterStates[letter],
+                        onClick = { onLetter(letter) },
+                    )
                 }
-                if (isLast) Key(label = "←", weight = 1.5f, onClick = onBackspace)
+                if (isLast) Key(label = "←", description = backspaceDescription, weight = 1.5f, onClick = onBackspace)
                 if (pad > 0f) Spacer(Modifier.weight(pad))
             }
         }
@@ -83,12 +103,14 @@ fun WordleKeyboard(
 @Composable
 private fun RowScope.Key(
     label: String,
+    description: String,
     onClick: () -> Unit,
     result: LetterResult? = null,
     weight: Float = 1f,
     small: Boolean = false,
 ) {
     val colors = BrainScrollTheme.colors
+    val haptics = LocalHaptics.current
 
     val fill: Color
     val content: Color
@@ -106,10 +128,31 @@ private fun RowScope.Key(
             .height(KeyHeight)
             .background(fill, Radius.control)
             .border(2.dp, borderColor, Radius.control)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = {
+                    haptics.perform(HapticKind.Light)
+                    onClick()
+                },
+            )
+            .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
         val style = if (small) BrainScrollTheme.typography.caption else BrainScrollTheme.typography.label
         BasicText(text = label, style = style.copy(color = content))
+    }
+}
+
+/** "Letter A" for a key not tried yet, "Letter A, not in the word" once the keyboard knows more. */
+@Composable
+private fun letterKeyDescription(letter: String, result: LetterResult?): String {
+    val name = stringResource(Res.string.a11y_letter, letter)
+    return when (result) {
+        LetterResult.Correct -> name + ", " + stringResource(Res.string.a11y_state_correct)
+        LetterResult.Present -> name + ", " + stringResource(Res.string.a11y_state_present)
+        LetterResult.Absent -> name + ", " + stringResource(Res.string.a11y_state_absent)
+        null -> name
     }
 }

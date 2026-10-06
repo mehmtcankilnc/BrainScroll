@@ -20,3 +20,6 @@ SELECT * FROM in_progress_round ORDER BY position ASC, id ASC;
 
 deleteById:
 DELETE FROM in_progress_round WHERE id = ?;
+
+deleteAll:
+DELETE FROM in_progress_round;

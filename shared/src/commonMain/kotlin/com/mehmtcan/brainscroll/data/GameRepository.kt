@@ -122,6 +122,23 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
         settings.put(SETTING_LANGUAGE, language.name)
     }
 
+    // --- Account deletion ---
+
+    /**
+     * Removes everything about the player from the device: results, favorites, unfinished puzzles, the upload
+     * queue and the cached tables. Only the chosen puzzle language stays. Done after the account was deleted on
+     * the server, so a new anonymous account does not receive the old history.
+     */
+    fun wipeLocalData() {
+        db.transaction {
+            favorites.deleteAll() // first: it refers to the results
+            results.deleteAll()
+            progress.deleteAll()
+            queue.deleteAll()
+            settings.deleteAllExcept(SETTING_LANGUAGE)
+        }
+    }
+
     // --- Cache of the leaderboards and friends, so the last view is still there offline ---
 
     fun cachedText(key: String): String? = settings.get(key).executeAsOneOrNull()

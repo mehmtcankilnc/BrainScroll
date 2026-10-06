@@ -22,3 +22,6 @@ SELECT result_id, is_favorite, updated_at FROM favorite WHERE result_id = ?;
 
 selectAllFavorites:
 SELECT result_id, is_favorite, updated_at FROM favorite;
+
+deleteAll:
+DELETE FROM favorite;

@@ -25,12 +25,13 @@ private fun nunitoFontFamily(): FontFamily = FontFamily(
  * without passing them as parameters (CompositionLocal).
  */
 @Composable
-fun BrainScrollTheme(content: @Composable () -> Unit) {
+fun BrainScrollTheme(highContrast: Boolean = false, content: @Composable () -> Unit) {
     val fontFamily = nunitoFontFamily()
     val typography = remember(fontFamily) { BrainScrollTypography(fontFamily) }
 
     CompositionLocalProvider(
-        LocalBrainScrollColors provides DarkColors,
+        LocalBrainScrollColors provides (if (highContrast) DarkColors.highContrast() else DarkColors),
+        LocalHighContrast provides highContrast,
         LocalBrainScrollTypography provides typography,
         content = content,
     )

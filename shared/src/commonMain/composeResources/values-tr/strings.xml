@@ -116,4 +116,22 @@
     <string name="notice_social_unavailable">Bir şeyler ters gitti, tekrar dene</string>
     <string name="notice_invite_sign_in">Önce giriş yap, davet sonra kullanılır</string>
     <string name="notice_invite_username">Önce kullanıcı adı seç, davet sonra kullanılır</string>
+    <string name="a11y_letter">%1$s harfi</string>
+    <string name="a11y_state_correct">doğru yerde</string>
+    <string name="a11y_state_present">kelimede, yanlış yerde</string>
+    <string name="a11y_state_absent">kelimede yok</string>
+    <string name="a11y_state_typed">yazıldı</string>
+    <string name="a11y_key_enter">Tahmini gönder</string>
+    <string name="a11y_key_backspace">Sil</string>
+    <string name="a11y_answer_streak">Doğru cevap serisi: %1$d</string>
+    <string name="a11y_day_streak">Gün serisi: %1$d</string>
+    <string name="a11y_favorite_add">Favorilere ekle</string>
+    <string name="a11y_favorite_remove">Favorilerden çıkar</string>
+    <string name="delete_account">Hesabı sil</string>
+    <string name="delete_title">Hesabın silinsin mi?</string>
+    <string name="delete_text">Hesabın ve bulutta yedeklenen her şey kalıcı olarak silinir: sonuçlar, favoriler, seriler, kullanıcı adın ve arkadaşların. Bu cihazdaki ilerleme de silinir. Bu işlem geri alınamaz.</string>
+    <string name="delete_confirm">Kalıcı olarak sil</string>
+    <string name="delete_cancel">Vazgeç</string>
+    <string name="notice_account_deleted">Hesap silindi</string>
+    <string name="notice_delete_failed">Hesap silinemedi. Bağlantını kontrol edip tekrar dene</string>
 </resources>

@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.daily_freeze
@@ -128,14 +130,26 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier 
 
 @Composable
 private fun StatTiles(played: Int, winRate: Float, streak: Int, best: Int, streakLabel: String) {
-    // IntrinsicSize.Max makes the four tiles as tall as the tallest one, even if one uses a smaller number size.
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
-        StatTile(played.toString(), stringResource(Res.string.stat_played), Modifier.weight(1f))
-        StatTile("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate), Modifier.weight(1f))
-        StatTile(streak.toString(), streakLabel, Modifier.weight(1f))
-        StatTile(best.toString(), stringResource(Res.string.stat_best_streak), Modifier.weight(1f))
+    val tiles = listOf(
+        played.toString() to stringResource(Res.string.stat_played),
+        "${(winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
+        streak.toString() to streakLabel,
+        best.toString() to stringResource(Res.string.stat_best_streak),
+    )
+    // Four tiles side by side do not fit when the player chose big text: then two rows of two.
+    val perRow = if (LocalDensity.current.fontScale > LARGE_TEXT_SCALE) 2 else 4
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        tiles.chunked(perRow).forEach { row ->
+            // IntrinsicSize.Max makes the tiles as tall as the tallest one, even if one uses a smaller number size.
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
+                row.forEach { (value, label) -> StatTile(value, label, Modifier.weight(1f)) }
+            }
+        }
     }
 }
+
+/** Above this system font scale the layouts switch to roomier arrangements. */
+private const val LARGE_TEXT_SCALE = 1.3f
 
 @Composable
 private fun StatTile(value: String, label: String, modifier: Modifier = Modifier) {
@@ -149,7 +163,8 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
         // "100%" does not fit the tile at the big size and would break into two lines: longer values use a smaller size.
         val valueStyle = if (value.length <= 3) type.display else type.title
         BasicText(value, style = valueStyle.copy(color = colors.textPrimary), maxLines = 1, softWrap = false)
-        BasicText(label, style = type.caption.copy(color = colors.textSecondary), maxLines = 1, softWrap = false)
+        // The label wraps (up to two lines) so big text is never cut off.
+        BasicText(label, style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center), maxLines = 2, modifier = Modifier.padding(horizontal = Spacing.xs))
     }
 }
 

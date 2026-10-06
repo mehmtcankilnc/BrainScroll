@@ -11,7 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_letter
+import brainscroll.shared.generated.resources.a11y_state_absent
+import brainscroll.shared.generated.resources.a11y_state_correct
+import brainscroll.shared.generated.resources.a11y_state_present
+import brainscroll.shared.generated.resources.a11y_state_typed
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
+import org.jetbrains.compose.resources.stringResource
 import com.mehmtcan.brainscroll.ui.theme.Radius
 
 /**
@@ -28,6 +38,8 @@ fun LetterTile(
     size: Dp = 56.dp,
 ) {
     val colors = BrainScrollTheme.colors
+    val extraBorder = if (LocalHighContrast.current) 1f else 0f
+    val description = tileDescription(letter, state)
 
     val fill: Color
     val content: Color
@@ -70,7 +82,8 @@ fun LetterTile(
         modifier = modifier
             .size(size)
             .background(fill, Radius.tile)
-            .border(borderWidth.dp, border, Radius.tile),
+            .border((if (borderWidth > 0f) borderWidth + extraBorder else 0f).dp, border, Radius.tile)
+            .then(if (description != null) Modifier.semantics(mergeDescendants = true) { contentDescription = description } else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         BasicText(
@@ -78,4 +91,20 @@ fun LetterTile(
             style = BrainScrollTheme.typography.tile.copy(color = content),
         )
     }
+}
+
+/**
+ * What a screen reader says for a tile, for example "Letter A, correct place" (docs/design.md section 9).
+ * An empty tile says nothing, so a grid of 30 tiles does not read out 30 times.
+ */
+@Composable
+private fun tileDescription(letter: String, state: TileState): String? {
+    if (state == TileState.Empty || letter.isEmpty()) return null
+    val status = when (state) {
+        TileState.Correct -> stringResource(Res.string.a11y_state_correct)
+        TileState.Pending -> stringResource(Res.string.a11y_state_present)
+        TileState.Absent -> stringResource(Res.string.a11y_state_absent)
+        else -> stringResource(Res.string.a11y_state_typed)
+    }
+    return stringResource(Res.string.a11y_letter, letter) + ", " + status
 }

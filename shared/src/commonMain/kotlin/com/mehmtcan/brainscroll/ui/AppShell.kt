@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,10 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.notice_sign_in_failed
+import brainscroll.shared.generated.resources.notice_account_deleted
+import brainscroll.shared.generated.resources.notice_delete_failed
 import brainscroll.shared.generated.resources.notice_signed_in
 import brainscroll.shared.generated.resources.tab_ranks
 import brainscroll.shared.generated.resources.notice_username_saved
@@ -62,6 +69,8 @@ import com.mehmtcan.brainscroll.ui.feed.FeedScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.profile.AccountUi
 import com.mehmtcan.brainscroll.ui.profile.ProfileScreen
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import kotlinx.coroutines.delay
@@ -89,6 +98,8 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
             accountNotice = when (event) {
                 AccountEvent.SignedIn -> ShellNotice(Res.string.notice_signed_in)
                 is AccountEvent.SignInFailed -> ShellNotice(Res.string.notice_sign_in_failed, detail = event.detail)
+                AccountEvent.AccountDeleted -> ShellNotice(Res.string.notice_account_deleted)
+                AccountEvent.DeleteFailed -> ShellNotice(Res.string.notice_delete_failed)
             }
             // A failure stays a little longer so the small print can be read.
             delay(if (event is AccountEvent.SignInFailed) ACCOUNT_NOTICE_FAILED_MILLIS else ACCOUNT_NOTICE_MILLIS)
@@ -139,6 +150,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                             onSignInWithGoogle = viewModel::signInWithGoogle,
                             onSignInWithApple = viewModel::signInWithApple,
                             onSignOut = viewModel::signOut,
+                            onDeleteAccount = viewModel::deleteAccount,
                         ),
                     )
                 }
@@ -188,6 +200,7 @@ private const val ACCOUNT_NOTICE_FAILED_MILLIS = 6_000L
 @Composable
 private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
     val colors = BrainScrollTheme.colors
+    val haptics = LocalHaptics.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -203,16 +216,25 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
+                        .semantics { this.selected = active }
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             role = Role.Tab,
-                            onClick = { onSelect(tab) },
+                            onClick = {
+                                if (tab != selected) haptics.perform(HapticKind.Light)
+                                onSelect(tab)
+                            },
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
+                    // The bar has a fixed height: its text grows with the system setting, but stops at 1.3 times.
+                    val density = LocalDensity.current
+                    CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale.coerceAtMost(TAB_MAX_FONT_SCALE))) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         BasicText(
+                            maxLines = 1,
+                            softWrap = false,
                             text = stringResource(tab.label),
                             style = BrainScrollTheme.typography.label.copy(
                                 color = if (active) colors.textPrimary else colors.textSecondary,
@@ -226,6 +248,7 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
                                 .background(if (active) colors.correctFill else Color.Transparent, Radius.pill),
                         )
                     }
+                    }
                 }
             }
         }
@@ -233,3 +256,4 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
 }
 
 private val TAB_BAR_HEIGHT = 56.dp
+private const val TAB_MAX_FONT_SCALE = 1.3f

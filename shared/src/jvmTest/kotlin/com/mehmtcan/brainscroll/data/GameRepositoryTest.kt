@@ -206,4 +206,31 @@ class GameRepositoryTest {
         assertTrue(rounds[1].skipped)
         assertEquals(1, second.skipsLeft) // a new session has its skip again
     }
+
+    @Test
+    fun wipingRemovesEverythingAboutThePlayerButKeepsTheLanguage() {
+        val repository = newRepository()
+        repository.finish(finished("r1"))
+        repository.finish(finished("r2", at = 2_000L))
+        repository.setFavorite("r1", true, now = 5L)
+        repository.saveProgress(stored("p1", position = 0, input = "KI"))
+        repository.saveLanguage(Language.TR)
+        repository.setSyncedUserId("user-1")
+        repository.cacheText("social:user-1:friends", "{}")
+        repository.enqueueEverything()
+        assertTrue(repository.pendingCount() > 0)
+
+        repository.wipeLocalData()
+
+        assertTrue(repository.history().isEmpty())
+        assertTrue(repository.favoriteResults().isEmpty())
+        assertTrue(repository.unfinishedRounds().isEmpty())
+        assertEquals(0, repository.pendingCount())
+        assertNull(repository.syncedUserId())
+        assertNull(repository.cachedText("social:user-1:friends"))
+        assertEquals(Language.TR, repository.savedLanguage(), "the chosen puzzle language is not about the account")
+        // And it keeps working afterwards.
+        repository.finish(finished("r3"))
+        assertEquals(1, repository.history().size)
+    }
 }

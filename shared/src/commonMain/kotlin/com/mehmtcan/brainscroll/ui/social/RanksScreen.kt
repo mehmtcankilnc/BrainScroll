@@ -1,9 +1,13 @@
+@file:OptIn(ExperimentalLayoutApi::class)
+
 package com.mehmtcan.brainscroll.ui.social
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +41,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.daily_retry
@@ -139,7 +144,7 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
 
 @Composable
 private fun SectionChips(ui: SocialUiState, viewModel: SocialViewModel) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Choice(stringResource(Res.string.ranks_speed), ui.section == Section.Speed) { viewModel.selectSection(Section.Speed) }
         Choice(stringResource(Res.string.ranks_streaks), ui.section == Section.Streak) { viewModel.selectSection(Section.Streak) }
         Choice(stringResource(Res.string.ranks_friends), ui.section == Section.Friends) { viewModel.selectSection(Section.Friends) }
@@ -153,6 +158,7 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
         text = text,
         textColor = if (selected) colors.textPrimary else colors.textSecondary,
         raised = selected,
+        selected = selected,
         onClick = onClick,
     )
 }
@@ -161,7 +167,7 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun ScopeChips(ui: SocialUiState, viewModel: SocialViewModel) {
     if (ui.access != Access.Ready) return
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Choice(stringResource(Res.string.filter_everyone), !ui.friendsOnly) { viewModel.selectFriendsOnly(false) }
         Choice(stringResource(Res.string.filter_friends), ui.friendsOnly) { viewModel.selectFriendsOnly(true) }
     }
@@ -172,7 +178,7 @@ private fun ScopeChips(ui: SocialUiState, viewModel: SocialViewModel) {
 private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewModel) {
     item {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Language.entries.forEach { language ->
                     Choice(language.name, ui.language == language) { viewModel.selectLanguage(language) }
                 }
@@ -197,7 +203,7 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
 private fun LazyListScope.streakSection(ui: SocialUiState, viewModel: SocialViewModel) {
     item {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Choice(stringResource(Res.string.kind_current), ui.kind == StreakKind.Current) { viewModel.selectKind(StreakKind.Current) }
                 Choice(stringResource(Res.string.kind_longest), ui.kind == StreakKind.Longest) { viewModel.selectKind(StreakKind.Longest) }
             }
@@ -247,6 +253,7 @@ private fun BoardLine(rank: Int, name: String, isMe: Boolean, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .semantics(mergeDescendants = true) {}
             .background(if (isMe) colors.bgRaised else colors.bgSurface, Radius.control)
             .padding(horizontal = Spacing.md, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
@@ -395,20 +402,27 @@ private fun PersonLine(name: String, actions: @Composable () -> Unit) {
 @Composable
 private fun SmallAction(text: String, primary: Boolean = false, onClick: () -> Unit) {
     val colors = BrainScrollTheme.colors
+    // The pill is 36 dp, the touch area 48 dp.
     Box(
         modifier = Modifier
-            .heightIn(min = 36.dp)
-            .background(if (primary) colors.correctFill else colors.bgRaised, Radius.pill)
+            .heightIn(min = 48.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 role = Role.Button,
                 onClick = onClick,
-            )
-            .padding(horizontal = Spacing.md),
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(text, style = BrainScrollTheme.typography.label.copy(color = if (primary) colors.correctOn else colors.textPrimary))
+        Box(
+            modifier = Modifier
+                .heightIn(min = 36.dp)
+                .background(if (primary) colors.correctFill else colors.bgRaised, Radius.pill)
+                .padding(horizontal = Spacing.md),
+            contentAlignment = Alignment.Center,
+        ) {
+            BasicText(text, style = BrainScrollTheme.typography.label.copy(color = if (primary) colors.correctOn else colors.textPrimary))
+        }
     }
 }
 

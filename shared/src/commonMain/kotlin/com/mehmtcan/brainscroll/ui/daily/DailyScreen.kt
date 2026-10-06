@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_day_streak
 import brainscroll.shared.generated.resources.daily_intro
 import brainscroll.shared.generated.resources.daily_loading
 import brainscroll.shared.generated.resources.daily_next
@@ -72,6 +73,15 @@ import com.mehmtcan.brainscroll.ui.theme.Spacing
 import com.mehmtcan.brainscroll.ui.wordle.WordleGrid
 import com.mehmtcan.brainscroll.ui.wordle.WordleKeyboard
 import kotlinx.coroutines.delay
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
+import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
+import com.mehmtcan.brainscroll.ui.motion.popOnIncrease
+import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.game.wordle.WordleStatus
+import com.mehmtcan.brainscroll.stats.DayStreaks
+import com.mehmtcan.brainscroll.ui.motion.Confetti
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
@@ -93,8 +103,10 @@ fun DailyScreen(viewModel: DailyViewModel, modifier: Modifier = Modifier) {
 
     var notice by remember { mutableStateOf<Pair<StringResource, Int>?>(null) }
     var noticeId by remember { mutableLongStateOf(0) }
+    val haptics = LocalHaptics.current
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
+            haptics.perform(HapticKind.Warning)
             noticeId++
             notice = (when (event) {
                 DailyEvent.TooShort -> Res.string.notice_too_short
@@ -160,7 +172,13 @@ private fun DailyHeader(ui: DailyUiState, onLanguage: (Language) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        Chip(text = ui.dayStreak.current.toString(), textColor = colors.streakDay) { FlameIcon(colors.streakDay) }
+        Box(Modifier.popOnIncrease(ui.dayStreak.current)) {
+            Chip(
+                text = ui.dayStreak.current.toString(),
+                textColor = colors.streakDay,
+                description = stringResource(Res.string.a11y_day_streak, ui.dayStreak.current),
+            ) { FlameIcon(colors.streakDay) }
+        }
         Spacer(Modifier.weight(1f))
         // Two puzzles a day, one per language. Both can be played.
         Language.entries.forEach { language ->
@@ -169,6 +187,7 @@ private fun DailyHeader(ui: DailyUiState, onLanguage: (Language) -> Unit) {
                 text = language.name,
                 textColor = if (selected) colors.textPrimary else colors.textSecondary,
                 raised = selected,
+                selected = selected,
                 onClick = { onLanguage(language) },
             )
         }
@@ -222,7 +241,13 @@ private fun Puzzle(ui: DailyUiState, viewModel: DailyViewModel) {
     val state = ui.state ?: return
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    OutcomeHaptics(round.status)
+    val justFinished = rememberJustFinished(round.status)
+    // Confetti for a win, and for a streak that reaches a milestone (every 7th day, the days that earn a freeze).
+    val milestone = ui.dayStreak.current > 0 && ui.dayStreak.current % DayStreaks.FREEZE_EVERY == 0
+    val celebrate = justFinished && (round.status == WordleStatus.Won || milestone)
 
+    Box(Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -241,7 +266,7 @@ private fun Puzzle(ui: DailyUiState, viewModel: DailyViewModel) {
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (state.isFinished) {
-                DailyResult(state, ui.isFavorite, viewModel::toggleFavorite)
+                DailyResult(state, ui.isFavorite, viewModel::toggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 WordleKeyboard(
                     language = round.language,
@@ -254,6 +279,8 @@ private fun Puzzle(ui: DailyUiState, viewModel: DailyViewModel) {
             }
         }
         Spacer(Modifier.height(Spacing.md))
+    }
+    if (celebrate) Confetti()
     }
 }
 
@@ -276,12 +303,12 @@ private fun ElapsedTime(state: DailyState, receivedAtMs: Long) {
 }
 
 @Composable
-private fun DailyResult(state: DailyState, isFavorite: Boolean, onToggleFavorite: () -> Unit) {
+private fun DailyResult(state: DailyState, isFavorite: Boolean, onToggleFavorite: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val won = state.status == DailyStatus.Won
 
-    Box(modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
+    Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,

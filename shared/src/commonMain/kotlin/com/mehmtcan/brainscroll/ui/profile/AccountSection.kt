@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.account_anonymous
@@ -15,6 +19,11 @@ import brainscroll.shared.generated.resources.account_google
 import brainscroll.shared.generated.resources.account_offline
 import brainscroll.shared.generated.resources.account_title
 import brainscroll.shared.generated.resources.backup_done
+import brainscroll.shared.generated.resources.delete_account
+import brainscroll.shared.generated.resources.delete_cancel
+import brainscroll.shared.generated.resources.delete_confirm
+import brainscroll.shared.generated.resources.delete_text
+import brainscroll.shared.generated.resources.delete_title
 import brainscroll.shared.generated.resources.backup_pending
 import brainscroll.shared.generated.resources.sign_in_apple
 import brainscroll.shared.generated.resources.sign_in_google
@@ -35,6 +44,7 @@ data class AccountUi(
     val onSignInWithGoogle: () -> Unit,
     val onSignInWithApple: () -> Unit,
     val onSignOut: () -> Unit,
+    val onDeleteAccount: () -> Unit,
 )
 
 /** Who you are signed in as, whether the progress is backed up, and the buttons to sign in or out. */
@@ -70,6 +80,7 @@ fun AccountSection(account: AccountUi, modifier: Modifier = Modifier) {
                         BasicText(stringResource(provider), style = type.body.copy(color = colors.textPrimary))
                         state.email?.let { BasicText(it, style = type.caption.copy(color = colors.textSecondary)) }
                         AppButton(stringResource(Res.string.sign_out), account.onSignOut)
+                        DeleteAccount(account.onDeleteAccount)
                     }
                 }
                 BasicText(
@@ -79,5 +90,33 @@ fun AccountSection(account: AccountUi, modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+}
+
+/**
+ * "Delete account" needs a second step: the first tap only opens the explanation, the real button is inside it
+ * (docs/plan.md phase 8: stores require deletion from inside the app, and it cannot be undone).
+ */
+@Composable
+private fun DeleteAccount(onDelete: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    var confirming by remember { mutableStateOf(false) }
+
+    if (!confirming) {
+        AppButton(stringResource(Res.string.delete_account), { confirming = true })
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.bgRaised, Radius.control)
+            .padding(Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        BasicText(stringResource(Res.string.delete_title), style = type.heading.copy(color = colors.error))
+        BasicText(stringResource(Res.string.delete_text), style = type.body.copy(color = colors.textPrimary))
+        AppButton(stringResource(Res.string.delete_confirm), { confirming = false; onDelete() })
+        AppButton(stringResource(Res.string.delete_cancel), { confirming = false })
     }
 }

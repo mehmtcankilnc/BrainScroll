@@ -26,3 +26,7 @@ SELECT * FROM game_result WHERE id = ?;
 
 selectByIds:
 SELECT * FROM game_result WHERE id IN ?;
+
+-- Account deletion: everything the player did leaves the device too.
+deleteAll:
+DELETE FROM game_result;
