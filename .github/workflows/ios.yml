@@ -109,8 +109,10 @@ jobs:
           printf '%s\n' "$APPSTORE_API_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${APPSTORE_KEY_ID}.p8"
           chmod 600 "$RUNNER_TEMP/keys/AuthKey_${APPSTORE_KEY_ID}.p8"
 
-      # The archive is built unsigned. A development profile would need a registered
-      # device, which TestFlight does not need. Signing happens in the export step.
+      # The archive is signed ad hoc ("-"), not with a real certificate: a development profile would need a
+      # registered device, which TestFlight does not need. Ad hoc signing still embeds the entitlements
+      # (Sign in with Apple) into the binary; a fully unsigned archive drops them and Apple login fails with
+      # error 1000. The export step then re-signs with the real distribution profile.
       - name: Archive
         run: >
           xcodebuild archive
@@ -119,8 +121,11 @@ jobs:
           -configuration Release
           -destination 'generic/platform=iOS'
           -archivePath "$RUNNER_TEMP/BrainScroll.xcarchive"
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGN_STYLE=Manual
+          CODE_SIGN_IDENTITY="-"
+          CODE_SIGNING_ALLOWED=YES
           CODE_SIGNING_REQUIRED=NO
+          PROVISIONING_PROFILE_SPECIFIER=""
           DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
           CURRENT_PROJECT_VERSION="${{ github.run_number }}"
 
