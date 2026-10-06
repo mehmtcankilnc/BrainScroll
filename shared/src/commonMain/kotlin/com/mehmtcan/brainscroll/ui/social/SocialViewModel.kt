@@ -17,6 +17,9 @@ import com.mehmtcan.brainscroll.social.StreakKind
 import com.mehmtcan.brainscroll.social.StreakRow
 import com.mehmtcan.brainscroll.social.isValidUsername
 import com.mehmtcan.brainscroll.social.socialJson
+import com.mehmtcan.brainscroll.telemetry.NoTelemetry
+import com.mehmtcan.brainscroll.telemetry.Telemetry
+import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -92,6 +95,7 @@ class SocialViewModel(
     initialLanguage: Language,
     /** Friend invite codes that arrived through a link. */
     invites: SharedFlow<String> = MutableSharedFlow(),
+    private val telemetry: Telemetry = NoTelemetry,
 ) : ViewModel() {
 
     private var userId: String? = null
@@ -393,6 +397,7 @@ class SocialViewModel(
     }
 
     private fun emit(kind: SocialEvent.Kind, name: String? = null) {
+        if (kind == SocialEvent.Kind.FriendAdded || kind == SocialEvent.Kind.NowFriends) telemetry.event(TelemetryEvent.FriendAdded)
         _events.tryEmit(SocialEvent(kind, name))
     }
 

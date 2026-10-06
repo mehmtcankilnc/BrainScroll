@@ -63,11 +63,13 @@ import brainscroll.shared.generated.resources.tab_feed
 import brainscroll.shared.generated.resources.tab_profile
 import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.ui.components.NoticePill
+import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.ui.daily.DailyScreen
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.feed.FeedScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.profile.AccountUi
+import com.mehmtcan.brainscroll.ui.profile.PrivacyUi
 import com.mehmtcan.brainscroll.ui.profile.ProfileScreen
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
@@ -89,6 +91,8 @@ private enum class Tab(val label: StringResource) {
 fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialViewModel: SocialViewModel) {
     val colors = BrainScrollTheme.colors
     var tab by remember { mutableStateOf(Tab.Feed) }
+    // Which tabs are used (only the name of the tab, nothing about the player).
+    LaunchedEffect(tab) { viewModel.telemetry.event(TelemetryEvent.TabViewed, mapOf("tab" to tab.name.lowercase())) }
 
     // Sign-in results are shown in a short message above whatever tab is open.
     // Friends and username messages too ([name] fills a %1$s in the text).
@@ -141,6 +145,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                     LaunchedEffect(Unit) { viewModel.refreshProfile() }
                     val profile by viewModel.profile.collectAsStateWithLifecycle()
                     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
+                    val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
                     ProfileScreen(
                         profile = profile,
                         account = AccountUi(
@@ -152,6 +157,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                             onSignOut = viewModel::signOut,
                             onDeleteAccount = viewModel::deleteAccount,
                         ),
+                        privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
                     )
                 }
             }

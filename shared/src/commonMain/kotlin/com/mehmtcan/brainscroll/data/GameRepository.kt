@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.data
 
+import com.mehmtcan.brainscroll.account.MergeTicket
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.db.Game_result
 import com.mehmtcan.brainscroll.db.In_progress_round
@@ -16,6 +17,9 @@ internal const val DATABASE_FILE = "brainscroll.db"
 private const val GAME_WORD = "word"
 private const val SETTING_LANGUAGE = "word_language"
 private const val SETTING_SYNCED_USER = "synced_user_id"
+private const val SETTING_TELEMETRY = "telemetry_enabled"
+private const val SETTING_PENDING_CRASH = "pending_crash"
+private const val SETTING_MERGE_TICKET = "merge_ticket"
 
 /**
  * Reads and writes everything the app keeps on the device. It is the only place that knows the tables;
@@ -59,7 +63,11 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             progress.deleteById(result.id)
             if (result.mode == Mode.ENDLESS) queue.enqueue(KIND_RESULT, result.id)
         }
+        onFinished?.invoke(result)
     }
+
+    /** Told about every puzzle that ends, endless or daily, after it was saved. Used for the anonymous counts. */
+    var onFinished: ((FinishedRound) -> Unit)? = null
 
     private fun insertResultRow(result: FinishedRound) {
         results.insertResult(
@@ -126,7 +134,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     /**
      * Removes everything about the player from the device: results, favorites, unfinished puzzles, the upload
-     * queue and the cached tables. Only the chosen puzzle language stays. Done after the account was deleted on
+     * queue and the cached tables. Only the chosen puzzle language and the privacy choice stay. Done after the account was deleted on
      * the server, so a new anonymous account does not receive the old history.
      */
     fun wipeLocalData() {
@@ -135,8 +143,42 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             results.deleteAll()
             progress.deleteAll()
             queue.deleteAll()
-            settings.deleteAllExcept(SETTING_LANGUAGE)
+            settings.deleteAllExcept(SETTING_LANGUAGE, SETTING_TELEMETRY)
         }
+    }
+
+    // --- Privacy choice and crash waiting to be sent (see telemetry/) ---
+
+    /** Whether anonymous usage counts and crash reports may be sent. On until the player turns it off. */
+    fun telemetryEnabled(): Boolean = settings.get(SETTING_TELEMETRY).executeAsOneOrNull() != "0"
+
+    fun setTelemetryEnabled(enabled: Boolean) {
+        settings.put(SETTING_TELEMETRY, if (enabled) "1" else "0")
+    }
+
+    fun pendingCrash(): String? = settings.get(SETTING_PENDING_CRASH).executeAsOneOrNull()
+
+    fun putPendingCrash(json: String) {
+        settings.put(SETTING_PENDING_CRASH, json)
+    }
+
+    fun clearPendingCrash() {
+        settings.deleteKey(SETTING_PENDING_CRASH)
+    }
+
+    // --- Account merge: the ticket kept while the player signs in (see account/AccountMerge) ---
+
+    fun mergeTicket(): MergeTicket? =
+        settings.get(SETTING_MERGE_TICKET).executeAsOneOrNull()?.split('|', limit = 2)
+            ?.takeIf { it.size == 2 && it[0].isNotEmpty() && it[1].isNotEmpty() }
+            ?.let { MergeTicket(fromUser = it[0], token = it[1]) }
+
+    fun putMergeTicket(ticket: MergeTicket) {
+        settings.put(SETTING_MERGE_TICKET, ticket.fromUser + "|" + ticket.token)
+    }
+
+    fun clearMergeTicket() {
+        settings.deleteKey(SETTING_MERGE_TICKET)
     }
 
     // --- Cache of the leaderboards and friends, so the last view is still there offline ---

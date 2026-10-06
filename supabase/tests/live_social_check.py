@@ -5,7 +5,7 @@
 Uses only the public publishable key, exactly like the app. It can only sign in as NEW anonymous users (a Google or
 Apple login cannot be scripted), so it checks what an anonymous player must and must not be able to do: look at the
 tables, but not take a username, add friends or see the friends tables; that nothing can be read or written
-around the functions; and that an account can delete itself. The full rules (usernames, ranking, friends) are checked offline by `npm test`
+around the functions; that anonymous counts and crash reports can be added but not read back; and that an account can delete itself. The full rules (usernames, ranking, friends) are checked offline by `npm test`
 (verify_leaderboards.mjs). Run it after `npx supabase db push` of the leaderboards migration.
 """
 import json, urllib.request, urllib.error
@@ -94,6 +94,35 @@ for fn, params in (("streak_apply", {"p_user": "00000000-0000-0000-0000-00000000
                    ("friend_scope", {"p_user": "00000000-0000-0000-0000-000000000000"})):
     s, b = rpc(fn, token, **params)
     check(f"helper {fn} is not callable", s >= 400, (s, b))
+
+# ---- anonymous counts and crash reports (needs the telemetry migration) ----
+s, b = rpc("log_events", token, p_platform="desktop", p_version="livecheck", p_events=[{"name": "app_open"}, {"name": "tab_viewed", "props": {"tab": "ranks"}}])
+check("a batch of known events is accepted", s in (200, 204), (s, b))
+s, b = rpc("log_events", token, p_platform="desktop", p_version="livecheck", p_events=[{"name": "not_on_the_list"}])
+check("an event that is not on the list is refused", s >= 400, (s, b))
+s, b = rpc("log_events", token, p_platform="toaster", p_version="livecheck", p_events=[{"name": "app_open"}])
+check("an unknown platform is refused", s >= 400, (s, b))
+s, b = rpc("log_crash", token, p_platform="desktop", p_version="livecheck", p_kind="LiveCheck", p_message="not a real crash", p_stack="at live_social_check")
+check("a crash report is accepted", s in (200, 204), (s, b))
+s, b = rpc("log_events", None, p_platform="desktop", p_version="livecheck", p_events=[{"name": "app_open"}])
+check("a visitor without a session cannot log", s >= 400, (s, b))
+for table in ("app_event", "crash_report", "event_name"):
+    s, b = call(f"/rest/v1/{table}?select=*", token=token, method="GET")
+    check(f"table {table} cannot be read back", s >= 400 or b == [], (s, b))
+s, b = rpc("purge_telemetry", token)
+check("purge_telemetry is not callable by app users", s >= 400, (s, b))
+
+# ---- account merge (needs the account_merge migration): only the anonymous side can be tested without a Google login ----
+s, b = rpc("start_account_merge", token)
+check("an anonymous account gets a merge ticket", s == 200 and isinstance(b, str) and len(b) >= 60, (s, b))
+s2, b2 = rpc("complete_account_merge", token, p_token=b if isinstance(b, str) else "x")
+check("an anonymous account cannot complete a merge (403)", s2 == 403, (s2, b2))
+s, b = rpc("complete_account_merge", token, p_token="not-a-ticket")
+check("a made-up ticket is refused", s >= 400, (s, b))
+s, b = rpc("start_account_merge", None)
+check("a visitor without a session cannot ask for a ticket", s >= 400, (s, b))
+s, b = call("/rest/v1/merge_ticket?select=*", token=token, method="GET")
+check("table merge_ticket cannot be read", s >= 400 or b == [], (s, b))
 
 # ---- account deletion (needs the delete_account migration): the throwaway user deletes itself ----
 s, b = call("/auth/v1/user", token=token, method="GET")

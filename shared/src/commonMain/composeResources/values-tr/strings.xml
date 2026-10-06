@@ -134,4 +134,12 @@
     <string name="delete_cancel">Vazgeç</string>
     <string name="notice_account_deleted">Hesap silindi</string>
     <string name="notice_delete_failed">Hesap silinemedi. Bağlantını kontrol edip tekrar dene</string>
+    <string name="privacy_title">BrainScroll'u geliştirmeye yardım et</string>
+    <string name="privacy_text">Anonim kullanım sayıları (hangi ekranların açıldığı gibi) ve çökme raporları gönderir. İçlerinde hesap, cihaz ya da kişisel veri yoktur.</string>
+    <string name="privacy_on">Paylaşım açık</string>
+    <string name="privacy_off">Paylaşım kapalı</string>
+    <string name="privacy_turn_off">Kapat</string>
+    <string name="privacy_turn_on">Aç</string>
+    <string name="stats_filter_all">İkisi</string>
+    <string name="stats_streak_note">Gün serisi iki dilden birini bitirmekle sayılır.</string>
 </resources>

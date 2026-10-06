@@ -18,6 +18,7 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.rememberPlatformHaptics
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.rememberReduceMotion
+import com.mehmtcan.brainscroll.telemetry.rememberPlatformInfo
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -38,12 +39,14 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
         // The puzzles start in the device language (Turkish or English) unless the player chose one before.
         val deviceLanguage = if (Locale.current.language == "tr") Language.TR else Language.EN
         val driverProvider = rememberDriverProvider()
+        val platformInfo = rememberPlatformInfo()
         val feedViewModel = viewModel {
             FeedViewModel(
                 repository = GameRepository(BrainScrollDatabase(driverProvider.create())),
                 deviceLanguage = deviceLanguage,
                 now = { Clock.System.now().toEpochMilliseconds() },
                 cloudServices = cloudServices,
+                platformInfo = platformInfo,
             )
         }
         // The daily puzzle shares the database and the account with the feed, so it is built from what the feed owns.
@@ -55,6 +58,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 initialLanguage = feedViewModel.repository.savedLanguage() ?: deviceLanguage,
                 now = { Clock.System.now().toEpochMilliseconds() },
                 onLocalChange = feedViewModel::requestSync,
+                telemetry = feedViewModel.telemetry,
             )
         }
         // The ranks tab uses the same account and database, and gets the invite codes the feed receives through links.
@@ -65,6 +69,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 accountState = feedViewModel.accountState,
                 initialLanguage = feedViewModel.repository.savedLanguage() ?: deviceLanguage,
                 invites = feedViewModel.inviteCodes,
+                telemetry = feedViewModel.telemetry,
             )
         }
         AppShell(feedViewModel, dailyViewModel, socialViewModel)

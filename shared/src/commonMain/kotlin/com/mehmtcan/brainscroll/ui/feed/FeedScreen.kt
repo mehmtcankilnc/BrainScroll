@@ -31,6 +31,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.utf16CodePoint
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.notice_finish_first
 import brainscroll.shared.generated.resources.notice_not_in_list
@@ -47,6 +49,7 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+private const val SESSION_CHECK_MILLIS = 60_000L
 private const val NOTICE_MILLIS = 1500L
 private val NOTICE_TOP_OFFSET = 44.dp
 
@@ -120,6 +123,17 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
         if (notice != null) {
             delay(NOTICE_MILLIS)
             notice = null
+        }
+    }
+
+    // A pause of 30 minutes starts a new session (a fresh skip). Checked when the feed is shown, when the app comes
+    // back to the front, and once a minute while it stays open.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshSession() }
+    LaunchedEffect(viewModel) {
+        viewModel.refreshSession()
+        while (true) {
+            delay(SESSION_CHECK_MILLIS)
+            viewModel.refreshSession()
         }
     }
 

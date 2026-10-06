@@ -134,4 +134,12 @@
     <string name="delete_cancel">Cancel</string>
     <string name="notice_account_deleted">Account deleted</string>
     <string name="notice_delete_failed">Couldn't delete the account. Check your connection and try again</string>
+    <string name="privacy_title">Help improve BrainScroll</string>
+    <string name="privacy_text">Sends anonymous usage counts (like which screens are opened) and crash reports. They contain no account, device or personal data.</string>
+    <string name="privacy_on">Sharing is on</string>
+    <string name="privacy_off">Sharing is off</string>
+    <string name="privacy_turn_off">Turn off</string>
+    <string name="privacy_turn_on">Turn on</string>
+    <string name="stats_filter_all">Both</string>
+    <string name="stats_streak_note">The day streak counts either language.</string>
 </resources>

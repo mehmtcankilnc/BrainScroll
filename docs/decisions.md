@@ -53,7 +53,7 @@ Son güncelleme: 2026-10-05
 - **Gün serisi:** günlük bulmacayı **bitirmek** yeter (kaybetsen de). Kazanma oranı ayrı istatistik.
 - **Seri dondurma** hakkı vardır (kazanma/verilme kuralı Faz 6'da netleşir; öneri: her 7 günlük seride 1 hak, en fazla 1 biriken).
 - **Doğru cevap serisi (sonsuz akış):** yanlış/kayıp seriyi bozar. **Atlamak bozmaz, ama akış başına yalnızca 1 atlama hakkı** vardır.
-  - Açık detay (Faz 3): "akış" = bir uygulama oturumu mu, yoksa belirli bir süre aralığı mı? Öneri: oturum (soğuk başlangıç veya 30 dk hareketsizlik sonrası sıfırlanır).
+  - "Akış" = oturum (karar, 2026-10-10): soğuk başlangıç veya 30 dk hareketsizlik sonrası atlama hakkı yenilenir. Seri ve atlanmış bulmacalar etkilenmez.
 
 ## Lider tabloları
 - Türler: **günlük bulmaca hızı** ve **seri uzunluğu** (güncel + en uzun). Kapsam: **genel** ve **arkadaşlar**.
@@ -68,4 +68,4 @@ Son güncelleme: 2026-10-05
 ## Açık / sonraya kalan
 - Supabase ücretsiz plan duraklatma davranışı: yayın öncesi plan kararı.
 - Gizlilik politikası ve destek sayfası `playbrainscroll.com` üzerinde yayınlanacak (App Store için gerekli).
-- Seri dondurma kesin kuralları (Faz 6), atlama hakkı "akış" tanımı (Faz 3).
+- Hesap birleştirme: anonim hesap mevcut bir Google/Apple hesabına geçerse sonuçlar bilet yoluyla taşınır (2026-10-10, plan Faz 8).

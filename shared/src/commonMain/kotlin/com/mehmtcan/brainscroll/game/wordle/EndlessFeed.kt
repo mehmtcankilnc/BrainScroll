@@ -18,7 +18,8 @@ data class FeedSnapshot(
  *
  * Rules:
  * - Answer streak: +1 for a win, back to 0 for a loss. Skipping does not break it.
- * - One skip per feed ("akış" = app session for now). Leaving an unfinished puzzle forward uses it.
+ * - One skip per feed ("akış" = session: a cold start, or the first action after [SESSION_IDLE_MILLIS] of
+ *   inactivity, gives a fresh skip, docs/decisions.md). Leaving an unfinished puzzle forward uses it.
  *   A puzzle that was skipped can be resumed later; finishing it counts like any other.
  * - Answers do not repeat until the whole pool of that language has been used.
  * - The language can only be chosen before the first letter is typed or the first skip.
@@ -27,7 +28,7 @@ class EndlessFeed(
     private val wordLists: Map<Language, WordList>,
     startLanguage: Language,
     private val random: Random = Random.Default,
-    maxSkips: Int = 1,
+    private val maxSkips: Int = 1,
     private val store: FeedStore = NoFeedStore,
     /** Unfinished puzzles from an earlier run. They become the first pages, in their saved order. */
     restored: List<StoredRound> = emptyList(),
@@ -47,6 +48,9 @@ class EndlessFeed(
     var skipsLeft = maxSkips
         private set
 
+    /** The last time the player did something in the feed. A long pause makes the next action start a new session. */
+    private var lastActivityAt = now()
+
     val size: Int get() = rounds.size
 
     init {
@@ -64,17 +68,38 @@ class EndlessFeed(
         while (rounds.size < count) rounds += newRound(rounds.size)
     }
 
+    /**
+     * Starts a new session if the player has been away for [SESSION_IDLE_MILLIS] or more: the skip is available again.
+     * Returns true if it did, so the caller can redraw. The answer streak and the puzzles themselves are not touched.
+     */
+    fun startNewSessionIfIdle(): Boolean {
+        val time = now()
+        if (time - lastActivityAt < SESSION_IDLE_MILLIS) return false
+        lastActivityAt = time
+        val changed = skipsLeft != maxSkips
+        skipsLeft = maxSkips
+        return changed
+    }
+
+    private fun touch() {
+        startNewSessionIfIdle()
+        lastActivityAt = now()
+    }
+
     fun type(index: Int, letter: Char) {
+        touch()
         rounds[index].type(letter)
         persist(rounds[index])
     }
 
     fun backspace(index: Int) {
+        touch()
         rounds[index].backspace()
         persist(rounds[index])
     }
 
     fun submit(index: Int) {
+        touch()
         val round = rounds[index]
         round.submit()
         if (round.isFinished && counted.add(index)) {
@@ -94,6 +119,7 @@ class EndlessFeed(
 
     /** Leaves round [index] forward, using the skip if it is needed. Returns false if that is not allowed. */
     fun leave(index: Int): Boolean {
+        touch()
         val round = rounds[index]
         if (round.isFinished || round.skipped) return true
         if (skipsLeft == 0) return false
@@ -155,3 +181,6 @@ class EndlessFeed(
         return bag.removeFirst()
     }
 }
+
+/** A session ends after 30 minutes without any action in the feed (docs/decisions.md). */
+const val SESSION_IDLE_MILLIS = 30L * 60 * 1000

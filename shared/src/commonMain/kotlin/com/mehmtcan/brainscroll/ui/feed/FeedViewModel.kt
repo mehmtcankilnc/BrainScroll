@@ -5,7 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.DeepLinkInbox
+import com.mehmtcan.brainscroll.account.MergeResult
+import com.mehmtcan.brainscroll.account.MergeTicket
 import com.mehmtcan.brainscroll.social.SocialApi
+import com.mehmtcan.brainscroll.telemetry.CrashHandler
+import com.mehmtcan.brainscroll.telemetry.PlatformInfo
+import com.mehmtcan.brainscroll.telemetry.Telemetry
+import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
+import com.mehmtcan.brainscroll.telemetry.TelemetryRecorder
 import com.mehmtcan.brainscroll.social.parseInviteCode
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.daily.DailyApi
@@ -50,6 +57,8 @@ data class ProfileState(
     val backupPending: Int = 0,
     /** Statistics of the daily puzzle (both languages together). */
     val daily: Stats = computeStats(emptyList(), mode = Mode.DAILY),
+    /** The same, for each language alone. */
+    val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
 )
 
@@ -67,6 +76,8 @@ class FeedViewModel(
     deviceLanguage: Language,
     private val now: () -> Long,
     cloudServices: CloudServicesFactory,
+    /** Platform and app version for the anonymous reports. */
+    platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
 ) : ViewModel() {
     private var feed: EndlessFeed? = null
     private var favoriteIds: Set<String> = emptySet()
@@ -110,6 +121,15 @@ class FeedViewModel(
     /** Friend invite codes that arrived through an invite link. Kept until the friends screen listens. */
     val inviteCodes: SharedFlow<String> = _inviteCodes
 
+    /** Anonymous usage counts and crash reports. The daily, social and shell code use this same one. */
+    val telemetry: Telemetry = TelemetryRecorder(
+        repository = repository,
+        api = services.telemetry,
+        info = platformInfo,
+        scope = viewModelScope,
+        signedIn = signedIn,
+    ).also { it.start() }
+
     private val sync = SyncCoordinator(
         scope = viewModelScope,
         engine = SyncEngine(repository, services.cloud),
@@ -138,7 +158,24 @@ class FeedViewModel(
     }
 
     init {
+        telemetry.event(TelemetryEvent.AppOpen)
+        // Errors nobody caught are kept on the device and sent at the next start.
+        CrashHandler.install { crash -> telemetry.recordCrash(crash) }
+        repository.onFinished = { result ->
+            val mode = if (result.mode == Mode.DAILY) TelemetryEvent.DailyFinished else TelemetryEvent.EndlessFinished
+            telemetry.event(mode, mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name))
+        }
+        viewModelScope.launch {
+            account.events.collect { event ->
+                when (event) {
+                    AccountEvent.SignedIn -> telemetry.event(TelemetryEvent.SignedIn, mapOf("provider" to providerName()))
+                    AccountEvent.AccountDeleted -> telemetry.event(TelemetryEvent.AccountDeleted)
+                    else -> Unit
+                }
+            }
+        }
         viewModelScope.launch { loadFeed() }
+        viewModelScope.launch { account.state.collect { handleMerge(it) } }
         viewModelScope.launch { account.start() }
         viewModelScope.launch {
             // The browser (Google) or the system hands the app a login link; the account service reads it.
@@ -196,6 +233,7 @@ class FeedViewModel(
             favorites = repository.favoriteResults(),
             backupPending = repository.pendingCount(),
             daily = computeStats(history, mode = Mode.DAILY),
+            dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },
                 today = IstanbulDay.dayIndex(now()),
@@ -207,11 +245,60 @@ class FeedViewModel(
     fun requestSync() = requestSyncIfNeeded()
 
     fun signInWithGoogle() {
-        viewModelScope.launch { account.signInWithGoogle() }
+        viewModelScope.launch {
+            prepareMerge()
+            account.signInWithGoogle()
+        }
     }
 
     fun signInWithApple() {
-        viewModelScope.launch { account.signInWithApple() }
+        viewModelScope.launch {
+            prepareMerge()
+            account.signInWithApple()
+        }
+    }
+
+    /**
+     * Signing in from an anonymous account may end in an account that already exists (it was used on another phone).
+     * Then the anonymous account is left behind with its daily results, which only the server can move. So a ticket
+     * is asked for now, while still anonymous, and kept until the sign-in is done ([handleMerge]).
+     */
+    private suspend fun prepareMerge() {
+        val state = account.state.value as? AccountState.SignedIn ?: return
+        if (state.kind != AccountState.SignedIn.Kind.Anonymous) return
+        val token = services.merge.start() ?: return // offline: signing in cannot work either, nothing is lost
+        repository.putMergeTicket(MergeTicket(fromUser = state.userId, token = token))
+    }
+
+    /** After a sign-in: if a ticket is waiting and the account is another one than the anonymous one, hand it over. */
+    private suspend fun handleMerge(state: AccountState) {
+        val signedIn = state as? AccountState.SignedIn ?: return
+        if (signedIn.kind == AccountState.SignedIn.Kind.Anonymous) return
+        val ticket = repository.mergeTicket() ?: return
+        if (ticket.fromUser == signedIn.userId) {
+            repository.clearMergeTicket() // the identity was linked to the same account: nothing to move
+            return
+        }
+        when (services.merge.complete(ticket.token)) {
+            MergeResult.Done -> {
+                repository.clearMergeTicket()
+                requestSyncIfNeeded()
+            }
+            MergeResult.Invalid -> repository.clearMergeTicket()
+            MergeResult.Retry -> Unit // kept: tried again at the next start or sign-in
+        }
+    }
+
+    /** The player came back, or has been looking at the feed for a while: a long pause means a new session. */
+    fun refreshSession() {
+        val f = feed ?: return
+        if (f.startNewSessionIfIdle()) publish()
+    }
+
+    private fun providerName(): String = when ((account.state.value as? AccountState.SignedIn)?.kind) {
+        AccountState.SignedIn.Kind.Google -> "google"
+        AccountState.SignedIn.Kind.Apple -> "apple"
+        else -> "unknown"
     }
 
     fun signOut() {

@@ -215,6 +215,8 @@ class GameRepositoryTest {
         repository.setFavorite("r1", true, now = 5L)
         repository.saveProgress(stored("p1", position = 0, input = "KI"))
         repository.saveLanguage(Language.TR)
+        repository.setTelemetryEnabled(false)
+        repository.putPendingCrash("{}")
         repository.setSyncedUserId("user-1")
         repository.cacheText("social:user-1:friends", "{}")
         repository.enqueueEverything()
@@ -229,6 +231,8 @@ class GameRepositoryTest {
         assertNull(repository.syncedUserId())
         assertNull(repository.cachedText("social:user-1:friends"))
         assertEquals(Language.TR, repository.savedLanguage(), "the chosen puzzle language is not about the account")
+        assertFalse(repository.telemetryEnabled(), "neither is the privacy choice")
+        assertNull(repository.pendingCrash())
         // And it keeps working afterwards.
         repository.finish(finished("r3"))
         assertEquals(1, repository.history().size)

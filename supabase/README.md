@@ -50,3 +50,16 @@ what an anonymous player may and may not do; the full rules are tested offline b
 ```bash
 PYTHONUTF8=1 python supabase/tests/live_social_check.py
 ```
+
+## Reading the anonymous counts and crash reports
+
+The app can only add rows to `app_event` and `crash_report`; you read them in the dashboard (SQL editor):
+
+```sql
+-- crashes, newest first
+select at, platform, app_version, kind, message from crash_report order by at desc limit 50;
+-- what is used: events per day
+select date_trunc('day', at) as day, name, count(*) from app_event group by 1, 2 order by 1 desc, 3 desc;
+-- remove what is older than 90 days (the privacy policy promises this; run it now and then)
+select purge_telemetry();
+```

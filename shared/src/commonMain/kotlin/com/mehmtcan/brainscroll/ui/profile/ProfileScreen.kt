@@ -17,6 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -37,11 +41,15 @@ import brainscroll.shared.generated.resources.stat_played
 import brainscroll.shared.generated.resources.stat_streak
 import brainscroll.shared.generated.resources.stat_win_rate
 import brainscroll.shared.generated.resources.stats_daily
+import brainscroll.shared.generated.resources.stats_filter_all
+import brainscroll.shared.generated.resources.stats_streak_note
 import brainscroll.shared.generated.resources.stats_endless
 import brainscroll.shared.generated.resources.stats_title
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
+import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
+import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.feed.ProfileState
@@ -53,9 +61,12 @@ import kotlin.math.roundToInt
 
 /** Statistics and favorites (docs/plan.md phase 4). Everything shown is derived from the saved results. */
 @Composable
-fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier = Modifier) {
+fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    // Null shows both languages together.
+    var dailyLanguage by remember { mutableStateOf<Language?>(null) }
+    val daily = dailyLanguage?.let { profile.dailyByLanguage[it] } ?: profile.daily
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
@@ -63,6 +74,7 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier 
     ) {
         item { Spacer(Modifier.height(Spacing.md)) }
         item { AccountSection(account) }
+        item { PrivacySection(privacy) }
         item { Spacer(Modifier.height(Spacing.sm)) }
         item {
             BasicText(stringResource(Res.string.stats_title), style = type.title.copy(color = colors.textPrimary))
@@ -82,18 +94,35 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier 
         item { GuessDistribution(profile.stats.guessDistribution) }
         item { Spacer(Modifier.height(Spacing.sm)) }
 
-        // The daily puzzle: its streak counts days, not answers, and it has a time.
+        // The daily puzzle: its streak counts days, not answers, and it has a time. The numbers can be shown for
+        // both languages together or for one (there are two puzzles a day, one per language).
         item { BasicText(stringResource(Res.string.stats_daily), style = type.heading.copy(color = colors.textPrimary)) }
         item {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                DailyFilterChip(stringResource(Res.string.stats_filter_all), dailyLanguage == null) { dailyLanguage = null }
+                Language.entries.forEach { language ->
+                    DailyFilterChip(language.name, dailyLanguage == language) { dailyLanguage = language }
+                }
+            }
+        }
+        item {
             StatTiles(
-                played = profile.daily.played,
-                winRate = profile.daily.winRate,
+                played = daily.played,
+                winRate = daily.winRate,
                 streak = profile.dayStreak.current,
                 best = profile.dayStreak.best,
                 streakLabel = stringResource(Res.string.stat_day_streak),
             )
         }
-        profile.daily.bestTimeMs?.let { best ->
+        if (dailyLanguage != null) {
+            item {
+                BasicText(
+                    text = stringResource(Res.string.stats_streak_note),
+                    style = type.caption.copy(color = colors.textSecondary),
+                )
+            }
+        }
+        daily.bestTimeMs?.let { best ->
             item {
                 BasicText(
                     text = stringResource(Res.string.stat_best_time) + ": " + formatDuration(best),
@@ -109,7 +138,7 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, modifier: Modifier 
                 )
             }
         }
-        item { GuessDistribution(profile.daily.guessDistribution) }
+        item { GuessDistribution(daily.guessDistribution) }
         item { Spacer(Modifier.height(Spacing.md)) }
         item {
             BasicText(stringResource(Res.string.favorites_title), style = type.title.copy(color = colors.textPrimary))
@@ -223,4 +252,16 @@ private fun FavoriteRow(round: FinishedRound) {
             BasicText(detail, style = type.caption.copy(color = colors.textSecondary))
         }
     }
+}
+
+@Composable
+private fun DailyFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    Chip(
+        text = text,
+        textColor = if (selected) colors.textPrimary else colors.textSecondary,
+        raised = selected,
+        selected = selected,
+        onClick = onClick,
+    )
 }

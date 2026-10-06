@@ -18,6 +18,9 @@ import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.game.wordle.keyStatesOf
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.DayStreak
+import com.mehmtcan.brainscroll.telemetry.NoTelemetry
+import com.mehmtcan.brainscroll.telemetry.Telemetry
+import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import kotlinx.coroutines.CancellationException
@@ -77,6 +80,7 @@ class DailyViewModel(
     private val loadWords: suspend (Language) -> WordList = ::loadWordList,
     /** Called after something changed that should be backed up (a favorite), so a sync can be scheduled. */
     private val onLocalChange: () -> Unit = {},
+    private val telemetry: Telemetry = NoTelemetry,
 ) : ViewModel() {
 
     private var language = initialLanguage
@@ -149,6 +153,8 @@ class DailyViewModel(
             phase = DailyPhase.Loading
             publish()
             load { api.start(language) }
+            // Counted once per press of Start that worked; asking again for a started puzzle is not a new start.
+            if (phase == DailyPhase.Playing) telemetry.event(TelemetryEvent.DailyStarted, mapOf("language" to language.name))
         }
     }
 
