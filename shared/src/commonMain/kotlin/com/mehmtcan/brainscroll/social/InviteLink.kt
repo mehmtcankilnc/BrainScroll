@@ -2,16 +2,20 @@ package com.mehmtcan.brainscroll.social
 
 import com.mehmtcan.brainscroll.account.percentDecode
 
-private const val INVITE_PREFIX = "com.mehmtcan.brainscroll://invite"
+/** The web link. It opens the app when installed (universal link / app link) and a page with the code when not. */
+private const val WEB_INVITE_PREFIX = "https://playbrainscroll.com/invite"
 
-/** The link that carries an invite code: `com.mehmtcan.brainscroll://invite?code=ABCD2345`. */
-fun inviteLink(code: String): String = "$INVITE_PREFIX?code=$code"
+/** The same invite with the app's own scheme. The page's "Open in the app" button uses it. */
+private const val APP_INVITE_PREFIX = "com.mehmtcan.brainscroll://invite"
 
-/** The code inside an invite link, or null if [url] is not an invite link (the login link, for example). */
+/** The link that carries an invite code: `https://playbrainscroll.com/invite?code=ABCD2345`. */
+fun inviteLink(code: String): String = "$WEB_INVITE_PREFIX?code=$code"
+
+/** The code inside an invite link (web or app scheme), or null if [url] is not one (the login link, for example). */
 fun parseInviteCode(url: String): String? {
-    if (!url.startsWith(INVITE_PREFIX, ignoreCase = true)) return null
-    val rest = url.substring(INVITE_PREFIX.length)
-    // "…://inviteEVIL" must not match: the host has to end here.
+    val prefix = listOf(WEB_INVITE_PREFIX, APP_INVITE_PREFIX).firstOrNull { url.startsWith(it, ignoreCase = true) } ?: return null
+    val rest = url.substring(prefix.length)
+    // "…/inviteEVIL" must not match: the path has to end here.
     if (rest.isNotEmpty() && rest[0] != '/' && rest[0] != '?' && rest[0] != '#') return null
     val query = rest.substringAfter('?', "").substringBefore('#')
     val code = query.split('&')

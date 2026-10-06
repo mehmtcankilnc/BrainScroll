@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.mehmtcan.brainscroll",
+      "sha256_cert_fingerprints": [
+        "28:E6:37:48:6E:EE:48:9B:F7:CF:BE:CF:A1:95:33:C2:4E:98:E4:29:4A:CE:7D:FC:A5:14:A7:5A:1A:AE:BA:33"
+      ]
+    }
+  }
+]

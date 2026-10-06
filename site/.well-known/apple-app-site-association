@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "4Q42563339.com.mehmtcan.brainscroll"
+        ],
+        "components": [
+          {
+            "/": "/invite",
+            "?": {
+              "code": "?*"
+            },
+            "comment": "Friend invite links open the app"
+          }
+        ]
+      }
+    ]
+  }
+}

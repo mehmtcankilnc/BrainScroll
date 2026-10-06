@@ -35,7 +35,21 @@
                     android:host="login-callback" />
             </intent-filter>
 
-            <!-- Friend invite link: com.mehmtcan.brainscroll://invite?code=ABCD2345 -->
+            <!-- Friend invite link on the web: https://playbrainscroll.com/invite?code=ABCD2345. autoVerify makes Android
+                 open the app directly once /.well-known/assetlinks.json on the site matches the app's signature. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="playbrainscroll.com"
+                    android:path="/invite" />
+            </intent-filter>
+
+            <!-- The same invite with the app's own scheme (the "Open in the app" button on that page): com.mehmtcan.brainscroll://invite?code=ABCD2345 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 

@@ -61,7 +61,11 @@ class SocialJsonTest {
 
     @Test
     fun inviteLinksRoundTripAndOtherLinksAreNotInvites() {
+        assertEquals("https://playbrainscroll.com/invite?code=ABCD2345", inviteLink("ABCD2345"))
         assertEquals("ABCD2345", parseInviteCode(inviteLink("ABCD2345")))
+        assertEquals("ABCD2345", parseInviteCode("https://playbrainscroll.com/invite?code=abcd2345&utm=x"))
+        assertNull(parseInviteCode("https://playbrainscroll.com/inviteEVIL?code=ABCD2345"))
+        assertNull(parseInviteCode("https://playbrainscroll.com/privacy?code=ABCD2345"))
         assertEquals("ABCD2345", parseInviteCode("com.mehmtcan.brainscroll://invite?code=abcd2345"))
         assertEquals("ABCD2345", parseInviteCode("com.mehmtcan.brainscroll://invite/?x=1&code=ABCD2345#frag"))
         assertNull(parseInviteCode("com.mehmtcan.brainscroll://invite"))
