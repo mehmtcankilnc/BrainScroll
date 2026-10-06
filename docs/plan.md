@@ -81,13 +81,14 @@ Amaç: Adil, hile korumalı günlük bulmaca.
 
 ## Faz 7 - Lider tabloları ve arkadaşlar
 Amaç: Rekabet.
-- [ ] Kullanıcı adı seçimi (benzersiz, uygunsuz içerik filtresi)
-- [ ] Günlük hız tablosu (az tahmin, eşitlikte kısa süre) - genel
-- [ ] Seri tabloları (güncel + en uzun) - genel
-- [ ] Arkadaş ekleme: davet kodu / bağlantı (deep link), arkadaş listesi
-- [ ] Arkadaşlar arası tablolar
-- [ ] Önbellek: son görüntü offline'da gösterilir
-**Çıkış:** Arkadaşınla günlük bulmacada yarışabiliyorsun. **TestFlight doğrulaması.**
+- [x] Kullanıcı adı seçimi (benzersiz, uygunsuz içerik filtresi): 3-16 karakter `A-Za-z0-9_`, büyük/küçük harfe duyarsız benzersiz, küçük yasaklı kelime listesi sunucuda (`blocked_word`)
+- [x] Günlük hız tablosu (az tahmin, eşitlikte kısa süre) - genel, bugün ve tüm zamanlar, dil başına ayrı
+- [x] Seri tabloları (güncel + en uzun) - genel; seri sunucuda `streak_stat` tablosunda tutulur (uygulamadaki `DayStreaks` kurallarının aynısı)
+- [x] Arkadaş ekleme: davet kodu / bağlantı (`com.mehmtcan.brainscroll://invite?code=...`), kodla anında karşılıklı, kullanıcı adıyla istek + kabul, arkadaş listesi
+- [x] Arkadaşlar arası tablolar
+- [x] Önbellek: son görüntü offline'da gösterilir (hesap başına, `setting` tablosunda)
+> Faz 7 notları (2026-10-06): Kararlar `docs/decisions.md` "Lider tabloları" bölümünde. Sunucu: `supabase/migrations/20261007090000_leaderboards_friends.sql` (tablolara RLS açık, politika yok, her şey fonksiyonlarla). Anonim hesaplar tabloları görür ama kullanıcı adı alamaz, tabloda ve arkadaş listesinde yer almaz (Google/Apple girişi şart). Seri tablosu dil bazlı değil çünkü seri iki dilden birini bitirmekle sayılır. Davet bağlantısı özel şema (custom scheme) olduğu için sohbet uygulamalarında tıklanabilir olmayabilir; mesajda kod da var. Gerçek (https) davet bağlantısı için `playbrainscroll.com` üzerinde universal link gerekir (Faz 8). Hesap birleştirme açığı (anonim hesap mevcut bir Google hesabına geçerse günlük sonuçlar yetim kalır) hâlâ açık: tablolar yalnızca girişli hesapları saydığı için etkisi sınırlı, ama merge RPC'si düşünülmeli. Testler: `supabase/tests/verify_leaderboards.mjs` (73 kontrol), canlı kontrol `live_social_check.py`, istemci `SocialViewModelTest` (16), `SocialJsonTest` (8), `SocialUiTest` (7).
+**Çıkış:** Arkadaşınla günlük bulmacada yarışabiliyorsun. **Migration henüz canlı projeye itilmedi (`npx supabase db push`). TestFlight doğrulaması bekliyor.**
 
 ## Faz 8 - Cilalama ve yayın
 - [ ] Haptik, animasyon cilası, erişilebilirlik (ekran okuyucu, büyük yazı)

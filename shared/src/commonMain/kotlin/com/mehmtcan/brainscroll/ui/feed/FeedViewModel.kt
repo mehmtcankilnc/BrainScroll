@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.DeepLinkInbox
+import com.mehmtcan.brainscroll.social.SocialApi
+import com.mehmtcan.brainscroll.social.parseInviteCode
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.data.GameRepository
@@ -22,6 +24,7 @@ import com.mehmtcan.brainscroll.stats.computeStats
 import com.mehmtcan.brainscroll.sync.SyncCoordinator
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.sync.SyncEngine
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -99,6 +102,14 @@ class FeedViewModel(
     /** The daily puzzle on the server, created together with the account so both use one Supabase client. */
     val dailyApi: DailyApi = services.daily
 
+    /** The leaderboards and friends, on the same Supabase client. */
+    val socialApi: SocialApi = services.social
+
+    private val _inviteCodes = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 4)
+
+    /** Friend invite codes that arrived through an invite link. Kept until the friends screen listens. */
+    val inviteCodes: SharedFlow<String> = _inviteCodes
+
     private val sync = SyncCoordinator(
         scope = viewModelScope,
         engine = SyncEngine(repository, services.cloud),
@@ -126,7 +137,8 @@ class FeedViewModel(
         viewModelScope.launch {
             // The browser (Google) or the system hands the app a login link; the account service reads it.
             DeepLinkInbox.urls.collect { url ->
-                account.handleCallbackUrl(url)
+                val invite = parseInviteCode(url)
+                if (invite != null) _inviteCodes.tryEmit(invite) else account.handleCallbackUrl(url)
                 DeepLinkInbox.consumed()
             }
         }

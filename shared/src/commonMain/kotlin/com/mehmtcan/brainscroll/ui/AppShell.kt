@@ -32,6 +32,25 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.notice_sign_in_failed
 import brainscroll.shared.generated.resources.notice_signed_in
+import brainscroll.shared.generated.resources.tab_ranks
+import brainscroll.shared.generated.resources.notice_username_saved
+import brainscroll.shared.generated.resources.notice_username_invalid
+import brainscroll.shared.generated.resources.notice_username_not_allowed
+import brainscroll.shared.generated.resources.notice_username_taken
+import brainscroll.shared.generated.resources.notice_friend_added
+import brainscroll.shared.generated.resources.notice_request_sent
+import brainscroll.shared.generated.resources.notice_now_friends
+import brainscroll.shared.generated.resources.notice_code_not_found
+import brainscroll.shared.generated.resources.notice_player_not_found
+import brainscroll.shared.generated.resources.notice_is_self
+import brainscroll.shared.generated.resources.notice_social_offline
+import brainscroll.shared.generated.resources.notice_social_unavailable
+import brainscroll.shared.generated.resources.notice_invite_sign_in
+import brainscroll.shared.generated.resources.notice_invite_username
+import com.mehmtcan.brainscroll.ui.social.RanksScreen
+import com.mehmtcan.brainscroll.ui.social.RanksSignIn
+import com.mehmtcan.brainscroll.ui.social.SocialEvent
+import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import brainscroll.shared.generated.resources.tab_daily
 import brainscroll.shared.generated.resources.tab_feed
 import brainscroll.shared.generated.resources.tab_profile
@@ -52,25 +71,36 @@ import org.jetbrains.compose.resources.stringResource
 private enum class Tab(val label: StringResource) {
     Feed(Res.string.tab_feed),
     Daily(Res.string.tab_daily),
+    Ranks(Res.string.tab_ranks),
     Profile(Res.string.tab_profile),
 }
 
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
 @Composable
-fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
+fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialViewModel: SocialViewModel) {
     val colors = BrainScrollTheme.colors
     var tab by remember { mutableStateOf(Tab.Feed) }
 
     // Sign-in results are shown in a short message above whatever tab is open.
-    var accountNotice by remember { mutableStateOf<Pair<StringResource, String?>?>(null) }
+    // Friends and username messages too ([name] fills a %1$s in the text).
+    var accountNotice by remember { mutableStateOf<ShellNotice?>(null) }
     LaunchedEffect(viewModel) {
         viewModel.accountEvents.collect { event ->
             accountNotice = when (event) {
-                AccountEvent.SignedIn -> Res.string.notice_signed_in to null
-                is AccountEvent.SignInFailed -> Res.string.notice_sign_in_failed to event.detail
+                AccountEvent.SignedIn -> ShellNotice(Res.string.notice_signed_in)
+                is AccountEvent.SignInFailed -> ShellNotice(Res.string.notice_sign_in_failed, detail = event.detail)
             }
             // A failure stays a little longer so the small print can be read.
             delay(if (event is AccountEvent.SignInFailed) ACCOUNT_NOTICE_FAILED_MILLIS else ACCOUNT_NOTICE_MILLIS)
+            accountNotice = null
+        }
+    }
+    LaunchedEffect(socialViewModel) {
+        socialViewModel.events.collect { event ->
+            // An invite link opens the friends part, where the player sees what happened to it.
+            if (event.kind in INVITE_EVENTS) tab = Tab.Ranks
+            accountNotice = ShellNotice(noticeFor(event.kind), name = event.name)
+            delay(ACCOUNT_NOTICE_MILLIS)
             accountNotice = null
         }
     }
@@ -87,6 +117,14 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
             when (tab) {
                 Tab.Feed -> FeedScreen(viewModel)
                 Tab.Daily -> DailyScreen(dailyViewModel)
+                Tab.Ranks -> RanksScreen(
+                    viewModel = socialViewModel,
+                    signIn = RanksSignIn(
+                        canSignInWithApple = viewModel.canSignInWithApple,
+                        onSignInWithGoogle = viewModel::signInWithGoogle,
+                        onSignInWithApple = viewModel::signInWithApple,
+                    ),
+                )
                 Tab.Profile -> {
                     // A daily result or a favorite may have changed while another tab was open.
                     LaunchedEffect(Unit) { viewModel.refreshProfile() }
@@ -105,10 +143,39 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel) {
                     )
                 }
             }
-            accountNotice?.let { (text, detail) -> NoticePill(stringResource(text), Modifier.align(Alignment.TopCenter), detail) }
+            accountNotice?.let { notice ->
+                val text = if (notice.name != null) stringResource(notice.text, notice.name) else stringResource(notice.text)
+                NoticePill(text, Modifier.align(Alignment.TopCenter), notice.detail)
+            }
         }
         TabBar(selected = tab, onSelect = { tab = it })
     }
+}
+
+private class ShellNotice(val text: StringResource, val name: String? = null, val detail: String? = null)
+
+private val INVITE_EVENTS = setOf(
+    SocialEvent.Kind.InviteNeedsSignIn,
+    SocialEvent.Kind.InviteNeedsUsername,
+    SocialEvent.Kind.FriendAdded,
+    SocialEvent.Kind.CodeNotFound,
+)
+
+private fun noticeFor(kind: SocialEvent.Kind): StringResource = when (kind) {
+    SocialEvent.Kind.UsernameSaved -> Res.string.notice_username_saved
+    SocialEvent.Kind.UsernameInvalid -> Res.string.notice_username_invalid
+    SocialEvent.Kind.UsernameNotAllowed -> Res.string.notice_username_not_allowed
+    SocialEvent.Kind.UsernameTaken -> Res.string.notice_username_taken
+    SocialEvent.Kind.FriendAdded -> Res.string.notice_friend_added
+    SocialEvent.Kind.RequestSent -> Res.string.notice_request_sent
+    SocialEvent.Kind.NowFriends -> Res.string.notice_now_friends
+    SocialEvent.Kind.CodeNotFound -> Res.string.notice_code_not_found
+    SocialEvent.Kind.PlayerNotFound -> Res.string.notice_player_not_found
+    SocialEvent.Kind.IsSelf -> Res.string.notice_is_self
+    SocialEvent.Kind.Offline -> Res.string.notice_social_offline
+    SocialEvent.Kind.Unavailable -> Res.string.notice_social_unavailable
+    SocialEvent.Kind.InviteNeedsSignIn -> Res.string.notice_invite_sign_in
+    SocialEvent.Kind.InviteNeedsUsername -> Res.string.notice_invite_username
 }
 
 private const val ACCOUNT_NOTICE_MILLIS = 2_500L

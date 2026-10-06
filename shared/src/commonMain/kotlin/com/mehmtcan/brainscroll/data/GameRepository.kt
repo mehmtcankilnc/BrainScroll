@@ -122,6 +122,14 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
         settings.put(SETTING_LANGUAGE, language.name)
     }
 
+    // --- Cache of the leaderboards and friends, so the last view is still there offline ---
+
+    fun cachedText(key: String): String? = settings.get(key).executeAsOneOrNull()
+
+    fun cacheText(key: String, value: String) {
+        settings.put(key, value)
+    }
+
     // --- Cloud sync (see sync/SyncEngine) ---
 
     /** The oldest queued changes, at most [limit]. */

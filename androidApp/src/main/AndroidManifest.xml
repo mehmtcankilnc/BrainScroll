@@ -34,6 +34,18 @@
                     android:scheme="com.mehmtcan.brainscroll"
                     android:host="login-callback" />
             </intent-filter>
+
+            <!-- Friend invite link: com.mehmtcan.brainscroll://invite?code=ABCD2345 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="com.mehmtcan.brainscroll"
+                    android:host="invite" />
+            </intent-filter>
         </activity>
     </application>
 

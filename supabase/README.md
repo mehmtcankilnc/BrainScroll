@@ -41,3 +41,12 @@ After pushing a migration that touches the daily puzzle, run the real-project sm
 ```bash
 PYTHONUTF8=1 python supabase/tests/live_daily_check.py
 ```
+
+## Live check of the leaderboards
+
+After pushing the leaderboards migration, run the real-project smoke test (it signs in as new anonymous users, so it checks
+what an anonymous player may and may not do; the full rules are tested offline by `npm test`):
+
+```bash
+PYTHONUTF8=1 python supabase/tests/live_social_check.py
+```

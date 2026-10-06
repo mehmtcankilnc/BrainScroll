@@ -29,6 +29,7 @@ import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.cloud.CloudServices
 import com.mehmtcan.brainscroll.daily.FakeDailyApi
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
+import com.mehmtcan.brainscroll.social.FakeSocialApi
 import com.mehmtcan.brainscroll.sync.FakeCloud
 import java.io.File
 import org.jetbrains.skia.EncodedImageFormat
@@ -51,8 +52,9 @@ internal class TestCloud(
     val account: FakeAccountService = FakeAccountService(),
     val api: FakeCloud = FakeCloud(),
     val daily: FakeDailyApi = FakeDailyApi(),
+    val social: FakeSocialApi = FakeSocialApi(),
 ) {
-    val factory: CloudServicesFactory = { CloudServices(account, api, daily) }
+    val factory: CloudServicesFactory = { CloudServices(account, api, daily, social) }
 
     init {
         // The fake cloud stores data under the account of the "session": make it the same one as the fake account.

@@ -13,6 +13,7 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.AppShell
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
+import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -44,6 +45,16 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices) {
                 onLocalChange = feedViewModel::requestSync,
             )
         }
-        AppShell(feedViewModel, dailyViewModel)
+        // The ranks tab uses the same account and database, and gets the invite codes the feed receives through links.
+        val socialViewModel = viewModel {
+            SocialViewModel(
+                api = feedViewModel.socialApi,
+                repository = feedViewModel.repository,
+                accountState = feedViewModel.accountState,
+                initialLanguage = feedViewModel.repository.savedLanguage() ?: deviceLanguage,
+                invites = feedViewModel.inviteCodes,
+            )
+        }
+        AppShell(feedViewModel, dailyViewModel, socialViewModel)
     }
 }

@@ -5,11 +5,13 @@ import com.mehmtcan.brainscroll.account.SupabaseAccountService
 import com.mehmtcan.brainscroll.account.platformAppleSignIn
 import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.daily.SupabaseDailyApi
+import com.mehmtcan.brainscroll.social.SocialApi
+import com.mehmtcan.brainscroll.social.SupabaseSocialApi
 import com.mehmtcan.brainscroll.sync.CloudApi
 import kotlinx.coroutines.CoroutineScope
 
 /** The things that talk to the network, bundled so tests (and previews) can swap them for fakes. */
-class CloudServices(val account: AccountService, val cloud: CloudApi, val daily: DailyApi)
+class CloudServices(val account: AccountService, val cloud: CloudApi, val daily: DailyApi, val social: SocialApi)
 
 /** Builds the services. The scope is the one the account service uses for its background work. */
 typealias CloudServicesFactory = (CoroutineScope) -> CloudServices
@@ -21,5 +23,6 @@ fun supabaseServices(scope: CoroutineScope): CloudServices {
         account = SupabaseAccountService(client, platformAppleSignIn(), scope),
         cloud = SupabaseCloudApi(client),
         daily = SupabaseDailyApi(client),
+        social = SupabaseSocialApi(client),
     )
 }

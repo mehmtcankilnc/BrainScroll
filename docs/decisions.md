@@ -59,6 +59,11 @@ Son güncelleme: 2026-10-05
 - Türler: **günlük bulmaca hızı** ve **seri uzunluğu** (güncel + en uzun). Kapsam: **genel** ve **arkadaşlar**.
 - Hız sıralaması: **önce az tahmin, eşitlikte kısa süre**.
 - Arkadaş ekleme: **kullanıcı adı + davet bağlantısı/kodu** (rehber erişimi yok).
+- **Faz 7 kararları (2026-10-06):**
+  - Kullanıcı adı ve tablolara girmek için **Google/Apple girişi şart**. Anonim hesaplar tablolarda ve arkadaş listelerinde yer almaz.
+  - Kullanıcı adı: 3-16 karakter, `a-z 0-9 _`, büyük/küçük harfe duyarsız benzersiz, küçük bir TR/EN yasaklı kelime listesi sunucuda denetlenir.
+  - Günlük hız tablosu: **bugün** ve **tüm zamanlar** (kişinin tüm günlerdeki en iyi tek sonucu: az tahmin, eşitlikte kısa süre). Dil başına ayrı.
+  - Arkadaşlık: davet kodu/bağlantısıyla **anında ve karşılıklı**, onay adımı yok. Kullanıcı adı ile ekleme **istek + kabul** ile olur (kullanıcı adı herkese açık olduğu için).
 
 ## Açık / sonraya kalan
 - Supabase ücretsiz plan duraklatma davranışı: yayın öncesi plan kararı.
