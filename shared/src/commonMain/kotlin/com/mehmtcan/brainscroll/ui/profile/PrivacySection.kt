@@ -47,5 +47,7 @@ fun PrivacySection(privacy: PrivacyUi, modifier: Modifier = Modifier) {
             text = stringResource(if (privacy.enabled) Res.string.privacy_turn_off else Res.string.privacy_turn_on),
             onClick = { privacy.onChange(!privacy.enabled) },
         )
+        // TEMP-CRASH-BUTTON: only for testing that a crash report arrives (docs/faz8-test-listesi.md 6d). REMOVE after the test.
+        AppButton(text = "TEST: crash the app", onClick = { error("Test crash from the TEMP crash button") })
     }
 }
