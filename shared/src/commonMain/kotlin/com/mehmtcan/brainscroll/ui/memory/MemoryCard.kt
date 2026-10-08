@@ -147,7 +147,7 @@ private fun cardDescription(position: Int, symbol: CardSymbol, face: CardFace): 
     }
 }
 
-private fun symbolName(symbol: CardSymbol): StringResource = when (symbol) {
+internal fun symbolName(symbol: CardSymbol): StringResource = when (symbol) {
     CardSymbol.Circle -> Res.string.symbol_circle
     CardSymbol.Triangle -> Res.string.symbol_triangle
     CardSymbol.Star -> Res.string.symbol_star

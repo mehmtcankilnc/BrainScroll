@@ -108,6 +108,8 @@ class SocialUiTest {
         snap("23_ranks_streaks")
         assertTrue(hasAnyText("12") && hasAnyText("carol (sen)", "carol (you)"))
 
+        clickAny("Filtre", "Filter")
+        snap("27_ranks_filters_open")
         clickAny("En uzun", "Longest")
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:false" } }
         // The section chip and the filter chip both say "Friends"; the filter is the second one.

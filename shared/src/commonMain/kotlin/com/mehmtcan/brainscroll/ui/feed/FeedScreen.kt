@@ -45,6 +45,8 @@ import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
+import com.mehmtcan.brainscroll.ui.tubes.TubesPage
+import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 import kotlinx.coroutines.delay
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
@@ -60,19 +62,19 @@ private val NOTICE_TOP_OFFSET = 44.dp
 private data class Notice(val text: StringResource, val id: Int)
 
 @Composable
-fun FeedScreen(viewModel: FeedViewModel, modifier: Modifier = Modifier) {
+fun FeedScreen(viewModel: FeedViewModel, onHome: () -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
         when (val s = state) {
             FeedUiState.Loading -> Unit
-            is FeedUiState.Ready -> FeedContent(s.feed, s.favoriteIds, viewModel)
+            is FeedUiState.Ready -> FeedContent(s.feed, s.favoriteIds, viewModel, onHome)
         }
     }
 }
 
 @Composable
-private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel: FeedViewModel) {
+private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel: FeedViewModel, onHome: () -> Unit) {
     // Start on the page the player was on (it matters when coming back from another tab).
     val startPage = viewModel.page.coerceIn(0, feed.pages.size - 1)
     val pagerState = rememberPagerState(initialPage = startPage) { feed.pages.size }
@@ -176,6 +178,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                     viewModel.setLanguage(next)
                 }
             } else null,
+            onHome = onHome,
         )
         Box(modifier = Modifier.weight(1f).fillMaxSize()) {
             // Forward is blocked up front while this puzzle is unfinished and no skip is left.
@@ -201,6 +204,14 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                         page = item,
                         onFlip = { card -> viewModel.flip(index, card) },
                         onCloseMismatch = { viewModel.closeMismatch(index) },
+                        isFavorite = item.id in favoriteIds,
+                        onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                    )
+                    is TubesSnapshot -> TubesPage(
+                        page = item,
+                        onPour = { from, to -> viewModel.pour(index, from, to) },
+                        onUndo = { viewModel.undo(index) },
+                        onRestart = { viewModel.restart(index) },
                         isFavorite = item.id in favoriteIds,
                         onToggleFavorite = { viewModel.toggleFavorite(item.id) },
                     )

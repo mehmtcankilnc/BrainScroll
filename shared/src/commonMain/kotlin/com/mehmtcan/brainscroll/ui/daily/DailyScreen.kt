@@ -64,7 +64,9 @@ import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.components.AppButton
+import com.mehmtcan.brainscroll.ui.components.ChevronButton
 import com.mehmtcan.brainscroll.ui.components.Chip
+import brainscroll.shared.generated.resources.back
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -95,7 +97,7 @@ private fun deviceNow(): Long = Clock.System.now().toEpochMilliseconds()
 
 /** The daily tab: one puzzle a day, the same for everyone. The server holds the answer and the clock. */
 @Composable
-fun DailyScreen(viewModel: DailyViewModel, modifier: Modifier = Modifier) {
+fun DailyScreen(viewModel: DailyViewModel, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
 
     // Opening the tab checks for a new day or an attempt finished on another phone.
@@ -147,7 +149,7 @@ fun DailyScreen(viewModel: DailyViewModel, modifier: Modifier = Modifier) {
             },
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            DailyHeader(ui, onLanguage = viewModel::selectLanguage)
+            DailyHeader(ui, onBack = onBack, onLanguage = viewModel::selectLanguage)
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (ui.phase) {
                     DailyPhase.Loading -> Message(stringResource(Res.string.daily_loading))
@@ -165,13 +167,15 @@ fun DailyScreen(viewModel: DailyViewModel, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun DailyHeader(ui: DailyUiState, onLanguage: (Language) -> Unit) {
+private fun DailyHeader(ui: DailyUiState, onBack: () -> Unit, onLanguage: (Language) -> Unit) {
     val colors = BrainScrollTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = Spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
+        // Same place and look as the way out of the feed.
+        ChevronButton(stringResource(Res.string.back), colors.textSecondary, onBack)
         Box(Modifier.popOnIncrease(ui.dayStreak.current)) {
             Chip(
                 text = ui.dayStreak.current.toString(),
@@ -348,7 +352,7 @@ private fun NextPuzzleCountdown(state: DailyState) {
 
 /** Small flame for the day streak, drawn as a path so it follows the token color. */
 @Composable
-private fun FlameIcon(color: Color) {
+internal fun FlameIcon(color: Color) {
     Canvas(Modifier.size(14.dp)) {
         val w = size.width
         val h = size.height

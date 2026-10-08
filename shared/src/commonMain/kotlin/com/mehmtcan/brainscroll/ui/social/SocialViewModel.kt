@@ -68,6 +68,16 @@ data class SocialUiState(
     val failed: Boolean,
 )
 
+/** The small "fastest today" table of the home page, apart from whatever the ranks tab has open. */
+data class SpeedPreview(
+    val rows: List<DailyRow> = emptyList(),
+    val loading: Boolean = false,
+    /** Nothing could be loaded and there was no earlier view to show. */
+    val failed: Boolean = false,
+    /** Offline: the rows are the last view. */
+    val stale: Boolean = false,
+)
+
 /** One-off messages for the screen. [name] is the player the message is about, when there is one. */
 data class SocialEvent(val kind: Kind, val name: String? = null) {
     enum class Kind {
@@ -119,6 +129,13 @@ class SocialViewModel(
     private var pendingInvite: String? = null
     private var job: Job? = null
 
+    private var previewLanguage: Language? = null
+    private var previewJob: Job? = null
+    private val _preview = MutableStateFlow(SpeedPreview())
+
+    /** Today's fastest players in one language, for the home page. Anyone with a session sees it, members or not. */
+    val preview: StateFlow<SpeedPreview> = _preview
+
     private val _ui = MutableStateFlow(snapshot())
     val ui: StateFlow<SocialUiState> = _ui
 
@@ -144,6 +161,32 @@ class SocialViewModel(
 
     /** The retry button. */
     fun refresh() = reload()
+
+    /** The home page wants today's fastest players in [language]: the last view at once, then the server's. */
+    fun loadPreview(language: Language) {
+        if (language != previewLanguage) _preview.value = SpeedPreview()
+        previewLanguage = language
+        previewJob?.cancel()
+        val user = userId
+        if (user == null) {
+            _preview.value = SpeedPreview(failed = true)
+            return
+        }
+        val key = "board:preview:${language.name}"
+        val cachedRows = cached<Board<DailyRow>>(key)?.rows.orEmpty()
+        _preview.value = SpeedPreview(rows = cachedRows.take(PREVIEW_ROWS), loading = true)
+        previewJob = viewModelScope.launch {
+            try {
+                val board = api.dailyBoard(language, DailyScope.Today, false)
+                cache(key, socialJson.encodeToString(board))
+                if (user == userId) _preview.value = SpeedPreview(rows = board.rows.take(PREVIEW_ROWS))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: SocialException) {
+                if (user == userId) _preview.value = SpeedPreview(rows = cachedRows.take(PREVIEW_ROWS), failed = cachedRows.isEmpty(), stale = cachedRows.isNotEmpty())
+            }
+        }
+    }
 
     fun selectSection(next: Section) {
         if (next == section) return
@@ -255,6 +298,9 @@ class SocialViewModel(
         friendsOnly = friendsOnly && member
         failed = false
         stale = false
+        previewJob?.cancel()
+        _preview.value = SpeedPreview()
+        previewLanguage?.let { if (newUser != null) loadPreview(it) }
         if (newUser == null) {
             job?.cancel()
             loading = false
@@ -428,3 +474,5 @@ class SocialViewModel(
         failed = failed,
     )
 }
+
+private const val PREVIEW_ROWS = 5

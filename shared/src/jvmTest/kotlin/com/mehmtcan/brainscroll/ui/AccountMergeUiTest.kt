@@ -21,8 +21,7 @@ class AccountMergeUiTest {
     /** The profile of an anonymous account, then "Sign in with Google" is tapped. */
     private fun ComposeUiTest.tapSignIn(cloud: TestCloud) {
         start(cloud)
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("Ayarlar", "Settings")
         clickAny("Google ile giriş yap", "Sign in with Google")
         waitUntil(timeoutMillis = 5_000) { cloud.account.googleRequests == 1 }
     }
@@ -107,8 +106,7 @@ class AccountMergeUiTest {
     fun anAccountThatWasNeverAnonymousAsksForNoTicket() = runComposeUiTest {
         val cloud = TestCloud(account = com.mehmtcan.brainscroll.account.FakeAccountService(google("already-google")))
         start(cloud)
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("Ayarlar", "Settings")
         assertTrue(cloud.merge.calls.isEmpty())
         assertTrue(cloud.account.googleRequests == 0)
     }

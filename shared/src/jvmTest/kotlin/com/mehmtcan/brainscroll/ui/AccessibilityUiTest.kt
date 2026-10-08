@@ -77,9 +77,10 @@ class AccessibilityUiTest {
 
     @Test
     fun theOpenTabIsAnnouncedAsSelected() = runComposeUiTest {
-        start()
-        val feed = if (onAllNodesWithText("Akış").fetchSemanticsNodes().isNotEmpty()) "Akış" else "Feed"
-        onNodeWithText(feed).assertIsSelected()
+        // The feed has no tab bar, so the check starts on the home tab.
+        start(openFeed = false)
+        val home = if (onAllNodesWithText("Ana Sayfa").fetchSemanticsNodes().isNotEmpty()) "Ana Sayfa" else "Home"
+        onNodeWithText(home).assertIsSelected()
         openTab("Profil", "Profile")
         waitForIdle()
         val profile = if (onAllNodesWithText("Profil").fetchSemanticsNodes().isNotEmpty()) "Profil" else "Profile"

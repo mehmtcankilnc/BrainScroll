@@ -6,6 +6,9 @@ import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.memory.MemoryGame
 import com.mehmtcan.brainscroll.game.memory.MemoryRound
+import com.mehmtcan.brainscroll.game.tubes.PourResult
+import com.mehmtcan.brainscroll.game.tubes.TubesGame
+import com.mehmtcan.brainscroll.game.tubes.TubesRound
 import kotlin.random.Random
 
 /** Everything the feed screen draws. */
@@ -52,8 +55,12 @@ class EndlessFeed(
     private val now: () -> Long = { 0L },
     private val newId: () -> String = { Random.nextLong().toULong().toString(16) },
     /** The games of the feed and their order: each page is followed by the next game in this list, round and round. */
-    private val games: List<GameKind> = listOf(GameKind.Word),
+    games: List<GameKind> = listOf(GameKind.Word),
 ) {
+    /** Every game this feed can show, in order. [games] is the part of it the player switched on. */
+    private val allGames: List<GameKind> = games
+    private var games: List<GameKind> = games
+
     private val rounds = mutableListOf<FeedRound>()
     private val counted = mutableSetOf<Int>()
     private val bags = mutableMapOf<Language, ArrayDeque<String>>()
@@ -77,6 +84,7 @@ class EndlessFeed(
             val round: FeedRound? = when (stored.game) {
                 GameKind.Word -> wordLists[stored.language]?.let { WordleRound.restore(rounds.size, stored, it) }
                 GameKind.Memory -> MemoryRound.restore(rounds.size, stored, now)
+                GameKind.Tubes -> TubesRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
         }
@@ -94,11 +102,49 @@ class EndlessFeed(
      * last page (not by the page number) keeps the order right after a restart, when only the started puzzles are
      * brought back and they are numbered again from zero.
      */
-    private fun nextKind(): GameKind {
-        val previous = rounds.lastOrNull()?.kind ?: return games.first()
+    private fun nextKind(): GameKind = kindAfter(rounds.lastOrNull()?.kind)
+
+    private fun kindAfter(previous: GameKind?): GameKind {
+        if (previous == null) return games.first()
         val at = games.indexOf(previous)
         return if (at < 0) games.first() else games[(at + 1) % games.size]
     }
+
+    /** The games that are switched on, in feed order. */
+    val enabledGames: List<GameKind> get() = games
+
+    /**
+     * Switches games on or off for the pages that are still to come. Pages from [fromIndex] on that were not touched
+     * and belong to a game that is now off are replaced; started, finished and skipped pages stay as they are.
+     * At least one game stays on: an empty [enabled] (or one with no known game) changes nothing.
+     */
+    fun setEnabledGames(enabled: Set<GameKind>, fromIndex: Int) {
+        val next = allGames.filter { it in enabled }
+        if (next.isEmpty() || next == games) return
+        games = next
+        for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
+            val round = rounds[i]
+            if (round.isUntouched && !round.skipped && round.kind !in games) {
+                rounds[i] = newRound(i, kindAfter(rounds.getOrNull(i - 1)?.kind))
+            }
+        }
+    }
+
+    /**
+     * Changes the language of the word puzzles that come from now on, also after the feed has been started (unlike
+     * [setLanguage]). Word pages from [fromIndex] on that were not touched are drawn again in the new language;
+     * puzzles that were started keep the language they began in.
+     */
+    fun setWordLanguage(newLanguage: Language, fromIndex: Int) {
+        require(wordLists.containsKey(newLanguage)) { "no word list for $newLanguage" }
+        if (newLanguage == language) return
+        language = newLanguage
+        for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
+            val round = rounds[i]
+            if (round.kind == GameKind.Word && round.isUntouched && !round.skipped) rounds[i] = newRound(i, GameKind.Word)
+        }
+    }
+
 
     /**
      * Starts a new session if the player has been away for [SESSION_IDLE_MILLIS] or more: the skip is available again.
@@ -155,6 +201,31 @@ class EndlessFeed(
     /** Hides the mismatched pair of the memory board on page [index] (the screen calls this after its short pause). */
     fun closeMismatch(index: Int) {
         (rounds[index] as? MemoryRound)?.closeMismatch()
+    }
+
+    // --- Color tubes actions (ignored on a page of another game) ---
+
+    /** Pours tube [from] into tube [to] on the tubes board of page [index]. */
+    fun pour(index: Int, from: Int, to: Int): PourResult {
+        val round = rounds[index] as? TubesRound ?: return PourResult.Ignored
+        touch()
+        val result = round.pour(from, to)
+        if (result != PourResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Takes back the last pour on page [index]. Returns false when there was nothing to take back. */
+    fun undo(index: Int): Boolean {
+        val round = rounds[index] as? TubesRound ?: return false
+        touch()
+        return round.undo().also { if (it) persist(round) }
+    }
+
+    /** Puts the tubes of page [index] back as they were at the start. Returns false when nothing had changed. */
+    fun restart(index: Int): Boolean {
+        val round = rounds[index] as? TubesRound ?: return false
+        touch()
+        return round.restart().also { if (it) persist(round) }
     }
 
     /** After a move: a round that just ended becomes a result (once), anything else is saved as progress. */
@@ -225,6 +296,7 @@ class EndlessFeed(
             WordleRound(index, WordleGame(list, nextAnswer(list)), list, newId())
         }
         GameKind.Memory -> MemoryRound(index, newId(), MemoryGame.newLayout(random), language, now)
+        GameKind.Tubes -> TubesRound(index, newId(), TubesGame.newLayout(random), language, now)
     }
 
     /** Keeps the store in step with a round: untouched rounds are not worth saving, started ones are. */

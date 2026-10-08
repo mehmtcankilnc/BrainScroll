@@ -1,6 +1,19 @@
 package com.mehmtcan.brainscroll.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
+import brainscroll.shared.generated.resources.profile_settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,12 +58,17 @@ import brainscroll.shared.generated.resources.favorite_memory_tag
 import brainscroll.shared.generated.resources.stat_fewest_moves
 import brainscroll.shared.generated.resources.stats_daily
 import brainscroll.shared.generated.resources.stats_memory
+import brainscroll.shared.generated.resources.stats_tubes
+import brainscroll.shared.generated.resources.favorite_tubes_result
+import brainscroll.shared.generated.resources.favorite_tubes_tag
 import brainscroll.shared.generated.resources.stats_filter_all
 import brainscroll.shared.generated.resources.stats_streak_note
 import brainscroll.shared.generated.resources.stats_endless
 import brainscroll.shared.generated.resources.stats_title
+import brainscroll.shared.generated.resources.tab_ranks
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
@@ -64,9 +82,88 @@ import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-/** Statistics and favorites (docs/plan.md phase 4). Everything shown is derived from the saved results. */
+/** Where the profile can lead. Each is a page of its own with a back button (docs/decisions.md, Sadeleştirme). */
+enum class ProfileTarget { Stats, Favorites, Settings, Ranks }
+
+/**
+ * The profile tab: one summary and a short list. The statistics, the favorites and the settings are pages of their
+ * own, so this screen stays short.
+ */
 @Composable
-fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi, modifier: Modifier = Modifier) {
+fun ProfileScreen(profile: ProfileState, onOpen: (ProfileTarget) -> Unit, modifier: Modifier = Modifier) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    // The endless numbers already include memory match, so only the daily puzzle is added.
+    val played = profile.stats.played + profile.daily.played
+    val won = profile.stats.won + profile.daily.won
+    val winRate = if (played == 0) 0f else won.toFloat() / played
+
+    Column(
+        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+    ) {
+        Spacer(Modifier.height(Spacing.md))
+        // The one surface on this screen: three numbers that sum the player up.
+        Row(
+            modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(vertical = Spacing.lg),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            SummaryNumber(played.toString(), stringResource(Res.string.stat_played))
+            SummaryNumber("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate))
+            SummaryNumber(profile.dayStreak.best.toString(), stringResource(Res.string.stat_best_streak))
+        }
+        Column {
+            ProfileRow(stringResource(Res.string.stats_title)) { onOpen(ProfileTarget.Stats) }
+            ProfileRow(stringResource(Res.string.favorites_title), profile.favorites.size.takeIf { it > 0 }?.toString()) { onOpen(ProfileTarget.Favorites) }
+            ProfileRow(stringResource(Res.string.tab_ranks)) { onOpen(ProfileTarget.Ranks) }
+            ProfileRow(stringResource(Res.string.profile_settings), last = true) { onOpen(ProfileTarget.Settings) }
+        }
+        Spacer(Modifier.height(Spacing.xl))
+    }
+}
+
+@Composable
+private fun SummaryNumber(value: String, label: String) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        BasicText(value, style = type.display.copy(color = colors.textPrimary), maxLines = 1, softWrap = false)
+        BasicText(label, style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center), maxLines = 2)
+    }
+}
+
+/** A line of the list: a name, an optional small value and a chevron. No surface, a hairline below. */
+@Composable
+private fun ProfileRow(title: String, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            BasicText(title, style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+            if (value != null) BasicText(value, style = type.label.copy(color = colors.textSecondary))
+            Canvas(Modifier.size(12.dp)) {
+                val path = Path().apply {
+                    moveTo(0.3f * size.width, 0.1f * size.height)
+                    lineTo(0.75f * size.width, 0.5f * size.height)
+                    lineTo(0.3f * size.width, 0.9f * size.height)
+                }
+                drawPath(path, colors.textSecondary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+        if (!last) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+    }
+}
+
+/** The numbers: the endless feed, memory match and the daily puzzle. Everything is derived from the saved results. */
+@Composable
+fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     // Null shows both languages together.
@@ -77,13 +174,7 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi,
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        item { Spacer(Modifier.height(Spacing.md)) }
-        item { AccountSection(account) }
-        item { PrivacySection(privacy) }
-        item { Spacer(Modifier.height(Spacing.sm)) }
-        item {
-            BasicText(stringResource(Res.string.stats_title), style = type.title.copy(color = colors.textPrimary))
-        }
+        item { BasicText(stringResource(Res.string.stats_title), style = type.title.copy(color = colors.textPrimary)) }
 
         // The endless feed.
         item { BasicText(stringResource(Res.string.stats_endless), style = type.heading.copy(color = colors.textPrimary)) }
@@ -108,6 +199,19 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi,
                     "${(profile.memory.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
                     (profile.memory.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
                     (profile.memory.fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
+                ),
+            )
+        }
+        item { Spacer(Modifier.height(Spacing.sm)) }
+
+        // Color tubes: every game is a win, so there is no win rate, only the fastest game and the fewest moves.
+        item { BasicText(stringResource(Res.string.stats_tubes), style = type.heading.copy(color = colors.textPrimary)) }
+        item {
+            TileGrid(
+                listOf(
+                    profile.tubes.played.toString() to stringResource(Res.string.stat_played),
+                    (profile.tubes.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    (profile.tubes.fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
                 ),
             )
         }
@@ -158,10 +262,20 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi,
             }
         }
         item { GuessDistribution(daily.guessDistribution) }
-        item { Spacer(Modifier.height(Spacing.md)) }
-        item {
-            BasicText(stringResource(Res.string.favorites_title), style = type.title.copy(color = colors.textPrimary))
-        }
+        item { Spacer(Modifier.height(Spacing.xl)) }
+    }
+}
+
+/** The finished puzzles the player marked with the heart. */
+@Composable
+fun FavoritesPage(profile: ProfileState, modifier: Modifier = Modifier) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        item { BasicText(stringResource(Res.string.favorites_title), style = type.title.copy(color = colors.textPrimary)) }
         if (profile.favorites.isEmpty()) {
             item {
                 BasicText(
@@ -172,6 +286,22 @@ fun ProfileScreen(profile: ProfileState, account: AccountUi, privacy: PrivacyUi,
         } else {
             items(profile.favorites, key = { it.id }) { FavoriteRow(it) }
         }
+        item { Spacer(Modifier.height(Spacing.xl)) }
+    }
+}
+
+/** The account and the privacy choice. */
+@Composable
+fun SettingsPage(account: AccountUi, privacy: PrivacyUi, modifier: Modifier = Modifier) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        item { BasicText(stringResource(Res.string.profile_settings), style = type.title.copy(color = colors.textPrimary)) }
+        item { AccountSection(account) }
+        item { PrivacySection(privacy) }
         item { Spacer(Modifier.height(Spacing.xl)) }
     }
 }
@@ -211,7 +341,7 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     Column(
-        modifier = modifier.fillMaxHeight().background(colors.bgSurface, Radius.control).padding(vertical = Spacing.md),
+        modifier = modifier.fillMaxHeight().padding(vertical = Spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -257,15 +387,17 @@ private fun FavoriteRow(round: FinishedRound) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.bgSurface, Radius.control)
-            .padding(Spacing.md),
+            .padding(vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        val memory = round.game == GameKind.Memory
-        // A memory result has no word: its board is a list of shape numbers, so the game's name is shown instead.
+        // Memory and tubes results have no word (their board is a list of numbers), so the game's name is shown instead.
         BasicText(
-            text = if (memory) stringResource(Res.string.favorite_memory_tag) else round.answer,
+            text = when (round.game) {
+                GameKind.Word -> round.answer
+                GameKind.Memory -> stringResource(Res.string.favorite_memory_tag)
+                GameKind.Tubes -> stringResource(Res.string.favorite_tubes_tag)
+            },
             style = type.heading.copy(color = colors.textPrimary),
             modifier = Modifier.weight(1f),
         )
@@ -273,7 +405,8 @@ private fun FavoriteRow(round: FinishedRound) {
             BasicText(
                 text = when {
                     round.outcome != Outcome.WON -> stringResource(Res.string.favorite_lost)
-                    memory -> stringResource(Res.string.favorite_memory_result, round.guesses.size / 2, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Memory -> stringResource(Res.string.favorite_memory_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Tubes -> stringResource(Res.string.favorite_tubes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
                 },
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),

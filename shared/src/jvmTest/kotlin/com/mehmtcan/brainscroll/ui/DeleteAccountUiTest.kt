@@ -37,7 +37,10 @@ class DeleteAccountUiTest {
         waitForIdle()
     }
 
+    /** The numbers are on the statistics page, the delete button on the settings page: go to the right one first. */
     private fun ComposeUiTest.scrollProfileTo(vararg texts: String) {
+        val stats = texts.any { it.startsWith("En iyi") || it.startsWith("Best") || it.startsWith("Günlük") || it.startsWith("Daily") }
+        if (stats) openProfilePage("İstatistikler", "Statistics") else openProfilePage("Ayarlar", "Settings")
         onNode(hasScrollAction()).performScrollToNode(texts.map { hasText(it, substring = true) }.reduce { a, b -> a or b })
         waitForIdle()
     }
@@ -48,6 +51,7 @@ class DeleteAccountUiTest {
     fun theFirstTapOnlyAsksAndCancelChangesNothing() = runComposeUiTest {
         val cloud = signedInCloud()
         playAndOpenProfile(cloud)
+        openProfilePage("Ayarlar", "Settings")
         clickAny("Hesabı sil", "Delete account")
         waitForIdle()
         snap("50_delete_confirm")
@@ -102,8 +106,7 @@ class DeleteAccountUiTest {
     @Test
     fun anAnonymousAccountDoesNotOfferDeletion() = runComposeUiTest {
         start(TestCloud())
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("Ayarlar", "Settings")
         assertFalse(hasAnyText("Hesabı sil", "Delete account"))
     }
 }

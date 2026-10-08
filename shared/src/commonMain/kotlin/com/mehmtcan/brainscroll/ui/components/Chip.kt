@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ fun Chip(
         Row(
             modifier = Modifier
                 .background(if (raised) colors.bgRaised else colors.bgSurface, Radius.pill)
+                .then(if (raised) Modifier.border(1.dp, colors.borderStrong.copy(alpha = 0.6f), Radius.pill) else Modifier)
                 .padding(horizontal = Spacing.md, vertical = Spacing.xs + 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),

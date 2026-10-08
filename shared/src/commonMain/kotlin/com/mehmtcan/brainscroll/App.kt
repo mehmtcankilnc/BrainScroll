@@ -34,7 +34,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
     reduceMotion: Boolean? = null,
     highContrast: Boolean? = null,
     /** The games in the feed, in order. Tests can ask for just one. */
-    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory),
+    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes),
 ) {
     // Tests pass their own haptics to see when the phone would buzz.
     CompositionLocalProvider(

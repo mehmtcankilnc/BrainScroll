@@ -15,7 +15,9 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -85,6 +87,8 @@ internal fun ComposeUiTest.start(
     fontScale: Float = 1f,
     /** Only word puzzles unless a test asks for more: most tests were written for a feed of word puzzles. */
     games: List<GameKind> = listOf(GameKind.Word),
+    /** The app opens on the home tab. Most tests are about the feed, so they go there; the home tests stay. */
+    openFeed: Boolean = true,
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -103,7 +107,11 @@ internal fun ComposeUiTest.start(
         }
     }
     waitForIdle()
-    waitUntil(timeoutMillis = 10_000) { hasKeyboard() }
+    // The app opens on the home tab; most tests are about the feed, so go there first.
+    if (openFeed) {
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { hasKeyboard() }
+    }
 }
 
 @OptIn(ExperimentalTestApi::class)
@@ -156,8 +164,51 @@ internal fun ComposeUiTest.switchToEnglish() {
 /** Opens a bottom tab. The label follows the device language, so the Turkish and English names are both given. */
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.openTab(turkish: String, english: String) {
+    // Daily and ranks are pages that open from the home tab, not tabs of their own.
+    when (turkish) {
+        "Günlük" -> {
+            goHome()
+            onNodeWithTag("dailyCard").performClick()
+            return
+        }
+        "Sıralama" -> {
+            goHome()
+            clickAny("Tümü", "See all")
+            return
+        }
+    }
+    // The feed and the pages have no tab bar: first go back to where it is.
+    if (onAllNodesWithText(turkish).fetchSemanticsNodes().isEmpty() && onAllNodesWithText(english).fetchSemanticsNodes().isEmpty()) goHome()
     val label = if (onAllNodesWithText(turkish).fetchSemanticsNodes().isNotEmpty()) turkish else english
     onNodeWithText(label).performClick()
+}
+
+/** Opens the profile tab and then one of its pages by the name of its row (Turkish and English). */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.openProfilePage(turkish: String, english: String) {
+    openTab("Profil", "Profile")
+    waitForIdle()
+    clickAny(turkish, english)
+    waitForIdle()
+}
+
+/** Back out of the feed or a page to a tab, then to the home tab. */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.goHome() {
+    for (description in listOf("Geri", "Back", "Ana Sayfa", "Home")) {
+        if (onAllNodesWithContentDescription(description).fetchSemanticsNodes().isNotEmpty()) {
+            onAllNodesWithContentDescription(description)[0].performClick()
+            waitForIdle()
+            break
+        }
+    }
+    for (label in listOf("Ana Sayfa", "Home")) {
+        if (onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()) {
+            onAllNodesWithText(label)[0].performClick()
+            waitForIdle()
+            break
+        }
+    }
 }
 
 /** True if any of the texts is on screen. Texts follow the device language, so callers give Turkish and English. */

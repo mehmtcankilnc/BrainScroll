@@ -1,6 +1,10 @@
 package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import brainscroll.shared.generated.resources.back
+import com.mehmtcan.brainscroll.ui.theme.Spacing
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +31,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -60,17 +66,24 @@ import com.mehmtcan.brainscroll.ui.social.SocialEvent
 import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import brainscroll.shared.generated.resources.tab_daily
 import brainscroll.shared.generated.resources.tab_feed
+import brainscroll.shared.generated.resources.tab_home
 import brainscroll.shared.generated.resources.tab_profile
 import com.mehmtcan.brainscroll.account.AccountEvent
+import com.mehmtcan.brainscroll.ui.components.ChevronButton
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.ui.daily.DailyScreen
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
+import com.mehmtcan.brainscroll.ui.home.HomeScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.profile.AccountUi
 import com.mehmtcan.brainscroll.ui.profile.PrivacyUi
+import com.mehmtcan.brainscroll.ui.profile.FavoritesPage
 import com.mehmtcan.brainscroll.ui.profile.ProfileScreen
+import com.mehmtcan.brainscroll.ui.profile.ProfileTarget
+import com.mehmtcan.brainscroll.ui.profile.SettingsPage
+import com.mehmtcan.brainscroll.ui.profile.StatsPage
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -80,19 +93,25 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 private enum class Tab(val label: StringResource) {
+    Home(Res.string.tab_home),
     Feed(Res.string.tab_feed),
-    Daily(Res.string.tab_daily),
-    Ranks(Res.string.tab_ranks),
     Profile(Res.string.tab_profile),
 }
 
+/** Pages that open over the tabs with a back button (docs/decisions.md, Sadeleştirme). They are not tabs. */
+private enum class SubPage { Daily, Ranks, Stats, Favorites, Settings }
+
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialViewModel: SocialViewModel) {
     val colors = BrainScrollTheme.colors
-    var tab by remember { mutableStateOf(Tab.Feed) }
-    // Which tabs are used (only the name of the tab, nothing about the player).
-    LaunchedEffect(tab) { viewModel.telemetry.event(TelemetryEvent.TabViewed, mapOf("tab" to tab.name.lowercase())) }
+    var tab by remember { mutableStateOf(Tab.Home) }
+    var subPage by remember { mutableStateOf<SubPage?>(null) }
+    // Which screens are used (only the name of the screen, nothing about the player).
+    LaunchedEffect(tab, subPage) {
+        viewModel.telemetry.event(TelemetryEvent.TabViewed, mapOf("tab" to (subPage ?: tab).name.lowercase()))
+    }
 
     // Sign-in results are shown in a short message above whatever tab is open.
     // Friends and username messages too ([name] fills a %1$s in the text).
@@ -113,7 +132,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
     LaunchedEffect(socialViewModel) {
         socialViewModel.events.collect { event ->
             // An invite link opens the friends part, where the player sees what happened to it.
-            if (event.kind in INVITE_EVENTS) tab = Tab.Ranks
+            if (event.kind in INVITE_EVENTS) subPage = SubPage.Ranks
             accountNotice = ShellNotice(noticeFor(event.kind), name = event.name)
             delay(ACCOUNT_NOTICE_MILLIS)
             accountNotice = null
@@ -122,42 +141,83 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
 
     // Only the content is pushed away from the status bar. The tab bar below handles the bottom edge itself,
     // so its background can reach the screen edges and sit under the home indicator.
+    // What the profile pages show. They are pages over the tabs, so the state is read here.
+    val profileState by viewModel.profile.collectAsStateWithLifecycle()
+    val accountState by viewModel.accountState.collectAsStateWithLifecycle()
+    val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
+
+    // The system back button (Android, and the back gesture) does what the on-screen back button does: close the page,
+    // or leave the feed for the home tab. On the home tab and the other tabs it keeps its usual job.
+    BackHandler(enabled = subPage != null || tab == Tab.Feed) {
+        if (subPage != null) subPage = null else tab = Tab.Home
+    }
+
+    // The feed and the sub pages have no tab bar, so then the content keeps clear of the bottom edge itself.
+    val showTabBar = subPage == null && tab != Tab.Feed
+    val contentInsets = if (showTabBar) WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+    else WindowInsetsSides.Top + WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
     Column(modifier = Modifier.fillMaxSize().background(colors.bgPage)) {
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(contentInsets)),
         ) {
-            when (tab) {
-                Tab.Feed -> FeedScreen(viewModel)
-                Tab.Daily -> DailyScreen(dailyViewModel)
-                Tab.Ranks -> RanksScreen(
-                    viewModel = socialViewModel,
-                    signIn = RanksSignIn(
-                        canSignInWithApple = viewModel.canSignInWithApple,
-                        onSignInWithGoogle = viewModel::signInWithGoogle,
-                        onSignInWithApple = viewModel::signInWithApple,
-                    ),
+            if (subPage != null) {
+                Column(Modifier.fillMaxSize()) {
+                    // The daily page has a header row of its own, so its back button lives there.
+                    if (subPage != SubPage.Daily) BackBar(onBack = { subPage = null })
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        when (subPage) {
+                            SubPage.Daily -> DailyScreen(dailyViewModel, onBack = { subPage = null })
+                            SubPage.Ranks -> RanksScreen(
+                                viewModel = socialViewModel,
+                                signIn = RanksSignIn(
+                                    canSignInWithApple = viewModel.canSignInWithApple,
+                                    onSignInWithGoogle = viewModel::signInWithGoogle,
+                                    onSignInWithApple = viewModel::signInWithApple,
+                                ),
+                            )
+                            SubPage.Stats -> StatsPage(profileState)
+                            SubPage.Favorites -> FavoritesPage(profileState)
+                            SubPage.Settings -> SettingsPage(
+                                account = AccountUi(
+                                    state = accountState,
+                                    canSignInWithApple = viewModel.canSignInWithApple,
+                                    backupPending = profileState.backupPending,
+                                    onSignInWithGoogle = viewModel::signInWithGoogle,
+                                    onSignInWithApple = viewModel::signInWithApple,
+                                    onSignOut = viewModel::signOut,
+                                    onDeleteAccount = viewModel::deleteAccount,
+                                ),
+                                privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
+                            )
+                            null -> Unit
+                        }
+                    }
+                }
+            } else when (tab) {
+                Tab.Home -> HomeScreen(
+                    feedViewModel = viewModel,
+                    dailyViewModel = dailyViewModel,
+                    socialViewModel = socialViewModel,
+                    onOpenDaily = { subPage = SubPage.Daily },
+                    onOpenRanks = { subPage = SubPage.Ranks },
                 )
+                Tab.Feed -> FeedScreen(viewModel, onHome = { tab = Tab.Home })
                 Tab.Profile -> {
                     // A daily result or a favorite may have changed while another tab was open.
                     LaunchedEffect(Unit) { viewModel.refreshProfile() }
-                    val profile by viewModel.profile.collectAsStateWithLifecycle()
-                    val accountState by viewModel.accountState.collectAsStateWithLifecycle()
-                    val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
                     ProfileScreen(
-                        profile = profile,
-                        account = AccountUi(
-                            state = accountState,
-                            canSignInWithApple = viewModel.canSignInWithApple,
-                            backupPending = profile.backupPending,
-                            onSignInWithGoogle = viewModel::signInWithGoogle,
-                            onSignInWithApple = viewModel::signInWithApple,
-                            onSignOut = viewModel::signOut,
-                            onDeleteAccount = viewModel::deleteAccount,
-                        ),
-                        privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
+                        profile = profileState,
+                        onOpen = { target ->
+                            subPage = when (target) {
+                                ProfileTarget.Stats -> SubPage.Stats
+                                ProfileTarget.Favorites -> SubPage.Favorites
+                                ProfileTarget.Settings -> SubPage.Settings
+                                ProfileTarget.Ranks -> SubPage.Ranks
+                            }
+                        },
                     )
                 }
             }
@@ -166,7 +226,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                 NoticePill(text, Modifier.align(Alignment.TopCenter), notice.detail)
             }
         }
-        TabBar(selected = tab, onSelect = { tab = it })
+        if (showTabBar) TabBar(selected = tab, onSelect = { tab = it })
     }
 }
 
@@ -259,6 +319,18 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
             }
         }
     }
+}
+
+/** The strip above a sub page: only a back chevron. The page below brings its own title. */
+@Composable
+private fun BackBar(onBack: () -> Unit) {
+    ChevronButton(
+        description = stringResource(Res.string.back),
+        color = BrainScrollTheme.colors.textPrimary,
+        onClick = onBack,
+        modifier = Modifier.padding(start = Spacing.sm),
+        touch = 48.dp,
+    )
 }
 
 private val TAB_BAR_HEIGHT = 56.dp

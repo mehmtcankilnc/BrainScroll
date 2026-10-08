@@ -38,11 +38,13 @@ class PersistenceUiTest {
         openTab("Profil", "Profile")
         waitForIdle()
         snap("8_profile")
+        openProfilePage("Favoriler", "Favorites")
         assertTrue(
             onAllNodesWithText("Henüz favori yok", substring = true).fetchSemanticsNodes().isEmpty() &&
                 onAllNodesWithText("No favorites yet", substring = true).fetchSemanticsNodes().isEmpty(),
             "the favorite should be listed",
         )
+        openTab("Profil", "Profile")
         // Played = 1 appears as a stat tile value (the distribution rows also use small numbers, so check the label too).
         assertTrue(
             onAllNodesWithText("Oynanan").fetchSemanticsNodes().isNotEmpty() ||

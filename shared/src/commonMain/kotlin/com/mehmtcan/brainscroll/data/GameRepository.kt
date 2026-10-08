@@ -18,6 +18,7 @@ internal const val DATABASE_FILE = "brainscroll.db"
 private const val SETTING_LANGUAGE = "word_language"
 private const val SETTING_SYNCED_USER = "synced_user_id"
 private const val SETTING_TELEMETRY = "telemetry_enabled"
+private const val SETTING_GAMES = "feed_games"
 private const val SETTING_PENDING_CRASH = "pending_crash"
 private const val SETTING_MERGE_TICKET = "merge_ticket"
 
@@ -130,6 +131,14 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     fun saveLanguage(language: Language) {
         settings.put(SETTING_LANGUAGE, language.name)
+    }
+
+    /** The games the player wants in the feed, or null if they never chose (then all of them). Unknown ids are ignored. */
+    fun savedGames(): Set<GameKind>? =
+        settings.get(SETTING_GAMES).executeAsOneOrNull()?.split(",")?.mapNotNull { GameKind.fromId(it) }?.toSet()?.takeIf { it.isNotEmpty() }
+
+    fun saveGames(games: Set<GameKind>) {
+        settings.put(SETTING_GAMES, games.joinToString(",") { it.id })
     }
 
     // --- Account deletion ---

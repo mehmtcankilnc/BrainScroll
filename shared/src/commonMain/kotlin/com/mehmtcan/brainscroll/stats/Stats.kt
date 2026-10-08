@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.stats
 
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
@@ -108,6 +109,24 @@ fun computeMemoryStats(history: List<FinishedRound>): MemoryStats {
         played = results.size,
         won = wins.size,
         bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull(),
-        fewestMoves = wins.minOfOrNull { it.guesses.size / 2 },
+        fewestMoves = wins.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for color tubes. Every tubes result is a win (the game cannot be lost). */
+data class TubesStats(
+    val played: Int,
+    /** The fastest game (see TubesRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest pours in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeTubesStats(history: List<FinishedRound>): TubesStats {
+    val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS }
+    return TubesStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
     )
 }

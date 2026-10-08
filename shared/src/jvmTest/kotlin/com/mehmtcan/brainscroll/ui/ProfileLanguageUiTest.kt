@@ -44,9 +44,9 @@ class ProfileLanguageUiTest {
         waitUntil(timeoutMillis = 5_000) { hasAnyText("Sıradaki bulmaca", "Next puzzle in") }
         waitForIdle()
 
-        openTab("Profil", "Profile")
+        openProfilePage("İstatistikler", "Statistics")
         waitForIdle()
-        scrollProfileTo("En iyi süre", "Best time")
+        scrollProfileTo("En iyi süre:", "Best time:")
         snap("70_profile_daily_both")
         assertTrue(hasAnyText("En iyi süre: 00:40", "Best time: 00:40"), "both together: the faster one")
 
@@ -54,7 +54,7 @@ class ProfileLanguageUiTest {
         // The chip "TR" of the daily section (the feed's own TR chip is on another tab).
         onAllNodesWithText("TR")[0].performClick()
         waitForIdle()
-        scrollProfileTo("En iyi süre", "Best time")
+        scrollProfileTo("En iyi süre:", "Best time:")
         snap("71_profile_daily_tr")
         assertTrue(hasAnyText("En iyi süre: 01:23", "Best time: 01:23"), "Turkish alone")
         assertFalse(hasAnyText("00:40"))
@@ -62,7 +62,7 @@ class ProfileLanguageUiTest {
 
         onAllNodesWithText("EN")[0].performClick()
         waitForIdle()
-        scrollProfileTo("En iyi süre", "Best time")
+        scrollProfileTo("En iyi süre:", "Best time:")
         assertTrue(hasAnyText("En iyi süre: 00:40", "Best time: 00:40"), "English alone")
         assertFalse(hasAnyText("01:23"))
     }

@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.ui.feed
 
 import androidx.compose.foundation.Canvas
+import brainscroll.shared.generated.resources.tab_home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.motion.popOnIncrease
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.components.Chip
+import com.mehmtcan.brainscroll.ui.components.ChevronButton
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
 
@@ -34,6 +36,8 @@ fun Hud(
     language: Language,
     /** Null while the language is locked (the feed has been started). */
     onToggleLanguage: (() -> Unit)?,
+    /** Back to the home page. The feed has no tab bar, so this is the way out. */
+    onHome: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -42,6 +46,7 @@ fun Hud(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
+        ChevronButton(stringResource(Res.string.tab_home), colors.textSecondary, onHome)
         Box(Modifier.popOnIncrease(answerStreak)) {
             Chip(
                 text = answerStreak.toString(),
@@ -61,7 +66,7 @@ fun Hud(
 
 /** Small lightning bolt for the answer streak, drawn as a path so it follows the token color. */
 @Composable
-private fun BoltIcon(color: Color) {
+internal fun BoltIcon(color: Color) {
     Canvas(Modifier.size(14.dp)) {
         val w = size.width
         val h = size.height

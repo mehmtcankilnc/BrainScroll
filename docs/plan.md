@@ -119,12 +119,19 @@ Amaç: İkinci oyun ve akışın çok oyunlu hale gelmesi. Kararlar `docs/decisi
 - [x] 9c Profil (Hafıza eşleştirme bölümü: oynanan, kazanma, en iyi süre, en az hamle), favori satırı, telemetri (`game`, `moves`), `docs/faz9-test-listesi.md`. Sunucu tarafı değişmedi (yeni migration yok). **Cihazda test bekliyor**
 **Çıkış:** Akışta kelime ve hafıza dönüşümlü geliyor, ikisi de kaydediliyor ve TestFlight'ta doğrulandı.
 
-## Faz 10+ - Diğer oyunlar
+## Faz 10 - Renk tüpleri
+Amaç: Üçüncü oyun. Kararlar `docs/decisions.md` "Renk tüpleri". Sunucu tarafı değişmedi (yeni migration yok).
+- [x] 10a Alan mantığı: `GameKind.Tubes`, `TubesGame` (kurallar: 5 renk x 4 birim, 7 tüp, 2 boş; dökme, geri al, yeniden başlat; her tahta çözülebilir, `canSolve` ile doğrulanır), `TubesRound` (süre = eylem araları toplamı, her aralık en fazla 15 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`pour`/`undo`/`restart`), sunucu sınırları için biten sonuçta `guesses` = yalnızca hamle sayısı, `FinishedRound.moveCount`, istatistik (`computeTubesStats`). Testler: `TubesGameTest`, `TubesRoundTest`, `TubesFeedTest`, `TubesStatsTest`, `TubesPersistenceTest`
+- [x] 10b Arayüz: `ui/tubes/TubesPage` (tüpler, seçilen tüp yukarı kalkar, her renk dolgu + şekil, geri al / yeniden başlat, sonuç kartı), akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, haptik, erişilebilirlik (tüp içeriği alttan okunur), telemetri (`game=tubes`, `moves`). `TubesUiTest` (5, ekran görüntüleri 90-93)
+- [ ] 10c Cihazda test (`docs/faz10-test-listesi.md`)
+**Çıkış:** Akışta kelime, hafıza ve renk tüpleri dönüşümlü geliyor, üçü de kaydediliyor.
+
+## Faz 11+ - Diğer oyunlar
 Sudoku, örüntü tanıma, satranç bulmacası. Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
 
 ### Satranç bulmacası - teknik notlar
 
-Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 10c gibi) ele alınmalı.
+Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 11c gibi) ele alınmalı.
 
 **Bulmaca kaynağı**
 - [ ] Lichess açık bulmaca veritabanı (CC0, CSV). Alanlar: `PuzzleId, FEN, Moves, Rating, RatingDeviation, Popularity, NbPlays, Themes, GameUrl, OpeningTags`. Lisans ve alan şemasını başlamadan resmi sayfadan doğrula.
@@ -140,7 +147,7 @@ Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 1
 
 **Çözüm doğrulama**
 - [ ] Oyuncunun hamlesi bulmacanın çözüm hamlesiyle karşılaştırılır. Mat bulmacalarında Lichess gibi **alternatif matlar da doğru sayılır**. Çok hamleli bulmacada her doğru hamleden sonra rakibin karşılığı otomatik oynanır.
-- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 10c başında netleştirilecek).
+- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 11c başında netleştirilecek).
 - [ ] İpucu: kaynak karesini vurgular. İpucu kullanılan çözüm sıralamaya girmez, seriyi bozmaz (öneri).
 
 **Günlük bulmaca ve adalet**

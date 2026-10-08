@@ -206,13 +206,13 @@ class MemoryUiTest {
         onAllNodesWithTag("favoriteHeart")[0].performClick()
         waitForIdle()
 
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("İstatistikler", "Statistics")
         onNode(hasScrollAction()).performScrollToNode(hasText("Hafıza eşleştirme").or(hasText("Memory match")))
         waitForIdle()
         snap("85_profile_memory")
         assertTrue(hasAnyText("Hafıza eşleştirme", "Memory match"), "the memory section")
         assertTrue(hasAnyText("En az hamle", "Fewest moves"))
+        openProfilePage("Favoriler", "Favorites")
         onNode(hasScrollAction()).performScrollToNode(hasText("hamle ·", substring = true).or(hasText("moves ·", substring = true)))
         assertTrue(hasAnyText("hamle ·", "moves ·"), "the favorite row names the game and its result")
 

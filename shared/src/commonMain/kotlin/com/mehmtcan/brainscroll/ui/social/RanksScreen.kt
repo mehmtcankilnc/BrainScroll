@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -46,6 +47,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.daily_retry
 import brainscroll.shared.generated.resources.filter_everyone
+import brainscroll.shared.generated.resources.filter_kind
+import brainscroll.shared.generated.resources.filter_language
+import brainscroll.shared.generated.resources.filter_period
+import brainscroll.shared.generated.resources.filter_title
+import brainscroll.shared.generated.resources.filter_who
 import brainscroll.shared.generated.resources.filter_friends
 import brainscroll.shared.generated.resources.friends_accept
 import brainscroll.shared.generated.resources.friends_add
@@ -116,13 +122,19 @@ data class RanksSignIn(
 fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modifier = Modifier) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.onShown() }
+    // The filters stay out of the way until asked for; the summary line says what is chosen.
+    var filtersOpen by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        item { SectionChips(ui, viewModel) }
+        item { SectionChips(ui, viewModel, filtersOpen) { filtersOpen = !filtersOpen } }
+        if (ui.section != Section.Friends) {
+            item { FilterSummary(ui) }
+            if (filtersOpen) item { FilterPanel(ui, viewModel) }
+        }
 
         // Who may do what: anonymous players only look, friends need a username.
         when (ui.access) {
@@ -143,11 +155,75 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
 // --- Chips ---
 
 @Composable
-private fun SectionChips(ui: SocialUiState, viewModel: SocialViewModel) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Choice(stringResource(Res.string.ranks_speed), ui.section == Section.Speed) { viewModel.selectSection(Section.Speed) }
-        Choice(stringResource(Res.string.ranks_streaks), ui.section == Section.Streak) { viewModel.selectSection(Section.Streak) }
-        Choice(stringResource(Res.string.ranks_friends), ui.section == Section.Friends) { viewModel.selectSection(Section.Friends) }
+private fun SectionChips(ui: SocialUiState, viewModel: SocialViewModel, filtersOpen: Boolean, onToggleFilters: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.weight(1f)) {
+            Choice(stringResource(Res.string.ranks_speed), ui.section == Section.Speed) { viewModel.selectSection(Section.Speed) }
+            Choice(stringResource(Res.string.ranks_streaks), ui.section == Section.Streak) { viewModel.selectSection(Section.Streak) }
+            Choice(stringResource(Res.string.ranks_friends), ui.section == Section.Friends) { viewModel.selectSection(Section.Friends) }
+        }
+        // The friends part has nothing to filter.
+        if (ui.section != Section.Friends) {
+            Choice(stringResource(Res.string.filter_title), filtersOpen, onToggleFilters)
+        }
+    }
+}
+
+/** One quiet line with what the table shows now, e.g. "TR - Today - Everyone". */
+@Composable
+private fun FilterSummary(ui: SocialUiState) {
+    val parts = buildList {
+        when (ui.section) {
+            Section.Speed -> {
+                add(ui.language.name)
+                add(stringResource(if (ui.scope == DailyScope.Today) Res.string.scope_today else Res.string.scope_all_time))
+            }
+            else -> add(stringResource(if (ui.kind == StreakKind.Current) Res.string.kind_current else Res.string.kind_longest))
+        }
+        // Only players who can have friends have this choice.
+        if (ui.access == Access.Ready) add(stringResource(if (ui.friendsOnly) Res.string.filter_friends else Res.string.filter_everyone))
+    }
+    Caption(parts.joinToString(" · "))
+}
+
+/** The filters of the open table, each with a small label. The explanation of the table is here too. */
+@Composable
+private fun FilterPanel(ui: SocialUiState, viewModel: SocialViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        if (ui.section == Section.Speed) {
+            LabeledChips(stringResource(Res.string.filter_language)) {
+                Language.entries.forEach { language ->
+                    Choice(language.name, ui.language == language) { viewModel.selectLanguage(language) }
+                }
+            }
+            LabeledChips(stringResource(Res.string.filter_period)) {
+                Choice(stringResource(Res.string.scope_today), ui.scope == DailyScope.Today) { viewModel.selectScope(DailyScope.Today) }
+                Choice(stringResource(Res.string.scope_all_time), ui.scope == DailyScope.AllTime) { viewModel.selectScope(DailyScope.AllTime) }
+            }
+        } else {
+            LabeledChips(stringResource(Res.string.filter_kind)) {
+                Choice(stringResource(Res.string.kind_current), ui.kind == StreakKind.Current) { viewModel.selectKind(StreakKind.Current) }
+                Choice(stringResource(Res.string.kind_longest), ui.kind == StreakKind.Longest) { viewModel.selectKind(StreakKind.Longest) }
+            }
+        }
+        if (ui.access == Access.Ready) {
+            LabeledChips(stringResource(Res.string.filter_who)) {
+                Choice(stringResource(Res.string.filter_everyone), !ui.friendsOnly) { viewModel.selectFriendsOnly(false) }
+                Choice(stringResource(Res.string.filter_friends), ui.friendsOnly) { viewModel.selectFriendsOnly(true) }
+            }
+        }
+        Caption(stringResource(if (ui.section == Section.Speed) Res.string.ranks_speed_caption else Res.string.ranks_streak_caption))
+    }
+}
+
+@Composable
+private fun LabeledChips(label: String, chips: @Composable () -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.width(56.dp)) { Caption(label) }
+        chips()
     }
 }
 
@@ -163,33 +239,9 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** Everyone or friends only. Friends only exists for players who can have friends. */
-@Composable
-private fun ScopeChips(ui: SocialUiState, viewModel: SocialViewModel) {
-    if (ui.access != Access.Ready) return
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Choice(stringResource(Res.string.filter_everyone), !ui.friendsOnly) { viewModel.selectFriendsOnly(false) }
-        Choice(stringResource(Res.string.filter_friends), ui.friendsOnly) { viewModel.selectFriendsOnly(true) }
-    }
-}
-
 // --- Speed and streak tables ---
 
 private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewModel) {
-    item {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Language.entries.forEach { language ->
-                    Choice(language.name, ui.language == language) { viewModel.selectLanguage(language) }
-                }
-                Spacer(Modifier.width(Spacing.sm))
-                Choice(stringResource(Res.string.scope_today), ui.scope == DailyScope.Today) { viewModel.selectScope(DailyScope.Today) }
-                Choice(stringResource(Res.string.scope_all_time), ui.scope == DailyScope.AllTime) { viewModel.selectScope(DailyScope.AllTime) }
-            }
-            ScopeChips(ui, viewModel)
-            Caption(stringResource(Res.string.ranks_speed_caption))
-        }
-    }
     boardItems(ui, ui.speed, viewModel) { row ->
         BoardLine(
             rank = row.rank,
@@ -201,16 +253,6 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
 }
 
 private fun LazyListScope.streakSection(ui: SocialUiState, viewModel: SocialViewModel) {
-    item {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Choice(stringResource(Res.string.kind_current), ui.kind == StreakKind.Current) { viewModel.selectKind(StreakKind.Current) }
-                Choice(stringResource(Res.string.kind_longest), ui.kind == StreakKind.Longest) { viewModel.selectKind(StreakKind.Longest) }
-            }
-            ScopeChips(ui, viewModel)
-            Caption(stringResource(Res.string.ranks_streak_caption))
-        }
-    }
     boardItems(ui, ui.streak, viewModel) { row ->
         BoardLine(rank = row.rank, name = row.username, isMe = row.isMe, value = row.value.toString())
     }
@@ -250,12 +292,15 @@ private fun <R> LazyListScope.boardItems(
 private fun BoardLine(rank: Int, name: String, isMe: Boolean, value: String) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    // No surface: rows sit on the page and are set apart by a hairline. Only my own row is lifted.
+    Column(Modifier.fillMaxWidth()) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {}
-            .background(if (isMe) colors.bgRaised else colors.bgSurface, Radius.control)
-            .padding(horizontal = Spacing.md, vertical = Spacing.md),
+            .background(if (isMe) colors.bgRaised else Color.Transparent, Radius.control)
+            .padding(horizontal = Spacing.sm, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
@@ -268,6 +313,7 @@ private fun BoardLine(rank: Int, name: String, isMe: Boolean, value: String) {
             style = type.body.copy(color = colors.textPrimary, fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal),
         )
         BasicText(value, style = type.label.copy(color = colors.textPrimary))
+    }
     }
 }
 
@@ -306,32 +352,7 @@ private fun LazyListScope.friendsSection(ui: SocialUiState, viewModel: SocialVie
         return
     }
     item { InviteCard(ui, viewModel) }
-    item {
-        var code by remember { mutableStateOf("") }
-        Card {
-            Heading(stringResource(Res.string.friends_add_code))
-            TextAction(
-                value = code,
-                onChange = { code = it.take(MAX_CODE) },
-                hint = stringResource(Res.string.friends_code_hint),
-                actionLabel = stringResource(Res.string.friends_add),
-                onAction = { viewModel.addFriendByCode(code); code = "" },
-            )
-        }
-    }
-    item {
-        var name by remember { mutableStateOf("") }
-        Card {
-            Heading(stringResource(Res.string.friends_add_name))
-            TextAction(
-                value = name,
-                onChange = { name = it.take(MAX_NAME) },
-                hint = stringResource(Res.string.friends_name_hint),
-                actionLabel = stringResource(Res.string.friends_ask),
-                onAction = { viewModel.sendRequest(name); name = "" },
-            )
-        }
-    }
+    item { AddFriend(viewModel) }
 
     val friends = ui.friends
     if (friends == null) {
@@ -362,6 +383,39 @@ private fun LazyListScope.friendsSection(ui: SocialUiState, viewModel: SocialVie
     }
 }
 
+/** One way to add a friend at a time: by their code, or by asking their username. One field, one button. */
+@Composable
+private fun AddFriend(viewModel: SocialViewModel) {
+    var byCode by remember { mutableStateOf(true) }
+    var code by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Choice(stringResource(Res.string.friends_add_code), byCode) { byCode = true }
+            Choice(stringResource(Res.string.friends_add_name), !byCode) { byCode = false }
+        }
+        if (byCode) {
+            TextAction(
+                value = code,
+                onChange = { code = it.take(MAX_CODE) },
+                hint = stringResource(Res.string.friends_code_hint),
+                actionLabel = stringResource(Res.string.friends_add),
+                onAction = { viewModel.addFriendByCode(code); code = "" },
+                onSurface = false,
+            )
+        } else {
+            TextAction(
+                value = name,
+                onChange = { name = it.take(MAX_NAME) },
+                hint = stringResource(Res.string.friends_name_hint),
+                actionLabel = stringResource(Res.string.friends_ask),
+                onAction = { viewModel.sendRequest(name); name = "" },
+                onSurface = false,
+            )
+        }
+    }
+}
+
 @Composable
 private fun InviteCard(ui: SocialUiState, viewModel: SocialViewModel) {
     val code = ui.inviteCode ?: return
@@ -369,8 +423,8 @@ private fun InviteCard(ui: SocialUiState, viewModel: SocialViewModel) {
     val clipboard = LocalClipboardManager.current
     val message = stringResource(Res.string.friends_invite_message, code, inviteLink(code))
     var copied by remember { mutableStateOf(false) }
-    Card {
-        Heading(stringResource(Res.string.friends_my_code))
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Caption(stringResource(Res.string.friends_my_code))
         BasicText(code, style = BrainScrollTheme.typography.display.copy(color = colors.correctFill, letterSpacing = 4.sp))
         AppButton(stringResource(Res.string.friends_copy), { clipboard.setText(AnnotatedString(message)); copied = true })
         if (copied) Caption(stringResource(Res.string.friends_copied))
@@ -383,8 +437,7 @@ private fun PersonLine(name: String, actions: @Composable () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.bgSurface, Radius.control)
-            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
@@ -453,7 +506,15 @@ private fun Caption(text: String) =
 
 /** A text field with a button next to it. */
 @Composable
-private fun TextAction(value: String, onChange: (String) -> Unit, hint: String, actionLabel: String, onAction: () -> Unit) {
+private fun TextAction(
+    value: String,
+    onChange: (String) -> Unit,
+    hint: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    /** True inside a card (the field is darker than the card), false on the page (the field is a surface). */
+    onSurface: Boolean = true,
+) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -461,7 +522,7 @@ private fun TextAction(value: String, onChange: (String) -> Unit, hint: String, 
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp)
-                .background(colors.bgPage, Radius.control)
+                .background(if (onSurface) colors.bgPage else colors.bgSurface, Radius.control)
                 .padding(horizontal = Spacing.md),
             contentAlignment = Alignment.CenterStart,
         ) {

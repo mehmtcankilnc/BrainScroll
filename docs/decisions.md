@@ -76,7 +76,37 @@ Son güncelleme: 2026-10-05
 - **Veri:** hafıza sonuçları mevcut `game_result` tablosuna `game = 'memory'` ile yazılır, sunucu şemasında değişiklik gerekmez (`answer` = kart dizilimi, `guesses` = açılan kartların sırası). Yarım kalan hafıza oyunu da korunur (mevcut `in_progress_round` tablosunda).
 - Hafıza için günlük mod **yok** (ilk sürüm), sıralama yok.
 
+## Renk tüpleri (karar: 2026-10-11)
+- Üçüncü oyun. Akış sırası kelime, hafıza, **renk tüpleri**, kelime... (`EndlessFeed.games`).
+- **Tahta:** tek boyut, **5 renk x 4 birim = 7 tüp** (5 dolu, 2 boş), tüp kapasitesi 4. Zorluk kademeleri sonra.
+- **Kural:** bir tüpün üstündeki aynı renk grubu, boş ya da üstü aynı renkte olan başka bir tüpe, sığdığı kadar dökülür. Her tüp boş ya da tek renkle dolu olunca kazanılır. Tek renkli tüpü boş tüpe dökmek geçersizdir (boşuna hamle).
+- **Kayıp yok.** Oyuncu sıkışırsa **geri al** (sınırsız, tek hamle) ya da **yeniden başlat** (tüpleri başa alır) kullanır. İkisi de **hamle sayacını geri vermez**: sayaç dökmelerin toplamıdır, yani denemenin bedelidir. Sonuç hep galibiyettir; seriyi yalnızca artırır, hiç sıfırlamaz.
+- **Her tahta çözülebilir:** karıştırılan tahta bir çözücüyle (`TubesGame.canSolve`) kontrol edilir, çözülemeyen ya da başlangıçta bitmiş tüp içeren tahta atılır.
+- **Renk körlüğü:** her renk aynı zamanda bir **şekildir** (kart şekilleriyle aynı beş şekil), içerik yalnızca renkle ayırt edilmez (design.md ilkesi). Ekran okuyucu tüpü alttan başlayarak şekil adlarıyla okur.
+- **Süre** hafızadaki gibi cihazda ölçülür: eylemler arası süreler toplamı, her aralık en fazla **15 sn** (düşünmek daha uzun sürer).
+- **Veri:** `game_result`'a `game = 'tubes'`. `answer` = başlangıç tahtası (`0121|2013|...|`, boş tüp boş), en fazla 26 karakter (sunucu sınırı 32). `guesses` = **yalnızca hamle sayısı** tek öğe olarak: sunucu `guesses` için en fazla 256 karakter kabul ediyor ve çok geri alan bir oyunun eylem günlüğü sığmazdı. Tam eylem günlüğü (`3>5`, `u`, `r`) yalnızca cihazdaki yarım oyunda (`in_progress_round`) durur ve oyunu aynen geri kurmaya yarar. Yeni migration yok.
+- Günlük mod ve sıralama yok (ilk sürüm).
+
 ## Açık / sonraya kalan
 - Supabase ücretsiz plan duraklatma davranışı: yayın öncesi plan kararı.
 - Gizlilik politikası ve destek sayfası `playbrainscroll.com` üzerinde yayınlanacak (App Store için gerekli).
 - Hesap birleştirme: anonim hesap mevcut bir Google/Apple hesabına geçerse sonuçlar bilet yoluyla taşınır (2026-10-10, plan Faz 8).
+
+## Ana Sayfa (karar: 2026-10-07)
+- **Yer:** yeni **Ana Sayfa** sekmesi, ilk sekme ve açılış ekranı. Sekme sırası: Ana Sayfa, Akış, Günlük, Sıralama, Profil.
+- **Bölüm sırası (yukarıdan aşağı):** Seriler, Bugünün bulmacası (en belirgin kart, TR/EN ve durum), Oyun kartları, En hızlılar önizlemesi, Akışını kişiselleştir.
+- **Seriler:** gün serisi + doğru cevap serisi, seri dondurma hakkı rozeti. Bugünün günlüğü bitmediyse gün serisinde küçük "bugün bekliyor" göstergesi. Anonim dahil herkese gösterilir; sıralamaya girmek için giriş ipucu.
+- **Popüler oyunlar:** v1'de gerçek sayaç yok, oyun kartları listesi. Karta dokunmak o oyunu Akış'ın ilk sayfası yapar, sonrası açık oyun türleriyle karışık devam eder. Gerçek popülerlik sayacı sonra.
+- **En hızlılar:** bugünün ilk 3-5 kişisi, "Tümü" ile Sıralama sekmesine. Dil, akış dili ayarından. Anonim görebilir.
+- **Kişiselleştirme (v1):** yalnızca **oyun türü** (kelime/hafıza aç-kapa) ve **kelime dili** (TR/EN). Zorluk ayarı kademeler gelince. En az bir oyun açık kalır; varsayılan ikisi de açık.
+- **Ayarlar:** Ana sayfada kart + alt sayfa (sheet), Profil'den de link. Değişiklik sonraki yeni sayfalardan geçerli, yarım oyun bozulmaz. Cihazda saklanır (hesap senkronu sonra).
+- **Çevrimdışı:** günlük kart "bağlantı gerekli" pasif; hız önizlemesi son önbellekle (yoksa boş durum mesajı); seriler ve oyun kartları yerelden çalışır.
+
+## Sadeleştirme (karar: 2026-10-07)
+- **Neden:** Akış (oyun) ekranı sade ve beğeniliyor; diğer sayfalar ve nav bar kalabalık. Hedef: ekran başına tek ana iş, ikincil şeyler gizli, yüzey (kart) yalnızca tıklanabilir/ana öğelerde, listeler arka plansız ve ince ayraçlı.
+- **Nav bar:** 3 sekme: Ana Sayfa, Akış, Profil. Günlük ve Sıralama sekme değil, geri düğmeli tam ekran alt sayfa. Günlük Ana Sayfa kartından, Sıralama Ana Sayfa "Tümü" bağlantısından (ve Profil) açılır.
+- **Akış:** nav bar gizli, sol üstte küçük ev düğmesi Ana Sayfa'ya döner.
+- **Ana Sayfa (Q6 değişti, oyun kartları kalktı):** en üstte kutusuz tek satır seri şeridi (alev + şimşek sayıları, dondurma rozeti, bugün bekliyor için küçük nokta), günlük kart (tamamı dokunulur), satır içi kişiselleştirme (oyun çipleri + kelime dili çipleri), en altta en hızlılar ilk 3 satır. Akışa tek yol Akış sekmesi. Satır içi kişiselleştirme beğenilmezse panele (PersonalizeSheet) geri dönülür.
+- **Sıralama:** üstte Hız / Seri / Arkadaşlar; dil, kapsam, herkes/arkadaşlar tek "Filtre" arkasında. Varsayılan: akış dili, Bugün, Herkes.
+- **Profil:** kısa özet kartı + İstatistikler / Favoriler / Ayarlar satırları, her biri kendi alt sayfasında.
+- **İş sırası:** (1) Ana Sayfa + nav bar, (2) Sıralama, (3) Profil, (4) görsel dil taraması. Her parçadan sonra ekran görüntüsü, onay beklenir.

@@ -64,8 +64,7 @@ class TelemetryUiTest {
     fun theSwitchInTheProfileStopsTheCounting() = runComposeUiTest {
         val cloud = TestCloud()
         start(cloud)
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("Ayarlar", "Settings")
         assertTrue(hasAnyText("Paylaşım açık", "Sharing is on"))
         snap("60_privacy_on")
         clickAny("Kapat", "Turn off")
@@ -81,8 +80,7 @@ class TelemetryUiTest {
         assertFalse(cloud.telemetry.events.any { it.props["tab"] == "daily" })
 
         // Turning it on again counts again.
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("Ayarlar", "Settings")
         clickAny("Aç", "Turn on")
         waitForIdle()
         openTab("Sıralama", "Ranks")

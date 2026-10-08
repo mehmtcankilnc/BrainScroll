@@ -19,8 +19,7 @@ import kotlin.test.assertTrue
 class AccountUiTest {
 
     private fun ComposeUiTest.openProfile() {
-        openTab("Profil", "Profile")
-        waitForIdle()
+        openProfilePage("Ayarlar", "Settings")
     }
 
     @Test

@@ -20,6 +20,8 @@ import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.FlipResult
+import com.mehmtcan.brainscroll.game.moveCount
+import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -27,7 +29,9 @@ import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.MemoryStats
+import com.mehmtcan.brainscroll.stats.TubesStats
 import com.mehmtcan.brainscroll.stats.computeMemoryStats
+import com.mehmtcan.brainscroll.stats.computeTubesStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.stats.Stats
 import com.mehmtcan.brainscroll.stats.Streaks
@@ -63,9 +67,13 @@ data class ProfileState(
     val daily: Stats = computeStats(emptyList(), mode = Mode.DAILY),
     /** Memory match, from the endless feed. */
     val memory: MemoryStats = computeMemoryStats(emptyList()),
+    /** Color tubes, from the endless feed. */
+    val tubes: TubesStats = computeTubesStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
+    /** A daily puzzle (either language) was finished today. */
+    val dailyDoneToday: Boolean = false,
 )
 
 /**
@@ -85,8 +93,11 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes),
 ) : ViewModel() {
+    /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
+    val availableGames: List<GameKind> = games
+
     private var feed: EndlessFeed? = null
     private var favoriteIds: Set<String> = emptySet()
 
@@ -95,6 +106,11 @@ class FeedViewModel(
 
     private val _profile = MutableStateFlow(ProfileState(computeStats(emptyList()), emptyList()))
     val profile: StateFlow<ProfileState> = _profile
+
+    private val _enabledGames = MutableStateFlow(games.toSet())
+
+    /** The games the player wants in the feed (docs/decisions.md, Ana Sayfa). Always at least one. */
+    val enabledGames: StateFlow<Set<GameKind>> = _enabledGames
 
     /** The page the feed was on, so switching tabs and coming back does not jump to the first puzzle. */
     var page: Int = 0
@@ -151,6 +167,8 @@ class FeedViewModel(
     private suspend fun loadFeed() {
         val lists = Language.entries.associateWith { loadWordList(it) }
         val restored = repository.unfinishedRounds()
+        val chosen = repository.savedGames()?.filter { it in games }?.takeIf { it.isNotEmpty() } ?: games
+        _enabledGames.value = chosen.toSet()
         feed = EndlessFeed(
             wordLists = lists,
             startLanguage = repository.savedLanguage() ?: startLanguage,
@@ -158,7 +176,7 @@ class FeedViewModel(
             restored = restored,
             startStreak = Streaks.current(repository.history()),
             now = now,
-            games = games,
+            games = games.filter { it in chosen },
         ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
         favoriteIds = repository.favoriteResults().map { it.id }.toSet()
         page = 0
@@ -175,7 +193,8 @@ class FeedViewModel(
             val props = when (result.game) {
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
-                GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to (result.guesses.size / 2).toString())
+                GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -225,6 +244,31 @@ class FeedViewModel(
         publish()
     }
 
+    /** Pours tube [from] into tube [to] on the tubes board of [page]. Returns what happened, so the screen can buzz. */
+    fun pour(page: Int, from: Int, to: Int): PourResult {
+        val f = feed ?: return PourResult.Ignored
+        val result = f.pour(page, from, to)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result != PourResult.Ignored && (_state.value as FeedUiState.Ready).feed.pages[page].isFinished) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Takes back the last pour of the tubes board on [page]. */
+    fun undo(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.undo(page).also { publish() }
+    }
+
+    /** Puts the tubes board on [page] back as it was at the start. */
+    fun restart(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restart(page).also { publish() }
+    }
+
     fun submit(page: Int) {
         act { it.submit(page) }
         refreshProfile()
@@ -249,6 +293,24 @@ class FeedViewModel(
         act { if (it.setLanguage(language)) repository.saveLanguage(language) }
     }
 
+    /**
+     * Switches a game on or off in the feed. The last game that is on cannot be switched off. Applies to pages that are
+     * still to come; puzzles that were started are left alone.
+     */
+    fun setGameEnabled(game: GameKind, enabled: Boolean) {
+        val next = if (enabled) _enabledGames.value + game else _enabledGames.value - game
+        if (next.isEmpty() || game !in availableGames || next == _enabledGames.value) return
+        _enabledGames.value = next
+        repository.saveGames(next)
+        act { it.setEnabledGames(next, fromIndex = page) }
+    }
+
+    /** The language of the word puzzles from now on. Puzzles already started keep theirs. */
+    fun setWordLanguage(language: Language) {
+        repository.saveLanguage(language)
+        act { it.setWordLanguage(language, fromIndex = page) }
+    }
+
     /** Hearts or un-hearts a finished puzzle. Its result is saved the moment it ends, so the id always exists. */
     fun toggleFavorite(resultId: String) {
         val nowFavorite = resultId !in favoriteIds
@@ -261,17 +323,20 @@ class FeedViewModel(
 
     fun refreshProfile() {
         val history = repository.history()
+        val today = IstanbulDay.dayIndex(now())
         _profile.value = ProfileState(
             stats = computeStats(history),
             favorites = repository.favoriteResults(),
             backupPending = repository.pendingCount(),
             daily = computeStats(history, mode = Mode.DAILY),
             memory = computeMemoryStats(history),
+            tubes = computeTubesStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },
-                today = IstanbulDay.dayIndex(now()),
+                today = today,
             ),
+            dailyDoneToday = history.any { it.mode == Mode.DAILY && it.dayIndex == today },
         )
     }
 
