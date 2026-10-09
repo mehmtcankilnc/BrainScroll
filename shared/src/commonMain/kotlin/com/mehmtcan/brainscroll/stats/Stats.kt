@@ -122,6 +122,22 @@ data class TubesStats(
     val fewestMoves: Int?,
 )
 
+/** What the statistics screen shows for minesweeper. */
+data class MinesStats(
+    val played: Int,
+    val won: Int,
+    /** The fastest win (see MinesRound for how the time is counted). Null until one was won. */
+    val bestTimeMs: Long?,
+) {
+    val winRate: Float get() = if (played == 0) 0f else won.toFloat() / played
+}
+
+fun computeMinesStats(history: List<FinishedRound>): MinesStats {
+    val results = history.filter { it.game == GameKind.Mines && it.mode == Mode.ENDLESS }
+    val wins = results.filter { it.outcome == Outcome.WON }
+    return MinesStats(played = results.size, won = wins.size, bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull())
+}
+
 fun computeTubesStats(history: List<FinishedRound>): TubesStats {
     val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS }
     return TubesStats(

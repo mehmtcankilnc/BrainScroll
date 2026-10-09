@@ -24,6 +24,7 @@ import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.ui.components.HeartButton
+import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -44,6 +45,7 @@ fun WordlePage(
     onEnter: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
+    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -61,7 +63,7 @@ fun WordlePage(
             text = stringResource(Res.string.game_word_puzzle),
             style = type.heading.copy(color = colors.textPrimary),
         )
-        Spacer(Modifier.height(Spacing.md))
+        HowToPlayButton(onHowToPlay)
 
         WordleGrid(round, modifier = Modifier.weight(1f).fillMaxWidth())
 

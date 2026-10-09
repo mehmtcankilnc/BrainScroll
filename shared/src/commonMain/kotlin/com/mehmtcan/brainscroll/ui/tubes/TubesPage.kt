@@ -85,6 +85,7 @@ import com.mehmtcan.brainscroll.game.tubes.TubesStatus
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.HeartButton
+import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
@@ -96,6 +97,7 @@ import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.popOnAppear
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -112,7 +114,6 @@ private val TubeGap = 12.dp
 private val MaxTubeWidth = 72.dp
 private val LiftHeight = 14.dp
 private val TubePadding = 3.dp
-private val ButtonSize = 56.dp
 private const val COLUMNS = 4
 
 /** The whole pour (go over the other tube, tip, drain, come back) takes this long. */
@@ -143,6 +144,7 @@ fun TubesPage(
     onRestart: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
+    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -180,6 +182,7 @@ fun TubesPage(
     ) {
         Spacer(Modifier.height(Spacing.sm))
         BasicText(stringResource(Res.string.game_tubes), style = type.heading.copy(color = colors.textPrimary))
+        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Chip(
             text = stringResource(Res.string.tubes_moves, state.moves),
@@ -574,35 +577,13 @@ private fun Tube(
 
 private enum class ButtonIcon { Undo, Restart }
 
-/** A round button with only an icon, large enough to hit easily (the circle is 56 dp, more than the 48 dp minimum). */
 @Composable
 private fun IconButton(icon: ButtonIcon, description: String, enabled: Boolean, tag: String, onClick: () -> Unit) {
-    val colors = BrainScrollTheme.colors
-    val iconColor = colors.textPrimary
-    Box(
-        modifier = Modifier
-            .size(ButtonSize)
-            .testTag(tag)
-            .alpha(if (enabled) 1f else 0.35f)
-            .clip(CircleShape)
-            .background(colors.bgSurface)
-            .border(1.5.dp, colors.borderStrong.copy(alpha = 0.6f), CircleShape)
-            .semantics {
-                contentDescription = description
-                role = Role.Button
-                if (!enabled) disabled()
-            }
-            .then(
-                if (enabled) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
-                else Modifier,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(Modifier.size(28.dp)) {
-            when (icon) {
-                ButtonIcon.Undo -> drawUndo(iconColor)
-                ButtonIcon.Restart -> drawRestart(iconColor)
-            }
+    val iconColor = BrainScrollTheme.colors.textPrimary
+    RoundIconButton(description = description, onClick = onClick, enabled = enabled, tag = tag) {
+        when (icon) {
+            ButtonIcon.Undo -> drawUndo(iconColor)
+            ButtonIcon.Restart -> drawRestart(iconColor)
         }
     }
 }

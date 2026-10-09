@@ -20,6 +20,7 @@ import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.FlipResult
+import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
@@ -29,7 +30,9 @@ import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.MemoryStats
+import com.mehmtcan.brainscroll.stats.MinesStats
 import com.mehmtcan.brainscroll.stats.TubesStats
+import com.mehmtcan.brainscroll.stats.computeMinesStats
 import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
@@ -69,6 +72,8 @@ data class ProfileState(
     val memory: MemoryStats = computeMemoryStats(emptyList()),
     /** Color tubes, from the endless feed. */
     val tubes: TubesStats = computeTubesStats(emptyList()),
+    /** Minesweeper, from the endless feed. */
+    val mines: MinesStats = computeMinesStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -93,7 +98,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines),
 ) : ViewModel() {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -194,7 +199,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -255,6 +260,33 @@ class FeedViewModel(
             requestSyncIfNeeded()
         }
         return result
+    }
+
+    /** Opens a cell of the minesweeper board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    fun openCell(page: Int, cell: Int): MinesResult {
+        val f = feed ?: return MinesResult.Ignored
+        return f.openCell(page, cell).also { afterMinesMove(it, page) }
+    }
+
+    /** Flags or unflags a cell of the minesweeper board on [page]. */
+    fun flagCell(page: Int, cell: Int): Boolean {
+        val f = feed ?: return false
+        return f.flagCell(page, cell).also { publish() }
+    }
+
+    /** Chords on an open number of the minesweeper board on [page]. */
+    fun chordCell(page: Int, cell: Int): MinesResult {
+        val f = feed ?: return MinesResult.Ignored
+        return f.chordCell(page, cell).also { afterMinesMove(it, page) }
+    }
+
+    private fun afterMinesMove(result: MinesResult, page: Int) {
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result != MinesResult.Ignored && (_state.value as FeedUiState.Ready).feed.pages[page].isFinished) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
     }
 
     /** Takes back the last pour of the tubes board on [page]. */
@@ -331,6 +363,7 @@ class FeedViewModel(
             daily = computeStats(history, mode = Mode.DAILY),
             memory = computeMemoryStats(history),
             tubes = computeTubesStats(history),
+            mines = computeMinesStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

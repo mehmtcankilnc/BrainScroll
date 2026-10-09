@@ -87,6 +87,25 @@ Son güncelleme: 2026-10-05
 - **Veri:** `game_result`'a `game = 'tubes'`. `answer` = başlangıç tahtası (`0121|2013|...|`, boş tüp boş), en fazla 26 karakter (sunucu sınırı 32). `guesses` = **yalnızca hamle sayısı** tek öğe olarak: sunucu `guesses` için en fazla 256 karakter kabul ediyor ve çok geri alan bir oyunun eylem günlüğü sığmazdı. Tam eylem günlüğü (`3>5`, `u`, `r`) yalnızca cihazdaki yarım oyunda (`in_progress_round`) durur ve oyunu aynen geri kurmaya yarar. Yeni migration yok.
 - Günlük mod ve sıralama yok (ilk sürüm).
 
+## Mayın tarlası (karar: 2026-10-11)
+- Dördüncü oyun. Akış sırası kelime, hafıza, renk tüpleri, **mayın tarlası**, kelime... (`EndlessFeed.games`).
+- **Tahta:** tek boyut, **8x8 = 64 hücre, 10 mayın**. Zorluk kademeleri sonra.
+- **İlk dokunuş her zaman güvenli:** mayınlar ilk açıştan **sonra** yerleşir, açılan hücre ve komşuları mayınsızdır (ilk hücre 0 olur ve bir alan açılır).
+- **Tahta tahminsiz çözülebilir:** üretilen her tahta saf mantıkla (`MinesSolver`) bitirilebilir, şansa kalan yer yoktur. Çözülemeyen tahmin atılır ve yenisi üretilir. Hızlı akışta "haksız" bir kayıp hissini önler.
+- **Kayıp:** mayına basınca **hemen** kayıp (hafızadaki "çok hata" gibi): şimşek serisi sıfırlanır, tüm mayınlar gösterilir, basılan mayın kırmızı. Kazanma: mayın olmayan her hücre açılır, kalan mayınlar bayraklı gösterilir.
+- **Bayrak:** hücreye **uzun basma** ve altta **bayrak modu** düğmesi ikisi birden. Bayrak modunda dokunma bayrak koyar, uzun basma açar (ikisi yer değiştirir). Bayrak sayısı sınırsız, sayaç eksiye inebilir. Bayraklı hücre dokunmayla açılmaz.
+- **Chord:** açık bir sayıya **çift dokunma**: çevresindeki bayrak sayısı sayıya eşitse bayraksız komşuların hepsi açılır (yanlış bayrak mayın açtırıp kaybettirir). Ekran okuyucuda sayının tıklaması chord'dur, bayrak için özel uzun tıklama eylemi vardır.
+- **Kaydırma çakışması yok:** hücreler yalnızca dokunma/uzun basma/çift dokunma dinler, dikey sürükleme akışın sayfa kaydırmasına gider.
+- **Süre** diğer oyunlar gibi cihazda: eylem araları toplamı, her aralık en fazla **15 sn**; ilk eylem (bayrak dahil) saati başlatır.
+- **Veri:** `game_result`'a `game = 'mines'`. Tahta kaydedilmez, **yeniden üretilir**: `answer` = `8x8x10:<seed>:<ilk hücre>` (ilk açıştan önce -1), en fazla 21 karakter (sunucu sınırı 32). `guesses` = **yalnızca hamle sayısı** (açma + chord; bayrak hamle sayılmaz), tek öğe (sunucu sınırı 256). Cihazdaki yarım oyun tam eylem günlüğünü (`o12`, `f12`, `c12`) tutar ve oyunu seed'den aynen geri kurar. Yeni migration yok.
+- Günlük mod ve sıralama yok (ilk sürüm). Profil: oynanan, kazanma %, en iyi süre.
+
+## Nasıl Oynanır? (karar: 2026-10-12)
+- **Her oyun sayfasında** (kelime, hafıza, renk tüpleri, mayın tarlası) başlığın hemen altında **"Nasıl Oynanır?"** düğmesi var (soru işaretli hap). Aynı yerde durur, böylece oyundan oyuna kayma olmaz.
+- Düğme, o oyunun kurallarını **alt panel** olarak açar (Ana Sayfa'daki kişiselleştirme paneliyle aynı desen): arkası karartılır, numaralı 4-5 kısa adım, "Anladım" düğmesi. Dışına dokunmak, "Anladım" ya da Android geri tuşu kapatır. Panel açıkken arkadaki oyun dokunuş, kaydırma ve fiziksel klavye almaz.
+- Metinler TR/EN, her oyunun kuralı ve **kaybetme/kazanma** koşulu ile oyuna özel ipuçları (bayrak, chord, geri al, şekiller) bir yerde (`ui/howto/HowToPlay.kt` + `howto_*` metinleri). Yeni oyun eklerken yalnızca `contentOf` içine bir satır ve metinler eklenir.
+- Kural değişirse (ör. mayın sayısı, deneme sayısı) bu metinlerin de güncellenmesi gerekir.
+
 ## Açık / sonraya kalan
 - Supabase ücretsiz plan duraklatma davranışı: yayın öncesi plan kararı.
 - Gizlilik politikası ve destek sayfası `playbrainscroll.com` üzerinde yayınlanacak (App Store için gerekli).

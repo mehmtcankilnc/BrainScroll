@@ -4,6 +4,8 @@ import com.mehmtcan.brainscroll.game.FeedRound
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
+import com.mehmtcan.brainscroll.game.mines.MinesResult
+import com.mehmtcan.brainscroll.game.mines.MinesRound
 import com.mehmtcan.brainscroll.game.memory.MemoryGame
 import com.mehmtcan.brainscroll.game.memory.MemoryRound
 import com.mehmtcan.brainscroll.game.tubes.PourResult
@@ -85,6 +87,7 @@ class EndlessFeed(
                 GameKind.Word -> wordLists[stored.language]?.let { WordleRound.restore(rounds.size, stored, it) }
                 GameKind.Memory -> MemoryRound.restore(rounds.size, stored, now)
                 GameKind.Tubes -> TubesRound.restore(rounds.size, stored, now)
+                GameKind.Mines -> MinesRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
         }
@@ -228,6 +231,33 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- Minesweeper actions (ignored on a page of another game) ---
+
+    /** Opens [cell] on the minesweeper board of page [index]. */
+    fun openCell(index: Int, cell: Int): MinesResult {
+        val round = rounds[index] as? MinesRound ?: return MinesResult.Ignored
+        touch()
+        val result = round.open(cell)
+        if (result != MinesResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Flags or unflags [cell] on page [index]. Returns false when that was not possible. */
+    fun flagCell(index: Int, cell: Int): Boolean {
+        val round = rounds[index] as? MinesRound ?: return false
+        touch()
+        return round.flag(cell).also { if (it) persist(round) }
+    }
+
+    /** Opens the neighbors of the open number [cell] that are not flagged, when its flags match its number. */
+    fun chordCell(index: Int, cell: Int): MinesResult {
+        val round = rounds[index] as? MinesRound ?: return MinesResult.Ignored
+        touch()
+        val result = round.chord(cell)
+        if (result != MinesResult.Ignored) afterMove(index, round)
+        return result
+    }
+
     /** After a move: a round that just ended becomes a result (once), anything else is saved as progress. */
     private fun afterMove(index: Int, round: FeedRound) {
         if (round.isFinished && counted.add(index)) {
@@ -297,6 +327,7 @@ class EndlessFeed(
         }
         GameKind.Memory -> MemoryRound(index, newId(), MemoryGame.newLayout(random), language, now)
         GameKind.Tubes -> TubesRound(index, newId(), TubesGame.newLayout(random), language, now)
+        GameKind.Mines -> MinesRound(index, newId(), random.nextInt(), language, now)
     }
 
     /** Keeps the store in step with a round: untouched rounds are not worth saving, started ones are. */

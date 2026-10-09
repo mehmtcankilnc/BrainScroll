@@ -42,10 +42,14 @@ import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.GuessError
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.components.NoticePill
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
+import com.mehmtcan.brainscroll.ui.howto.HowToPlaySheet
 import com.mehmtcan.brainscroll.ui.tubes.TubesPage
+import com.mehmtcan.brainscroll.ui.mines.MinesPage
+import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
 import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 import kotlinx.coroutines.delay
@@ -79,6 +83,8 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val startPage = viewModel.page.coerceIn(0, feed.pages.size - 1)
     val pagerState = rememberPagerState(initialPage = startPage) { feed.pages.size }
     var notice by remember { mutableStateOf<Notice?>(null) }
+    // The game whose rules are on show ("How to play?"), if any.
+    var howTo by remember { mutableStateOf<GameKind?>(null) }
     var noticeCounter by remember { mutableIntStateOf(0) }
     fun show(text: StringResource) {
         notice = Notice(text, noticeCounter++)
@@ -148,78 +154,95 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .focusRequester(focusRequester)
-            .focusable()
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown || event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) {
-                    return@onPreviewKeyEvent false
-                }
-                when (event.key) {
-                    Key.Enter, Key.NumPadEnter -> { viewModel.submit(pagerState.currentPage); true }
-                    Key.Backspace -> { viewModel.backspace(pagerState.currentPage); true }
-                    else -> {
-                        val ch = event.utf16CodePoint.toChar()
-                        if (ch.isLetter()) { viewModel.type(pagerState.currentPage, ch); true } else false
+    // The rules panel goes over the whole screen, the bar at the top included, so the scrim darkens and blocks all of it.
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    // With the rules on show, typing must not reach the puzzle below.
+                    if (howTo != null || event.type != KeyEventType.KeyDown || event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) {
+                        return@onPreviewKeyEvent false
+                    }
+                    when (event.key) {
+                        Key.Enter, Key.NumPadEnter -> { viewModel.submit(pagerState.currentPage); true }
+                        Key.Backspace -> { viewModel.backspace(pagerState.currentPage); true }
+                        else -> {
+                            val ch = event.utf16CodePoint.toChar()
+                            if (ch.isLetter()) { viewModel.type(pagerState.currentPage, ch); true } else false
+                        }
+                    }
+                },
+        ) {
+            Hud(
+                answerStreak = feed.answerStreak,
+                skipsLeft = feed.skipsLeft,
+                language = feed.language,
+                // Locked once the feed has been started (first letter typed or first skip).
+                onToggleLanguage = if (feed.canChangeLanguage) {
+                    {
+                        val next = if (feed.language == Language.EN) Language.TR else Language.EN
+                        viewModel.setLanguage(next)
+                    }
+                } else null,
+                onHome = onHome,
+            )
+            Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                // Forward is blocked up front while this puzzle is unfinished and no skip is left.
+                val leaveBlocked = !(current.isFinished || current.skipped || feed.skipsLeft > 0)
+                VerticalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blockForwardScroll(blocked = leaveBlocked) { show(Res.string.notice_finish_first) },
+                    beyondViewportPageCount = 1,
+                    key = { it },
+                ) { index ->
+                    when (val item = feed.pages[index]) {
+                        is RoundSnapshot -> WordlePage(
+                            round = item,
+                            onLetter = { viewModel.type(index, it) },
+                            onBackspace = { viewModel.backspace(index) },
+                            onEnter = { viewModel.submit(index) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is MemorySnapshot -> MemoryPage(
+                            page = item,
+                            onFlip = { card -> viewModel.flip(index, card) },
+                            onCloseMismatch = { viewModel.closeMismatch(index) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is TubesSnapshot -> TubesPage(
+                            page = item,
+                            onPour = { from, to -> viewModel.pour(index, from, to) },
+                            onUndo = { viewModel.undo(index) },
+                            onRestart = { viewModel.restart(index) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is MinesSnapshot -> MinesPage(
+                            page = item,
+                            onOpen = { cell -> viewModel.openCell(index, cell) },
+                            onFlag = { cell -> viewModel.flagCell(index, cell) },
+                            onChord = { cell -> viewModel.chordCell(index, cell) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        else -> Unit
                     }
                 }
-            },
-    ) {
-        Hud(
-            answerStreak = feed.answerStreak,
-            skipsLeft = feed.skipsLeft,
-            language = feed.language,
-            // Locked once the feed has been started (first letter typed or first skip).
-            onToggleLanguage = if (feed.canChangeLanguage) {
-                {
-                    val next = if (feed.language == Language.EN) Language.TR else Language.EN
-                    viewModel.setLanguage(next)
-                }
-            } else null,
-            onHome = onHome,
-        )
-        Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-            // Forward is blocked up front while this puzzle is unfinished and no skip is left.
-            val leaveBlocked = !(current.isFinished || current.skipped || feed.skipsLeft > 0)
-            VerticalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blockForwardScroll(blocked = leaveBlocked) { show(Res.string.notice_finish_first) },
-                beyondViewportPageCount = 1,
-                key = { it },
-            ) { index ->
-                when (val item = feed.pages[index]) {
-                    is RoundSnapshot -> WordlePage(
-                        round = item,
-                        onLetter = { viewModel.type(index, it) },
-                        onBackspace = { viewModel.backspace(index) },
-                        onEnter = { viewModel.submit(index) },
-                        isFavorite = item.id in favoriteIds,
-                        onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                    )
-                    is MemorySnapshot -> MemoryPage(
-                        page = item,
-                        onFlip = { card -> viewModel.flip(index, card) },
-                        onCloseMismatch = { viewModel.closeMismatch(index) },
-                        isFavorite = item.id in favoriteIds,
-                        onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                    )
-                    is TubesSnapshot -> TubesPage(
-                        page = item,
-                        onPour = { from, to -> viewModel.pour(index, from, to) },
-                        onUndo = { viewModel.undo(index) },
-                        onRestart = { viewModel.restart(index) },
-                        isFavorite = item.id in favoriteIds,
-                        onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                    )
-                    else -> Unit
-                }
+                // Sits under the page title so it never covers it.
+                notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
             }
-            // Sits under the page title so it never covers it.
-            notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
         }
+        howTo?.let { HowToPlaySheet(it, onClose = { howTo = null }) }
     }
 }

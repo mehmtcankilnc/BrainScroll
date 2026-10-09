@@ -45,6 +45,7 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -69,6 +70,7 @@ fun MemoryPage(
     onCloseMismatch: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
+    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -99,6 +101,7 @@ fun MemoryPage(
     ) {
         Spacer(Modifier.height(Spacing.sm))
         BasicText(stringResource(Res.string.game_memory), style = type.heading.copy(color = colors.textPrimary))
+        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Chip(

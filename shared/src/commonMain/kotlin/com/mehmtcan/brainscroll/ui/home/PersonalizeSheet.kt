@@ -32,6 +32,7 @@ import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.a11y_switch_off
 import brainscroll.shared.generated.resources.a11y_switch_on
 import brainscroll.shared.generated.resources.game_memory
+import brainscroll.shared.generated.resources.game_mines
 import brainscroll.shared.generated.resources.game_tubes
 import brainscroll.shared.generated.resources.game_word_puzzle
 import brainscroll.shared.generated.resources.personalize_done
@@ -95,6 +96,7 @@ fun PersonalizeSheet(viewModel: FeedViewModel, onClose: () -> Unit, modifier: Mo
                         GameKind.Word -> stringResource(Res.string.game_word_puzzle)
                         GameKind.Memory -> stringResource(Res.string.game_memory)
                         GameKind.Tubes -> stringResource(Res.string.game_tubes)
+                        GameKind.Mines -> stringResource(Res.string.game_mines)
                     },
                     on = on,
                     locked = locked,

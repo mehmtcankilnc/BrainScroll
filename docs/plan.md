@@ -126,12 +126,19 @@ Amaç: Üçüncü oyun. Kararlar `docs/decisions.md` "Renk tüpleri". Sunucu tar
 - [ ] 10c Cihazda test (`docs/faz10-test-listesi.md`)
 **Çıkış:** Akışta kelime, hafıza ve renk tüpleri dönüşümlü geliyor, üçü de kaydediliyor.
 
-## Faz 11+ - Diğer oyunlar
+## Faz 11 - Mayın tarlası
+Amaç: Dördüncü oyun. Kararlar `docs/decisions.md` "Mayın tarlası". Sunucu tarafı değişmedi (yeni migration yok).
+- [x] 11a Alan mantığı: `GameKind.Mines`, `MinesGame` (8x8, 10 mayın; mayınlar ilk açışta yerleşir, ilk hücre ve komşuları mayınsız; açma, bayrak, chord, taşma açma), `MinesSolver` (saf mantık çözücü: tek sayı + altküme kuralı), tahta `seed` + ilk hücreden belirlenir ve **tahminsiz çözülebilir** (`solvableByLogic` ile doğrulanır), `MinesRound` (süre = eylem araları toplamı, her aralık en fazla 15 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`openCell`/`flagCell`/`chordCell`), istatistik (`computeMinesStats`). Testler: `MinesGameTest`, `MinesRoundTest`, `MinesFeedTest`, `MinesStatsTest`, `MinesPersistenceTest`
+- [x] 11b Arayüz: `ui/mines/MinesPage` (hücreler, dokun = aç, uzun bas = bayrak, bayrak modu düğmesi, sayıya çift dokun = chord, sonuç kartı), ortak `RoundIconButton`, akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, haptik, erişilebilirlik (hücre konumu ve durumu okunur, tıklama ve uzun tıklama eylemleri), telemetri (`game=mines`, `moves`). `MinesUiTest` (7, ekran görüntüleri 100-106)
+- [ ] 11c Cihazda test (`docs/faz11-test-listesi.md`)
+**Çıkış:** Akışta kelime, hafıza, renk tüpleri ve mayın tarlası dönüşümlü geliyor, dördü de kaydediliyor.
+
+## Faz 12+ - Diğer oyunlar
 Sudoku, örüntü tanıma, satranç bulmacası. Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
 
 ### Satranç bulmacası - teknik notlar
 
-Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 11c gibi) ele alınmalı.
+Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 12c gibi) ele alınmalı.
 
 **Bulmaca kaynağı**
 - [ ] Lichess açık bulmaca veritabanı (CC0, CSV). Alanlar: `PuzzleId, FEN, Moves, Rating, RatingDeviation, Popularity, NbPlays, Themes, GameUrl, OpeningTags`. Lisans ve alan şemasını başlamadan resmi sayfadan doğrula.
@@ -147,7 +154,7 @@ Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 1
 
 **Çözüm doğrulama**
 - [ ] Oyuncunun hamlesi bulmacanın çözüm hamlesiyle karşılaştırılır. Mat bulmacalarında Lichess gibi **alternatif matlar da doğru sayılır**. Çok hamleli bulmacada her doğru hamleden sonra rakibin karşılığı otomatik oynanır.
-- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 11c başında netleştirilecek).
+- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 12c başında netleştirilecek).
 - [ ] İpucu: kaynak karesini vurgular. İpucu kullanılan çözüm sıralamaya girmez, seriyi bozmaz (öneri).
 
 **Günlük bulmaca ve adalet**
