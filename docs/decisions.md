@@ -112,10 +112,32 @@ Son güncelleme: 2026-10-05
 - **Süre** diğer oyunlar gibi cihazda: eylem araları toplamı, ama sudoku daha çok düşünme istediği için her aralık en fazla **30 sn** (diğer oyunlarda 10-15 sn). İlk eylem (not dahil) saati başlatır.
 - **Veri:** `game_result`'a `game = 'sudoku'`. `guesses` = **yalnızca hamle sayısı** tek öğe (sunucu sınırı 256). Cihazdaki yarım oyun tam eylem günlüğünü tutar (`p12:5` sayı koy, `n12:5` not aç/kapa, `e12` sil) ve tahtayı tohumdan aynen geri kurar. Yeni migration yok.
 - Günlük mod ve sıralama yok (ilk sürüm). Profil: oynanan, kazanma %, en iyi süre.
-- **Sıradaki oyun fikirleri (onaylı):** Işıkları Söndür (Lights Out) ve Kayan Bulmaca (15 bulmaca benzeri). Bkz. `docs/plan.md` Faz 13+.
+
+## Işıkları söndür (karar: 2026-10-09)
+- Altıncı oyun. Akış sırası kelime, hafıza, renk tüpleri, mayın tarlası, sudoku, **ışıkları söndür**, kelime... (`EndlessFeed.games`).
+- **Kural:** 5x5 ızgara. Bir ışığa dokunmak onu ve hemen üstündeki, altındaki, solundaki, sağındaki ışığı değiştirir (yanan söner, sönük yanar; kenar ve köşede olmayan komşu yok sayılır). Tüm ışıklar sönünce oyun kazanılır.
+- **Her tahta çözülebilir:** tahta **geriye doğru** üretilir. Sönük tahtadan başlayıp **7 farklı hücreye** dokunulur (tohumla seçilir). Dokunuşlar sırayla ilgisizdir ve iki kez dokunmak iptal eder, yani aynı 7 hücreye yeniden dokunmak tüm ışıkları söndürür. Böylece her tahta **en çok 7 dokunuşla** çözülür. Çok az ışığı olan (4'ten az) tahta atılır ve yenisi üretilir.
+- **Kaybetmek yok** (renk tüpleri gibi): kazanç ortak seriyi artırır. Aynı ışığa ikinci dokunuş zaten geri almadır, bu yüzden ayrı bir "geri al" yok; yalnızca **baştan başla** düğmesi var. Baştan başlamak hamle sayacını geri vermez (renk tüpleri ile aynı karar). Tahta başlangıçtaysa düğme soluk.
+- **"En çok 7" göstergesi:** hamle sayacının yanında, tahtanın en çok kaç dokunuşta çözüleceği yazar (adil bir hedef, en iyi çözüm bundan kısa olabilir). Zorluk seviyeleri sonra: üretici ve tur `size` (tahta boyu) ve `taps` (dokunuş sayısı) parametrelerini alıyor, kayıtta tahtanın adında yazılı (`5x5x7:<seed>`); çok dokunuş = daha zor.
+- **Görünüm:** yanan ışık sarı dolgu ve içinde koyu daire, sönük ışık koyu zemin ve içinde soluk halka (renk körlüğünde şekille de ayırt edilir). Geçiş 200 ms renk animasyonu ("hareketi azalt" açıkken anında).
+- **Süre** diğer oyunlar gibi cihazda: eylem araları toplamı, her aralık en fazla **15 sn**; ilk dokunuş saati başlatır.
+- **Veri:** `game_result`'a `game = 'lights'`. `answer` = `5x5x7:<seed>`, en fazla 19 karakter (sunucu sınırı 32). `guesses` = **yalnızca dokunuş sayısı** tek öğe (sunucu sınırı 256). Cihazdaki yarım oyun eylem günlüğünü tutar (`t12` dokun, `r` baştan başla) ve tahtayı tohumdan aynen geri kurar. Yeni migration yok.
+- Günlük mod ve sıralama yok (ilk sürüm). Profil: oynanan, en iyi süre, en az hamle.
+
+## Kayan bulmaca (karar: 2026-10-09)
+- Yedinci oyun. Akış sırası kelime, hafıza, renk tüpleri, mayın tarlası, sudoku, ışıkları söndür, **kayan bulmaca**, kelime... (`EndlessFeed.games`).
+- **Tahta:** **3 sütun x 4 satır**, 11 numaralı taş ve bir boş hücre (telefon gibi dik, taşlar rahat vurulur). Hedef: 1 sol üstte, sayılar sırayla, boşluk en sonda. Taşlar yalnızca sayıdır (resim yok).
+- **Hamle:** boşlukla **aynı satır ya da sütundaki** bir taşa dokunmak onu boşluğa kaydırır; arada başka taşlar varsa **hepsi birlikte** bir adım ilerler. Bu **tek hamle** sayılır. Boşlukla aynı hizada olmayan taş ve boşluğun kendisi yok sayılır (hamle sayılmaz, haptik yok).
+- **Her tahta çözülebilir:** tahta bitmiş resimden **geçerli kaydırmalarla karıştırılır** (80 rastgele tek taş kaydırması, bir öncekini hemen geri almadan, tohumla). Bu çözülebilirliği garanti eder (3 sütunda çözülebilirlik = ters çevrilmiş çift sayısı çift, testte doğrulanıyor, ayrıca gerçek bir çözücüyle birkaç tahta çözülüyor). Taşların yerinden toplam uzaklığı 14'ten azsa tahta çok kolay sayılır ve karıştırma sürer.
+- **Kaybetmek yok** (renk tüpleri ve ışıkları söndür gibi): kazanç ortak seriyi artırır. Yalnızca **baştan başla** düğmesi var (geri al yok; hamleyi geri almak için taşı geri kaydırırsın). Baştan başlamak hamle sayacını geri vermez. Tahta başlangıçtaysa düğme soluk.
+- **"En çok" göstergesi yok:** karıştırma 80 adım olduğu için bu sayı en iyi çözümü anlatmazdı. Skor: hamle ve süre.
+- **Görünüm:** koyu zeminli yuvarlak köşeli taşlar, büyük kalın sayı. **Yerinde olan taşın sayısı ve çerçevesi yeşil** (yardım ve ilerleme göstergesi). Taş yeni hücresine **200 ms kayarak** gider ("hareketi azalt" açıkken anında). Sayı boyutu taşa göre, yazı boyutu ayarına göre değil (taşa sığmalı).
+- **Süre** diğer oyunlar gibi cihazda: eylem araları toplamı, her aralık en fazla **15 sn**; ilk kaydırma saati başlatır.
+- **Veri:** `game_result`'a `game = 'slide'`. `answer` = `3x4x80:<seed>` (sütun x satır x karıştırma adımı), en fazla 19 karakter (sunucu sınırı 32). `guesses` = **yalnızca hamle sayısı** tek öğe (sunucu sınırı 256). Cihazdaki yarım oyun eylem günlüğünü tutar (`m7` 7. hücreden kaydır, `r` baştan başla) ve tahtayı tohumdan aynen geri kurar. Yeni migration yok.
+- Zorluk seviyeleri sonra: tahta boyu (3x3, 4x4) ve karıştırma. Günlük mod ve sıralama yok (ilk sürüm). Profil: oynanan, en iyi süre, en az hamle.
 
 ## Nasıl Oynanır? (karar: 2026-10-12)
-- **Her oyun sayfasında** (kelime, hafıza, renk tüpleri, mayın tarlası, sudoku) başlığın hemen altında **"Nasıl Oynanır?"** düğmesi var (soru işaretli hap). Aynı yerde durur, böylece oyundan oyuna kayma olmaz.
+- **Her oyun sayfasında** (kelime, hafıza, renk tüpleri, mayın tarlası, sudoku, ışıkları söndür, kayan bulmaca) başlığın hemen altında **"Nasıl Oynanır?"** düğmesi var (soru işaretli hap). Aynı yerde durur, böylece oyundan oyuna kayma olmaz.
 - Düğme, o oyunun kurallarını **alt panel** olarak açar (Ana Sayfa'daki kişiselleştirme paneliyle aynı desen): arkası karartılır, numaralı 4-5 kısa adım, "Anladım" düğmesi. Dışına dokunmak, "Anladım" ya da Android geri tuşu kapatır. Panel açıkken arkadaki oyun dokunuş, kaydırma ve fiziksel klavye almaz.
 - Metinler TR/EN, her oyunun kuralı ve **kaybetme/kazanma** koşulu ile oyuna özel ipuçları (bayrak, chord, geri al, şekiller) bir yerde (`ui/howto/HowToPlay.kt` + `howto_*` metinleri). Yeni oyun eklerken yalnızca `contentOf` içine bir satır ve metinler eklenir.
 - Kural değişirse (ör. mayın sayısı, deneme sayısı) bu metinlerin de güncellenmesi gerekir.

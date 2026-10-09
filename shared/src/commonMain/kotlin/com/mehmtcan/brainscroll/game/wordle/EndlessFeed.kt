@@ -4,12 +4,16 @@ import com.mehmtcan.brainscroll.game.FeedRound
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
+import com.mehmtcan.brainscroll.game.lights.LightsResult
+import com.mehmtcan.brainscroll.game.lights.LightsRound
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.mines.MinesRound
 import com.mehmtcan.brainscroll.game.memory.MemoryGame
 import com.mehmtcan.brainscroll.game.memory.MemoryRound
 import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.tubes.TubesGame
+import com.mehmtcan.brainscroll.game.slide.SlideResult
+import com.mehmtcan.brainscroll.game.slide.SlideRound
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
 import com.mehmtcan.brainscroll.game.sudoku.SudokuRound
 import com.mehmtcan.brainscroll.game.tubes.TubesRound
@@ -91,6 +95,8 @@ class EndlessFeed(
                 GameKind.Tubes -> TubesRound.restore(rounds.size, stored, now)
                 GameKind.Mines -> MinesRound.restore(rounds.size, stored, now)
                 GameKind.Sudoku -> SudokuRound.restore(rounds.size, stored, now)
+                GameKind.Lights -> LightsRound.restore(rounds.size, stored, now)
+                GameKind.Slide -> SlideRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
         }
@@ -261,6 +267,42 @@ class EndlessFeed(
         return result
     }
 
+    // --- Lights Out actions (ignored on a page of another game) ---
+
+    /** Taps [cell] on the Lights Out board of page [index]. */
+    fun tapLight(index: Int, cell: Int): LightsResult {
+        val round = rounds[index] as? LightsRound ?: return LightsResult.Ignored
+        touch()
+        val result = round.tap(cell)
+        if (result != LightsResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Puts the lights of page [index] back as they were at the start. Returns false when nothing had changed. */
+    fun restartLights(index: Int): Boolean {
+        val round = rounds[index] as? LightsRound ?: return false
+        touch()
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Sliding puzzle actions (ignored on a page of another game) ---
+
+    /** Taps the tile in [cell] on the sliding puzzle of page [index]. */
+    fun slideTile(index: Int, cell: Int): SlideResult {
+        val round = rounds[index] as? SlideRound ?: return SlideResult.Ignored
+        touch()
+        val result = round.slide(cell)
+        if (result != SlideResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Puts the tiles of page [index] back as they were at the start. Returns false when nothing had changed. */
+    fun restartSlide(index: Int): Boolean {
+        val round = rounds[index] as? SlideRound ?: return false
+        touch()
+        return round.restart().also { if (it) persist(round) }
+    }
+
     // --- Sudoku actions (ignored on a page of another game) ---
 
     /** Puts [digit] in [cell] of the sudoku board of page [index]. A wrong digit is a mistake; the third one loses. */
@@ -357,6 +399,8 @@ class EndlessFeed(
         GameKind.Tubes -> TubesRound(index, newId(), TubesGame.newLayout(random), language, now)
         GameKind.Mines -> MinesRound(index, newId(), random.nextInt(), language, now)
         GameKind.Sudoku -> SudokuRound(index, newId(), random.nextInt(), language, now)
+        GameKind.Lights -> LightsRound(index, newId(), random.nextInt(), language, now)
+        GameKind.Slide -> SlideRound(index, newId(), random.nextInt(), language, now)
     }
 
     /** Keeps the store in step with a round: untouched rounds are not worth saving, started ones are. */

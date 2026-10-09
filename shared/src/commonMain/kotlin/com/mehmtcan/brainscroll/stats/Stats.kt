@@ -154,6 +154,42 @@ fun computeMinesStats(history: List<FinishedRound>): MinesStats {
     return MinesStats(played = results.size, won = wins.size, bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull())
 }
 
+/** What the statistics screen shows for Lights Out. Every result is a win (the game cannot be lost). */
+data class LightsStats(
+    val played: Int,
+    /** The fastest game (see LightsRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest taps in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeLightsStats(history: List<FinishedRound>): LightsStats {
+    val results = history.filter { it.game == GameKind.Lights && it.mode == Mode.ENDLESS }
+    return LightsStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the sliding puzzle. Every result is a win (the game cannot be lost). */
+data class SlideStats(
+    val played: Int,
+    /** The fastest game (see SlideRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest moves in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeSlideStats(history: List<FinishedRound>): SlideStats {
+    val results = history.filter { it.game == GameKind.Slide && it.mode == Mode.ENDLESS }
+    return SlideStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
 fun computeTubesStats(history: List<FinishedRound>): TubesStats {
     val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS }
     return TubesStats(

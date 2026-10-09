@@ -609,7 +609,7 @@ private fun DrawScope.drawUndo(color: androidx.compose.ui.graphics.Color) {
 }
 
 /** A circular arrow, nearly closed, pointing clockwise. */
-private fun DrawScope.drawRestart(color: androidx.compose.ui.graphics.Color) {
+internal fun DrawScope.drawRestart(color: androidx.compose.ui.graphics.Color) {
     val s = size.minDimension
     val stroke = Stroke(width = s * 0.1f, cap = StrokeCap.Round)
     val start = -50f

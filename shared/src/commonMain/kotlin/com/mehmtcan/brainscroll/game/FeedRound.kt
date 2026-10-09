@@ -10,6 +10,8 @@ enum class GameKind(val id: String) {
     Tubes("tubes"),
     Mines("mines"),
     Sudoku("sudoku"),
+    Lights("lights"),
+    Slide("slide"),
     ;
 
     companion object {
@@ -20,13 +22,13 @@ enum class GameKind(val id: String) {
 
 /**
  * How many moves a finished result took, whatever the game: a memory move is two flipped cards (the flips are the
- * guesses), a tubes, minesweeper or sudoku result keeps its number of moves as its only guess. Word puzzles count guesses.
+ * guesses), a tubes, minesweeper, sudoku, lights or slide result keeps its number of moves as its only guess. Word puzzles count guesses.
  */
 val FinishedRound.moveCount: Int
     get() = when (game) {
         GameKind.Word -> guesses.size
         GameKind.Memory -> guesses.size / 2
-        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku -> guesses.firstOrNull()?.toIntOrNull() ?: 0
+        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide -> guesses.firstOrNull()?.toIntOrNull() ?: 0
     }
 
 /**

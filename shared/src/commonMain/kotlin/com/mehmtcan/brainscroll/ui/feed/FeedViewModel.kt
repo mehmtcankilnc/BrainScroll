@@ -21,7 +21,9 @@ import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
+import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.moveCount
+import com.mehmtcan.brainscroll.game.slide.SlideResult
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
 import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
@@ -31,10 +33,14 @@ import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.MemoryStats
+import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
+import com.mehmtcan.brainscroll.stats.SlideStats
 import com.mehmtcan.brainscroll.stats.SudokuStats
 import com.mehmtcan.brainscroll.stats.TubesStats
+import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
+import com.mehmtcan.brainscroll.stats.computeSlideStats
 import com.mehmtcan.brainscroll.stats.computeSudokuStats
 import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
@@ -79,6 +85,10 @@ data class ProfileState(
     val mines: MinesStats = computeMinesStats(emptyList()),
     /** Sudoku, from the endless feed. */
     val sudoku: SudokuStats = computeSudokuStats(emptyList()),
+    /** Lights Out, from the endless feed. */
+    val lights: LightsStats = computeLightsStats(emptyList()),
+    /** Sliding puzzle, from the endless feed. */
+    val slide: SlideStats = computeSlideStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -103,7 +113,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide),
 ) : ViewModel() {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -204,7 +214,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -292,6 +302,44 @@ class FeedViewModel(
             refreshProfile()
             requestSyncIfNeeded()
         }
+    }
+
+    /** Taps a light of the Lights Out board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    fun tapLight(page: Int, cell: Int): LightsResult {
+        val f = feed ?: return LightsResult.Ignored
+        val result = f.tapLight(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == LightsResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the Lights Out board on [page] back as it was at the start. */
+    fun restartLights(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartLights(page).also { publish() }
+    }
+
+    /** Slides the tile in [cell] of the sliding puzzle on [page]. Returns what happened, so the screen can buzz accordingly. */
+    fun slideTile(page: Int, cell: Int): SlideResult {
+        val f = feed ?: return SlideResult.Ignored
+        val result = f.slideTile(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == SlideResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the sliding puzzle on [page] back as it was at the start. */
+    fun restartSlide(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartSlide(page).also { publish() }
     }
 
     /** Puts a digit in a cell of the sudoku board on [page]. Returns what happened, so the screen can buzz accordingly. */
@@ -397,6 +445,8 @@ class FeedViewModel(
             tubes = computeTubesStats(history),
             mines = computeMinesStats(history),
             sudoku = computeSudokuStats(history),
+            lights = computeLightsStats(history),
+            slide = computeSlideStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

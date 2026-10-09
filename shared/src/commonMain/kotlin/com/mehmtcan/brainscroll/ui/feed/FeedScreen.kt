@@ -50,7 +50,11 @@ import com.mehmtcan.brainscroll.ui.howto.HowToPlaySheet
 import com.mehmtcan.brainscroll.ui.tubes.TubesPage
 import com.mehmtcan.brainscroll.ui.mines.MinesPage
 import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
+import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
+import com.mehmtcan.brainscroll.game.slide.SlideSnapshot
 import com.mehmtcan.brainscroll.game.sudoku.SudokuSnapshot
+import com.mehmtcan.brainscroll.ui.slide.SlidePage
+import com.mehmtcan.brainscroll.ui.lights.LightsPage
 import com.mehmtcan.brainscroll.ui.sudoku.SudokuPage
 import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
@@ -243,6 +247,22 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                             onPlace = { cell, digit -> viewModel.placeDigit(index, cell, digit) },
                             onNote = { cell, digit -> viewModel.toggleNote(index, cell, digit) },
                             onErase = { cell -> viewModel.eraseCell(index, cell) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is LightsSnapshot -> LightsPage(
+                            page = item,
+                            onTap = { cell -> viewModel.tapLight(index, cell) },
+                            onRestart = { viewModel.restartLights(index) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is SlideSnapshot -> SlidePage(
+                            page = item,
+                            onSlide = { cell -> viewModel.slideTile(index, cell) },
+                            onRestart = { viewModel.restartSlide(index) },
                             isFavorite = item.id in favoriteIds,
                             onToggleFavorite = { viewModel.toggleFavorite(item.id) },
                             onHowToPlay = { howTo = item.kind },

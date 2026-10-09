@@ -97,6 +97,26 @@ class HowToPlayUiTest {
     }
 
     @Test
+    fun lightsOutHasItsRules() = runComposeUiTest {
+        openOnSecondPage(GameKind.Lights)
+        pressHowTo()
+        snap("133_howto_lights")
+        assertTrue(hasAnyText("Nasıl oynanır: Işıkları söndür", "How to play: Lights out"))
+        close()
+        assertFalse(sheetShown())
+    }
+
+    @Test
+    fun slidingPuzzleHasItsRules() = runComposeUiTest {
+        openOnSecondPage(GameKind.Slide)
+        pressHowTo()
+        snap("143_howto_slide")
+        assertTrue(hasAnyText("Nasıl oynanır: Kayan bulmaca", "How to play: Sliding puzzle"))
+        close()
+        assertFalse(sheetShown())
+    }
+
+    @Test
     fun tappingOutsideThePanelClosesItAndTheGameBelowIsNotTouched() = runComposeUiTest {
         openOnSecondPage(GameKind.Tubes)
         pressHowTo()

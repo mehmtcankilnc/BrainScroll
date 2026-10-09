@@ -142,14 +142,32 @@ Amaç: Beşinci oyun. Kararlar `docs/decisions.md` "Sudoku". Sunucu tarafı değ
 
 **Çıkış:** Akışta kelime, hafıza, renk tüpleri, mayın tarlası ve sudoku dönüşümlü geliyor, beşi de kaydediliyor.
 
-## Faz 13+ - Diğer oyunlar
-**Onaylı sıradaki fikirler (2026-10-09):** **Işıkları Söndür** (Lights Out: 5x5 ızgara, dokunma hücreyi ve 4 komşusunu çevirir; tahta çözülmüş durumdan geriye doğru üretilir, yani her zaman çözülebilir; hamle sayısı skor) ve **Kayan Bulmaca** (15 bulmaca benzeri, örn. 3x4; karıştırma yalnızca geçerli hamlelerle yapılır, yani çözülebilir; hamle ve süre skor). İkisi de Mayın tarlası/Sudoku kalıbıyla eklenir.
+## Faz 13 - Işıkları söndür
+Amaç: Altıncı oyun. Kararlar `docs/decisions.md` "Işıkları söndür". Sunucu tarafı değişmedi (yeni migration yok).
+- [x] 13a Oyun mantığı: `GameKind.Lights`, `LightsGame` (5x5, dokunma hücreyi ve 4 komşusunu çevirir; tahta sönük tahtadan 7 dokunuşla geriye doğru üretilir = her zaman çözülebilir; baştan başla), `LightsRound` (süre = eylem araları toplamı, her aralık en fazla 15 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`tapLight`/`restartLights`), istatistik (`computeLightsStats`). Testler: `LightsGameTest`, `LightsRoundTest`, `LightsFeedTest`, `LightsStatsTest`, `LightsPersistenceTest`
+- [x] 13b Arayüz: `ui/lights/LightsPage` (ışık ızgarası, hamle ve "en çok" göstergesi, baştan başla düğmesi, sonuç kartı), akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, "Nasıl Oynanır?" metni, haptik, erişilebilirlik, telemetri (`game=lights`, `moves`). `LightsUiTest` (4, ekran görüntüleri 130-132) ve `HowToPlayUiTest`
+- [ ] 13c Cihazda test (`docs/faz13-test-listesi.md`)
+- [ ] 13d Zorluk seviyeleri (sonra): tahta boyu ve dokunuş sayısı
 
-Ayrıca: örüntü tanıma, satranç bulmacası. Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
+**Çıkış:** Akışta kelime, hafıza, renk tüpleri, mayın tarlası, sudoku ve ışıkları söndür dönüşümlü geliyor, altısı da kaydediliyor.
+
+## Faz 14 - Kayan bulmaca
+Amaç: Yedinci oyun. Kararlar `docs/decisions.md` "Kayan bulmaca". Sunucu tarafı değişmedi (yeni migration yok).
+- [x] 14a Oyun mantığı: `GameKind.Slide`, `SlideGame` (3x4, 11 taş; boşlukla aynı hizadaki taşa dokunmak arada kalanlarla birlikte kaydırır = 1 hamle; tahta bitmiş resimden geçerli kaydırmalarla karıştırılır = her zaman çözülebilir; baştan başla), `SlideRound` (süre = eylem araları toplamı, her aralık en fazla 15 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`slideTile`/`restartSlide`), istatistik (`computeSlideStats`). Testler: `SlideGameTest` (gerçek bir IDA* çözücüyle çözülebilirlik), `SlideRoundTest`, `SlideFeedTest`, `SlideStatsTest`, `SlidePersistenceTest`
+- [x] 14b Arayüz: `ui/slide/SlidePage` (kayarak giden taşlar, yerindeki taş yeşil, hamle sayacı, baştan başla düğmesi, sonuç kartı), akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, "Nasıl Oynanır?" metni, haptik, erişilebilirlik, telemetri (`game=slide`, `moves`). `SlideUiTest` (5, ekran görüntüleri 140-142) ve `HowToPlayUiTest`
+- [ ] 14c Cihazda test (`docs/faz14-test-listesi.md`)
+- [ ] 14d Zorluk seviyeleri (sonra): tahta boyu ve karıştırma
+
+**Çıkış:** Akışta yedi oyun dönüşümlü geliyor, yedisi de kaydediliyor.
+
+## Faz 15+ - Diğer oyunlar
+**Fikirler:** örüntü tanıma, satranç bulmacası. (15 bulmaca benzeri, örn. 3x4; karıştırma yalnızca geçerli hamlelerle yapılır, yani çözülebilir; hamle ve süre skor). İkisi de Mayın tarlası/Sudoku kalıbıyla eklenir.
+
+Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
 
 ### Satranç bulmacası - teknik notlar
 
-Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 13c gibi) ele alınmalı.
+Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 15c gibi) ele alınmalı.
 
 **Bulmaca kaynağı**
 - [ ] Lichess açık bulmaca veritabanı (CC0, CSV). Alanlar: `PuzzleId, FEN, Moves, Rating, RatingDeviation, Popularity, NbPlays, Themes, GameUrl, OpeningTags`. Lisans ve alan şemasını başlamadan resmi sayfadan doğrula.
@@ -165,7 +183,7 @@ Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 1
 
 **Çözüm doğrulama**
 - [ ] Oyuncunun hamlesi bulmacanın çözüm hamlesiyle karşılaştırılır. Mat bulmacalarında Lichess gibi **alternatif matlar da doğru sayılır**. Çok hamleli bulmacada her doğru hamleden sonra rakibin karşılığı otomatik oynanır.
-- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 13c başında netleştirilecek).
+- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 15c başında netleştirilecek).
 - [ ] İpucu: kaynak karesini vurgular. İpucu kullanılan çözüm sıralamaya girmez, seriyi bozmaz (öneri).
 
 **Günlük bulmaca ve adalet**
