@@ -41,6 +41,12 @@ import brainscroll.shared.generated.resources.howto_mines_2
 import brainscroll.shared.generated.resources.howto_mines_3
 import brainscroll.shared.generated.resources.howto_mines_4
 import brainscroll.shared.generated.resources.howto_mines_5
+import brainscroll.shared.generated.resources.howto_sudoku_1
+import brainscroll.shared.generated.resources.howto_sudoku_2
+import brainscroll.shared.generated.resources.howto_sudoku_3
+import brainscroll.shared.generated.resources.howto_sudoku_4
+import brainscroll.shared.generated.resources.howto_sudoku_5
+import brainscroll.shared.generated.resources.howto_title_sudoku
 import brainscroll.shared.generated.resources.howto_title_memory
 import brainscroll.shared.generated.resources.howto_title_mines
 import brainscroll.shared.generated.resources.howto_title_tubes
@@ -106,6 +112,10 @@ private fun contentOf(kind: GameKind) = when (kind) {
     GameKind.Mines -> HowToContent(
         Res.string.howto_title_mines,
         listOf(Res.string.howto_mines_1, Res.string.howto_mines_2, Res.string.howto_mines_3, Res.string.howto_mines_4, Res.string.howto_mines_5),
+    )
+    GameKind.Sudoku -> HowToContent(
+        Res.string.howto_title_sudoku,
+        listOf(Res.string.howto_sudoku_1, Res.string.howto_sudoku_2, Res.string.howto_sudoku_3, Res.string.howto_sudoku_4, Res.string.howto_sudoku_5),
     )
 }
 

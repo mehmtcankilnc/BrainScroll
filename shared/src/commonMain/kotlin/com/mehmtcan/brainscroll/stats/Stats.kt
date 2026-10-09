@@ -132,6 +132,22 @@ data class MinesStats(
     val winRate: Float get() = if (played == 0) 0f else won.toFloat() / played
 }
 
+/** What the statistics screen shows for sudoku. */
+data class SudokuStats(
+    val played: Int,
+    val won: Int,
+    /** The fastest win (see SudokuRound for how the time is counted). Null until one was won. */
+    val bestTimeMs: Long?,
+) {
+    val winRate: Float get() = if (played == 0) 0f else won.toFloat() / played
+}
+
+fun computeSudokuStats(history: List<FinishedRound>): SudokuStats {
+    val results = history.filter { it.game == GameKind.Sudoku && it.mode == Mode.ENDLESS }
+    val wins = results.filter { it.outcome == Outcome.WON }
+    return SudokuStats(played = results.size, won = wins.size, bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull())
+}
+
 fun computeMinesStats(history: List<FinishedRound>): MinesStats {
     val results = history.filter { it.game == GameKind.Mines && it.mode == Mode.ENDLESS }
     val wins = results.filter { it.outcome == Outcome.WON }

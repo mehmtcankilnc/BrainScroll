@@ -1,0 +1,156 @@
+package com.mehmtcan.brainscroll.game.sudoku
+
+import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
+import com.mehmtcan.brainscroll.game.wordle.FeedStore
+import com.mehmtcan.brainscroll.game.wordle.FinishedRound
+import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.game.wordle.Outcome
+import com.mehmtcan.brainscroll.game.wordle.StoredRound
+import com.mehmtcan.brainscroll.game.wordle.WordList
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+/** Sudoku as one of the games of the endless feed. */
+class SudokuFeedTest {
+
+    private class FakeStore : FeedStore {
+        val progress = linkedMapOf<String, StoredRound>()
+        val results = mutableListOf<FinishedRound>()
+        override fun saveProgress(round: StoredRound) { progress[round.id] = round }
+        override fun deleteProgress(id: String) { progress.remove(id) }
+        override fun finish(result: FinishedRound) {
+            progress.remove(result.id)
+            results += result
+        }
+    }
+
+    private val words = listOf("crane", "slate", "ghost")
+    private val lists = mapOf(
+        Language.EN to WordList(Language.EN, 5, valid = words, answers = words),
+        Language.TR to WordList(Language.TR, 5, valid = listOf("kitap"), answers = listOf("kitap")),
+    )
+    private var clock = 1_000L
+    private var ids = 0
+
+    private fun feed(
+        store: FeedStore = FakeStore(),
+        restored: List<StoredRound> = emptyList(),
+        games: List<GameKind> = listOf(GameKind.Sudoku),
+    ) = EndlessFeed(lists, Language.EN, random = Random(7), store = store, restored = restored, now = { clock }, newId = { "id${ids++}" }, games = games)
+
+    private fun EndlessFeed.board(index: Int): SudokuSnapshot = assertIs(snapshot().pages[index])
+
+    /** The solution of the board on page [index], found by logic from what is on show (the same way a player would). */
+    private fun EndlessFeed.solutionOf(index: Int): IntArray =
+        SudokuGenerator.solveBySingles(board(index).state.givens.toIntArray())!!
+
+    private fun EndlessFeed.solve(index: Int) {
+        val solution = solutionOf(index)
+        val state = board(index).state
+        for (cell in state.values.indices) if (state.values[cell] == 0) placeDigit(index, cell, solution[cell])
+    }
+
+    private fun EndlessFeed.lose(index: Int) {
+        val solution = solutionOf(index)
+        val state = board(index).state
+        for (cell in state.values.indices.filter { state.values[it] == 0 }.take(3)) {
+            placeDigit(index, cell, if (solution[cell] == 1) 2 else 1)
+        }
+    }
+
+    @Test
+    fun theGamesComeOneAfterTheOtherAndSudokuIsFifth() {
+        val f = feed(games = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku))
+        f.ensureSize(6)
+        assertEquals(
+            listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Word),
+            f.snapshot().pages.map { it.kind },
+        )
+    }
+
+    @Test
+    fun solvingABoardSavesAWinOnceAndRaisesTheStreak() {
+        val store = FakeStore()
+        val f = feed(store)
+        f.ensureSize(2)
+        clock += 2_000
+        f.solve(0)
+        assertEquals(1, f.snapshot().answerStreak)
+        val result = store.results.single()
+        assertEquals(GameKind.Sudoku, result.game)
+        assertEquals(Outcome.WON, result.outcome)
+        assertFalse(store.progress.containsKey(result.id))
+        f.placeDigit(0, 0, 1)
+        f.toggleNote(0, 0, 1)
+        f.eraseCell(0, 0)
+        assertEquals(1, store.results.size, "a finished board takes no more actions")
+    }
+
+    @Test
+    fun threeMistakesAreALossAndResetTheStreak() {
+        val store = FakeStore()
+        val f = feed(store)
+        f.ensureSize(2)
+        f.solve(0)
+        assertEquals(1, f.snapshot().answerStreak)
+        f.lose(1)
+        assertEquals(0, f.snapshot().answerStreak)
+        assertEquals(Outcome.LOST, store.results.last().outcome)
+    }
+
+    @Test
+    fun aBoardInProgressWithNotesComesBackAfterARestart() {
+        val store = FakeStore()
+        val f = feed(store)
+        f.ensureSize(1)
+        val cells = f.board(0).state.values.indices.filter { f.board(0).state.values[it] == 0 }
+        f.toggleNote(0, cells[0], 4)
+        f.placeDigit(0, cells[1], f.solutionOf(0)[cells[1]])
+        clock += 4_000
+        f.toggleNote(0, cells[2], 8)
+        val saved = store.progress.values.single()
+        assertEquals(GameKind.Sudoku, saved.game)
+
+        val back = feed(store, restored = listOf(saved))
+        assertEquals(f.board(0).state, back.board(0).state)
+        assertEquals(f.board(0).durationMs, back.board(0).durationMs)
+    }
+
+    @Test
+    fun aNoteOnAnUntouchedBoardStartsItSoItIsSaved() {
+        val store = FakeStore()
+        val f = feed(store)
+        f.ensureSize(1)
+        assertTrue(store.progress.isEmpty())
+        val cell = f.board(0).state.values.indexOfFirst { it == 0 }
+        f.toggleNote(0, cell, 5)
+        assertEquals(1, store.progress.size)
+    }
+
+    @Test
+    fun aWrongDigitIsSavedAsProgressWithoutEndingTheBoard() {
+        val store = FakeStore()
+        val f = feed(store)
+        f.ensureSize(1)
+        val solution = f.solutionOf(0)
+        val cell = f.board(0).state.values.indexOfFirst { it == 0 }
+        assertEquals(SudokuResult.Mistake, f.placeDigit(0, cell, if (solution[cell] == 1) 2 else 1))
+        assertEquals(1, f.board(0).state.mistakes)
+        assertTrue(store.results.isEmpty())
+        assertEquals(1, store.progress.size)
+    }
+
+    @Test
+    fun theActionsAreIgnoredOnAPageOfAnotherGame() {
+        val f = feed(games = listOf(GameKind.Word, GameKind.Sudoku))
+        f.ensureSize(2)
+        assertEquals(SudokuResult.Ignored, f.placeDigit(0, 0, 1), "page 0 is a word puzzle")
+        assertEquals(SudokuResult.Ignored, f.toggleNote(0, 0, 1))
+        assertEquals(SudokuResult.Ignored, f.eraseCell(0, 0))
+    }
+}

@@ -100,8 +100,22 @@ Son güncelleme: 2026-10-05
 - **Veri:** `game_result`'a `game = 'mines'`. Tahta kaydedilmez, **yeniden üretilir**: `answer` = `8x8x10:<seed>:<ilk hücre>` (ilk açıştan önce -1), en fazla 21 karakter (sunucu sınırı 32). `guesses` = **yalnızca hamle sayısı** (açma + chord; bayrak hamle sayılmaz), tek öğe (sunucu sınırı 256). Cihazdaki yarım oyun tam eylem günlüğünü (`o12`, `f12`, `c12`) tutar ve oyunu seed'den aynen geri kurar. Yeni migration yok.
 - Günlük mod ve sıralama yok (ilk sürüm). Profil: oynanan, kazanma %, en iyi süre.
 
+## Sudoku (karar: 2026-10-09)
+- Beşinci oyun. Akış sırası kelime, hafıza, renk tüpleri, mayın tarlası, **sudoku**, kelime... (`EndlessFeed.games`).
+- **Tahta:** klasik **9x9**, tek seviye, **36 ipucu (verilen sayı)**. Zorluk seviyeleri sonra: üretici ve tur zaten `clues` (ipucu sayısı) parametresi alıyor, kayıtta tahtanın adında yazılı, yani seviye eklemek yeni bir veri biçimi gerektirmez. Az ipucu = zor, ama aşağıdaki "salt mantık" sözü zorluğun alt sınırını belirler (yalnızca tekli kurallar yetmeyen tahtalar için daha ileri teknikler gerekir, bu seviye kararıyla birlikte alınacak).
+- **Tahta tek çözümlü ve tahminsiz:** üretilen her tahta yalnızca "çıplak tekli" (bir hücrede tek aday kalması) ve "gizli tekli" (bir satır, sütun ya da kutuda bir sayının tek yeri kalması) ile çözülebilir. Bu, tek çözüm demektir ve mayın tarlasındaki "şansa kalan yer yok" sözüyle aynı. Üretim: sabit bir desenden tam bir ızgara (satır/sütun/bant ve sayı karıştırma), sonra hücreler rastgele sırayla boşaltılır ve boşaltma yalnızca tahta hâlâ tekli kurallarla çözülüyorsa kalır. 36'ya inilemezse birkaç ipucu fazla kalır (testte en çok 42).
+- **Tahta tohumdan yeniden üretilir:** `seed` (ve `clues`) aynı tahtayı verir (`kotlin.random.Random(seed)`), tahta kaydedilmez. `answer` = `9x9x36:<seed>`, en fazla 20 karakter (sunucu sınırı 32).
+- **Hata kuralı:** sayı çözümden farklıysa **hata**, kırmızı görünür, **3. hata oyunu kaybettirir** (hafızadaki "6. hata" gibi, şimşek serisi sıfırlanır). Doğru sayı **kalıcıdır** (silinmez, değiştirilmez); yanlış sayı silinebilir ya da başka sayıyla değiştirilebilir (her yanlış deneme yine hata sayılır). Aynı yanlış sayıyı tekrar basmak hata sayılmaz. Kazanmak için tüm hücreler çözümle aynı olmalı.
+- **Notlar:** "Notlar" düğmesi açıkken sayı tuşları hücreye küçük **kalem notu** yazar (aç/kapa). Doğru sayı konunca aynı satır, sütun ve kutudaki o sayının notları **kendiliğinden silinir**. Silgi: yanlış sayıyı geri alır ya da hücrenin notlarını temizler. Yanlış sayı çevredeki notlara dokunmaz.
+- **Arayüz:** hücre seç, sonra sayı tuşu (1-9, silgi). Seçili hücre sarı çerçeve, aynı satır/sütun/kutu ve aynı sayılar açık zemin ve sarı ince çerçeve. Verilen sayılar beyaz kalın, oyuncunun sayıları mavi, yanlışlar kırmızı. 9 kez doğru yerleşen sayının tuşu soluk. Kutular arasında geniş boşluk.
+- **Hamle:** yerleştirilen sayı sayısı (notlar ve silme hamle sayılmaz).
+- **Süre** diğer oyunlar gibi cihazda: eylem araları toplamı, ama sudoku daha çok düşünme istediği için her aralık en fazla **30 sn** (diğer oyunlarda 10-15 sn). İlk eylem (not dahil) saati başlatır.
+- **Veri:** `game_result`'a `game = 'sudoku'`. `guesses` = **yalnızca hamle sayısı** tek öğe (sunucu sınırı 256). Cihazdaki yarım oyun tam eylem günlüğünü tutar (`p12:5` sayı koy, `n12:5` not aç/kapa, `e12` sil) ve tahtayı tohumdan aynen geri kurar. Yeni migration yok.
+- Günlük mod ve sıralama yok (ilk sürüm). Profil: oynanan, kazanma %, en iyi süre.
+- **Sıradaki oyun fikirleri (onaylı):** Işıkları Söndür (Lights Out) ve Kayan Bulmaca (15 bulmaca benzeri). Bkz. `docs/plan.md` Faz 13+.
+
 ## Nasıl Oynanır? (karar: 2026-10-12)
-- **Her oyun sayfasında** (kelime, hafıza, renk tüpleri, mayın tarlası) başlığın hemen altında **"Nasıl Oynanır?"** düğmesi var (soru işaretli hap). Aynı yerde durur, böylece oyundan oyuna kayma olmaz.
+- **Her oyun sayfasında** (kelime, hafıza, renk tüpleri, mayın tarlası, sudoku) başlığın hemen altında **"Nasıl Oynanır?"** düğmesi var (soru işaretli hap). Aynı yerde durur, böylece oyundan oyuna kayma olmaz.
 - Düğme, o oyunun kurallarını **alt panel** olarak açar (Ana Sayfa'daki kişiselleştirme paneliyle aynı desen): arkası karartılır, numaralı 4-5 kısa adım, "Anladım" düğmesi. Dışına dokunmak, "Anladım" ya da Android geri tuşu kapatır. Panel açıkken arkadaki oyun dokunuş, kaydırma ve fiziksel klavye almaz.
 - Metinler TR/EN, her oyunun kuralı ve **kaybetme/kazanma** koşulu ile oyuna özel ipuçları (bayrak, chord, geri al, şekiller) bir yerde (`ui/howto/HowToPlay.kt` + `howto_*` metinleri). Yeni oyun eklerken yalnızca `contentOf` içine bir satır ve metinler eklenir.
 - Kural değişirse (ör. mayın sayısı, deneme sayısı) bu metinlerin de güncellenmesi gerekir.

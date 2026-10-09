@@ -133,12 +133,23 @@ Amaç: Dördüncü oyun. Kararlar `docs/decisions.md` "Mayın tarlası". Sunucu 
 - [ ] 11c Cihazda test (`docs/faz11-test-listesi.md`)
 **Çıkış:** Akışta kelime, hafıza, renk tüpleri ve mayın tarlası dönüşümlü geliyor, dördü de kaydediliyor.
 
-## Faz 12+ - Diğer oyunlar
-Sudoku, örüntü tanıma, satranç bulmacası. Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
+## Faz 12 - Sudoku
+Amaç: Beşinci oyun. Kararlar `docs/decisions.md` "Sudoku". Sunucu tarafı değişmedi (yeni migration yok). Zorluk seviyeleri sonra (üretici `clues` parametresini şimdiden alıyor).
+- [x] 12a Oyun mantığı: `GameKind.Sudoku`, `SudokuGenerator` (tohumdan 9x9 tahta, 36 ipucu, yalnızca tekli kurallarla çözülebilir = tek çözüm), `SudokuGame` (yanlış sayı = hata, 3. hata kaybettirir, doğru sayı kalıcı, notlar ve kendiliğinden not temizleme, silgi), `SudokuRound` (süre = eylem araları toplamı, her aralık en fazla 30 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`placeDigit`/`toggleNote`/`eraseCell`), istatistik (`computeSudokuStats`). Testler: `SudokuGameTest`, `SudokuRoundTest`, `SudokuFeedTest`, `SudokuStatsTest`, `SudokuPersistenceTest`
+- [x] 12b Arayüz: `ui/sudoku/SudokuPage` (tahta, hücre seçimi ve vurgular, sayı tuşları, silgi, notlar düğmesi, hata sayacı, sonuç kartı), akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, "Nasıl Oynanır?" metni, haptik (doğru orta, yanlış uyarı), erişilebilirlik (hücre konumu ve durumu okunur), telemetri (`game=sudoku`, `moves`). `SudokuUiTest` (6, ekran görüntüleri 120-124) ve `HowToPlayUiTest`
+- [ ] 12c Cihazda test (`docs/faz12-test-listesi.md`)
+- [ ] 12d Zorluk seviyeleri (sonra): ipucu sayısı ve gerekirse ileri teknikler, seviye seçimi
+
+**Çıkış:** Akışta kelime, hafıza, renk tüpleri, mayın tarlası ve sudoku dönüşümlü geliyor, beşi de kaydediliyor.
+
+## Faz 13+ - Diğer oyunlar
+**Onaylı sıradaki fikirler (2026-10-09):** **Işıkları Söndür** (Lights Out: 5x5 ızgara, dokunma hücreyi ve 4 komşusunu çevirir; tahta çözülmüş durumdan geriye doğru üretilir, yani her zaman çözülebilir; hamle sayısı skor) ve **Kayan Bulmaca** (15 bulmaca benzeri, örn. 3x4; karıştırma yalnızca geçerli hamlelerle yapılır, yani çözülebilir; hamle ve süre skor). İkisi de Mayın tarlası/Sudoku kalıbıyla eklenir.
+
+Ayrıca: örüntü tanıma, satranç bulmacası. Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
 
 ### Satranç bulmacası - teknik notlar
 
-Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 12c gibi) ele alınmalı.
+Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 13c gibi) ele alınmalı.
 
 **Bulmaca kaynağı**
 - [ ] Lichess açık bulmaca veritabanı (CC0, CSV). Alanlar: `PuzzleId, FEN, Moves, Rating, RatingDeviation, Popularity, NbPlays, Themes, GameUrl, OpeningTags`. Lisans ve alan şemasını başlamadan resmi sayfadan doğrula.
@@ -154,7 +165,7 @@ Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 1
 
 **Çözüm doğrulama**
 - [ ] Oyuncunun hamlesi bulmacanın çözüm hamlesiyle karşılaştırılır. Mat bulmacalarında Lichess gibi **alternatif matlar da doğru sayılır**. Çok hamleli bulmacada her doğru hamleden sonra rakibin karşılığı otomatik oynanır.
-- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 12c başında netleştirilecek).
+- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 13c başında netleştirilecek).
 - [ ] İpucu: kaynak karesini vurgular. İpucu kullanılan çözüm sıralamaya girmez, seriyi bozmaz (öneri).
 
 **Günlük bulmaca ve adalet**

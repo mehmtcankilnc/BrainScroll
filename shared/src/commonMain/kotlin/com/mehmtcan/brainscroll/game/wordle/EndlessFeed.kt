@@ -10,6 +10,8 @@ import com.mehmtcan.brainscroll.game.memory.MemoryGame
 import com.mehmtcan.brainscroll.game.memory.MemoryRound
 import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.tubes.TubesGame
+import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
+import com.mehmtcan.brainscroll.game.sudoku.SudokuRound
 import com.mehmtcan.brainscroll.game.tubes.TubesRound
 import kotlin.random.Random
 
@@ -88,6 +90,7 @@ class EndlessFeed(
                 GameKind.Memory -> MemoryRound.restore(rounds.size, stored, now)
                 GameKind.Tubes -> TubesRound.restore(rounds.size, stored, now)
                 GameKind.Mines -> MinesRound.restore(rounds.size, stored, now)
+                GameKind.Sudoku -> SudokuRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
         }
@@ -258,6 +261,31 @@ class EndlessFeed(
         return result
     }
 
+    // --- Sudoku actions (ignored on a page of another game) ---
+
+    /** Puts [digit] in [cell] of the sudoku board of page [index]. A wrong digit is a mistake; the third one loses. */
+    fun placeDigit(index: Int, cell: Int, digit: Int): SudokuResult {
+        val round = rounds[index] as? SudokuRound ?: return SudokuResult.Ignored
+        touch()
+        val result = round.place(cell, digit)
+        if (result != SudokuResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Switches the pencil note [digit] on or off in [cell] of page [index]. */
+    fun toggleNote(index: Int, cell: Int, digit: Int): SudokuResult {
+        val round = rounds[index] as? SudokuRound ?: return SudokuResult.Ignored
+        touch()
+        return round.toggleNote(cell, digit).also { if (it != SudokuResult.Ignored) persist(round) }
+    }
+
+    /** Takes back a wrong digit or the notes of [cell] on page [index]. */
+    fun eraseCell(index: Int, cell: Int): SudokuResult {
+        val round = rounds[index] as? SudokuRound ?: return SudokuResult.Ignored
+        touch()
+        return round.erase(cell).also { if (it != SudokuResult.Ignored) persist(round) }
+    }
+
     /** After a move: a round that just ended becomes a result (once), anything else is saved as progress. */
     private fun afterMove(index: Int, round: FeedRound) {
         if (round.isFinished && counted.add(index)) {
@@ -328,6 +356,7 @@ class EndlessFeed(
         GameKind.Memory -> MemoryRound(index, newId(), MemoryGame.newLayout(random), language, now)
         GameKind.Tubes -> TubesRound(index, newId(), TubesGame.newLayout(random), language, now)
         GameKind.Mines -> MinesRound(index, newId(), random.nextInt(), language, now)
+        GameKind.Sudoku -> SudokuRound(index, newId(), random.nextInt(), language, now)
     }
 
     /** Keeps the store in step with a round: untouched rounds are not worth saving, started ones are. */

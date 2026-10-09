@@ -87,6 +87,16 @@ class HowToPlayUiTest {
     }
 
     @Test
+    fun sudokuHasItsRules() = runComposeUiTest {
+        openOnSecondPage(GameKind.Sudoku)
+        pressHowTo()
+        snap("125_howto_sudoku")
+        assertTrue(hasAnyText("Nasıl oynanır: Sudoku", "How to play: Sudoku"))
+        close()
+        assertFalse(sheetShown())
+    }
+
+    @Test
     fun tappingOutsideThePanelClosesItAndTheGameBelowIsNotTouched() = runComposeUiTest {
         openOnSecondPage(GameKind.Tubes)
         pressHowTo()

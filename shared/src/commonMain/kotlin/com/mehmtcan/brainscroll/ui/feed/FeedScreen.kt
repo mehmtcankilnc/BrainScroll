@@ -50,6 +50,8 @@ import com.mehmtcan.brainscroll.ui.howto.HowToPlaySheet
 import com.mehmtcan.brainscroll.ui.tubes.TubesPage
 import com.mehmtcan.brainscroll.ui.mines.MinesPage
 import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
+import com.mehmtcan.brainscroll.game.sudoku.SudokuSnapshot
+import com.mehmtcan.brainscroll.ui.sudoku.SudokuPage
 import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 import kotlinx.coroutines.delay
@@ -232,6 +234,15 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                             onOpen = { cell -> viewModel.openCell(index, cell) },
                             onFlag = { cell -> viewModel.flagCell(index, cell) },
                             onChord = { cell -> viewModel.chordCell(index, cell) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is SudokuSnapshot -> SudokuPage(
+                            page = item,
+                            onPlace = { cell, digit -> viewModel.placeDigit(index, cell, digit) },
+                            onNote = { cell, digit -> viewModel.toggleNote(index, cell, digit) },
+                            onErase = { cell -> viewModel.eraseCell(index, cell) },
                             isFavorite = item.id in favoriteIds,
                             onToggleFavorite = { viewModel.toggleFavorite(item.id) },
                             onHowToPlay = { howTo = item.kind },

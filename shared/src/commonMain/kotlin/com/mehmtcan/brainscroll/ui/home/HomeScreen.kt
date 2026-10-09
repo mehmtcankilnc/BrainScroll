@@ -38,6 +38,7 @@ import brainscroll.shared.generated.resources.a11y_answer_streak
 import brainscroll.shared.generated.resources.a11y_day_streak
 import brainscroll.shared.generated.resources.game_memory
 import brainscroll.shared.generated.resources.game_mines
+import brainscroll.shared.generated.resources.game_sudoku
 import brainscroll.shared.generated.resources.game_tubes
 import brainscroll.shared.generated.resources.game_word_puzzle
 import brainscroll.shared.generated.resources.home_daily_continue
@@ -145,6 +146,7 @@ fun HomeScreen(
                             GameKind.Memory -> stringResource(Res.string.game_memory)
                             GameKind.Tubes -> stringResource(Res.string.game_tubes)
                             GameKind.Mines -> stringResource(Res.string.game_mines)
+                            GameKind.Sudoku -> stringResource(Res.string.game_sudoku)
                         },
                         textColor = if (on) colors.textPrimary else colors.textSecondary,
                         raised = on,

@@ -60,6 +60,9 @@ import brainscroll.shared.generated.resources.stats_daily
 import brainscroll.shared.generated.resources.stats_memory
 import brainscroll.shared.generated.resources.stats_tubes
 import brainscroll.shared.generated.resources.stats_mines
+import brainscroll.shared.generated.resources.stats_sudoku
+import brainscroll.shared.generated.resources.favorite_sudoku_result
+import brainscroll.shared.generated.resources.favorite_sudoku_tag
 import brainscroll.shared.generated.resources.favorite_mines_result
 import brainscroll.shared.generated.resources.favorite_mines_tag
 import brainscroll.shared.generated.resources.favorite_tubes_result
@@ -228,6 +231,19 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
                     profile.mines.played.toString() to stringResource(Res.string.stat_played),
                     "${(profile.mines.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
                     (profile.mines.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                ),
+            )
+        }
+        item { Spacer(Modifier.height(Spacing.sm)) }
+
+        // Sudoku: played, win rate and the fastest win.
+        item { BasicText(stringResource(Res.string.stats_sudoku), style = type.heading.copy(color = colors.textPrimary)) }
+        item {
+            TileGrid(
+                listOf(
+                    profile.sudoku.played.toString() to stringResource(Res.string.stat_played),
+                    "${(profile.sudoku.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
+                    (profile.sudoku.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
                 ),
             )
         }
@@ -414,6 +430,7 @@ private fun FavoriteRow(round: FinishedRound) {
                 GameKind.Memory -> stringResource(Res.string.favorite_memory_tag)
                 GameKind.Tubes -> stringResource(Res.string.favorite_tubes_tag)
                 GameKind.Mines -> stringResource(Res.string.favorite_mines_tag)
+                GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_tag)
             },
             style = type.heading.copy(color = colors.textPrimary),
             modifier = Modifier.weight(1f),
@@ -425,6 +442,7 @@ private fun FavoriteRow(round: FinishedRound) {
                     round.game == GameKind.Memory -> stringResource(Res.string.favorite_memory_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Tubes -> stringResource(Res.string.favorite_tubes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Mines -> stringResource(Res.string.favorite_mines_result, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_result, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
                 },
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),
