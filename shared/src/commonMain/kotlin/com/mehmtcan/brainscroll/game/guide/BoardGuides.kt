@@ -48,8 +48,8 @@ object SudokuGuide {
         }
         // A cell that can only hold one digit.
         for (cell in 0 until CELLS) {
-            if (values[cell] == 0 && Integer.bitCount(candidates[cell]) == 1) {
-                return GuideStep(GuideReason.SudokuOnlyDigit, listOf(cell), listOf(Integer.numberOfTrailingZeros(candidates[cell]) + 1))
+            if (values[cell] == 0 && candidates[cell].countOneBits() == 1) {
+                return GuideStep(GuideReason.SudokuOnlyDigit, listOf(cell), listOf(candidates[cell].countTrailingZeroBits() + 1))
             }
         }
         // A digit that has one place left in a row, a column or a box.
