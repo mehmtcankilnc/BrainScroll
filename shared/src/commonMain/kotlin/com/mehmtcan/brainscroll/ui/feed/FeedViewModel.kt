@@ -23,8 +23,11 @@ import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.moveCount
+import com.mehmtcan.brainscroll.game.pipes.PipesResult
 import com.mehmtcan.brainscroll.game.slide.SlideResult
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
+import com.mehmtcan.brainscroll.game.target.Op
+import com.mehmtcan.brainscroll.game.target.TargetResult
 import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -35,13 +38,17 @@ import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.MemoryStats
 import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
+import com.mehmtcan.brainscroll.stats.PipesStats
 import com.mehmtcan.brainscroll.stats.SlideStats
 import com.mehmtcan.brainscroll.stats.SudokuStats
+import com.mehmtcan.brainscroll.stats.TargetStats
 import com.mehmtcan.brainscroll.stats.TubesStats
 import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
+import com.mehmtcan.brainscroll.stats.computePipesStats
 import com.mehmtcan.brainscroll.stats.computeSlideStats
 import com.mehmtcan.brainscroll.stats.computeSudokuStats
+import com.mehmtcan.brainscroll.stats.computeTargetStats
 import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
@@ -89,6 +96,10 @@ data class ProfileState(
     val lights: LightsStats = computeLightsStats(emptyList()),
     /** Sliding puzzle, from the endless feed. */
     val slide: SlideStats = computeSlideStats(emptyList()),
+    /** Target number, from the endless feed. */
+    val target: TargetStats = computeTargetStats(emptyList()),
+    /** Pipes, from the endless feed. */
+    val pipes: PipesStats = computePipesStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -113,7 +124,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes),
 ) : ViewModel() {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -214,7 +225,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -342,6 +353,53 @@ class FeedViewModel(
         return f.restartSlide(page).also { publish() }
     }
 
+    /** Combines two numbers of the target number game on [page]. Returns what happened, so the screen can buzz accordingly. */
+    fun combineNumbers(page: Int, firstId: Int, op: Op, secondId: Int): TargetResult {
+        val f = feed ?: return TargetResult.Ignored
+        val result = f.combineNumbers(page, firstId, op, secondId)
+        publish()
+        // A game that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == TargetResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** What the operation would give, or null if it is not allowed. Used to dim numbers that do not fit. */
+    fun previewNumbers(page: Int, firstId: Int, op: Op, secondId: Int): Int? = feed?.previewNumbers(page, firstId, op, secondId)
+
+    /** Takes back the last operation of the target number game on [page]. */
+    fun undoNumbers(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.undoNumbers(page).also { publish() }
+    }
+
+    /** Puts the target number game on [page] back as it was at the start. */
+    fun restartNumbers(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartNumbers(page).also { publish() }
+    }
+
+    /** Turns a tile of the pipes board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    fun turnPipe(page: Int, cell: Int): PipesResult {
+        val f = feed ?: return PipesResult.Ignored
+        val result = f.turnPipe(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == PipesResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the pipes board on [page] back as it was at the start. */
+    fun restartPipes(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartPipes(page).also { publish() }
+    }
+
     /** Puts a digit in a cell of the sudoku board on [page]. Returns what happened, so the screen can buzz accordingly. */
     fun placeDigit(page: Int, cell: Int, digit: Int): SudokuResult {
         val f = feed ?: return SudokuResult.Ignored
@@ -417,6 +475,26 @@ class FeedViewModel(
         act { it.setEnabledGames(next, fromIndex = page) }
     }
 
+    /**
+     * Called before the feed is shown. The feed opens on the page it was left on; if that page belongs to a game that is
+     * switched off now (a puzzle that was started before, which is kept), it opens on the next page of a game that is on.
+     * The page that was passed over stays where it is: the player can still swipe back to it.
+     */
+    fun prepareFeed() {
+        val f = feed ?: return
+        val on = _enabledGames.value
+        var target = page
+        var scanned = 0
+        while (scanned++ < MAX_SCAN) {
+            f.ensureSize(target + 1)
+            if (f.snapshot().pages[target].kind in on) break
+            target++
+        }
+        page = target
+        f.ensureSize(target + AHEAD)
+        publish()
+    }
+
     /** The language of the word puzzles from now on. Puzzles already started keep theirs. */
     fun setWordLanguage(language: Language) {
         repository.saveLanguage(language)
@@ -447,6 +525,8 @@ class FeedViewModel(
             sudoku = computeSudokuStats(history),
             lights = computeLightsStats(history),
             slide = computeSlideStats(history),
+            target = computeTargetStats(history),
+            pipes = computePipesStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },
@@ -558,5 +638,8 @@ class FeedViewModel(
     private companion object {
         /** Current puzzle plus the next one (docs/design.md section 8). */
         const val AHEAD = 2
+
+        /** How many pages are looked at, at most, for one of a game that is on (only started puzzles of a game that is off are passed). */
+        const val MAX_SCAN = 100
     }
 }

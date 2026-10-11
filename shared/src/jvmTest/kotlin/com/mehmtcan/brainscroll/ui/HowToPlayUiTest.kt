@@ -117,6 +117,26 @@ class HowToPlayUiTest {
     }
 
     @Test
+    fun targetNumberHasItsRules() = runComposeUiTest {
+        openOnSecondPage(GameKind.Target)
+        pressHowTo()
+        snap("154_howto_target")
+        assertTrue(hasAnyText("Nasıl oynanır: Hedef sayı", "How to play: Target number"))
+        close()
+        assertFalse(sheetShown())
+    }
+
+    @Test
+    fun pipesHasItsRules() = runComposeUiTest {
+        openOnSecondPage(GameKind.Pipes)
+        pressHowTo()
+        snap("163_howto_pipes")
+        assertTrue(hasAnyText("Nasıl oynanır: Boru bağla", "How to play: Pipes"))
+        close()
+        assertFalse(sheetShown())
+    }
+
+    @Test
     fun tappingOutsideThePanelClosesItAndTheGameBelowIsNotTouched() = runComposeUiTest {
         openOnSecondPage(GameKind.Tubes)
         pressHowTo()

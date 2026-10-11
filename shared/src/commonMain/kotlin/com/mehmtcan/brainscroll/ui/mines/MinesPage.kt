@@ -316,7 +316,7 @@ private fun Cell(
     }
 }
 
-private fun numberColor(number: Int, colors: BrainScrollColors): Color = when (number) {
+internal fun numberColor(number: Int, colors: BrainScrollColors): Color = when (number) {
     1 -> colors.streakAnswer
     2 -> colors.correctFill
     3 -> colors.error
@@ -326,7 +326,7 @@ private fun numberColor(number: Int, colors: BrainScrollColors): Color = when (n
 }
 
 /** A pole with a pennant. */
-private fun DrawScope.drawFlag(pole: Color, flag: Color) {
+internal fun DrawScope.drawFlag(pole: Color, flag: Color) {
     val s = size.minDimension
     drawLine(pole, Offset(s * 0.30f, s * 0.12f), Offset(s * 0.30f, s * 0.88f), strokeWidth = s * 0.09f, cap = StrokeCap.Round)
     drawLine(pole, Offset(s * 0.16f, s * 0.88f), Offset(s * 0.62f, s * 0.88f), strokeWidth = s * 0.09f, cap = StrokeCap.Round)
@@ -340,7 +340,7 @@ private fun DrawScope.drawFlag(pole: Color, flag: Color) {
 }
 
 /** A round bomb with spikes. */
-private fun DrawScope.drawMine(body: Color, spark: Color) {
+internal fun DrawScope.drawMine(body: Color, spark: Color) {
     val s = size.minDimension
     val center = Offset(s / 2, s / 2)
     for (i in 0 until 8) {

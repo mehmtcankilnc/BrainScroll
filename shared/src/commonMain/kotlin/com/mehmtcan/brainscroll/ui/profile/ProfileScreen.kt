@@ -63,6 +63,12 @@ import brainscroll.shared.generated.resources.stats_mines
 import brainscroll.shared.generated.resources.stats_sudoku
 import brainscroll.shared.generated.resources.stats_lights
 import brainscroll.shared.generated.resources.stats_slide
+import brainscroll.shared.generated.resources.stats_target
+import brainscroll.shared.generated.resources.stats_pipes
+import brainscroll.shared.generated.resources.favorite_pipes_result
+import brainscroll.shared.generated.resources.favorite_pipes_tag
+import brainscroll.shared.generated.resources.favorite_target_result
+import brainscroll.shared.generated.resources.favorite_target_tag
 import brainscroll.shared.generated.resources.favorite_slide_result
 import brainscroll.shared.generated.resources.favorite_slide_tag
 import brainscroll.shared.generated.resources.favorite_lights_result
@@ -268,6 +274,32 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
         }
         item { Spacer(Modifier.height(Spacing.sm)) }
 
+        // Target number: every game is a win, so only the fastest game and the fewest moves.
+        item { BasicText(stringResource(Res.string.stats_target), style = type.heading.copy(color = colors.textPrimary)) }
+        item {
+            TileGrid(
+                listOf(
+                    profile.target.played.toString() to stringResource(Res.string.stat_played),
+                    (profile.target.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    (profile.target.fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
+                ),
+            )
+        }
+        item { Spacer(Modifier.height(Spacing.sm)) }
+
+        // Pipes: every game is a win, so only the fastest game and the fewest moves.
+        item { BasicText(stringResource(Res.string.stats_pipes), style = type.heading.copy(color = colors.textPrimary)) }
+        item {
+            TileGrid(
+                listOf(
+                    profile.pipes.played.toString() to stringResource(Res.string.stat_played),
+                    (profile.pipes.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    (profile.pipes.fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
+                ),
+            )
+        }
+        item { Spacer(Modifier.height(Spacing.sm)) }
+
         // Sudoku: played, win rate and the fastest win.
         item { BasicText(stringResource(Res.string.stats_sudoku), style = type.heading.copy(color = colors.textPrimary)) }
         item {
@@ -465,6 +497,8 @@ private fun FavoriteRow(round: FinishedRound) {
                 GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_tag)
                 GameKind.Lights -> stringResource(Res.string.favorite_lights_tag)
                 GameKind.Slide -> stringResource(Res.string.favorite_slide_tag)
+                GameKind.Target -> stringResource(Res.string.favorite_target_tag)
+                GameKind.Pipes -> stringResource(Res.string.favorite_pipes_tag)
             },
             style = type.heading.copy(color = colors.textPrimary),
             modifier = Modifier.weight(1f),
@@ -479,6 +513,8 @@ private fun FavoriteRow(round: FinishedRound) {
                     round.game == GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_result, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Lights -> stringResource(Res.string.favorite_lights_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Slide -> stringResource(Res.string.favorite_slide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Target -> stringResource(Res.string.favorite_target_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Pipes -> stringResource(Res.string.favorite_pipes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
                 },
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),

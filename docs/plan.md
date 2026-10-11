@@ -160,14 +160,32 @@ Amaç: Yedinci oyun. Kararlar `docs/decisions.md` "Kayan bulmaca". Sunucu taraf�
 
 **Çıkış:** Akışta yedi oyun dönüşümlü geliyor, yedisi de kaydediliyor.
 
-## Faz 15+ - Diğer oyunlar
-**Fikirler:** örüntü tanıma, satranç bulmacası. (15 bulmaca benzeri, örn. 3x4; karıştırma yalnızca geçerli hamlelerle yapılır, yani çözülebilir; hamle ve süre skor). İkisi de Mayın tarlası/Sudoku kalıbıyla eklenir.
+## Faz 15 - Hedef sayı
+Amaç: Sekizinci oyun (kuralları oyun sahibinden). Kararlar `docs/decisions.md` "Hedef sayı". Sunucu tarafı değişmedi (yeni migration yok).
+- [x] 15a Oyun mantığı: `GameKind.Target`, `Op` (dört işlem, yalnızca sıfırdan büyük tam sayı sonuç), `TargetGenerator` (tohumdan 4 sayı; geçerli hamlelerle yapılabilen her değeri ve en az işlem sayısını genişlik öncelikli aramayla bulur; hedef 10-99, başlangıç sayısı değil, en az 2 işlem; "en az" kesin en iyi), `TargetGame` (iki sayıyı işlemle birleştir, her sayı bir kez, geri al, baştan başla), `TargetRound` (tahta açıkça `2367>48` diye kaydedilir; süre = eylem araları toplamı, her aralık en fazla 15 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`combineNumbers`/`previewNumbers`/`undoNumbers`/`restartNumbers`), istatistik (`computeTargetStats`). Testler: `TargetGeneratorTest` (kaba kuvvet çapraz kontrol, en az işlem sayısının kesinliği, çözücüyle çözüm), `TargetGameTest`, `TargetRoundTest`, `TargetFeedTest`, `TargetStatsTest`, `TargetPersistenceTest`
+- [x] 15b Arayüz: `ui/target/TargetPage` (hedef kartı, sayı taşları, son üç işlem, işlem tuşları, geri al ve baştan başla, sonuç kartı), akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, "Nasıl Oynanır?" metni, haptik, erişilebilirlik, telemetri (`game=target`, `moves`). `TargetUiTest` (5, ekran görüntüleri 150-153) ve `HowToPlayUiTest`
+- [ ] 15c Cihazda test (`docs/faz15-test-listesi.md`)
+- [ ] 15d Zorluk seviyeleri (sonra): en az işlem, hedef aralığı
+
+**Çıkış:** Akışta sekiz oyun dönüşümlü geliyor, sekizi de kaydediliyor.
+
+## Faz 16 - Boru bağla
+Amaç: Dokuzuncu oyun. Kararlar `docs/decisions.md` "Boru bağla". Sunucu tarafı değişmedi (yeni migration yok).
+- [x] 16a Oyun mantığı: `GameKind.Pipes`, `PipesGenerator` (rastgele Kruskal ile 5x5 ağaç, derece en çok 3; karıştırma; **kesin "en az"** için geri izleme; `minPar` 15), `PipesGame` (saat yönünde çeyrek dönüş, açık uç yoksa kazanç, baştan başla), `PipesRound` (tahta açıkça 25 onaltılık hane; süre = eylem araları toplamı, her aralık en fazla 15 sn; eylem günlüğüyle kayıt/geri yükleme), `EndlessFeed` (`turnPipe`/`restartPipes`), istatistik (`computePipesStats`). Testler: `PipesGeneratorTest` (ağaç özellikleri, 3x3 kaba kuvvet çapraz kontrol, "en az"ın gerçek çözüm olması), `PipesGameTest`, `PipesRoundTest`, `PipesFeedTest`, `PipesStatsTest`, `PipesPersistenceTest`
+- [x] 16b Arayüz: `ui/pipes/PipesPage` (borular, yeşil/gri halkalı uçlar, dönüş animasyonu, hamle ve "en az" göstergesi, baştan başla düğmesi, sonuç kartı), akış, Ana Sayfa ve kişiselleştirme çipleri, Profil istatistikleri ve favori satırı, "Nasıl Oynanır?" metni, haptik, erişilebilirlik, telemetri (`game=pipes`, `moves`). `PipesUiTest` (4, ekran görüntüleri 160-162) ve `HowToPlayUiTest`
+- [ ] 16c Cihazda test (`docs/faz16-test-listesi.md`)
+- [ ] 16d Zorluk seviyeleri (sonra): tahta boyu ve en az eşiği
+
+**Çıkış:** Akışta dokuz oyun dönüşümlü geliyor, dokuzu da kaydediliyor.
+
+## Faz 17+ - Diğer oyunlar
+**Fikirler:** renk doldur, ikili bulmaca (Takuzu), kelime avı, hanoi kuleleri, dizi hafızası, örüntü tamamla, araba çıkar, satranç bulmacası. (15 bulmaca benzeri, örn. 3x4; karıştırma yalnızca geçerli hamlelerle yapılır, yani çözülebilir; hamle ve süre skor). İkisi de Mayın tarlası/Sudoku kalıbıyla eklenir.
 
 Her oyun `Game` arayüzünü ve `FeedRound`'u uygular; her biri için günlük + sonsuz mod kararı ayrıca alınır. Görsel tasarımlar [design.md](design.md) içinde tokenlarla tanımlıdır.
 
 ### Satranç bulmacası - teknik notlar
 
-Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 15c gibi) ele alınmalı.
+Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 17c gibi) ele alınmalı.
 
 **Bulmaca kaynağı**
 - [ ] Lichess açık bulmaca veritabanı (CC0, CSV). Alanlar: `PuzzleId, FEN, Moves, Rating, RatingDeviation, Popularity, NbPlays, Themes, GameUrl, OpeningTags`. Lisans ve alan şemasını başlamadan resmi sayfadan doğrula.
@@ -183,7 +201,7 @@ Dört oyun içinde teknik olarak en ağır olanı. Kendi alt fazı olarak (Faz 1
 
 **Çözüm doğrulama**
 - [ ] Oyuncunun hamlesi bulmacanın çözüm hamlesiyle karşılaştırılır. Mat bulmacalarında Lichess gibi **alternatif matlar da doğru sayılır**. Çok hamleli bulmacada her doğru hamleden sonra rakibin karşılığı otomatik oynanır.
-- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 15c başında netleştirilecek).
+- [ ] Yanlış hamle: kısa uyarı animasyonu ve haptik, doğru cevap serisini bozar (karar: ilk yanlış bozar mı, bir deneme hakkı mı olur; Faz 17c başında netleştirilecek).
 - [ ] İpucu: kaynak karesini vurgular. İpucu kullanılan çözüm sıralamaya girmez, seriyi bozmaz (öneri).
 
 **Günlük bulmaca ve adalet**

@@ -589,7 +589,7 @@ private fun IconButton(icon: ButtonIcon, description: String, enabled: Boolean, 
 }
 
 /** A U-turn arrow pointing left. */
-private fun DrawScope.drawUndo(color: androidx.compose.ui.graphics.Color) {
+internal fun DrawScope.drawUndo(color: androidx.compose.ui.graphics.Color) {
     val s = size.minDimension
     val stroke = Stroke(width = s * 0.1f, cap = StrokeCap.Round, join = StrokeJoin.Round)
     val head = Path().apply {

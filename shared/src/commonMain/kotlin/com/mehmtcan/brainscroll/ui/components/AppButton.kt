@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -45,5 +46,33 @@ fun AppButton(
             text = text,
             style = BrainScrollTheme.typography.label.copy(color = if (primary) colors.correctOn else colors.textPrimary),
         )
+    }
+}
+
+/**
+ * A button that is only an outline in the green of the app, for the second action of a card (the daily puzzle). At least
+ * 48 dp tall. It is quieter than the filled [AppButton], which stays the one main button of a screen.
+ */
+@Composable
+fun AppOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = BrainScrollTheme.colors
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .border(1.5.dp, colors.correctFill, Radius.control)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.correctFill))
     }
 }

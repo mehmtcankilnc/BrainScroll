@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
@@ -30,20 +33,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.a11y_answer_streak
 import brainscroll.shared.generated.resources.a11y_day_streak
-import brainscroll.shared.generated.resources.game_memory
-import brainscroll.shared.generated.resources.game_lights
-import brainscroll.shared.generated.resources.game_mines
-import brainscroll.shared.generated.resources.game_slide
-import brainscroll.shared.generated.resources.game_sudoku
-import brainscroll.shared.generated.resources.game_tubes
-import brainscroll.shared.generated.resources.game_word_puzzle
+import brainscroll.shared.generated.resources.app_name
 import brainscroll.shared.generated.resources.home_daily_continue
+import brainscroll.shared.generated.resources.home_daily_description
+import brainscroll.shared.generated.resources.home_daily_solve
 import brainscroll.shared.generated.resources.home_daily_done
 import brainscroll.shared.generated.resources.home_daily_offline
 import brainscroll.shared.generated.resources.home_daily_play
@@ -54,12 +56,14 @@ import brainscroll.shared.generated.resources.home_fastest_empty
 import brainscroll.shared.generated.resources.home_fastest_failed
 import brainscroll.shared.generated.resources.home_fastest_sign_in
 import brainscroll.shared.generated.resources.home_fastest_title
+import brainscroll.shared.generated.resources.home_feed_add
+import brainscroll.shared.generated.resources.home_feed_edit
+import brainscroll.shared.generated.resources.home_feed_more
+import brainscroll.shared.generated.resources.home_feed_title
 import brainscroll.shared.generated.resources.home_freeze_badge
+import brainscroll.shared.generated.resources.home_start_feed
+import brainscroll.shared.generated.resources.home_word_language
 import brainscroll.shared.generated.resources.home_waiting_today
-import brainscroll.shared.generated.resources.personalize_games
-import brainscroll.shared.generated.resources.personalize_language
-import brainscroll.shared.generated.resources.personalize_last_game
-import brainscroll.shared.generated.resources.personalize_title
 import brainscroll.shared.generated.resources.ranks_guesses
 import brainscroll.shared.generated.resources.ranks_loading
 import brainscroll.shared.generated.resources.ranks_you
@@ -68,6 +72,8 @@ import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.social.DailyRow
 import com.mehmtcan.brainscroll.ui.components.AppButton
+import com.mehmtcan.brainscroll.ui.components.AppOutlinedButton
+import com.mehmtcan.brainscroll.ui.components.ForwardChevron
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.daily.DailyPhase
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
@@ -98,6 +104,8 @@ fun HomeScreen(
     socialViewModel: SocialViewModel,
     onOpenDaily: () -> Unit,
     onOpenRanks: () -> Unit,
+    onOpenFeedEditor: () -> Unit,
+    onStartFeed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -134,47 +142,15 @@ fun HomeScreen(
             freezeReady = profile.dayStreak.freezesAvailable > 0,
         )
 
-        DailyCard(daily.phase, daily.language, dailyViewModel, onOpenDaily)
+        FeedCard(
+            enabled = feedViewModel.availableGames.filter { it in enabled },
+            disabledCount = feedViewModel.availableGames.count { it !in enabled },
+            wordLanguage = wordLanguage,
+            onEdit = onOpenFeedEditor,
+            onStart = onStartFeed,
+        )
 
-        // --- Feed settings, in place ---
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            BasicText(stringResource(Res.string.personalize_title), style = type.heading.copy(color = colors.textPrimary))
-            ChipRow(stringResource(Res.string.personalize_games)) {
-                feedViewModel.availableGames.forEach { game ->
-                    val on = game in enabled
-                    Chip(
-                        text = when (game) {
-                            GameKind.Word -> stringResource(Res.string.game_word_puzzle)
-                            GameKind.Memory -> stringResource(Res.string.game_memory)
-                            GameKind.Tubes -> stringResource(Res.string.game_tubes)
-                            GameKind.Mines -> stringResource(Res.string.game_mines)
-                            GameKind.Sudoku -> stringResource(Res.string.game_sudoku)
-                            GameKind.Lights -> stringResource(Res.string.game_lights)
-                            GameKind.Slide -> stringResource(Res.string.game_slide)
-                        },
-                        textColor = if (on) colors.textPrimary else colors.textSecondary,
-                        raised = on,
-                        selected = on,
-                        // The last game that is on cannot be switched off: the feed would be empty.
-                        onClick = if (on && enabled.size == 1) null else ({ feedViewModel.setGameEnabled(game, !on) }),
-                    )
-                }
-            }
-            if (enabled.size == 1) {
-                BasicText(stringResource(Res.string.personalize_last_game), style = type.caption.copy(color = colors.textSecondary))
-            }
-            ChipRow(stringResource(Res.string.personalize_language)) {
-                Language.entries.forEach { option ->
-                    Chip(
-                        text = option.name,
-                        textColor = if (option == wordLanguage) colors.textPrimary else colors.textSecondary,
-                        raised = option == wordLanguage,
-                        selected = option == wordLanguage,
-                        onClick = { feedViewModel.setWordLanguage(option) },
-                    )
-                }
-            }
-        }
+        DailyCard(daily.phase, daily.language, dailyViewModel, onOpenDaily)
 
         // --- Fastest today ---
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -198,21 +174,6 @@ fun HomeScreen(
     }
 }
 
-/** A small label and the chips of one setting, wrapping when the text is large. */
-@Composable
-private fun ChipRow(label: String, chips: @Composable () -> Unit) {
-    val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        BasicText(label, style = type.caption.copy(color = colors.textSecondary), modifier = Modifier.padding(end = Spacing.xs))
-        chips()
-    }
-}
-
 /** Both streaks in one quiet line. A dot beside the day streak says today's puzzle is still open. */
 @Composable
 private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean, freezeReady: Boolean) {
@@ -226,6 +187,12 @@ private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
+        // The name of the app on the left; the streaks stay in the top right corner.
+        BasicText(
+            text = stringResource(Res.string.app_name),
+            style = type.title.copy(color = colors.textPrimary),
+            modifier = Modifier.weight(1f).semantics { heading() },
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
@@ -258,8 +225,9 @@ private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean
 }
 
 /**
- * Today's puzzle. The whole card opens the daily page, whatever the state is: offline, the page shows the message and
- * the retry button, so this card only says how things stand.
+ * Today's puzzle: its picture, its name, a line about it and one outlined button. The whole card opens the daily page,
+ * whatever the state is: offline, the page shows the message and the retry button, so this card only says how things
+ * stand. The daily puzzle is the word puzzle, in the language chosen here.
  */
 @Composable
 private fun DailyCard(phase: DailyPhase, language: Language, dailyViewModel: DailyViewModel, onOpen: () -> Unit) {
@@ -272,7 +240,7 @@ private fun DailyCard(phase: DailyPhase, language: Language, dailyViewModel: Dai
             .background(colors.bgSurface, Radius.card)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onOpen)
             .padding(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             BasicText(
@@ -292,18 +260,128 @@ private fun DailyCard(phase: DailyPhase, language: Language, dailyViewModel: Dai
                 }
             }
         }
-        when (phase) {
-            DailyPhase.Intro -> AppButton(stringResource(Res.string.home_daily_play), onOpen, primary = true)
-            DailyPhase.Playing -> AppButton(stringResource(Res.string.home_daily_continue), onOpen, primary = true)
-            DailyPhase.Finished -> {
-                BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
-                AppButton(stringResource(Res.string.home_daily_result), onOpen)
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
+            GameThumbnail(GameKind.Word, language, Modifier.size(DAILY_THUMBNAIL))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                BasicText(GameKind.Word.displayName(), style = type.heading.copy(color = colors.textPrimary))
+                when (phase) {
+                    DailyPhase.Intro -> {
+                        BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
+                        AppOutlinedButton(stringResource(Res.string.home_daily_solve), onOpen)
+                    }
+                    DailyPhase.Playing -> {
+                        BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
+                        AppOutlinedButton(stringResource(Res.string.home_daily_continue), onOpen)
+                    }
+                    DailyPhase.Finished -> {
+                        BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                        AppOutlinedButton(stringResource(Res.string.home_daily_result), onOpen)
+                    }
+                    DailyPhase.Offline, DailyPhase.Unavailable ->
+                        BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSecondary))
+                    DailyPhase.Loading ->
+                        BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
+                }
             }
-            DailyPhase.Offline, DailyPhase.Unavailable ->
-                BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSecondary))
-            DailyPhase.Loading ->
-                BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
         }
+    }
+}
+
+private val DAILY_THUMBNAIL = 104.dp
+
+/** How many games the feed card shows by name before the rest are counted ("+3 games"). */
+private const val FEED_PREVIEW = 3
+
+/**
+ * The feed in short: the pictures of the first games that are on, a tile for the rest, the language of the word games
+ * and the button that starts the feed. Everything that is not "go" opens the feed editor, where the games are chosen.
+ */
+@Composable
+private fun FeedCard(
+    enabled: List<GameKind>,
+    disabledCount: Int,
+    wordLanguage: Language,
+    onEdit: () -> Unit,
+    onStart: () -> Unit,
+) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val shown = enabled.take(FEED_PREVIEW)
+    val more = enabled.size - shown.size
+    val tileText = when {
+        more > 0 -> stringResource(Res.string.home_feed_more, more)
+        disabledCount > 0 -> stringResource(Res.string.home_feed_add)
+        else -> null
+    }
+    Column(
+        modifier = Modifier.testTag("feedCard").fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            BasicText(stringResource(Res.string.home_feed_title), style = type.title.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier
+                    .testTag("editFeed")
+                    .heightIn(min = 48.dp)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit),
+            ) {
+                BasicText(stringResource(Res.string.home_feed_edit), style = type.label.copy(color = colors.correctFill))
+                ForwardChevron(colors.correctFill)
+            }
+        }
+        // Four equal slots: the pictures of the first games, then a tile for the rest. Empty slots keep the pictures their size.
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
+            shown.forEach { game ->
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1f).testTag("feedThumbnail"))
+                    BasicText(text = game.displayName(), style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center), maxLines = 1, modifier = Modifier.fillMaxWidth())
+                }
+            }
+            if (tileText != null) {
+                // The text is part of the tile; the line under the pictures stays empty so the tiles are as tall as they are.
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Column(
+                        modifier = Modifier
+                            .testTag("feedMore")
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(Radius.control)
+                            .background(colors.bgRaised)
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        BasicText("+", style = type.display.copy(color = colors.textSecondary))
+                        BasicText(
+                            text = tileText,
+                            style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+                            maxLines = 1,
+                        )
+                    }
+                    BasicText(text = " ", style = type.caption.copy(color = Color.Transparent), maxLines = 1)
+                }
+            }
+            repeat(FEED_PREVIEW + 1 - shown.size - if (tileText != null) 1 else 0) { Spacer(Modifier.weight(1f)) }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            modifier = Modifier
+                .testTag("wordLanguageRow")
+                .fillMaxWidth()
+                .clip(Radius.control)
+                .background(colors.bgRaised)
+                .heightIn(min = 48.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit)
+                .padding(horizontal = Spacing.md),
+        ) {
+            BasicText(stringResource(Res.string.home_word_language), style = type.body.copy(color = colors.textSecondary), modifier = Modifier.weight(1f))
+            BasicText(wordLanguage.nativeName(), style = type.label.copy(color = colors.textPrimary))
+            ForwardChevron(colors.textSecondary)
+        }
+        AppButton(stringResource(Res.string.home_start_feed) + "  →", onStart, modifier = Modifier.testTag("startFeedHome"), primary = true)
     }
 }
 

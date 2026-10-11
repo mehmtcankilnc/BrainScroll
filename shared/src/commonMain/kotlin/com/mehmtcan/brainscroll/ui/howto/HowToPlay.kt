@@ -32,6 +32,17 @@ import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.howto_button
 import brainscroll.shared.generated.resources.howto_close_hint
 import brainscroll.shared.generated.resources.howto_done
+import brainscroll.shared.generated.resources.howto_target_1
+import brainscroll.shared.generated.resources.howto_target_2
+import brainscroll.shared.generated.resources.howto_target_3
+import brainscroll.shared.generated.resources.howto_target_4
+import brainscroll.shared.generated.resources.howto_target_5
+import brainscroll.shared.generated.resources.howto_title_target
+import brainscroll.shared.generated.resources.howto_pipes_1
+import brainscroll.shared.generated.resources.howto_pipes_2
+import brainscroll.shared.generated.resources.howto_pipes_3
+import brainscroll.shared.generated.resources.howto_pipes_4
+import brainscroll.shared.generated.resources.howto_title_pipes
 import brainscroll.shared.generated.resources.howto_slide_1
 import brainscroll.shared.generated.resources.howto_slide_2
 import brainscroll.shared.generated.resources.howto_slide_3
@@ -122,6 +133,14 @@ private fun contentOf(kind: GameKind) = when (kind) {
     GameKind.Mines -> HowToContent(
         Res.string.howto_title_mines,
         listOf(Res.string.howto_mines_1, Res.string.howto_mines_2, Res.string.howto_mines_3, Res.string.howto_mines_4, Res.string.howto_mines_5),
+    )
+    GameKind.Pipes -> HowToContent(
+        Res.string.howto_title_pipes,
+        listOf(Res.string.howto_pipes_1, Res.string.howto_pipes_2, Res.string.howto_pipes_3, Res.string.howto_pipes_4),
+    )
+    GameKind.Target -> HowToContent(
+        Res.string.howto_title_target,
+        listOf(Res.string.howto_target_1, Res.string.howto_target_2, Res.string.howto_target_3, Res.string.howto_target_4, Res.string.howto_target_5),
     )
     GameKind.Slide -> HowToContent(
         Res.string.howto_title_slide,

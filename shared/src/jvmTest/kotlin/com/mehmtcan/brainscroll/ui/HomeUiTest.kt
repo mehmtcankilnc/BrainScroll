@@ -1,20 +1,27 @@
 package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.game.GameKind
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** The home tab and the pages around it (docs/decisions.md, Sadeleştirme). */
+/** The home tab, the feed editor and the pages around them (docs/decisions.md, "Ana Sayfa yenilemesi"). */
 @OptIn(ExperimentalTestApi::class)
 class HomeUiTest {
 
     private val both = listOf(GameKind.Word, GameKind.Memory)
+
+    private fun androidx.compose.ui.test.ComposeUiTest.cards() = onAllNodesWithTag("gameCard").fetchSemanticsNodes().size
 
     @Test
     fun theAppOpensOnTheHomeTabWithItsSections() = runComposeUiTest {
@@ -22,23 +29,184 @@ class HomeUiTest {
         snap("20_home")
 
         assertTrue(hasAnyText("Bugünün bulmacası", "Today's puzzle"))
-        assertTrue(hasAnyText("Akışını kişiselleştir", "Personalize your feed"))
+        assertTrue(hasAnyText("Akışın", "Your feed"))
         assertTrue(hasAnyText("Bugün en hızlılar", "Fastest today"))
-        // The game cards are gone: the feed is entered through its tab.
+        assertTrue(hasAnyText("Akışa başla  →", "Start your feed  →"))
+        // The game cards are gone: the feed is entered through its tab or the start button.
         assertFalse(hasAnyText("Hemen oyna", "Play now"))
+        // The feed card shows the pictures of the games that are on.
+        assertEquals(2, onAllNodesWithTag("feedThumbnail").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun withManyGamesTheFeedCardShowsThreeAndCountsTheRest() = runComposeUiTest {
+        start(games = GameKind.entries, openFeed = false)
+        snap("22_home_all_games")
+
+        assertEquals(3, onAllNodesWithTag("feedThumbnail").fetchSemanticsNodes().size)
+        assertTrue(hasAnyText("+6 oyun", "+6 games"))
+    }
+
+    @Test
+    fun editOpensTheFeedEditorWithEveryGameAsACard() = runComposeUiTest {
+        start(games = GameKind.entries, openFeed = false)
+
+        onNodeWithTag("editFeed").performClick()
+        waitForIdle()
+        snap("23_feed_editor")
+
+        assertTrue(hasAnyText("Akışını oluştur", "Build your feed"))
+        assertTrue(hasAnyText("9 oyun seçili", "9 games selected"))
+        assertEquals(GameKind.entries.size, cards())
+        onAllNodesWithTag("gameCard").onLast().performScrollTo()
+        waitForIdle()
+        snap("24_feed_editor_end")
+        // The pictures are there for every game, and the way back is the back button.
+        goHome()
+        assertTrue(hasAnyText("Akışın", "Your feed"))
+    }
+
+    @Test
+    fun aCardSwitchesAGameOffAndOnAndTheCountFollows() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        onNodeWithTag("editFeed").performClick()
+        waitForIdle()
+        assertTrue(hasAnyText("2 oyun seçili", "2 games selected"))
+
+        val memory = if (hasAnyText("Hafıza eşleştirme")) "Hafıza eşleştirme" else "Memory match"
+        onAllNodesWithText(memory).onLast().performClick()
+        waitForIdle()
+        assertTrue(hasAnyText("1 oyun seçili", "1 game selected", "1 games selected"))
+
+        onAllNodesWithText(memory).onLast().performClick()
+        waitForIdle()
+        assertTrue(hasAnyText("2 oyun seçili", "2 games selected"))
     }
 
     @Test
     fun theLastGameCannotBeSwitchedOff() = runComposeUiTest {
         start(games = both, openFeed = false)
+        onNodeWithTag("editFeed").performClick()
+        waitForIdle()
 
-        // Memory off is fine; then Word is the last one and its chip is not clickable any more.
+        // Memory off is fine; then Word is the last one and its card does nothing any more.
         val memory = if (hasAnyText("Hafıza eşleştirme")) "Hafıza eşleştirme" else "Memory match"
+        val word = if (hasAnyText("Kelime bulmacası")) "Kelime bulmacası" else "Word puzzle"
         onAllNodesWithText(memory).onLast().performClick()
+        waitForIdle()
+        onAllNodesWithText(word).onLast().performClick()
         waitForIdle()
 
         assertTrue(hasAnyText("En az bir oyun açık kalır", "At least one game stays on"))
-        snap("21_personalize_inline")
+        assertTrue(hasAnyText("1 oyun seçili", "1 game selected", "1 games selected"))
+        snap("21_feed_editor_last_game")
+    }
+
+    @Test
+    fun theStartButtonOpensTheFeed() = runComposeUiTest {
+        start(games = both, openFeed = false)
+
+        onNodeWithTag("startFeedHome").performClick()
+        waitUntil(timeoutMillis = 10_000) { hasAnyText("ENTER", "GİR") }
+
+        assertFalse(hasAnyText("Profil", "Profile"), "the feed has no tab bar")
+    }
+
+    @Test
+    fun theStartButtonOfTheEditorOpensTheFeedToo() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        onNodeWithTag("editFeed").performClick()
+        waitForIdle()
+
+        onNodeWithTag("startFeed").performClick()
+        waitUntil(timeoutMillis = 10_000) { hasAnyText("ENTER", "GİR") }
+    }
+
+    private fun androidx.compose.ui.test.ComposeUiTest.switchOffWordInTheEditor() {
+        onNodeWithTag("editFeed").performClick()
+        waitForIdle()
+        val word = if (hasAnyText("Kelime bulmacası")) "Kelime bulmacası" else "Word puzzle"
+        onAllNodesWithText(word).onLast().performClick()
+        waitForIdle()
+        assertTrue(hasAnyText("1 oyun seçili", "1 game selected", "1 games selected"))
+    }
+
+    private fun androidx.compose.ui.test.ComposeUiTest.memoryCards() = onAllNodesWithTag("memoryCard").fetchSemanticsNodes().size
+
+    /**
+     * True when a memory page is the one on show: its title is near the top of the screen. (A page that is composed
+     * but not shown reports its place as zero.)
+     */
+    private fun androidx.compose.ui.test.ComposeUiTest.memoryPageOnShow(): Boolean =
+        listOf("Hafıza eşleştirme", "Memory match").any { title ->
+            onAllNodesWithText(title).fetchSemanticsNodes().any { it.boundsInRoot.center.y in 1f..200f }
+        }
+
+    @Test
+    fun startingTheFeedWithTheWordPuzzleSwitchedOffOpensAnotherGame() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        switchOffWordInTheEditor()
+
+        onNodeWithTag("startFeed").performClick()
+        waitUntil(timeoutMillis = 10_000) { memoryCards() > 0 }
+
+        assertTrue(memoryPageOnShow(), "the memory board is the page on show")
+    }
+
+    @Test
+    fun aWordPuzzleStartedEarlierIsPassedWhenItsGameIsSwitchedOff() = runComposeUiTest {
+        start(games = both)
+        // Start a word puzzle: one letter makes it a puzzle in progress, which the feed keeps.
+        key('A')
+        goHome()
+
+        switchOffWordInTheEditor()
+        onNodeWithTag("startFeed").performClick()
+        waitUntil(timeoutMillis = 10_000) { memoryCards() > 0 }
+
+        assertTrue(memoryPageOnShow(), "the feed opens on the next page, a memory board")
+    }
+
+    @Test
+    fun theEditorHasItsTitleAndTheCountOnTheLineOfTheBackButton() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        onNodeWithTag("editFeed").performClick()
+        waitForIdle()
+
+        val back = onAllNodesWithContentDescription("Geri").fetchSemanticsNodes().ifEmpty { onAllNodesWithContentDescription("Back").fetchSemanticsNodes() }.single()
+        val title = onAllNodesWithText("Akışını oluştur").fetchSemanticsNodes().ifEmpty { onAllNodesWithText("Build your feed").fetchSemanticsNodes() }.single()
+        val count = onNodeWithTag("editorSelectedCount").fetchSemanticsNode()
+        fun middle(node: androidx.compose.ui.semantics.SemanticsNode) = node.boundsInRoot.center.y
+        assertTrue(kotlin.math.abs(middle(back) - middle(title)) < 6f, "title and back button on one line")
+        assertTrue(kotlin.math.abs(middle(count) - middle(title)) < 6f, "count and title on one line")
+        snap("25_feed_editor_header")
+    }
+
+    @Test
+    fun theStreaksSitInTheTopRightCorner() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        val flame = onAllNodesWithContentDescription("Gün serisi", substring = true).fetchSemanticsNodes().ifEmpty {
+            onAllNodesWithContentDescription("Day streak", substring = true).fetchSemanticsNodes()
+        }
+        assertTrue(flame.isNotEmpty())
+        val left = flame.minOf { it.boundsInRoot.left }
+        assertTrue(left > 390f / 2 * 1.0f, "the streaks are in the right half of the screen")
+        assertTrue(hasAnyText("BrainScroll"), "the name of the app fills the left of the line")
+    }
+
+    @Test
+    fun theLanguageRowOpensTheEditorWhereTheLanguageIsChosen() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        assertTrue(hasAnyText("Türkçe"))
+
+        onNodeWithTag("wordLanguageRow").performClick()
+        waitForIdle()
+        assertTrue(hasAnyText("Akışını oluştur", "Build your feed"))
+
+        onNodeWithTag("languageEN").performClick()
+        waitForIdle()
+        goHome()
+        assertTrue(hasAnyText("English"), "the home row shows the new language")
     }
 
     @Test
@@ -61,6 +229,6 @@ class HomeUiTest {
         assertFalse(hasAnyText("Profil", "Profile"))
 
         goHome()
-        assertTrue(hasAnyText("Akışını kişiselleştir", "Personalize your feed"))
+        assertTrue(hasAnyText("Akışın", "Your feed"))
     }
 }

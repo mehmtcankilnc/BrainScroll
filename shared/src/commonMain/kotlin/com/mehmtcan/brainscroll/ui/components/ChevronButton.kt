@@ -43,3 +43,16 @@ fun ChevronButton(description: String, color: Color, onClick: () -> Unit, modifi
         }
     }
 }
+
+/** A small right chevron for rows and links that lead somewhere (the mirror of the back chevron). */
+@Composable
+fun ForwardChevron(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(10.dp)) {
+        val path = Path().apply {
+            moveTo(0.3f * size.width, 0.1f * size.height)
+            lineTo(0.75f * size.width, 0.5f * size.height)
+            lineTo(0.3f * size.width, 0.9f * size.height)
+        }
+        drawPath(path, color, style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+}

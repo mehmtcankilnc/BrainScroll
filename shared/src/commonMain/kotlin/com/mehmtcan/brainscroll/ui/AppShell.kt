@@ -74,6 +74,7 @@ import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.ui.daily.DailyScreen
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
+import com.mehmtcan.brainscroll.ui.home.FeedEditorScreen
 import com.mehmtcan.brainscroll.ui.home.HomeScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
@@ -99,7 +100,7 @@ private enum class Tab(val label: StringResource) {
 }
 
 /** Pages that open over the tabs with a back button (docs/decisions.md, Sadeleştirme). They are not tabs. */
-private enum class SubPage { Daily, Ranks, Stats, Favorites, Settings }
+private enum class SubPage { Daily, Ranks, Stats, Favorites, Settings, FeedEditor }
 
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -166,7 +167,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
             if (subPage != null) {
                 Column(Modifier.fillMaxSize()) {
                     // The daily page has a header row of its own, so its back button lives there.
-                    if (subPage != SubPage.Daily) BackBar(onBack = { subPage = null })
+                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor) BackBar(onBack = { subPage = null })
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         when (subPage) {
                             SubPage.Daily -> DailyScreen(dailyViewModel, onBack = { subPage = null })
@@ -177,6 +178,15 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                                     onSignInWithGoogle = viewModel::signInWithGoogle,
                                     onSignInWithApple = viewModel::signInWithApple,
                                 ),
+                            )
+                            SubPage.FeedEditor -> FeedEditorScreen(
+                                feedViewModel = viewModel,
+                                onBack = { subPage = null },
+                                onStartFeed = {
+                                    subPage = null
+                                    viewModel.prepareFeed()
+                                    tab = Tab.Feed
+                                },
                             )
                             SubPage.Stats -> StatsPage(profileState)
                             SubPage.Favorites -> FavoritesPage(profileState)
@@ -203,6 +213,11 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                     socialViewModel = socialViewModel,
                     onOpenDaily = { subPage = SubPage.Daily },
                     onOpenRanks = { subPage = SubPage.Ranks },
+                    onOpenFeedEditor = { subPage = SubPage.FeedEditor },
+                    onStartFeed = {
+                        viewModel.prepareFeed()
+                        tab = Tab.Feed
+                    },
                 )
                 Tab.Feed -> FeedScreen(viewModel, onHome = { tab = Tab.Home })
                 Tab.Profile -> {
@@ -226,7 +241,13 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                 NoticePill(text, Modifier.align(Alignment.TopCenter), notice.detail)
             }
         }
-        if (showTabBar) TabBar(selected = tab, onSelect = { tab = it })
+        if (showTabBar) {
+            TabBar(selected = tab, onSelect = {
+                // The feed opens on a page of a game that is switched on, wherever it was left.
+                if (it == Tab.Feed) viewModel.prepareFeed()
+                tab = it
+            })
+        }
     }
 }
 

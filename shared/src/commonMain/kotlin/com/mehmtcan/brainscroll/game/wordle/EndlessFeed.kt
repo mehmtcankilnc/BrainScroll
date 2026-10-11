@@ -7,6 +7,9 @@ import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.lights.LightsRound
 import com.mehmtcan.brainscroll.game.mines.MinesResult
+import com.mehmtcan.brainscroll.game.pipes.PipesGenerator
+import com.mehmtcan.brainscroll.game.pipes.PipesResult
+import com.mehmtcan.brainscroll.game.pipes.PipesRound
 import com.mehmtcan.brainscroll.game.mines.MinesRound
 import com.mehmtcan.brainscroll.game.memory.MemoryGame
 import com.mehmtcan.brainscroll.game.memory.MemoryRound
@@ -15,6 +18,10 @@ import com.mehmtcan.brainscroll.game.tubes.TubesGame
 import com.mehmtcan.brainscroll.game.slide.SlideResult
 import com.mehmtcan.brainscroll.game.slide.SlideRound
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
+import com.mehmtcan.brainscroll.game.target.Op
+import com.mehmtcan.brainscroll.game.target.TargetGenerator
+import com.mehmtcan.brainscroll.game.target.TargetResult
+import com.mehmtcan.brainscroll.game.target.TargetRound
 import com.mehmtcan.brainscroll.game.sudoku.SudokuRound
 import com.mehmtcan.brainscroll.game.tubes.TubesRound
 import kotlin.random.Random
@@ -54,7 +61,7 @@ class EndlessFeed(
     private val wordLists: Map<Language, WordList>,
     startLanguage: Language,
     private val random: Random = Random.Default,
-    private val maxSkips: Int = 1,
+    private val maxSkips: Int = 999, // TEST: normal value is 1
     private val store: FeedStore = NoFeedStore,
     /** Unfinished puzzles from an earlier run. They become the first pages, in their saved order. */
     restored: List<StoredRound> = emptyList(),
@@ -97,6 +104,8 @@ class EndlessFeed(
                 GameKind.Sudoku -> SudokuRound.restore(rounds.size, stored, now)
                 GameKind.Lights -> LightsRound.restore(rounds.size, stored, now)
                 GameKind.Slide -> SlideRound.restore(rounds.size, stored, now)
+                GameKind.Target -> TargetRound.restore(rounds.size, stored, now)
+                GameKind.Pipes -> PipesRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
         }
@@ -303,6 +312,53 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- Target number actions (ignored on a page of another game) ---
+
+    /** Combines the numbers [firstId] and [secondId] with [op] on the target number game of page [index]. */
+    fun combineNumbers(index: Int, firstId: Int, op: Op, secondId: Int): TargetResult {
+        val round = rounds[index] as? TargetRound ?: return TargetResult.Ignored
+        touch()
+        val result = round.combine(firstId, op, secondId)
+        if (result != TargetResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** What [firstId] [op] [secondId] would give on page [index], or null if it is not a move. Changes nothing. */
+    fun previewNumbers(index: Int, firstId: Int, op: Op, secondId: Int): Int? =
+        (rounds[index] as? TargetRound)?.preview(firstId, op, secondId)
+
+    /** Takes back the last operation on page [index]. Returns false when there was nothing to take back. */
+    fun undoNumbers(index: Int): Boolean {
+        val round = rounds[index] as? TargetRound ?: return false
+        touch()
+        return round.undo().also { if (it) persist(round) }
+    }
+
+    /** Puts the numbers of page [index] back as they were at the start. Returns false when nothing had been done. */
+    fun restartNumbers(index: Int): Boolean {
+        val round = rounds[index] as? TargetRound ?: return false
+        touch()
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Pipes actions (ignored on a page of another game) ---
+
+    /** Turns the tile in [cell] on the pipes board of page [index]. */
+    fun turnPipe(index: Int, cell: Int): PipesResult {
+        val round = rounds[index] as? PipesRound ?: return PipesResult.Ignored
+        touch()
+        val result = round.tap(cell)
+        if (result != PipesResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Puts the tiles of page [index] back as they were at the start. Returns false when nothing had changed. */
+    fun restartPipes(index: Int): Boolean {
+        val round = rounds[index] as? PipesRound ?: return false
+        touch()
+        return round.restart().also { if (it) persist(round) }
+    }
+
     // --- Sudoku actions (ignored on a page of another game) ---
 
     /** Puts [digit] in [cell] of the sudoku board of page [index]. A wrong digit is a mistake; the third one loses. */
@@ -401,6 +457,8 @@ class EndlessFeed(
         GameKind.Sudoku -> SudokuRound(index, newId(), random.nextInt(), language, now)
         GameKind.Lights -> LightsRound(index, newId(), random.nextInt(), language, now)
         GameKind.Slide -> SlideRound(index, newId(), random.nextInt(), language, now)
+        GameKind.Target -> TargetGenerator.generate(random.nextInt()).let { TargetRound(index, newId(), it.numbers, it.target, language, now, it.par) }
+        GameKind.Pipes -> PipesGenerator.generate(random.nextInt()).let { PipesRound(index, newId(), it.start.toList(), language, now, it.par) }
     }
 
     /** Keeps the store in step with a round: untouched rounds are not worth saving, started ones are. */

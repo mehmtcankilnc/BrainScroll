@@ -51,8 +51,12 @@ import com.mehmtcan.brainscroll.ui.tubes.TubesPage
 import com.mehmtcan.brainscroll.ui.mines.MinesPage
 import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
+import com.mehmtcan.brainscroll.game.pipes.PipesSnapshot
 import com.mehmtcan.brainscroll.game.slide.SlideSnapshot
+import com.mehmtcan.brainscroll.ui.pipes.PipesPage
 import com.mehmtcan.brainscroll.game.sudoku.SudokuSnapshot
+import com.mehmtcan.brainscroll.game.target.TargetSnapshot
+import com.mehmtcan.brainscroll.ui.target.TargetPage
 import com.mehmtcan.brainscroll.ui.slide.SlidePage
 import com.mehmtcan.brainscroll.ui.lights.LightsPage
 import com.mehmtcan.brainscroll.ui.sudoku.SudokuPage
@@ -263,6 +267,24 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                             page = item,
                             onSlide = { cell -> viewModel.slideTile(index, cell) },
                             onRestart = { viewModel.restartSlide(index) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is TargetSnapshot -> TargetPage(
+                            page = item,
+                            onCombine = { first, op, second -> viewModel.combineNumbers(index, first, op, second) },
+                            preview = { first, op, second -> viewModel.previewNumbers(index, first, op, second) },
+                            onUndo = { viewModel.undoNumbers(index) },
+                            onRestart = { viewModel.restartNumbers(index) },
+                            isFavorite = item.id in favoriteIds,
+                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
+                            onHowToPlay = { howTo = item.kind },
+                        )
+                        is PipesSnapshot -> PipesPage(
+                            page = item,
+                            onTurn = { cell -> viewModel.turnPipe(index, cell) },
+                            onRestart = { viewModel.restartPipes(index) },
                             isFavorite = item.id in favoriteIds,
                             onToggleFavorite = { viewModel.toggleFavorite(item.id) },
                             onHowToPlay = { howTo = item.kind },

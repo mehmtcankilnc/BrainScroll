@@ -190,6 +190,42 @@ fun computeSlideStats(history: List<FinishedRound>): SlideStats {
     )
 }
 
+/** What the statistics screen shows for the target number game. Every result is a win (the game cannot be lost). */
+data class TargetStats(
+    val played: Int,
+    /** The fastest game (see TargetRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest operations in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeTargetStats(history: List<FinishedRound>): TargetStats {
+    val results = history.filter { it.game == GameKind.Target && it.mode == Mode.ENDLESS }
+    return TargetStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the pipes game. Every result is a win (the game cannot be lost). */
+data class PipesStats(
+    val played: Int,
+    /** The fastest game (see PipesRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest taps in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computePipesStats(history: List<FinishedRound>): PipesStats {
+    val results = history.filter { it.game == GameKind.Pipes && it.mode == Mode.ENDLESS }
+    return PipesStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
 fun computeTubesStats(history: List<FinishedRound>): TubesStats {
     val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS }
     return TubesStats(
