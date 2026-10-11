@@ -32,6 +32,9 @@ import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.game.wordle.StoredRound
+import com.mehmtcan.brainscroll.game.wordle.WordList
+import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
 import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.loadWordList
 import com.mehmtcan.brainscroll.stats.DayStreak
@@ -65,7 +68,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.mehmtcan.brainscroll.game.PageSnapshot
+import com.mehmtcan.brainscroll.game.guide.GuideStep
 
 sealed interface FeedUiState {
     data object Loading : FeedUiState
@@ -125,7 +132,7 @@ class FeedViewModel(
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
     private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes),
-) : ViewModel() {
+) : ViewModel(), FeedActions {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
 
@@ -142,6 +149,39 @@ class FeedViewModel(
 
     /** The games the player wants in the feed (docs/decisions.md, Ana Sayfa). Always at least one. */
     val enabledGames: StateFlow<Set<GameKind>> = _enabledGames
+
+    private val _guide = MutableStateFlow<GuideState?>(null)
+
+    /** The step the guide gave, with the page it is for: it only counts while that page looks the same. */
+    val guide: StateFlow<GuideState?> = _guide
+
+    /** The player asks the guide for a step on page [index]. The puzzle is neutral from then on. */
+    fun requestGuide(index: Int) {
+        val f = feed ?: return
+        val page = f.snapshot().pages.getOrNull(index) ?: return
+        val task = f.guideTask(index) ?: return
+        viewModelScope.launch {
+            // The search can take a moment on a hard position: not on the thread of the screen.
+            val step = withContext(Dispatchers.Default) { task() }
+            if (step == null) {
+                _guide.value = null
+                _guideNothing.tryEmit(Unit)
+                return@launch
+            }
+            f.markGuided(index)
+            publish()
+            _guide.value = GuideState(page, step)
+        }
+    }
+
+    fun clearGuide() {
+        _guide.value = null
+    }
+
+    private val _guideNothing = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** The guide had nothing to say for the page the player asked about. */
+    val guideNothing: SharedFlow<Unit> = _guideNothing
 
     /** The page the feed was on, so switching tabs and coming back does not jump to the first puzzle. */
     var page: Int = 0
@@ -194,25 +234,90 @@ class FeedViewModel(
 
     private val startLanguage = deviceLanguage
 
-    /** Builds the feed from what the device remembers: unfinished puzzles, the streak, the favorites. */
-    private suspend fun loadFeed() {
-        val lists = Language.entries.associateWith { loadWordList(it) }
-        val restored = repository.unfinishedRounds()
-        val chosen = repository.savedGames()?.filter { it in games }?.takeIf { it.isNotEmpty() } ?: games
-        _enabledGames.value = chosen.toSet()
-        feed = EndlessFeed(
-            wordLists = lists,
-            startLanguage = repository.savedLanguage() ?: startLanguage,
+    private val _appLanguage = MutableStateFlow(repository.savedAppLanguage())
+
+    /** The language of the app's texts the player chose, or null to follow the device. */
+    val appLanguage: StateFlow<AppLanguage?> = _appLanguage
+
+    /** The language the app's texts are in now: the chosen one, or the device's. */
+    val resolvedAppLanguage: Language get() = _appLanguage.value?.wordLanguage ?: startLanguage
+
+    fun setAppLanguage(language: AppLanguage?) {
+        repository.saveAppLanguage(language)
+        _appLanguage.value = language
+    }
+
+    private val _wordLanguages = MutableStateFlow(repository.savedWordLanguages() ?: listOf(resolvedAppLanguage))
+
+    /** The languages of the word puzzles in the feed: at least one. Until the player chooses, the app language. */
+    val wordLanguages: StateFlow<List<Language>> = _wordLanguages
+
+    private var wordLists: Map<Language, WordList> = emptyMap()
+
+    /** A feed of the games the player switched on, in the languages chosen, starting with [restored] puzzles. */
+    private fun buildFeed(restored: List<StoredRound>): EndlessFeed {
+        val chosen = _enabledGames.value
+        return EndlessFeed(
+            wordLists = wordLists,
+            startLanguage = _wordLanguages.value.first(),
+            startLanguages = _wordLanguages.value,
             store = repository,
             restored = restored,
             startStreak = Streaks.current(repository.history()),
             now = now,
             games = games.filter { it in chosen },
         ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
+    }
+
+    /** Builds the feed from what the device remembers: unfinished puzzles, the streak, the favorites. */
+    private suspend fun loadFeed() {
+        wordLists = Language.entries.associateWith { loadWordList(it) }
+        val restored = repository.unfinishedRounds()
+        val chosen = repository.savedGames()?.filter { it in games }?.takeIf { it.isNotEmpty() } ?: games
+        _enabledGames.value = chosen.toSet()
+        feed = buildFeed(restored)
         favoriteIds = repository.favoriteResults().map { it.id }.toSet()
         page = 0
         publish()
         refreshProfile()
+    }
+
+    /**
+     * Starts a new feed from the games and languages the player chose: whatever was left unfinished in the old one is
+     * forgotten, and the feed begins on its first page.
+     */
+    fun startNewFeed() {
+        if (feed == null) return
+        repository.clearFeedProgress()
+        feed = buildFeed(emptyList())
+        page = 0
+        _guide.value = null
+        publish()
+    }
+
+    /** Goes on with the feed that was left: opens it on the first puzzle that was started and not finished. */
+    fun continueFeed() {
+        val f = feed ?: return
+        prepareFeed()
+        f.firstUnfinishedIndex()?.let {
+            page = it
+            publish()
+        }
+    }
+
+    /**
+     * The feed tab was opened. The feed is kept when the puzzle it was left on is not finished (started or not), and it
+     * goes on at a puzzle that was started and left half done, wherever that is. When the last puzzle is finished and
+     * nothing is half done, there is nothing to go on with: a new feed is made from the choices of the player.
+     */
+    fun openFeedTab() {
+        val f = feed ?: return
+        val leftOn = f.snapshot().pages.getOrNull(page)
+        when {
+            leftOn != null && !leftOn.isFinished && f.firstUnfinishedIndex() == null -> prepareFeed() // kept, on the same page
+            f.firstUnfinishedIndex() != null -> continueFeed()
+            else -> startNewFeed()
+        }
     }
 
     init {
@@ -252,12 +357,12 @@ class FeedViewModel(
         sync.start()
     }
 
-    fun type(page: Int, letter: Char) = act { it.type(page, letter) }
+    override fun type(page: Int, letter: Char) = act { it.type(page, letter) }
 
-    fun backspace(page: Int) = act { it.backspace(page) }
+    override fun backspace(page: Int) = act { it.backspace(page) }
 
     /** Turns over a card of the memory board on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun flip(page: Int, card: Int): FlipResult {
+    override fun flip(page: Int, card: Int): FlipResult {
         val f = feed ?: return FlipResult.Ignored
         val result = f.flip(page, card)
         publish()
@@ -270,13 +375,13 @@ class FeedViewModel(
     }
 
     /** The two wrong cards of the memory board on [page] turn back. */
-    fun closeMismatch(page: Int) {
+    override fun closeMismatch(page: Int) {
         feed?.closeMismatch(page)
         publish()
     }
 
     /** Pours tube [from] into tube [to] on the tubes board of [page]. Returns what happened, so the screen can buzz. */
-    fun pour(page: Int, from: Int, to: Int): PourResult {
+    override fun pour(page: Int, from: Int, to: Int): PourResult {
         val f = feed ?: return PourResult.Ignored
         val result = f.pour(page, from, to)
         publish()
@@ -289,19 +394,19 @@ class FeedViewModel(
     }
 
     /** Opens a cell of the minesweeper board on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun openCell(page: Int, cell: Int): MinesResult {
+    override fun openCell(page: Int, cell: Int): MinesResult {
         val f = feed ?: return MinesResult.Ignored
         return f.openCell(page, cell).also { afterMinesMove(it, page) }
     }
 
     /** Flags or unflags a cell of the minesweeper board on [page]. */
-    fun flagCell(page: Int, cell: Int): Boolean {
+    override fun flagCell(page: Int, cell: Int): Boolean {
         val f = feed ?: return false
         return f.flagCell(page, cell).also { publish() }
     }
 
     /** Chords on an open number of the minesweeper board on [page]. */
-    fun chordCell(page: Int, cell: Int): MinesResult {
+    override fun chordCell(page: Int, cell: Int): MinesResult {
         val f = feed ?: return MinesResult.Ignored
         return f.chordCell(page, cell).also { afterMinesMove(it, page) }
     }
@@ -316,7 +421,7 @@ class FeedViewModel(
     }
 
     /** Taps a light of the Lights Out board on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun tapLight(page: Int, cell: Int): LightsResult {
+    override fun tapLight(page: Int, cell: Int): LightsResult {
         val f = feed ?: return LightsResult.Ignored
         val result = f.tapLight(page, cell)
         publish()
@@ -329,13 +434,13 @@ class FeedViewModel(
     }
 
     /** Puts the Lights Out board on [page] back as it was at the start. */
-    fun restartLights(page: Int): Boolean {
+    override fun restartLights(page: Int): Boolean {
         val f = feed ?: return false
         return f.restartLights(page).also { publish() }
     }
 
     /** Slides the tile in [cell] of the sliding puzzle on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun slideTile(page: Int, cell: Int): SlideResult {
+    override fun slideTile(page: Int, cell: Int): SlideResult {
         val f = feed ?: return SlideResult.Ignored
         val result = f.slideTile(page, cell)
         publish()
@@ -348,13 +453,13 @@ class FeedViewModel(
     }
 
     /** Puts the sliding puzzle on [page] back as it was at the start. */
-    fun restartSlide(page: Int): Boolean {
+    override fun restartSlide(page: Int): Boolean {
         val f = feed ?: return false
         return f.restartSlide(page).also { publish() }
     }
 
     /** Combines two numbers of the target number game on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun combineNumbers(page: Int, firstId: Int, op: Op, secondId: Int): TargetResult {
+    override fun combineNumbers(page: Int, firstId: Int, op: Op, secondId: Int): TargetResult {
         val f = feed ?: return TargetResult.Ignored
         val result = f.combineNumbers(page, firstId, op, secondId)
         publish()
@@ -367,22 +472,22 @@ class FeedViewModel(
     }
 
     /** What the operation would give, or null if it is not allowed. Used to dim numbers that do not fit. */
-    fun previewNumbers(page: Int, firstId: Int, op: Op, secondId: Int): Int? = feed?.previewNumbers(page, firstId, op, secondId)
+    override fun previewNumbers(page: Int, firstId: Int, op: Op, secondId: Int): Int? = feed?.previewNumbers(page, firstId, op, secondId)
 
     /** Takes back the last operation of the target number game on [page]. */
-    fun undoNumbers(page: Int): Boolean {
+    override fun undoNumbers(page: Int): Boolean {
         val f = feed ?: return false
         return f.undoNumbers(page).also { publish() }
     }
 
     /** Puts the target number game on [page] back as it was at the start. */
-    fun restartNumbers(page: Int): Boolean {
+    override fun restartNumbers(page: Int): Boolean {
         val f = feed ?: return false
         return f.restartNumbers(page).also { publish() }
     }
 
     /** Turns a tile of the pipes board on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun turnPipe(page: Int, cell: Int): PipesResult {
+    override fun turnPipe(page: Int, cell: Int): PipesResult {
         val f = feed ?: return PipesResult.Ignored
         val result = f.turnPipe(page, cell)
         publish()
@@ -395,25 +500,25 @@ class FeedViewModel(
     }
 
     /** Puts the pipes board on [page] back as it was at the start. */
-    fun restartPipes(page: Int): Boolean {
+    override fun restartPipes(page: Int): Boolean {
         val f = feed ?: return false
         return f.restartPipes(page).also { publish() }
     }
 
     /** Puts a digit in a cell of the sudoku board on [page]. Returns what happened, so the screen can buzz accordingly. */
-    fun placeDigit(page: Int, cell: Int, digit: Int): SudokuResult {
+    override fun placeDigit(page: Int, cell: Int, digit: Int): SudokuResult {
         val f = feed ?: return SudokuResult.Ignored
         return f.placeDigit(page, cell, digit).also { afterSudokuMove(it, page) }
     }
 
     /** Switches a pencil note on or off in a cell of the sudoku board on [page]. */
-    fun toggleNote(page: Int, cell: Int, digit: Int): SudokuResult {
+    override fun toggleNote(page: Int, cell: Int, digit: Int): SudokuResult {
         val f = feed ?: return SudokuResult.Ignored
         return f.toggleNote(page, cell, digit).also { publish() }
     }
 
     /** Takes back a wrong digit, or the notes, of a cell of the sudoku board on [page]. */
-    fun eraseCell(page: Int, cell: Int): SudokuResult {
+    override fun eraseCell(page: Int, cell: Int): SudokuResult {
         val f = feed ?: return SudokuResult.Ignored
         return f.eraseCell(page, cell).also { publish() }
     }
@@ -428,18 +533,18 @@ class FeedViewModel(
     }
 
     /** Takes back the last pour of the tubes board on [page]. */
-    fun undo(page: Int): Boolean {
+    override fun undo(page: Int): Boolean {
         val f = feed ?: return false
         return f.undo(page).also { publish() }
     }
 
     /** Puts the tubes board on [page] back as it was at the start. */
-    fun restart(page: Int): Boolean {
+    override fun restart(page: Int): Boolean {
         val f = feed ?: return false
         return f.restart(page).also { publish() }
     }
 
-    fun submit(page: Int) {
+    override fun submit(page: Int) {
         act { it.submit(page) }
         refreshProfile()
         requestSyncIfNeeded()
@@ -449,18 +554,6 @@ class FeedViewModel(
     fun onPageSettled(page: Int) {
         this.page = page
         act { it.ensureSize(page + AHEAD) }
-    }
-
-    /** Asks to leave [page] forward. Returns false when that is not allowed (the screen blocks the swipe). */
-    fun leave(page: Int): Boolean {
-        val f = feed ?: return false
-        val allowed = f.leave(page)
-        publish()
-        return allowed
-    }
-
-    fun setLanguage(language: Language) {
-        act { if (it.setLanguage(language)) repository.saveLanguage(language) }
     }
 
     /**
@@ -495,14 +588,18 @@ class FeedViewModel(
         publish()
     }
 
-    /** The language of the word puzzles from now on. Puzzles already started keep theirs. */
-    fun setWordLanguage(language: Language) {
-        repository.saveLanguage(language)
-        act { it.setWordLanguage(language, fromIndex = page) }
+    /** Switches a language of the word puzzles on or off. The last language that is on stays. Applies to puzzles still to come. */
+    fun setWordLanguageEnabled(language: Language, enabled: Boolean) {
+        val current = _wordLanguages.value
+        val next = Language.entries.filter { if (it == language) enabled else it in current }
+        if (next.isEmpty() || next == current) return
+        _wordLanguages.value = next
+        repository.saveWordLanguages(next)
+        act { it.setWordLanguages(next.toSet(), fromIndex = page) }
     }
 
     /** Hearts or un-hearts a finished puzzle. Its result is saved the moment it ends, so the id always exists. */
-    fun toggleFavorite(resultId: String) {
+    override fun toggleFavorite(resultId: String) {
         val nowFavorite = resultId !in favoriteIds
         repository.setFavorite(resultId, nowFavorite, now())
         favoriteIds = if (nowFavorite) favoriteIds + resultId else favoriteIds - resultId
@@ -584,12 +681,6 @@ class FeedViewModel(
         }
     }
 
-    /** The player came back, or has been looking at the feed for a while: a long pause means a new session. */
-    fun refreshSession() {
-        val f = feed ?: return
-        if (f.startNewSessionIfIdle()) publish()
-    }
-
     private fun providerName(): String = when ((account.state.value as? AccountState.SignedIn)?.kind) {
         AccountState.SignedIn.Kind.Google -> "google"
         AccountState.SignedIn.Kind.Apple -> "apple"
@@ -643,3 +734,6 @@ class FeedViewModel(
         const val MAX_SCAN = 100
     }
 }
+
+/** A step of the guide and the page it was asked for. When the page changes, the step is out of date. */
+data class GuideState(val page: PageSnapshot, val step: GuideStep)

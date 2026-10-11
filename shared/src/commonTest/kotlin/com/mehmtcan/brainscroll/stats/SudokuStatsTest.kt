@@ -15,12 +15,12 @@ class SudokuStatsTest {
 
     private fun word(outcome: Outcome) = FinishedRound(
         id = "w$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "CRANE",
-        guesses = listOf("A", "B"), outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf("A", "B"), outcome = outcome, finishedAt = clock++,
     )
 
     private fun sudoku(outcome: Outcome, durationMs: Long) = FinishedRound(
         id = "s$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "9x9x36:5",
-        guesses = listOf("12"), outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf("12"), outcome = outcome, finishedAt = clock++,
         durationMs = durationMs, game = GameKind.Sudoku,
     )
 

@@ -108,11 +108,11 @@ class SocialUiTest {
         snap("23_ranks_streaks")
         assertTrue(hasAnyText("12") && hasAnyText("carol (sen)", "carol (you)"))
 
-        clickAny("Filtre", "Filter")
-        snap("27_ranks_filters_open")
+        // The choices are always in view now: no filter button to open first.
+        snap("27_ranks_filters")
         clickAny("En uzun", "Longest")
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:false" } }
-        // The section chip and the filter chip both say "Friends"; the filter is the second one.
+        // The section tab and the "Players" choice both say "Friends"; the choice is the second one.
         val friendsLabel = if (onAllNodesWithText("Arkadaşlar").fetchSemanticsNodes().isNotEmpty()) "Arkadaşlar" else "Friends"
         onAllNodesWithText(friendsLabel)[1].performClick()
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:true" } }

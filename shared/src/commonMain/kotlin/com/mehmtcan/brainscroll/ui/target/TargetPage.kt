@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,7 +58,6 @@ import brainscroll.shared.generated.resources.a11y_target_par
 import brainscroll.shared.generated.resources.a11y_target_restart
 import brainscroll.shared.generated.resources.a11y_target_undo
 import brainscroll.shared.generated.resources.game_target
-import brainscroll.shared.generated.resources.swipe_hint
 import brainscroll.shared.generated.resources.target_hint
 import brainscroll.shared.generated.resources.target_label
 import brainscroll.shared.generated.resources.target_moves
@@ -75,7 +77,6 @@ import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -121,7 +122,6 @@ fun TargetPage(
     onRestart: () -> Boolean,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -169,8 +169,6 @@ fun TargetPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_target), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Chip(
@@ -196,16 +194,18 @@ fun TargetPage(
                     for (token in state.tokens) {
                         // With a number and an operation picked, the numbers that make a move not allowed are dimmed.
                         val fits = first == null || op == null || token.id == first || preview(first, op, token.id) != null
-                        NumberTile(
-                            value = token.value,
-                            id = token.id,
-                            size = tile,
-                            selected = token.id == first,
-                            dimmed = !fits,
-                            reached = won && token.value == state.target,
-                            playing = !won,
-                            onClick = { tapNumber(token.id) },
-                        )
+                        GuideMark(isGuided(token.id), Radius.card) {
+                            NumberTile(
+                                value = token.value,
+                                id = token.id,
+                                size = tile,
+                                selected = token.id == first,
+                                dimmed = !fits,
+                                reached = won && token.value == state.target,
+                                playing = !won,
+                                onClick = { tapNumber(token.id) },
+                            )
+                        }
                     }
                 }
                 Steps(state.steps)
@@ -408,7 +408,7 @@ private fun TargetResultCard(page: TargetSnapshot, isFavorite: Boolean, onToggle
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

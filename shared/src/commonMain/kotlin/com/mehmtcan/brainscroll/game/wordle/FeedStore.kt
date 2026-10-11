@@ -14,10 +14,11 @@ data class StoredRound(
     val answer: String,
     val guesses: List<String>,
     val input: String,
-    val skipped: Boolean,
     val position: Int,
     /** Which game this round belongs to. For memory, [answer] is the board and [guesses] the order of the flips. */
     val game: GameKind = GameKind.Word,
+    /** True once the player asked the guide for a step: the puzzle no longer counts for streaks and statistics. */
+    val assisted: Boolean = false,
 )
 
 /** A puzzle that is over. These rows are append-only history; streaks and statistics are derived from them. */
@@ -28,8 +29,6 @@ data class FinishedRound(
     val answer: String,
     val guesses: List<String>,
     val outcome: Outcome,
-    /** True if the player left this puzzle once before finishing it. */
-    val wasSkipped: Boolean,
     val finishedAt: Long,
     /** Daily puzzles only: how long it took, from the server's clock. Null for endless puzzles. */
     val durationMs: Long? = null,
@@ -39,6 +38,8 @@ data class FinishedRound(
      */
     val puzzleDay: Long? = null,
     val game: GameKind = GameKind.Word,
+    /** True if the player used the guide: the result stays in the history but counts for no streak and no statistic. */
+    val assisted: Boolean = false,
 ) {
     /** The Istanbul day this result counts for (docs/decisions.md). */
     val dayIndex: Long get() = puzzleDay ?: IstanbulDay.dayIndex(finishedAt)

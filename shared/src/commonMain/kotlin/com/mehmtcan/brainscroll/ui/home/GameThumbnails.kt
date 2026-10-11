@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
     BoxWithConstraints(
         modifier = modifier
             .clearAndSetSemantics { }
+            .graphicsLayer()
             .clip(Radius.control)
             .background(colors.bgPage)
             .border(1.dp, colors.borderSubtle, Radius.control),
@@ -188,7 +190,7 @@ private fun TubesThumb(side: Dp) {
     val tubeWidth = (side * 0.86f - gap * 4) / 5
     val tubeHeight = side * 0.8f
     val capacity = TubesGame.DEFAULT_CAPACITY
-    val slot = (tubeHeight - tubeWidth * 0.12f) / capacity
+    val slot = tubeHeight / capacity
     Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
         TubesSample.forEach { tube ->
             val shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = tubeWidth / 2, bottomEnd = tubeWidth / 2, topStart = tubeWidth * 0.12f, topEnd = tubeWidth * 0.12f)
@@ -245,7 +247,7 @@ private fun MinesThumb(side: Dp) {
     }
 }
 
-// --- Sudoku: the top left of a real board, given numbers and two the player entered ---
+// --- Sudoku: the top left box of a real board, given numbers and two the player entered ---
 
 private val SudokuSample by lazy { SudokuGenerator.generate(7) }
 
@@ -253,26 +255,17 @@ private val SudokuSample by lazy { SudokuGenerator.generate(7) }
 private fun SudokuThumb(side: Dp) {
     val colors = BrainScrollTheme.colors
     val puzzle = SudokuSample
-    val shown = 5
-    val gap = side * 0.02f
-    val boxGap = side * 0.04f
-    val cell = (side * 0.84f - gap * 4 - boxGap) / shown
+    val shown = 3
+    val gap = side * 0.04f
+    val cell = (side * 0.84f - gap * (shown - 1)) / shown
     // The first two empty cells in the picture show the right number, as if the player had entered them.
     val entered = (0 until shown * shown).map { (it / shown) * 9 + it % shown }.filter { puzzle.givens[it] == 0 }.take(2).toSet()
-    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-        for (r in 0 until shown) {
-            if (r == 3) androidx.compose.foundation.layout.Spacer(Modifier.size(boxGap - gap))
-            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                for (c in 0 until shown) {
-                    if (c == 3) androidx.compose.foundation.layout.Spacer(Modifier.size(boxGap - gap))
-                    val index = r * 9 + c
-                    Cell(cell, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, cell * 0.2f) {
-                        when {
-                            puzzle.givens[index] != 0 -> Mark(puzzle.givens[index].toString(), cell * 0.62f, colors.textPrimary)
-                            index in entered -> Mark(puzzle.solution[index].toString(), cell * 0.62f, colors.streakAnswer, FontWeight.Medium)
-                        }
-                    }
-                }
+    Grid(rows = shown, cols = shown, gap = gap) { r, c ->
+        val index = r * 9 + c
+        Cell(cell, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, cell * 0.2f) {
+            when {
+                puzzle.givens[index] != 0 -> Mark(puzzle.givens[index].toString(), cell * 0.62f, colors.textPrimary)
+                index in entered -> Mark(puzzle.solution[index].toString(), cell * 0.62f, colors.streakAnswer, FontWeight.Medium)
             }
         }
     }

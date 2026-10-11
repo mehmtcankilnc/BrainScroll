@@ -61,6 +61,9 @@ class SudokuGame(
 
     val isFinished: Boolean get() = status != SudokuStatus.Playing
 
+    /** The digit that belongs in each cell. Only the guide may use it. */
+    internal val solution: List<Int> get() = puzzle.solution.toList()
+
     val state: SudokuState
         get() = SudokuState(
             givens = puzzle.givens.toList(),

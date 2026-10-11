@@ -3,6 +3,7 @@ package com.mehmtcan.brainscroll.ui
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithTag
@@ -31,7 +32,7 @@ class HomeUiTest {
         assertTrue(hasAnyText("Bugünün bulmacası", "Today's puzzle"))
         assertTrue(hasAnyText("Akışın", "Your feed"))
         assertTrue(hasAnyText("Bugün en hızlılar", "Fastest today"))
-        assertTrue(hasAnyText("Akışa başla  →", "Start your feed  →"))
+        assertTrue(hasAnyText("Akışa başla", "Start your feed"))
         // The game cards are gone: the feed is entered through its tab or the start button.
         assertFalse(hasAnyText("Hemen oyna", "Play now"))
         // The feed card shows the pictures of the games that are on.
@@ -51,7 +52,7 @@ class HomeUiTest {
     fun editOpensTheFeedEditorWithEveryGameAsACard() = runComposeUiTest {
         start(games = GameKind.entries, openFeed = false)
 
-        onNodeWithTag("editFeed").performClick()
+        clickAny("Akışın", "Your feed")
         waitForIdle()
         snap("23_feed_editor")
 
@@ -69,7 +70,7 @@ class HomeUiTest {
     @Test
     fun aCardSwitchesAGameOffAndOnAndTheCountFollows() = runComposeUiTest {
         start(games = both, openFeed = false)
-        onNodeWithTag("editFeed").performClick()
+        clickAny("Akışın", "Your feed")
         waitForIdle()
         assertTrue(hasAnyText("2 oyun seçili", "2 games selected"))
 
@@ -86,7 +87,7 @@ class HomeUiTest {
     @Test
     fun theLastGameCannotBeSwitchedOff() = runComposeUiTest {
         start(games = both, openFeed = false)
-        onNodeWithTag("editFeed").performClick()
+        clickAny("Akışın", "Your feed")
         waitForIdle()
 
         // Memory off is fine; then Word is the last one and its card does nothing any more.
@@ -109,13 +110,13 @@ class HomeUiTest {
         onNodeWithTag("startFeedHome").performClick()
         waitUntil(timeoutMillis = 10_000) { hasAnyText("ENTER", "GİR") }
 
-        assertFalse(hasAnyText("Profil", "Profile"), "the feed has no tab bar")
+        assertTrue(hasAnyText("Profil", "Profile"), "the feed keeps the tab bar")
     }
 
     @Test
     fun theStartButtonOfTheEditorOpensTheFeedToo() = runComposeUiTest {
         start(games = both, openFeed = false)
-        onNodeWithTag("editFeed").performClick()
+        clickAny("Akışın", "Your feed")
         waitForIdle()
 
         onNodeWithTag("startFeed").performClick()
@@ -123,7 +124,7 @@ class HomeUiTest {
     }
 
     private fun androidx.compose.ui.test.ComposeUiTest.switchOffWordInTheEditor() {
-        onNodeWithTag("editFeed").performClick()
+        clickAny("Akışın", "Your feed")
         waitForIdle()
         val word = if (hasAnyText("Kelime bulmacası")) "Kelime bulmacası" else "Word puzzle"
         onAllNodesWithText(word).onLast().performClick()
@@ -154,7 +155,7 @@ class HomeUiTest {
     }
 
     @Test
-    fun aWordPuzzleStartedEarlierIsPassedWhenItsGameIsSwitchedOff() = runComposeUiTest {
+    fun aWordPuzzleStartedEarlierIsForgottenWhenANewFeedWithoutItsGameIsStarted() = runComposeUiTest {
         start(games = both)
         // Start a word puzzle: one letter makes it a puzzle in progress, which the feed keeps.
         key('A')
@@ -162,15 +163,17 @@ class HomeUiTest {
 
         switchOffWordInTheEditor()
         onNodeWithTag("startFeed").performClick()
+        waitForIdle()
+        onNodeWithTag("confirmYes").performClick() // the half done puzzle is forgotten: asked first
         waitUntil(timeoutMillis = 10_000) { memoryCards() > 0 }
 
-        assertTrue(memoryPageOnShow(), "the feed opens on the next page, a memory board")
+        assertTrue(memoryPageOnShow(), "the new feed has no word puzzle, it opens on a memory board")
     }
 
     @Test
     fun theEditorHasItsTitleAndTheCountOnTheLineOfTheBackButton() = runComposeUiTest {
         start(games = both, openFeed = false)
-        onNodeWithTag("editFeed").performClick()
+        clickAny("Akışın", "Your feed")
         waitForIdle()
 
         val back = onAllNodesWithContentDescription("Geri").fetchSemanticsNodes().ifEmpty { onAllNodesWithContentDescription("Back").fetchSemanticsNodes() }.single()
@@ -185,8 +188,8 @@ class HomeUiTest {
     @Test
     fun theStreaksSitInTheTopRightCorner() = runComposeUiTest {
         start(games = both, openFeed = false)
-        val flame = onAllNodesWithContentDescription("Gün serisi", substring = true).fetchSemanticsNodes().ifEmpty {
-            onAllNodesWithContentDescription("Day streak", substring = true).fetchSemanticsNodes()
+        val flame = onAllNodesWithContentDescription("Günlük seri", substring = true).fetchSemanticsNodes().ifEmpty {
+            onAllNodesWithContentDescription("Daily streak", substring = true).fetchSemanticsNodes()
         }
         assertTrue(flame.isNotEmpty())
         val left = flame.minOf { it.boundsInRoot.left }
@@ -195,25 +198,10 @@ class HomeUiTest {
     }
 
     @Test
-    fun theLanguageRowOpensTheEditorWhereTheLanguageIsChosen() = runComposeUiTest {
-        start(games = both, openFeed = false)
-        assertTrue(hasAnyText("Türkçe"))
-
-        onNodeWithTag("wordLanguageRow").performClick()
-        waitForIdle()
-        assertTrue(hasAnyText("Akışını oluştur", "Build your feed"))
-
-        onNodeWithTag("languageEN").performClick()
-        waitForIdle()
-        goHome()
-        assertTrue(hasAnyText("English"), "the home row shows the new language")
-    }
-
-    @Test
-    fun theFeedHasNoTabBarAndTheChevronGoesHome() = runComposeUiTest {
+    fun theFeedKeepsTheTabBarAndTheChevronGoesHome() = runComposeUiTest {
         start(games = both)
 
-        assertFalse(hasAnyText("Profil", "Profile"))
+        assertTrue(hasAnyText("Profil", "Profile"))
         goHome()
 
         assertTrue(hasAnyText("Bugünün bulmacası", "Today's puzzle"))
@@ -230,5 +218,143 @@ class HomeUiTest {
 
         goHome()
         assertTrue(hasAnyText("Akışın", "Your feed"))
+    }
+
+    private fun androidx.compose.ui.test.ComposeUiTest.cLetters() = onAllNodes(hasText("C")).fetchSemanticsNodes().size
+
+    @Test
+    fun todaysPuzzleIsAboveTheFeedCard() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        val daily = onNodeWithTag("dailyCard").fetchSemanticsNode().boundsInRoot.top
+        val feed = onNodeWithTag("feedCard").fetchSemanticsNode().boundsInRoot.top
+        assertTrue(daily < feed, "today's puzzle comes first, the feed card below it")
+    }
+
+    @Test
+    fun theFeedCardHasNoEditButtonAndNoLanguageRowButTheCardOpensTheEditor() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        assertFalse(hasAnyText("Düzenle", "Edit"), "no edit button")
+        assertFalse(hasAnyText("Kelime oyunlarının dili", "Word language"), "no language row")
+        assertFalse(hasAnyText("→"), "no arrow on the start button")
+
+        clickAny("Akışın", "Your feed")
+        waitForIdle()
+        assertTrue(hasAnyText("Akışını oluştur", "Build your feed"), "tapping the card opens the editor")
+    }
+
+    @Test
+    fun thereIsNothingToContinueUntilAPuzzleIsStarted() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        assertTrue(onAllNodesWithTag("continueFeed").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun continuingGoesBackToThePuzzleThatWasLeftHalfDone() = runComposeUiTest {
+        start(games = both)
+        key('C')
+        key('R')
+        goHome()
+
+        assertTrue(onAllNodesWithTag("continueFeed").fetchSemanticsNodes().isNotEmpty(), "the button is offered")
+        val daily = onNodeWithTag("dailyCard").fetchSemanticsNode().boundsInRoot.top
+        val button = onNodeWithTag("continueFeed").fetchSemanticsNode().boundsInRoot.top
+        val feed = onNodeWithTag("feedCard").fetchSemanticsNode().boundsInRoot.top
+        assertTrue(daily < button && button < feed, "between today's puzzle and the feed card")
+
+        onNodeWithTag("continueFeed").performClick()
+        waitUntil(timeoutMillis = 10_000) { cLetters() > 0 }
+        assertEquals(2, cLetters(), "the typed letter is back: the C key and the tile")
+    }
+
+    @Test
+    fun startingANewFeedForgetsWhatWasLeftHalfDone() = runComposeUiTest {
+        start(games = both)
+        key('C')
+        key('R')
+        goHome()
+
+        onNodeWithTag("startFeedHome").performClick()
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("confirmDialog").fetchSemanticsNodes().isNotEmpty(), "a puzzle would be forgotten: ask first")
+        assertTrue(hasAnyText("Yeni akış başlatılsın mı?", "Start a new feed?"))
+        onNodeWithTag("confirmYes").performClick()
+        waitUntil(timeoutMillis = 10_000) { cLetters() > 0 }
+        assertEquals(1, cLetters(), "only the key: nothing was typed in the new feed")
+
+        goHome()
+        assertTrue(onAllNodesWithTag("continueFeed").fetchSemanticsNodes().isEmpty(), "and there is nothing to continue")
+    }
+
+    @Test
+    fun theFeedTabGoesOnWithAPuzzleLeftHalfDone() = runComposeUiTest {
+        start(games = both)
+        key('C')
+        goHome()
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { cLetters() > 0 }
+        assertEquals(2, cLetters(), "the letter typed before is still there")
+    }
+
+    @Test
+    fun theFeedTabMakesANewFeedFromTheChoicesWhenNothingIsHalfDone() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        switchOffWordInTheEditor()
+        goHome()
+
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { memoryCards() > 0 }
+        assertTrue(memoryPageOnShow(), "the feed is made from the games the player kept")
+    }
+
+    @Test
+    fun cancellingTheQuestionKeepsTheFeedAsItWas() = runComposeUiTest {
+        start(games = both)
+        key('C')
+        goHome()
+
+        onNodeWithTag("startFeedHome").performClick()
+        waitForIdle()
+        onNodeWithTag("confirmNo").performClick()
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("confirmDialog").fetchSemanticsNodes().isEmpty(), "the question is gone")
+        assertTrue(onAllNodesWithTag("continueFeed").fetchSemanticsNodes().isNotEmpty(), "and the half done puzzle is still there to continue")
+    }
+
+    @Test
+    fun nothingIsAskedWhenThereIsNothingToLose() = runComposeUiTest {
+        start(games = both, openFeed = false)
+        onNodeWithTag("startFeedHome").performClick()
+        waitUntil(timeoutMillis = 10_000) { cLetters() > 0 }
+        assertTrue(onAllNodesWithTag("confirmDialog").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun theEditorAsksTooBeforeItStartsANewFeed() = runComposeUiTest {
+        start(games = both)
+        key('C')
+        goHome()
+        clickAny("Akışın", "Your feed")
+        waitForIdle()
+        onNodeWithTag("startFeed").performClick()
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("confirmDialog").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("confirmYes").performClick()
+        waitUntil(timeoutMillis = 10_000) { cLetters() > 0 }
+        assertEquals(1, cLetters(), "a new feed")
+    }
+
+    @Test
+    fun theFeedTabKeepsTheFeedWhenThePuzzleItWasLeftOnIsNotFinished() = runComposeUiTest {
+        start(games = both)
+        // The second page, a memory board nobody touched yet: not finished, so the feed is kept where it was.
+        swipeFeedUp()
+        mainClock.advanceTimeBy(1_500)
+        waitUntil(timeoutMillis = 10_000) { memoryCards() > 0 }
+        assertTrue(memoryPageOnShow())
+        goHome()
+
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { memoryCards() > 0 }
+        assertTrue(memoryPageOnShow(), "back on the memory board, not on a new feed's first page")
     }
 }

@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.guideHighlight
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +36,6 @@ import brainscroll.shared.generated.resources.memory_mistakes
 import brainscroll.shared.generated.resources.memory_moves
 import brainscroll.shared.generated.resources.memory_result
 import brainscroll.shared.generated.resources.memory_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
@@ -45,7 +48,6 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -70,7 +72,6 @@ fun MemoryPage(
     onCloseMismatch: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -100,8 +101,6 @@ fun MemoryPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_memory), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Chip(
@@ -169,6 +168,7 @@ private fun Board(page: MemorySnapshot, onFlip: (Int) -> Unit, modifier: Modifie
                             },
                             size = cardSize,
                             onClick = { onFlip(index) },
+                            modifier = Modifier.guideHighlight(isGuided(index), Radius.control),
                         )
                     }
                 }
@@ -199,7 +199,7 @@ private fun MemoryResultCard(page: MemorySnapshot, isFavorite: Boolean, onToggle
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

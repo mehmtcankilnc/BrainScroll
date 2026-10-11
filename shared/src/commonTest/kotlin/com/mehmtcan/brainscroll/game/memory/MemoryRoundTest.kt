@@ -90,15 +90,6 @@ class MemoryRoundTest {
     }
 
     @Test
-    fun theSkippedMarkIsKeptInTheStoredAndFinishedForms() {
-        val r = round()
-        r.markSkipped()
-        assertTrue(r.skipped)
-        assertTrue(r.toStored().skipped)
-        assertTrue(r.toFinished(1).wasSkipped)
-    }
-
-    @Test
     fun aRoundSurvivesBeingSavedAndRestored() {
         val r = round()
         r.flip(0); clock += 1_500; r.flip(3)       // match

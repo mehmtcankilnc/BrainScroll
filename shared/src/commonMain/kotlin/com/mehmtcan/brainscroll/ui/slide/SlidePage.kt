@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.guideHighlight
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -48,7 +52,6 @@ import brainscroll.shared.generated.resources.slide_hint
 import brainscroll.shared.generated.resources.slide_moves
 import brainscroll.shared.generated.resources.slide_result
 import brainscroll.shared.generated.resources.slide_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.slide.SlideResult
 import com.mehmtcan.brainscroll.game.slide.SlideSnapshot
@@ -61,7 +64,6 @@ import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
@@ -92,7 +94,6 @@ fun SlidePage(
     onRestart: () -> Boolean,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -110,8 +111,6 @@ fun SlidePage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_slide), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Chip(
             text = stringResource(Res.string.slide_moves, state.moves),
@@ -178,6 +177,7 @@ private fun Board(state: SlideState, tile: Dp, playing: Boolean, onSlide: (Int) 
                     home = state.isHome(cell),
                     size = tile,
                     playing = playing,
+                    guided = isGuided(cell),
                     onClick = { onSlide(cell) },
                 )
             }
@@ -186,7 +186,7 @@ private fun Board(state: SlideState, tile: Dp, playing: Boolean, onSlide: (Int) 
 }
 
 @Composable
-private fun Tile(number: Int, cell: Int, row: Int, column: Int, home: Boolean, size: Dp, playing: Boolean, onClick: () -> Unit) {
+private fun Tile(number: Int, cell: Int, row: Int, column: Int, home: Boolean, size: Dp, playing: Boolean, guided: Boolean, onClick: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val extraBorder = if (LocalHighContrast.current) 1f else 0f
     val density = LocalDensity.current
@@ -208,6 +208,7 @@ private fun Tile(number: Int, cell: Int, row: Int, column: Int, home: Boolean, s
             }
             .background(colors.bgSurface, Radius.card)
             .border((1.5f + extraBorder).dp, if (home) colors.correctFill.copy(alpha = 0.6f) else colors.borderStrong.copy(alpha = 0.5f), Radius.card)
+            .guideHighlight(guided, Radius.card)
             .then(
                 if (playing) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
                 else Modifier,
@@ -247,7 +248,7 @@ private fun SlideResultCard(page: SlideSnapshot, isFavorite: Boolean, onToggleFa
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

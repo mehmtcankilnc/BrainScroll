@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.memory
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.guide.GuideTask
+import com.mehmtcan.brainscroll.game.guide.MemoryGuide
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -16,9 +18,9 @@ data class MemorySnapshot(
     val state: MemoryState,
     /** Time spent so far, as the round counts it (see [MemoryRound]). */
     val durationMs: Long,
-    override val skipped: Boolean,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status != MemoryStatus.Playing
+    override val isWon: Boolean get() = state.status == MemoryStatus.Won
     override val kind: GameKind get() = GameKind.Memory
 }
 
@@ -47,16 +49,23 @@ class MemoryRound(
 
     override val kind: GameKind get() = GameKind.Memory
 
-    override var skipped = false
+    override var assisted = false
         private set
+
+    override fun markAssisted() {
+        assisted = true
+    }
+
+    override fun guideTask(): GuideTask? {
+        if (isFinished) return null
+        val state = game.state
+        return { MemoryGuide.step(state) }
+    }
 
     override val isFinished: Boolean get() = game.isFinished
 
     override val isUntouched: Boolean get() = flips.isEmpty()
 
-    override fun markSkipped() {
-        skipped = true
-    }
 
     /** Turns over the card at [card]. Returns what happened; [FlipResult.Ignored] changes nothing, not even the clock. */
     fun flip(card: Int): FlipResult {
@@ -73,7 +82,7 @@ class MemoryRound(
     /** Hides the two cards of a mismatch (the UI calls this when its short pause is over). */
     fun closeMismatch() = game.closeMismatch()
 
-    override fun snapshot() = MemorySnapshot(id, index, game.state, elapsedMs, skipped)
+    override fun snapshot() = MemorySnapshot(id, index, game.state, elapsedMs)
 
     override fun toStored() = StoredRound(
         id = id,
@@ -81,8 +90,8 @@ class MemoryRound(
         answer = layout.joinToString(",") { it.ordinal.toString() },
         guesses = flips.map { it.toString() },
         input = elapsedMs.toString(),
-        skipped = skipped,
         position = index,
+        assisted = assisted,
         game = GameKind.Memory,
     )
 
@@ -93,7 +102,7 @@ class MemoryRound(
         answer = layout.joinToString(",") { it.ordinal.toString() },
         guesses = flips.map { it.toString() },
         outcome = if (game.state.status == MemoryStatus.Won) Outcome.WON else Outcome.LOST,
-        wasSkipped = skipped,
+        assisted = assisted,
         finishedAt = finishedAt,
         durationMs = elapsedMs,
         game = GameKind.Memory,
@@ -119,7 +128,7 @@ class MemoryRound(
             stored.guesses.forEach { round.game.flip(it.toIntOrNull() ?: return null).also { _ -> round.flips += it.toInt() } }
             round.game.closeMismatch() // a mismatch that was on screen when the app closed is hidden again
             round.elapsedMs = stored.input.toLongOrNull() ?: 0L
-            round.skipped = stored.skipped
+            round.assisted = stored.assisted
             return round
         }
     }

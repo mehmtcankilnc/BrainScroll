@@ -2,6 +2,16 @@ package com.mehmtcan.brainscroll.ui.feed
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import com.mehmtcan.brainscroll.ui.theme.Spacing
+import com.mehmtcan.brainscroll.ui.howto.HintSheet
+import com.mehmtcan.brainscroll.ui.components.AppOutlinedButton
+import brainscroll.shared.generated.resources.hint_button
+import brainscroll.shared.generated.resources.guide_none
+import brainscroll.shared.generated.resources.guide_button
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,10 +20,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -31,22 +41,21 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.utf16CodePoint
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import brainscroll.shared.generated.resources.Res
-import brainscroll.shared.generated.resources.notice_finish_first
 import brainscroll.shared.generated.resources.notice_not_in_list
-import brainscroll.shared.generated.resources.notice_skipped
 import brainscroll.shared.generated.resources.notice_too_short
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.GuessError
-import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
 import com.mehmtcan.brainscroll.ui.howto.HowToPlaySheet
+import com.mehmtcan.brainscroll.ui.motion.CelebrateWin
+import com.mehmtcan.brainscroll.ui.home.displayName
+import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
+import com.mehmtcan.brainscroll.ui.streak.StreakKind
 import com.mehmtcan.brainscroll.ui.tubes.TubesPage
 import com.mehmtcan.brainscroll.ui.mines.MinesPage
 import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
@@ -68,7 +77,6 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-private const val SESSION_CHECK_MILLIS = 60_000L
 private const val NOTICE_MILLIS = 1500L
 private val NOTICE_TOP_OFFSET = 44.dp
 
@@ -95,39 +103,27 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     var notice by remember { mutableStateOf<Notice?>(null) }
     // The game whose rules are on show ("How to play?"), if any.
     var howTo by remember { mutableStateOf<GameKind?>(null) }
+    var streakInfo by remember { mutableStateOf(false) }
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val bestWinStreak = maxOf(profile.stats.bestStreak, feed.answerStreak)
     var noticeCounter by remember { mutableIntStateOf(0) }
     fun show(text: StringResource) {
         notice = Notice(text, noticeCounter++)
     }
 
-    // The effect below lives across recompositions, so it must read the newest snapshot, not the first one.
-    val latestFeed by rememberUpdatedState(feed)
-
-    // Leaving a puzzle forward: allowed if it is finished, already skipped, or the one skip is still available.
+    // The feed scrolls freely: a puzzle that is left unfinished is simply saved where it is.
     LaunchedEffect(pagerState) {
-        var last = pagerState.settledPage
-        viewModel.onPageSettled(last)
-        snapshotFlow { pagerState.settledPage }.collect { page ->
-            if (page > last) {
-                val lastRound = latestFeed.pages[last]
-                val wasUnfinished = !lastRound.isFinished && !lastRound.skipped
-                if (viewModel.leave(last)) {
-                    if (wasUnfinished) show(Res.string.notice_skipped)
-                    last = page
-                    viewModel.onPageSettled(page)
-                } else {
-                    show(Res.string.notice_finish_first)
-                    pagerState.animateScrollToPage(last)
-                }
-            } else {
-                last = page
-                viewModel.onPageSettled(page)
-            }
-        }
+        viewModel.onPageSettled(pagerState.settledPage)
+        snapshotFlow { pagerState.settledPage }.collect { viewModel.onPageSettled(it) }
     }
 
     val page = pagerState.currentPage
     val current = feed.pages[page]
+    // The step of the guide counts while the page looks as it did when it was given; any move makes it old.
+    val guideState by viewModel.guide.collectAsStateWithLifecycle()
+    val guide = guideState?.takeIf { it.page == current }?.step
+    var hintFor by remember { mutableStateOf<GameKind?>(null) }
+    LaunchedEffect(viewModel) { viewModel.guideNothing.collect { show(Res.string.guide_none) } }
     val currentWord = current as? RoundSnapshot
 
     // Rejected guesses show a message. The tick makes the same error show again. (Only word puzzles have guesses.)
@@ -146,17 +142,6 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
         if (notice != null) {
             delay(NOTICE_MILLIS)
             notice = null
-        }
-    }
-
-    // A pause of 30 minutes starts a new session (a fresh skip). Checked when the feed is shown, when the app comes
-    // back to the front, and once a minute while it stays open.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshSession() }
-    LaunchedEffect(viewModel) {
-        viewModel.refreshSession()
-        while (true) {
-            delay(SESSION_CHECK_MILLIS)
-            viewModel.refreshSession()
         }
     }
 
@@ -187,115 +172,47 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 },
         ) {
             Hud(
+                title = current.kind.displayName(),
+                badge = if (currentWord != null && feed.wordLanguages.size > 1) currentWord.language.name else null,
                 answerStreak = feed.answerStreak,
-                skipsLeft = feed.skipsLeft,
-                language = feed.language,
-                // Locked once the feed has been started (first letter typed or first skip).
-                onToggleLanguage = if (feed.canChangeLanguage) {
-                    {
-                        val next = if (feed.language == Language.EN) Language.TR else Language.EN
-                        viewModel.setLanguage(next)
-                    }
-                } else null,
                 onHome = onHome,
+                onHowToPlay = { howTo = current.kind },
+                onStreak = { streakInfo = true },
             )
             Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                // Forward is blocked up front while this puzzle is unfinished and no skip is left.
-                val leaveBlocked = !(current.isFinished || current.skipped || feed.skipsLeft > 0)
                 VerticalPager(
                     state = pagerState,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .blockForwardScroll(blocked = leaveBlocked) { show(Res.string.notice_finish_first) },
+                        .fillMaxSize(),
                     beyondViewportPageCount = 1,
                     key = { it },
                 ) { index ->
-                    when (val item = feed.pages[index]) {
-                        is RoundSnapshot -> WordlePage(
-                            round = item,
-                            onLetter = { viewModel.type(index, it) },
-                            onBackspace = { viewModel.backspace(index) },
-                            onEnter = { viewModel.submit(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is MemorySnapshot -> MemoryPage(
-                            page = item,
-                            onFlip = { card -> viewModel.flip(index, card) },
-                            onCloseMismatch = { viewModel.closeMismatch(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is TubesSnapshot -> TubesPage(
-                            page = item,
-                            onPour = { from, to -> viewModel.pour(index, from, to) },
-                            onUndo = { viewModel.undo(index) },
-                            onRestart = { viewModel.restart(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is MinesSnapshot -> MinesPage(
-                            page = item,
-                            onOpen = { cell -> viewModel.openCell(index, cell) },
-                            onFlag = { cell -> viewModel.flagCell(index, cell) },
-                            onChord = { cell -> viewModel.chordCell(index, cell) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is SudokuSnapshot -> SudokuPage(
-                            page = item,
-                            onPlace = { cell, digit -> viewModel.placeDigit(index, cell, digit) },
-                            onNote = { cell, digit -> viewModel.toggleNote(index, cell, digit) },
-                            onErase = { cell -> viewModel.eraseCell(index, cell) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is LightsSnapshot -> LightsPage(
-                            page = item,
-                            onTap = { cell -> viewModel.tapLight(index, cell) },
-                            onRestart = { viewModel.restartLights(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is SlideSnapshot -> SlidePage(
-                            page = item,
-                            onSlide = { cell -> viewModel.slideTile(index, cell) },
-                            onRestart = { viewModel.restartSlide(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is TargetSnapshot -> TargetPage(
-                            page = item,
-                            onCombine = { first, op, second -> viewModel.combineNumbers(index, first, op, second) },
-                            preview = { first, op, second -> viewModel.previewNumbers(index, first, op, second) },
-                            onUndo = { viewModel.undoNumbers(index) },
-                            onRestart = { viewModel.restartNumbers(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        is PipesSnapshot -> PipesPage(
-                            page = item,
-                            onTurn = { cell -> viewModel.turnPipe(index, cell) },
-                            onRestart = { viewModel.restartPipes(index) },
-                            isFavorite = item.id in favoriteIds,
-                            onToggleFavorite = { viewModel.toggleFavorite(item.id) },
-                            onHowToPlay = { howTo = item.kind },
-                        )
-                        else -> Unit
-                    }
+                    GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page })
                 }
                 // Sits under the page title so it never covers it.
+                guide?.let { GuideBanner(it, Modifier.align(Alignment.TopCenter).padding(top = Spacing.xs)) }
                 notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
             }
+            // Help for a puzzle that is not over: a general tip (free) and the guide (the puzzle becomes neutral).
+            if (!current.isFinished) {
+                HelpRow(onHint = { hintFor = current.kind }, onGuide = { viewModel.requestGuide(page) })
+            }
         }
+        CelebrateWin(current)
+        hintFor?.let { HintSheet(it, onClose = { hintFor = null }) }
         howTo?.let { HowToPlaySheet(it, onClose = { howTo = null }) }
+        if (streakInfo) StreakInfoSheet(StreakKind.Win, current = feed.answerStreak, best = bestWinStreak, onClose = { streakInfo = false })
+    }
+}
+
+/** Two quiet buttons under the puzzle. The guide is the one that marks the puzzle, so it says what it does when used. */
+@Composable
+private fun HelpRow(onHint: () -> Unit, onGuide: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        AppOutlinedButton(stringResource(Res.string.hint_button), onHint, Modifier.weight(1f).testTag("hintButton"))
+        AppOutlinedButton(stringResource(Res.string.guide_button), onGuide, Modifier.weight(1f).testTag("guideButton"))
     }
 }

@@ -62,7 +62,6 @@ class PersistenceUiTest {
             runComposeUiTest {
                 start()
                 switchToEnglish()
-                onNodeWithText("EN").assertHasClickAction()
                 key('C')
                 key('R')
                 waitForIdle()
@@ -73,8 +72,6 @@ class PersistenceUiTest {
                 start()
                 waitForIdle()
                 snap("9_after_reopen")
-                // The language is locked again, because the restored puzzle had been started.
-                onNodeWithText("EN").assertHasNoClickAction()
                 // The two letters are back in the grid: the C key exists on two pages, plus our tile.
                 assertEquals(3, onAllNodes(hasText("C")).fetchSemanticsNodes().size)
                 assertEquals(3, onAllNodes(hasText("R")).fetchSemanticsNodes().size)

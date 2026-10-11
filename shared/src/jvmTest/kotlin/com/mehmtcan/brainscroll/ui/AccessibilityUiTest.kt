@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.account.AccountState
@@ -102,20 +103,22 @@ class AccessibilityUiTest {
     @Test
     fun streakChipsAreReadAsSentencesNotAsBareNumbers() = runComposeUiTest {
         start()
-        assertTrue(describedAs("Doğru cevap serisi: 0", "Correct answer streak: 0"))
+        assertTrue(describedAs("Kazanma serisi: 0", "Win streak: 0"))
         openTab("Günlük", "Daily")
         waitForIdle()
         waitUntil(timeoutMillis = 5_000) { hasAnyText("Başla", "Start") }
-        assertTrue(describedAs("Gün serisi: 0", "Day streak: 0"))
+        assertTrue(describedAs("Günlük seri: 0", "Daily streak: 0"))
     }
 
     @Test
-    fun theLanguageChoicesSayWhichOneIsChosen() = runComposeUiTest {
+    fun theWordLanguageChoicesSayWhichOnesAreOn() = runComposeUiTest {
         startDaily()
-        val chosen = onAllNodesWithText("TR").fetchSemanticsNodes() + onAllNodesWithText("EN").fetchSemanticsNodes()
-        val selectedFlags = chosen.map { it.config.getOrNull(SemanticsProperties.Selected) }
-        assertEquals(2, selectedFlags.size)
-        assertEquals(1, selectedFlags.count { it == true }, "exactly one language is selected")
+        goHome()
+        clickAny("Akışın", "Your feed")
+        waitForIdle()
+        val flags = listOf("languageTR", "languageEN").map { onNodeWithTag(it).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected) }
+        assertEquals(1, flags.count { it == true }, "by default the word puzzles come in one language, the app language")
+        assertEquals(2, flags.count { it != null }, "both choices say whether they are on")
     }
 
     @Test

@@ -13,6 +13,9 @@ class FakeSocialApi(
     var inviteCode: String = "ABCD2345",
     var speedToday: List<DailyRow> = emptyList(),
     var speedAllTime: List<DailyRow> = emptyList(),
+    /** The speed table of any game other than the word puzzle, today and of all time. */
+    var gameToday: List<DailyRow> = emptyList(),
+    var gameAllTime: List<DailyRow> = emptyList(),
     var streaksCurrent: List<StreakRow> = emptyList(),
     var streaksLongest: List<StreakRow> = emptyList(),
     var friendsState: FriendsState = FriendsState(),
@@ -53,6 +56,13 @@ class FakeSocialApi(
         enter("dailyBoard:${language.name}:${scope.name}:$friendsOnly")
         if (friendsOnly) requireReady()
         val rows = if (scope == DailyScope.Today) speedToday else speedAllTime
+        return Board(rows.take(50), rows.firstOrNull { it.isMe }?.takeIf { it !in rows.take(50) })
+    }
+
+    override suspend fun gameBoard(game: com.mehmtcan.brainscroll.game.GameKind, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow> {
+        enter("gameBoard:${game.id}:${scope.name}:$friendsOnly")
+        if (friendsOnly) requireReady()
+        val rows = if (scope == DailyScope.Today) gameToday else gameAllTime
         return Board(rows.take(50), rows.firstOrNull { it.isMe }?.takeIf { it !in rows.take(50) })
     }
 

@@ -36,13 +36,11 @@ class MixedFeedTest {
     private fun feed(
         store: FeedStore = FakeStore(),
         restored: List<StoredRound> = emptyList(),
-        skips: Int = 1,
         streak: Int = 0,
     ) = EndlessFeed(
         wordLists = lists,
         startLanguage = Language.EN,
         random = Random(1),
-        maxSkips = skips,
         store = store,
         restored = restored,
         startStreak = streak,
@@ -169,43 +167,13 @@ class MixedFeedTest {
     }
 
     @Test
-    fun theOneSkipIsSharedBetweenTheGames() {
-        val f = feed()
-        f.ensureSize(4)
-        f.flip(1, 0) // starts the memory board
-        assertTrue(f.leave(0), "the word page is untouched: leaving it uses the skip")
-        assertEquals(0, f.snapshot().skipsLeft)
-        assertFalse(f.leave(1), "the memory board is unfinished and no skip is left")
-        assertTrue(f.snapshot().pages[0].skipped)
-    }
-
-    @Test
-    fun leavingAFinishedBoardIsFree() {
-        val f = feed()
-        f.ensureSize(2)
-        f.solveMemory(1)
-        assertTrue(f.leave(1))
-        assertEquals(1, f.snapshot().skipsLeft)
-    }
-
-    @Test
     fun changingTheWordLanguageDoesNotTouchMemoryBoards() {
         val f = feed()
         f.ensureSize(4)
         val boards = listOf(f.memory(1).state.layout, f.memory(3).state.layout)
-        assertTrue(f.setLanguage(Language.TR))
+        f.setWordLanguage(Language.TR, fromIndex = 0)
         assertEquals(boards, listOf(f.memory(1).state.layout, f.memory(3).state.layout))
         assertTrue(f.snapshot().rounds.all { it.language == Language.TR })
-    }
-
-    @Test
-    fun startingAMemoryBoardLocksTheLanguage() {
-        val f = feed()
-        f.ensureSize(2)
-        assertTrue(f.snapshot().canChangeLanguage)
-        f.flip(1, 0)
-        assertFalse(f.snapshot().canChangeLanguage)
-        assertFalse(f.setLanguage(Language.TR))
     }
 
     @Test
@@ -244,7 +212,7 @@ class MixedFeedTest {
 
     @Test
     fun aMemoryBoardWithUnreadableSavedDataIsLeftOut() {
-        val broken = StoredRound("bad", Language.EN, "not a board", emptyList(), "", false, 0, GameKind.Memory)
+        val broken = StoredRound("bad", Language.EN, "not a board", emptyList(), "", 0, GameKind.Memory)
         val f = feed(restored = listOf(broken))
         assertEquals(0, f.size)
     }
@@ -259,17 +227,6 @@ class MixedFeedTest {
         first.flip(1, 1)
         val second = feed(FakeStore(), restored = store.progress.values.toList())
         assertEquals(4_000, second.memory(0).durationMs)
-    }
-
-    @Test
-    fun theSessionResetGivesTheSkipBackInTheMixedFeedToo() {
-        val f = feed()
-        f.ensureSize(4)
-        f.leave(0)
-        assertEquals(0, f.snapshot().skipsLeft)
-        clock += SESSION_IDLE_MILLIS
-        assertTrue(f.startNewSessionIfIdle())
-        assertEquals(1, f.snapshot().skipsLeft)
     }
 
     @Test

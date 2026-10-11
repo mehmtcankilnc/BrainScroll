@@ -1,0 +1,95 @@
+package com.mehmtcan.brainscroll.ui.feed
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.semantics
+import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.guide_lights_tap
+import brainscroll.shared.generated.resources.guide_memory_pair
+import brainscroll.shared.generated.resources.guide_memory_partner
+import brainscroll.shared.generated.resources.guide_mines_mine
+import brainscroll.shared.generated.resources.guide_mines_none
+import brainscroll.shared.generated.resources.guide_mines_safe
+import brainscroll.shared.generated.resources.guide_mines_start
+import brainscroll.shared.generated.resources.guide_neutral
+import brainscroll.shared.generated.resources.guide_pipes_turn
+import brainscroll.shared.generated.resources.guide_slide_tile
+import brainscroll.shared.generated.resources.guide_sudoku_erase
+import brainscroll.shared.generated.resources.guide_sudoku_only_digit
+import brainscroll.shared.generated.resources.guide_sudoku_only_place
+import brainscroll.shared.generated.resources.guide_sudoku_solution
+import brainscroll.shared.generated.resources.guide_target_combine
+import brainscroll.shared.generated.resources.guide_tubes_pour
+import brainscroll.shared.generated.resources.guide_tubes_stuck
+import brainscroll.shared.generated.resources.guide_word_letter
+import com.mehmtcan.brainscroll.game.guide.GuideReason
+import com.mehmtcan.brainscroll.game.guide.GuideStep
+import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.theme.Spacing
+import org.jetbrains.compose.resources.stringResource
+
+/** The sentence of a step, in the language of the app. */
+@Composable
+fun guideText(step: GuideStep): String {
+    val n = step.numbers
+    return when (step.reason) {
+        GuideReason.MinesStart -> stringResource(Res.string.guide_mines_start)
+        GuideReason.MinesSafe -> stringResource(Res.string.guide_mines_safe)
+        GuideReason.MinesMine -> stringResource(Res.string.guide_mines_mine)
+        GuideReason.MinesNone -> stringResource(Res.string.guide_mines_none)
+        GuideReason.SudokuErase -> stringResource(Res.string.guide_sudoku_erase)
+        GuideReason.SudokuOnlyDigit -> stringResource(Res.string.guide_sudoku_only_digit, n[0])
+        GuideReason.SudokuOnlyPlace -> stringResource(Res.string.guide_sudoku_only_place, n[0])
+        GuideReason.SudokuSolution -> stringResource(Res.string.guide_sudoku_solution, n[0])
+        GuideReason.PipesTurn -> stringResource(Res.string.guide_pipes_turn, n[0])
+        GuideReason.LightsTap -> stringResource(Res.string.guide_lights_tap)
+        GuideReason.SlideTile -> stringResource(Res.string.guide_slide_tile)
+        GuideReason.TubesPour -> stringResource(Res.string.guide_tubes_pour)
+        GuideReason.TubesStuck -> stringResource(Res.string.guide_tubes_stuck)
+        GuideReason.TargetCombine -> stringResource(Res.string.guide_target_combine, n[0], n[1], operationSymbol(step.text))
+        GuideReason.MemoryPartner -> stringResource(Res.string.guide_memory_partner)
+        GuideReason.MemoryPair -> stringResource(Res.string.guide_memory_pair)
+        GuideReason.WordLetter -> stringResource(Res.string.guide_word_letter, n[0], step.text)
+    }
+}
+
+/** What the screen shows for an operation: the saved symbols are + - * /. */
+private fun operationSymbol(saved: String): String = when (saved) {
+    "*" -> "×"
+    "/" -> "÷"
+    "-" -> "−"
+    else -> saved
+}
+
+/**
+ * The step on screen: its sentence, and under it, small, that the guide leaves the win streak alone. Over the page, under
+ * the bar, so it never covers the board.
+ */
+@Composable
+fun GuideBanner(step: GuideStep, modifier: Modifier = Modifier) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    Column(
+        modifier = modifier
+            .testTag("guideBanner")
+            .padding(horizontal = Spacing.lg)
+            .fillMaxWidth()
+            .background(colors.bgRaised, Radius.card)
+            .padding(Spacing.md)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        BasicText(guideText(step), style = type.body.copy(color = colors.textPrimary))
+        BasicText(stringResource(Res.string.guide_neutral), style = type.caption.copy(color = colors.textSecondary))
+    }
+}

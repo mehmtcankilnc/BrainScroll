@@ -25,9 +25,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -42,7 +42,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.back
+import brainscroll.shared.generated.resources.confirm_cancel
 import brainscroll.shared.generated.resources.editor_language
+import brainscroll.shared.generated.resources.new_feed_confirm
+import brainscroll.shared.generated.resources.new_feed_message
+import brainscroll.shared.generated.resources.new_feed_title
+import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
+import com.mehmtcan.brainscroll.ui.feed.FeedUiState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import brainscroll.shared.generated.resources.editor_language_hint
 import brainscroll.shared.generated.resources.editor_selected
 import brainscroll.shared.generated.resources.editor_subtitle
 import brainscroll.shared.generated.resources.editor_title
@@ -52,7 +61,6 @@ import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.components.AppButton
 import com.mehmtcan.brainscroll.ui.components.ChevronButton
-import com.mehmtcan.brainscroll.ui.feed.FeedUiState
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -74,11 +82,16 @@ fun Language.nativeName(): String = when (this) {
 fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFeed: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    val feedState by feedViewModel.state.collectAsStateWithLifecycle()
     val enabled by feedViewModel.enabledGames.collectAsStateWithLifecycle()
-    val wordLanguage = (feedState as? FeedUiState.Ready)?.feed?.language ?: Language.TR
+    val wordLanguages by feedViewModel.wordLanguages.collectAsStateWithLifecycle()
+    val wordLanguage = wordLanguages.first()
 
-    Column(modifier = modifier.fillMaxSize()) {
+    val feedState by feedViewModel.state.collectAsStateWithLifecycle()
+    val hasUnfinished = (feedState as? FeedUiState.Ready)?.feed?.hasUnfinished == true
+    var confirmNewFeed by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
         // The header stays in place: the back button, the title and the count on one line, the line about it below.
         Column(Modifier.fillMaxWidth().padding(start = Spacing.sm, end = Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -127,13 +140,22 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm)) {
-                BasicText(
-                    text = stringResource(Res.string.editor_language),
-                    style = type.body.copy(color = colors.textPrimary),
-                    modifier = Modifier.weight(1f).padding(end = Spacing.sm),
-                )
-                LanguageSwitch(wordLanguage) { feedViewModel.setWordLanguage(it) }
+            if (GameKind.Word in enabled) {
+                Column(Modifier.fillMaxWidth().padding(top = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    BasicText(stringResource(Res.string.editor_language), style = type.body.copy(color = colors.textPrimary))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Language.entries.forEach { option ->
+                            val chosen = option in wordLanguages
+                            WordLanguageChip(
+                                language = option,
+                                chosen = chosen,
+                                // The last language that is on stays: there would be no word puzzles.
+                                onClick = if (chosen && wordLanguages.size == 1) null else ({ feedViewModel.setWordLanguageEnabled(option, !chosen) }),
+                            )
+                        }
+                    }
+                    BasicText(stringResource(Res.string.editor_language_hint), style = type.caption.copy(color = colors.textSecondary))
+                }
             }
             if (enabled.size == 1) {
                 BasicText(stringResource(Res.string.personalize_last_game), style = type.caption.copy(color = colors.textSecondary))
@@ -141,8 +163,24 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
             Spacer(Modifier.height(Spacing.sm))
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.md)) {
-            AppButton(stringResource(Res.string.home_start_feed) + "  →", onStartFeed, modifier = Modifier.testTag("startFeed"), primary = true)
+            AppButton(
+                stringResource(Res.string.home_start_feed),
+                { if (hasUnfinished) confirmNewFeed = true else onStartFeed() },
+                modifier = Modifier.testTag("startFeed"),
+                primary = true,
+            )
         }
+    }
+    if (confirmNewFeed) {
+        ConfirmDialog(
+            title = stringResource(Res.string.new_feed_title),
+            message = stringResource(Res.string.new_feed_message),
+            confirmText = stringResource(Res.string.new_feed_confirm),
+            cancelText = stringResource(Res.string.confirm_cancel),
+            onConfirm = { confirmNewFeed = false; onStartFeed() },
+            onCancel = { confirmNewFeed = false },
+        )
+    }
     }
 }
 
@@ -174,7 +212,7 @@ private fun GameCard(game: GameKind, wordLanguage: Language, on: Boolean, onClic
             .padding(Spacing.sm),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1.25f).alpha(if (on) 1f else 0.5f))
+        GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1.25f).graphicsLayer { alpha = if (on) 1f else 0.5f })
         // The mark and the name are one group in the middle of the line, under the middle of the picture.
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -220,33 +258,25 @@ private fun CheckMark(on: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-/** Two choices in one pill: the chosen one is filled green. */
+/** A language of the word puzzles: filled green when it is in the feed. Several can be on at the same time. */
 @Composable
-private fun LanguageSwitch(selected: Language, onSelect: (Language) -> Unit) {
+private fun WordLanguageChip(language: Language, chosen: Boolean, onClick: (() -> Unit)?) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    Row(
+    Box(
         modifier = Modifier
+            .testTag("language" + language.name)
             .clip(Radius.pill)
-            .background(colors.bgSurface)
-            .border(1.dp, colors.borderSubtle, Radius.pill)
-            .padding(3.dp),
+            .background(if (chosen) colors.correctFill else colors.bgSurface)
+            .border(1.dp, if (chosen) colors.correctFill else colors.borderSubtle, Radius.pill)
+            .semantics { selected = chosen }
+            .then(
+                if (onClick != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Checkbox, onClick = onClick)
+                else Modifier,
+            )
+            .padding(horizontal = Spacing.lg, vertical = Spacing.sm + 2.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        // Turkish first: it is the main language of the app.
-        listOf(Language.TR, Language.EN).forEach { option ->
-            val chosen = option == selected
-            Box(
-                modifier = Modifier
-                    .testTag("language" + option.name)
-                    .clip(Radius.pill)
-                    .background(if (chosen) colors.correctFill else colors.bgSurface)
-                    .semantics { this.selected = chosen }
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton) { onSelect(option) }
-                    .padding(horizontal = Spacing.lg, vertical = Spacing.sm + 2.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                BasicText(option.nativeName(), style = type.label.copy(color = if (chosen) colors.correctOn else colors.textSecondary))
-            }
-        }
+        BasicText(language.nativeName(), style = type.label.copy(color = if (chosen) colors.correctOn else colors.textSecondary))
     }
 }

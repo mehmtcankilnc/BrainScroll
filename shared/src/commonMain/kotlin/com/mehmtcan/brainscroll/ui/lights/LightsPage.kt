@@ -20,6 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -48,7 +51,6 @@ import brainscroll.shared.generated.resources.lights_moves
 import brainscroll.shared.generated.resources.lights_par
 import brainscroll.shared.generated.resources.lights_result
 import brainscroll.shared.generated.resources.lights_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
@@ -60,7 +62,6 @@ import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
@@ -89,7 +90,6 @@ fun LightsPage(
     onRestart: () -> Boolean,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -107,8 +107,6 @@ fun LightsPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_lights), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Chip(
@@ -131,14 +129,16 @@ fun LightsPage(
                     Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                         for (column in 0 until state.size) {
                             val index = row * state.size + column
-                            Light(
-                                row = row + 1,
-                                column = column + 1,
-                                on = state.lit[index],
-                                playing = !won,
-                                size = cellSize,
-                                onClick = { if (onTap(index) != LightsResult.Ignored) haptics.perform(HapticKind.Light) },
-                            )
+                            GuideMark(isGuided(index), Radius.card) {
+                                Light(
+                                    row = row + 1,
+                                    column = column + 1,
+                                    on = state.lit[index],
+                                    playing = !won,
+                                    size = cellSize,
+                                    onClick = { if (onTap(index) != LightsResult.Ignored) haptics.perform(HapticKind.Light) },
+                                )
+                            }
                         }
                     }
                 }
@@ -228,7 +228,7 @@ private fun LightsResultCard(page: LightsSnapshot, isFavorite: Boolean, onToggle
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

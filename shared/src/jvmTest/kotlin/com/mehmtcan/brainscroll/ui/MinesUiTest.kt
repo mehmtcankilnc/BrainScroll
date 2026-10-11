@@ -46,6 +46,8 @@ class MinesUiTest {
 
     private fun ComposeUiTest.tap(cell: Int) {
         onAllNodesWithTag("mineCell")[cell].performClick()
+        // With the clock held a frame has to be given by hand for the board to be drawn again.
+        if (!mainClock.autoAdvance) mainClock.advanceTimeBy(50)
         waitForIdle()
     }
 
@@ -177,6 +179,7 @@ class MinesUiTest {
         snap("105_mines_lost")
         assertTrue(lost())
         assertTrue(values().any { it == -4 }, "the mine that was opened is marked")
+        assertTrue(onAllNodesWithTag("mineExplosion").fetchSemanticsNodes().isNotEmpty(), "the blast is drawn around that mine")
         assertTrue(values().count { it == -3 || it == -4 } == 10, "and all ten mines are shown")
         assertTrue(HapticKind.Warning in haptics.kinds)
         assertTrue(HapticKind.Success !in haptics.kinds)
@@ -188,11 +191,14 @@ class MinesUiTest {
         val haptics = RecordingHaptics()
         openMines(cloud, haptics)
         haptics.kinds.clear()
+        // The clock is held while playing, so the confetti is still in the air when it is looked at.
+        mainClock.autoAdvance = false
         solve()
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
         snap("106_mines_won")
         assertTrue(cleared())
+        assertTrue(onAllNodesWithTag("confetti").fetchSemanticsNodes().isNotEmpty(), "a win throws confetti")
         assertEquals(1, haptics.kinds.count { it == HapticKind.Success }, "winning is one success")
         waitUntil(timeoutMillis = 15_000) { cloud.telemetry.events.any { it.event == TelemetryEvent.EndlessFinished } }
         val event = cloud.telemetry.events.first { it.event == TelemetryEvent.EndlessFinished }

@@ -26,7 +26,7 @@ class SyncEngineTest {
     }
 
     private fun result(id: String, at: Long = 1_000L, outcome: Outcome = Outcome.WON, mode: Mode = Mode.ENDLESS) =
-        FinishedRound(id, mode, Language.EN, "CRANE", listOf("SLATE", "CRANE"), outcome, wasSkipped = false, finishedAt = at)
+        FinishedRound(id, mode, Language.EN, "CRANE", listOf("SLATE", "CRANE"), outcome, finishedAt = at)
 
     private fun GameRepository.sync(user: String = "user-a"): SyncResult {
         cloud.currentUser = user

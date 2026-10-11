@@ -49,7 +49,7 @@ class MemoryPersistenceTest {
 
     private fun memoryResult(id: String = "m1") = FinishedRound(
         id = id, mode = Mode.ENDLESS, language = Language.EN, answer = "0,1,2,0,1,2",
-        guesses = listOf("0", "3", "1", "4", "2", "5"), outcome = Outcome.WON, wasSkipped = false,
+        guesses = listOf("0", "3", "1", "4", "2", "5"), outcome = Outcome.WON,
         finishedAt = 9_000, durationMs = 12_345, game = GameKind.Memory,
     )
 

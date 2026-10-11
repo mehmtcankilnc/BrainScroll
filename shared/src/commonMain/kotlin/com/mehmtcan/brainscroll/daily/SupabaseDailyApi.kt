@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.daily
 
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.game.wordle.LetterResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.exceptions.RestException
@@ -14,7 +16,7 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-/** Calls the three functions of `supabase/migrations/20261006090000_daily_puzzle.sql`. */
+/** Calls the three functions of `supabase/migrations/20261006090000_daily_puzzle.sql` and the one of `20261011090000_daily_games.sql`. */
 class SupabaseDailyApi(private val client: SupabaseClient) : DailyApi {
 
     override suspend fun state(language: Language) = call("get_daily_state") { put("p_language", language.name) }
@@ -24,6 +26,27 @@ class SupabaseDailyApi(private val client: SupabaseClient) : DailyApi {
     override suspend fun guess(language: Language, word: String) = call("submit_daily_guess") {
         put("p_language", language.name)
         put("p_guess", word)
+    }
+
+    override suspend fun submitGameResult(game: GameKind, outcome: Outcome, moves: Int, durationMs: Long, language: Language) {
+        try {
+            client.pluginManager.getPlugin(Postgrest).rpc("submit_daily_game_result", buildJsonObject {
+                put("p_game", game.id)
+                put("p_outcome", outcome.name)
+                put("p_moves", moves)
+                put("p_duration_ms", durationMs)
+                put("p_language", language.name)
+            })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: PostgrestRestException) {
+            // 22023: the server finds the result implausible. Not worth asking again.
+            throw if (e.code == "22023") DailyException.InvalidGuess() else DailyException.Unavailable()
+        } catch (e: RestException) {
+            throw DailyException.Unavailable()
+        } catch (e: Exception) {
+            throw DailyException.Offline()
+        }
     }
 
     private suspend fun call(function: String, parameters: JsonObjectBuilder.() -> Unit): DailyState =

@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.slide
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.guide.GuideTask
+import com.mehmtcan.brainscroll.game.guide.SlideGuide
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -16,7 +18,6 @@ data class SlideSnapshot(
     val state: SlideState,
     /** Time spent so far, as the round counts it (see [SlideRound]). */
     val durationMs: Long,
-    override val skipped: Boolean,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status == SlideStatus.Won
     override val kind: GameKind get() = GameKind.Slide
@@ -50,16 +51,23 @@ class SlideRound(
 
     override val kind: GameKind get() = GameKind.Slide
 
-    override var skipped = false
+    override var assisted = false
         private set
+
+    override fun markAssisted() {
+        assisted = true
+    }
+
+    override fun guideTask(): GuideTask? {
+        if (isFinished) return null
+        val state = game.state
+        return { SlideGuide.step(state) }
+    }
 
     override val isFinished: Boolean get() = game.isFinished
 
     override val isUntouched: Boolean get() = actions.isEmpty()
 
-    override fun markSkipped() {
-        skipped = true
-    }
 
     fun slide(cell: Int): SlideResult = game.tap(cell).also { if (it != SlideResult.Ignored) record("m$cell") }
 
@@ -72,7 +80,7 @@ class SlideRound(
         lastActionAt = time
     }
 
-    override fun snapshot() = SlideSnapshot(id, index, game.state, elapsedMs, skipped)
+    override fun snapshot() = SlideSnapshot(id, index, game.state, elapsedMs)
 
     /** "3x4x80:seed": the columns, the rows, the number of random slides the board was made with, and the seed. */
     private fun encodedBoard() = "${cols}x${rows}x$scramble:$seed"
@@ -83,8 +91,8 @@ class SlideRound(
         answer = encodedBoard(),
         guesses = actions.toList(),
         input = elapsedMs.toString(),
-        skipped = skipped,
         position = index,
+        assisted = assisted,
         game = GameKind.Slide,
     )
 
@@ -99,7 +107,7 @@ class SlideRound(
         answer = encodedBoard(),
         guesses = listOf(game.state.moves.toString()),
         outcome = Outcome.WON,
-        wasSkipped = skipped,
+        assisted = assisted,
         finishedAt = finishedAt,
         durationMs = elapsedMs,
         game = GameKind.Slide,
@@ -134,7 +142,7 @@ class SlideRound(
                 round.actions += action
             }
             round.elapsedMs = stored.input.toLongOrNull() ?: 0L
-            round.skipped = stored.skipped
+            round.assisted = stored.assisted
             return round
         }
     }

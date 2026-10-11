@@ -15,13 +15,13 @@ class TubesStatsTest {
 
     private fun word(outcome: Outcome) = FinishedRound(
         id = "w$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "CRANE",
-        guesses = listOf("A", "B"), outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf("A", "B"), outcome = outcome, finishedAt = clock++,
     )
 
     /** A tubes result keeps its number of pours as its only guess. */
     private fun tubes(moves: Int, durationMs: Long) = FinishedRound(
         id = "t$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "0011|1100||",
-        guesses = listOf(moves.toString()), outcome = Outcome.WON, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf(moves.toString()), outcome = Outcome.WON, finishedAt = clock++,
         durationMs = durationMs, game = GameKind.Tubes,
     )
 

@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -89,18 +91,19 @@ import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** The "How to play?" pill every game page has under its title. It opens [HowToPlaySheet]. */
+/** The round "?" next to the name of the game. It opens [HowToPlaySheet]; the touch area is 48 dp. */
 @Composable
-fun HowToPlayButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun HowToIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
-    Box(modifier.testTag("howToButton")) {
-        Chip(
-            text = stringResource(Res.string.howto_button),
-            textColor = colors.textSecondary,
-            onClick = onClick,
-            icon = { QuestionMark(colors.textSecondary) },
-        )
-    }
+    val description = stringResource(Res.string.howto_button)
+    Box(
+        modifier = modifier
+            .testTag("howToButton")
+            .size(48.dp)
+            .semantics { contentDescription = description }
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) { QuestionMark(colors.textSecondary) }
 }
 
 /** A small circle with a question mark, drawn with text so it follows the text color. */

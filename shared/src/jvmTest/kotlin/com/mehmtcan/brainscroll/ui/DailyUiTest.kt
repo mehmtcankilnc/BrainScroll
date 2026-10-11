@@ -156,17 +156,6 @@ class DailyUiTest {
     }
 
     @Test
-    fun theOtherLanguageIsItsOwnPuzzle() = runComposeUiTest {
-        val cloud = TestCloud()
-        startDaily(cloud)
-        val here = puzzleLanguage()
-        val other = if (here == Language.TR) "EN" else "TR"
-        clickAny(other)
-        waitUntil(timeoutMillis = 5_000) { hasAnyText("Başla", "Start") } // the other language was not started
-        assertFalse(hasAnyText("ENTER", "GİR"))
-    }
-
-    @Test
     fun anAttemptAlreadyInProgressIsPickedUp() = runComposeUiTest {
         val cloud = TestCloud(daily = FakeDailyApi().also { it.prefill(Language.EN, listOf("SLATE"));  it.prefill(Language.TR, listOf("KIRIK")) })
         start(cloud)

@@ -46,7 +46,7 @@ class HowToPlayUiTest {
     fun theWordPuzzleHasTheButtonAndItsRules() = runComposeUiTest {
         start()
         snap("110_howto_button_word")
-        assertTrue(hasAnyText("Nasıl Oynanır?", "How to play?"))
+        assertTrue(onAllNodesWithTag("howToButton").fetchSemanticsNodes().isNotEmpty(), "the rules button is in the bar")
         pressHowTo()
         snap("111_howto_word")
         assertTrue(sheetShown())

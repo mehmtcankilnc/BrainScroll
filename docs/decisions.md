@@ -205,3 +205,24 @@ Son güncelleme: 2026-10-05
 - **Sıralama:** üstte Hız / Seri / Arkadaşlar; dil, kapsam, herkes/arkadaşlar tek "Filtre" arkasında. Varsayılan: akış dili, Bugün, Herkes.
 - **Profil:** kısa özet kartı + İstatistikler / Favoriler / Ayarlar satırları, her biri kendi alt sayfasında.
 - **İş sırası:** (1) Ana Sayfa + nav bar, (2) Sıralama, (3) Profil, (4) görsel dil taraması. Her parçadan sonra ekran görüntüsü, onay beklenir.
+
+## Faz 17: akış, dil, günlük rotasyon (karar: 2026-10-11)
+- **Atlama (skip) kalktı.** Akış serbest kayar, yarım bulmaca kaydedilir ve seriyi bozmaz. `was_skipped` kolonu eski Android SQLite'ı yüzünden silinmedi: yerelde ve sunucuda hep 0/false.
+- **İpucu ve rehber (yapıldı):** akışta bulmacanın altında iki düğme. **İpucu** oyunun genel taktiğini söyler, bulmacaya etkisi yok. **Bana yol göster** bir sonraki doğru hamleyi halkayla gösterir ve bir cümleyle açıklar; hamleyi oyuncu yapar. Rehber kullanılan bulmaca **nötr**: kazanma serisini ne artırır ne bozar, istatistiklere ve rekorlara girmez, geçmişte durur. Bu bilgi rehber balonunda ve seri modalında yazıyor. Günlük bulmacada düğmeler yok.
+  - Bayrak `was_skipped` kolonunda saklanır (kolon artık "rehber kullanıldı" demek, bulutla da eşlenir). `Streaks` ve tüm `compute*Stats` işlemleri `assisted` olanları atlar.
+  - Çözücüler `game/guide/`: mayın (mevcut mantık çözücü), sudoku (tek aday, tek yer), boru (mevcut arama), ışıklar (GF(2) denklemi, en az dokunuş), kayan bulmaca (IDA*), tüpler (BFS, takılınca "takıldın"), hedef sayı (BFS), hafıza (çifti gösterir), kelime (henüz yeşil olmayan bir harf verir). Aramalar ekran thread'inde değil, arka planda çalışır.
+- **Dil:** uygulama dili (Ayarlar, açılır liste, "Cihaz dili" dahil) ile kelime dili ayrı. Kelime dili akış düzenlemede çoklu seçim (en az biri açık), bulmacada TR/EN rozeti. Günlük kelime bulmacası uygulama dilinde, seçici yok.
+- **İki seri, iki isim:** Günlük seri (alev, ana sayfa/günlük/profil) ve Kazanma serisi (şimşek, akış/ana sayfa/profil). Dokununca açıklama modalı.
+- **Günün bulmacası rotasyonu:** oyun gün numarasından uygulamada hesaplanır (`DailyRotation`): 9 günlük turlar, her turda her oyun bir kez, turlar arası art arda aynı oyun yok. Herkeste aynı.
+  - **Kelime günü:** eskisi gibi (sunucuda gizli cevap, sunucu saati, `get_daily_leaderboard`).
+  - **Diğer oyunlar:** tahta gün numarasından üretilir, süreyi cihaz ölçer, çevrimdışı oynanır, sonuç `DAILY` olarak yerelde kalır (gün serisi sayar) ve bağlantı olunca `submit_daily_game_result` ile sunucuya gider. Sunucu makul sınırlar dışındaki sonucu reddeder (süre en az 1,5 sn) ve kişi başı günde bir sonuç alır. Süre cihazın sözüdür: arkadaşlar arası bir oyun.
+  - **Hız tablosu:** Bugün sekmesi günün oyununun tablosu (süre, sonra hamle; kelimede eskisi gibi tahmin, sonra süre). Tüm zamanlar'da oyun seçici. Migration: `20261011090000_daily_games.sql`, doğrulama: `supabase/tests/verify_daily_games.mjs`.
+
+## Ana sayfa ve akış başlangıcı (karar: 2026-10-11)
+- **Sıra:** serilerin altında Günün bulmacası, sonra (varsa) "Önceki akışa devam et", sonra Akışın kartı, sonra en hızlılar.
+- **Akışın kartı:** başlık, ilk oyunların resimleri ve "Akışa başla" (okşuz). Düzenle butonu ve kelime dili satırı yok; düğme dışında karta dokunmak akış düzenleme ekranını açar.
+- **Yeni akış:** ana sayfadaki ve düzenleme ekranındaki "Akışa başla" yeni akış kurar: eski akıştan kalan yarım bulmacalar silinir, akış oyun ve dil seçimlerinden kurulur, ilk sayfadan başlar.
+- **Onay:** yeni akış yarım bulmacayı sileceği için, yalnız yarım bulmaca varsa, "Yeni akış başlatılsın mı?" sorulur (ana sayfa ve düzenleme ekranı). Silinecek bir şey yoksa sorulmaz.
+- **Devam:** yarım (başlanmış, bitmemiş) bulmaca varsa ana sayfada "Önceki akışa devam et" çıkar ve akışı o bulmacada açar.
+- **Alt menüden Akış:** son bakılan bulmaca bitmemişse (başlanmış ya da hiç dokunulmamış) akış aynı sayfada korunur; başka yerde yarım bulmaca varsa oradan devam edilir; son bulmaca bitmiş ve yarım bulmaca yoksa kişiselleştirmeye göre yeni akış kurulur. Zaten akıştayken sekmeye basmak bir şey yapmaz.
+- **Varsayılan:** ilk açılışta bütün oyunlar seçili; oyun ve dil seçimi her değişiklikte kaydedilir.

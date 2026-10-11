@@ -8,7 +8,7 @@ CREATE TABLE game_result (
     answer TEXT NOT NULL,
     guesses TEXT NOT NULL,          -- accepted guesses, comma separated
     outcome TEXT NOT NULL,          -- WON or LOST
-    was_skipped INTEGER NOT NULL,   -- 1 if the player left the puzzle once before finishing it
+    was_skipped INTEGER NOT NULL,   -- 1 if the player used the guide (the column was "skipped" once)
     finished_at INTEGER NOT NULL,   -- epoch millis
     day_index INTEGER NOT NULL,     -- Istanbul day of finished_at (IstanbulDay.dayIndex)
     duration_ms INTEGER             -- daily puzzles only: how long it took, measured by the server

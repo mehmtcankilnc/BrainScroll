@@ -1,6 +1,35 @@
 package com.mehmtcan.brainscroll.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import brainscroll.shared.generated.resources.a11y_answer_streak
+import brainscroll.shared.generated.resources.a11y_day_streak
+import brainscroll.shared.generated.resources.account_apple
+import brainscroll.shared.generated.resources.account_google
+import brainscroll.shared.generated.resources.account_guest
+import brainscroll.shared.generated.resources.account_guest_hint
+import brainscroll.shared.generated.resources.account_offline
+import brainscroll.shared.generated.resources.account_offline_short
+import brainscroll.shared.generated.resources.backup_done
+import brainscroll.shared.generated.resources.backup_pending
+import brainscroll.shared.generated.resources.home_streaks_answer
+import brainscroll.shared.generated.resources.home_streaks_day
+import brainscroll.shared.generated.resources.profile_favorites_hint
+import brainscroll.shared.generated.resources.profile_ranks_hint
+import brainscroll.shared.generated.resources.profile_settings_hint
+import brainscroll.shared.generated.resources.profile_stats_hint
+import brainscroll.shared.generated.resources.stat_won
+import brainscroll.shared.generated.resources.streak_best
+import com.mehmtcan.brainscroll.account.AccountState
+import com.mehmtcan.brainscroll.ui.components.ForwardChevron
+import com.mehmtcan.brainscroll.ui.daily.FlameIcon
+import com.mehmtcan.brainscroll.ui.feed.BoltIcon
+import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
+import com.mehmtcan.brainscroll.ui.streak.StreakKind
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -104,39 +133,153 @@ import kotlin.math.roundToInt
 enum class ProfileTarget { Stats, Favorites, Settings, Ranks }
 
 /**
- * The profile tab: one summary and a short list. The statistics, the favorites and the settings are pages of their
- * own, so this screen stays short.
+ * The profile tab, top to bottom: who you are and whether your progress is backed up, the two streaks (tap one to see
+ * what it means), three numbers that sum you up, and a short list that leads to the pages: statistics, favorites,
+ * ranks and settings. Each line of the list says in a few words what is behind it.
  */
 @Composable
-fun ProfileScreen(profile: ProfileState, onOpen: (ProfileTarget) -> Unit, modifier: Modifier = Modifier) {
+fun ProfileScreen(
+    profile: ProfileState,
+    account: AccountState,
+    onOpen: (ProfileTarget) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     // The endless numbers already include memory match, so only the daily puzzle is added.
     val played = profile.stats.played + profile.daily.played
     val won = profile.stats.won + profile.daily.won
     val winRate = if (played == 0) 0f else won.toFloat() / played
+    var streakInfo by remember { mutableStateOf<StreakKind?>(null) }
 
-    Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
-    ) {
-        Spacer(Modifier.height(Spacing.md))
-        // The one surface on this screen: three numbers that sum the player up.
-        Row(
-            modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(vertical = Spacing.lg),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg),
         ) {
-            SummaryNumber(played.toString(), stringResource(Res.string.stat_played))
-            SummaryNumber("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate))
-            SummaryNumber(profile.dayStreak.best.toString(), stringResource(Res.string.stat_best_streak))
+            Spacer(Modifier.height(Spacing.md))
+            AccountCard(account, profile.backupPending) { onOpen(ProfileTarget.Settings) }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
+                StreakTile(
+                    kind = StreakKind.Daily,
+                    title = stringResource(Res.string.home_streaks_day),
+                    current = profile.dayStreak.current,
+                    best = profile.dayStreak.best,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    onClick = { streakInfo = StreakKind.Daily },
+                )
+                StreakTile(
+                    kind = StreakKind.Win,
+                    title = stringResource(Res.string.home_streaks_answer),
+                    current = profile.stats.currentStreak,
+                    best = profile.stats.bestStreak,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    onClick = { streakInfo = StreakKind.Win },
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(vertical = Spacing.lg),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                SummaryNumber(played.toString(), stringResource(Res.string.stat_played))
+                SummaryNumber("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate))
+                SummaryNumber(won.toString(), stringResource(Res.string.stat_won))
+            }
+
+            Column {
+                ProfileRow(stringResource(Res.string.stats_title), stringResource(Res.string.profile_stats_hint)) { onOpen(ProfileTarget.Stats) }
+                ProfileRow(
+                    stringResource(Res.string.favorites_title),
+                    stringResource(Res.string.profile_favorites_hint),
+                    value = profile.favorites.size.takeIf { it > 0 }?.toString(),
+                ) { onOpen(ProfileTarget.Favorites) }
+                ProfileRow(stringResource(Res.string.tab_ranks), stringResource(Res.string.profile_ranks_hint)) { onOpen(ProfileTarget.Ranks) }
+                ProfileRow(stringResource(Res.string.profile_settings), stringResource(Res.string.profile_settings_hint), last = true) { onOpen(ProfileTarget.Settings) }
+            }
+            Spacer(Modifier.height(Spacing.xl))
         }
-        Column {
-            ProfileRow(stringResource(Res.string.stats_title)) { onOpen(ProfileTarget.Stats) }
-            ProfileRow(stringResource(Res.string.favorites_title), profile.favorites.size.takeIf { it > 0 }?.toString()) { onOpen(ProfileTarget.Favorites) }
-            ProfileRow(stringResource(Res.string.tab_ranks)) { onOpen(ProfileTarget.Ranks) }
-            ProfileRow(stringResource(Res.string.profile_settings), last = true) { onOpen(ProfileTarget.Settings) }
+        when (streakInfo) {
+            StreakKind.Daily -> StreakInfoSheet(
+                StreakKind.Daily,
+                current = profile.dayStreak.current,
+                best = profile.dayStreak.best,
+                freezes = profile.dayStreak.freezesAvailable,
+                onClose = { streakInfo = null },
+            )
+            StreakKind.Win -> StreakInfoSheet(StreakKind.Win, current = profile.stats.currentStreak, best = profile.stats.bestStreak, onClose = { streakInfo = null })
+            null -> Unit
         }
-        Spacer(Modifier.height(Spacing.xl))
+    }
+}
+
+/** Who is playing: a round mark with a letter, what kind of account it is and how the backup stands. Opens the settings. */
+@Composable
+private fun AccountCard(account: AccountState, backupPending: Int, onClick: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val signedIn = account as? AccountState.SignedIn
+    val named = signedIn != null && signedIn.kind != AccountState.SignedIn.Kind.Anonymous
+    val title = when {
+        signedIn == null -> stringResource(Res.string.account_offline_short)
+        signedIn.kind == AccountState.SignedIn.Kind.Google -> stringResource(Res.string.account_google)
+        signedIn.kind == AccountState.SignedIn.Kind.Apple -> stringResource(Res.string.account_apple)
+        else -> stringResource(Res.string.account_guest)
+    }
+    val detail = when {
+        signedIn == null -> stringResource(Res.string.account_offline)
+        !named -> stringResource(Res.string.account_guest_hint)
+        backupPending == 0 -> stringResource(Res.string.backup_done)
+        else -> stringResource(Res.string.backup_pending, backupPending)
+    }
+    val initial = (signedIn?.email?.firstOrNull()?.uppercaseChar() ?: '?').toString()
+    Row(
+        modifier = Modifier
+            .testTag("accountCard")
+            .fillMaxWidth()
+            .background(colors.bgSurface, Radius.card)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
+            .padding(Spacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        Box(
+            Modifier.size(44.dp).background(if (named) colors.correctFill else colors.bgRaised, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            BasicText(initial, style = type.heading.copy(color = if (named) colors.correctOn else colors.textSecondary))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            BasicText(title, style = type.heading.copy(color = colors.textPrimary))
+            BasicText(detail, style = type.caption.copy(color = colors.textSecondary))
+        }
+        ForwardChevron(colors.textSecondary)
+    }
+}
+
+/** One streak: its icon and name, the number now and the best so far. The whole tile opens the explanation. */
+@Composable
+private fun StreakTile(kind: StreakKind, title: String, current: Int, best: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val accent = if (kind == StreakKind.Daily) colors.streakDay else colors.streakAnswer
+    val description = stringResource(if (kind == StreakKind.Daily) Res.string.a11y_day_streak else Res.string.a11y_answer_streak, current)
+    Column(
+        modifier = modifier
+            .testTag(if (kind == StreakKind.Daily) "dayStreakTile" else "winStreakTile")
+            .background(colors.bgSurface, Radius.card)
+            .semantics(mergeDescendants = true) { contentDescription = description }
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
+            .padding(Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            if (kind == StreakKind.Daily) FlameIcon(accent) else BoltIcon(accent)
+            BasicText(title, style = type.caption.copy(color = colors.textSecondary), maxLines = 1)
+        }
+        BasicText(current.toString(), style = type.display.copy(color = accent))
+        BasicText(stringResource(Res.string.streak_best, best), style = type.caption.copy(color = colors.textSecondary))
     }
 }
 
@@ -150,30 +293,26 @@ private fun SummaryNumber(value: String, label: String) {
     }
 }
 
-/** A line of the list: a name, an optional small value and a chevron. No surface, a hairline below. */
+/** A line of the list: a name with a few words under it, an optional small value and a chevron. A hairline below. */
 @Composable
-private fun ProfileRow(title: String, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
+private fun ProfileRow(title: String, hint: String? = null, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     Column(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp)
+                .heightIn(min = 64.dp)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            BasicText(title, style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
-            if (value != null) BasicText(value, style = type.label.copy(color = colors.textSecondary))
-            Canvas(Modifier.size(12.dp)) {
-                val path = Path().apply {
-                    moveTo(0.3f * size.width, 0.1f * size.height)
-                    lineTo(0.75f * size.width, 0.5f * size.height)
-                    lineTo(0.3f * size.width, 0.9f * size.height)
-                }
-                drawPath(path, colors.textSecondary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                BasicText(title, style = type.heading.copy(color = colors.textPrimary))
+                if (hint != null) BasicText(hint, style = type.caption.copy(color = colors.textSecondary))
             }
+            if (value != null) BasicText(value, style = type.label.copy(color = colors.textSecondary))
+            ForwardChevron(colors.textSecondary)
         }
         if (!last) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
     }
@@ -388,7 +527,7 @@ fun FavoritesPage(profile: ProfileState, modifier: Modifier = Modifier) {
 
 /** The account and the privacy choice. */
 @Composable
-fun SettingsPage(account: AccountUi, privacy: PrivacyUi, modifier: Modifier = Modifier) {
+fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     LazyColumn(
@@ -396,6 +535,7 @@ fun SettingsPage(account: AccountUi, privacy: PrivacyUi, modifier: Modifier = Mo
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         item { BasicText(stringResource(Res.string.profile_settings), style = type.title.copy(color = colors.textPrimary)) }
+        item { LanguageSection(language) }
         item { AccountSection(account) }
         item { PrivacySection(privacy) }
         item { Spacer(Modifier.height(Spacing.xl)) }

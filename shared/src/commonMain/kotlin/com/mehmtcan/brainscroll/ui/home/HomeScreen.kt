@@ -28,6 +28,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -57,12 +59,17 @@ import brainscroll.shared.generated.resources.home_fastest_failed
 import brainscroll.shared.generated.resources.home_fastest_sign_in
 import brainscroll.shared.generated.resources.home_fastest_title
 import brainscroll.shared.generated.resources.home_feed_add
-import brainscroll.shared.generated.resources.home_feed_edit
+import brainscroll.shared.generated.resources.confirm_cancel
+import brainscroll.shared.generated.resources.home_continue_feed
+import brainscroll.shared.generated.resources.new_feed_confirm
+import brainscroll.shared.generated.resources.new_feed_message
+import brainscroll.shared.generated.resources.new_feed_title
+import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
+import brainscroll.shared.generated.resources.home_feed_edit_description
 import brainscroll.shared.generated.resources.home_feed_more
 import brainscroll.shared.generated.resources.home_feed_title
 import brainscroll.shared.generated.resources.home_freeze_badge
 import brainscroll.shared.generated.resources.home_start_feed
-import brainscroll.shared.generated.resources.home_word_language
 import brainscroll.shared.generated.resources.home_waiting_today
 import brainscroll.shared.generated.resources.ranks_guesses
 import brainscroll.shared.generated.resources.ranks_loading
@@ -77,8 +84,16 @@ import com.mehmtcan.brainscroll.ui.components.ForwardChevron
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.daily.DailyPhase
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
+import com.mehmtcan.brainscroll.ui.daily.DailyGamePhase
+import com.mehmtcan.brainscroll.ui.daily.DailyGameUi
+import com.mehmtcan.brainscroll.ui.daily.DailyGameViewModel
 import com.mehmtcan.brainscroll.ui.daily.FlameIcon
+import brainscroll.shared.generated.resources.home_daily_description_board
+import brainscroll.shared.generated.resources.home_fastest_game
+import brainscroll.shared.generated.resources.ranks_moves
 import com.mehmtcan.brainscroll.ui.feed.BoltIcon
+import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
+import com.mehmtcan.brainscroll.ui.streak.StreakKind
 import com.mehmtcan.brainscroll.ui.feed.FeedUiState
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.motion.popOnIncrease
@@ -101,11 +116,13 @@ private const val PREVIEW_ROWS = 3
 fun HomeScreen(
     feedViewModel: FeedViewModel,
     dailyViewModel: DailyViewModel,
+    dailyGameViewModel: DailyGameViewModel,
     socialViewModel: SocialViewModel,
     onOpenDaily: () -> Unit,
     onOpenRanks: () -> Unit,
     onOpenFeedEditor: () -> Unit,
     onStartFeed: () -> Unit,
+    onContinueFeed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -115,6 +132,7 @@ fun HomeScreen(
     val profile by feedViewModel.profile.collectAsStateWithLifecycle()
     val enabled by feedViewModel.enabledGames.collectAsStateWithLifecycle()
     val daily by dailyViewModel.ui.collectAsStateWithLifecycle()
+    val dailyGame by dailyGameViewModel.ui.collectAsStateWithLifecycle()
     val preview by socialViewModel.preview.collectAsStateWithLifecycle()
     val social by socialViewModel.ui.collectAsStateWithLifecycle()
 
@@ -126,11 +144,18 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         feedViewModel.refreshProfile()
         dailyViewModel.onShown()
+        dailyGameViewModel.refresh()
     }
     LaunchedEffect(wordLanguage) { socialViewModel.loadPreview(wordLanguage) }
 
+    var streakInfo by remember { mutableStateOf<StreakKind?>(null) }
+    var confirmNewFeed by remember { mutableStateOf(false) }
+    // Starting a new feed forgets a puzzle that was left half done: ask first, but only when there is one to lose.
+    val startNewFeed = { if (ready?.feed?.hasUnfinished == true) confirmNewFeed = true else onStartFeed() }
+
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         Spacer(Modifier.height(Spacing.sm))
@@ -140,29 +165,37 @@ fun HomeScreen(
             answerStreak = answerStreak,
             waitingToday = !profile.dailyDoneToday,
             freezeReady = profile.dayStreak.freezesAvailable > 0,
+            onDayStreak = { streakInfo = StreakKind.Daily },
+            onWinStreak = { streakInfo = StreakKind.Win },
         )
+
+        DailyCard(daily.phase, daily.language, dailyGame, onOpenDaily)
+
+        // A feed that was left half done can be gone on with; it is not offered when there is none.
+        if (ready?.feed?.hasUnfinished == true) {
+            AppOutlinedButton(stringResource(Res.string.home_continue_feed), onContinueFeed, modifier = Modifier.testTag("continueFeed"))
+        }
 
         FeedCard(
             enabled = feedViewModel.availableGames.filter { it in enabled },
             disabledCount = feedViewModel.availableGames.count { it !in enabled },
             wordLanguage = wordLanguage,
             onEdit = onOpenFeedEditor,
-            onStart = onStartFeed,
+            onStart = startNewFeed,
         )
-
-        DailyCard(daily.phase, daily.language, dailyViewModel, onOpenDaily)
 
         // --- Fastest today ---
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 BasicText(
-                    text = stringResource(Res.string.home_fastest_title) + " · " + wordLanguage.name,
+                    text = if (dailyGame.game == GameKind.Word) stringResource(Res.string.home_fastest_title) + " · " + wordLanguage.name
+                    else stringResource(Res.string.home_fastest_game, dailyGame.game.displayName()),
                     style = type.heading.copy(color = colors.textPrimary),
                     modifier = Modifier.weight(1f),
                 )
                 Chip(text = stringResource(Res.string.home_fastest_all), textColor = colors.textPrimary, onClick = onOpenRanks)
             }
-            FastestPreview(preview.rows.take(PREVIEW_ROWS), preview.loading, preview.failed)
+            FastestPreview(preview.rows.take(PREVIEW_ROWS), preview.loading, preview.failed, dailyGame.game)
             if (social.access == Access.Anonymous) {
                 BasicText(
                     text = stringResource(Res.string.home_fastest_sign_in),
@@ -172,11 +205,33 @@ fun HomeScreen(
         }
         Spacer(Modifier.height(Spacing.xl))
     }
+    if (confirmNewFeed) {
+        ConfirmDialog(
+            title = stringResource(Res.string.new_feed_title),
+            message = stringResource(Res.string.new_feed_message),
+            confirmText = stringResource(Res.string.new_feed_confirm),
+            cancelText = stringResource(Res.string.confirm_cancel),
+            onConfirm = { confirmNewFeed = false; onStartFeed() },
+            onCancel = { confirmNewFeed = false },
+        )
+    }
+    when (streakInfo) {
+        StreakKind.Daily -> StreakInfoSheet(
+            StreakKind.Daily,
+            current = profile.dayStreak.current,
+            best = profile.dayStreak.best,
+            freezes = profile.dayStreak.freezesAvailable,
+            onClose = { streakInfo = null },
+        )
+        StreakKind.Win -> StreakInfoSheet(StreakKind.Win, current = answerStreak, best = maxOf(profile.stats.bestStreak, answerStreak), onClose = { streakInfo = null })
+        null -> Unit
+    }
+    }
 }
 
 /** Both streaks in one quiet line. A dot beside the day streak says today's puzzle is still open. */
 @Composable
-private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean, freezeReady: Boolean) {
+private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean, freezeReady: Boolean, onDayStreak: () -> Unit, onWinStreak: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val waiting = stringResource(Res.string.home_waiting_today)
@@ -196,9 +251,11 @@ private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.semantics(mergeDescendants = true) {
-                contentDescription = dayDescription
-            },
+            modifier = Modifier
+                .testTag("dayStreak")
+                .semantics(mergeDescendants = true) { contentDescription = dayDescription }
+                .heightIn(min = 48.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onDayStreak),
         ) {
             FlameIcon(colors.streakDay)
             Box(Modifier.popOnIncrease(dayStreak)) {
@@ -209,9 +266,11 @@ private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.semantics(mergeDescendants = true) {
-                contentDescription = answerDescription
-            },
+            modifier = Modifier
+                .testTag("winStreak")
+                .semantics(mergeDescendants = true) { contentDescription = answerDescription }
+                .heightIn(min = 48.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onWinStreak),
         ) {
             BoltIcon(colors.streakAnswer)
             Box(Modifier.popOnIncrease(answerStreak)) {
@@ -225,14 +284,16 @@ private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean
 }
 
 /**
- * Today's puzzle: its picture, its name, a line about it and one outlined button. The whole card opens the daily page,
- * whatever the state is: offline, the page shows the message and the retry button, so this card only says how things
- * stand. The daily puzzle is the word puzzle, in the language chosen here.
+ * Today's puzzle: the picture and the name of the game of the day (every game comes in turn), a line about it and one
+ * outlined button. The whole card opens the daily page, whatever the state is. The word puzzle needs a connection, so
+ * the card says so when there is none; the other games are played on the device. The language of the word puzzle is the
+ * language of the app, shown as a label.
  */
 @Composable
-private fun DailyCard(phase: DailyPhase, language: Language, dailyViewModel: DailyViewModel, onOpen: () -> Unit) {
+private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi, onOpen: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    val game = gameUi.game
     Column(
         modifier = Modifier
             .testTag("dailyCard")
@@ -248,39 +309,37 @@ private fun DailyCard(phase: DailyPhase, language: Language, dailyViewModel: Dai
                 style = type.title.copy(color = colors.textPrimary),
                 modifier = Modifier.weight(1f),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Language.entries.forEach { option ->
-                    Chip(
-                        text = option.name,
-                        textColor = if (option == language) colors.textPrimary else colors.textSecondary,
-                        raised = option == language,
-                        selected = option == language,
-                        onClick = { dailyViewModel.selectLanguage(option) },
-                    )
-                }
-            }
+            if (game == GameKind.Word) Chip(text = language.nativeName(), textColor = colors.textSecondary)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
-            GameThumbnail(GameKind.Word, language, Modifier.size(DAILY_THUMBNAIL))
+            GameThumbnail(game, language, Modifier.size(DAILY_THUMBNAIL))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                BasicText(GameKind.Word.displayName(), style = type.heading.copy(color = colors.textPrimary))
-                when (phase) {
-                    DailyPhase.Intro -> {
-                        BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
-                        AppOutlinedButton(stringResource(Res.string.home_daily_solve), onOpen)
+                BasicText(game.displayName(), style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.testTag("dailyCardGame"))
+                if (game == GameKind.Word) {
+                    when (phase) {
+                        DailyPhase.Intro -> {
+                            BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
+                            AppOutlinedButton(stringResource(Res.string.home_daily_solve), onOpen)
+                        }
+                        DailyPhase.Playing -> {
+                            BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
+                            AppOutlinedButton(stringResource(Res.string.home_daily_continue), onOpen)
+                        }
+                        DailyPhase.Finished -> {
+                            BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                            AppOutlinedButton(stringResource(Res.string.home_daily_result), onOpen)
+                        }
+                        DailyPhase.Offline, DailyPhase.Unavailable ->
+                            BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSecondary))
+                        DailyPhase.Loading ->
+                            BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
                     }
-                    DailyPhase.Playing -> {
-                        BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
-                        AppOutlinedButton(stringResource(Res.string.home_daily_continue), onOpen)
-                    }
-                    DailyPhase.Finished -> {
-                        BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
-                        AppOutlinedButton(stringResource(Res.string.home_daily_result), onOpen)
-                    }
-                    DailyPhase.Offline, DailyPhase.Unavailable ->
-                        BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSecondary))
-                    DailyPhase.Loading ->
-                        BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
+                } else if (gameUi.phase == DailyGamePhase.Finished) {
+                    BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                    AppOutlinedButton(stringResource(Res.string.home_daily_result), onOpen)
+                } else {
+                    BasicText(stringResource(Res.string.home_daily_description_board), style = type.body.copy(color = colors.textSecondary))
+                    AppOutlinedButton(stringResource(Res.string.home_daily_solve), onOpen)
                 }
             }
         }
@@ -313,24 +372,28 @@ private fun FeedCard(
         disabledCount > 0 -> stringResource(Res.string.home_feed_add)
         else -> null
     }
+    val editDescription = stringResource(Res.string.home_feed_edit_description)
+    // The card is a surface with a layer behind its content that opens the editor: anywhere on the card but the start
+    // button (and the thumbnails' own taps) goes to the editor. The content keeps its own accessibility nodes this way.
+    Box(
+        modifier = Modifier
+            .testTag("feedCard")
+            .fillMaxWidth()
+            .clip(Radius.card)
+            .background(colors.bgSurface),
+    ) {
+    Box(
+        Modifier
+            .testTag("editFeed")
+            .matchParentSize()
+            .semantics { contentDescription = editDescription }
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit),
+    )
     Column(
-        modifier = Modifier.testTag("feedCard").fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg),
+        modifier = Modifier.fillMaxWidth().padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            BasicText(stringResource(Res.string.home_feed_title), style = type.title.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                modifier = Modifier
-                    .testTag("editFeed")
-                    .heightIn(min = 48.dp)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit),
-            ) {
-                BasicText(stringResource(Res.string.home_feed_edit), style = type.label.copy(color = colors.correctFill))
-                ForwardChevron(colors.correctFill)
-            }
-        }
+        BasicText(stringResource(Res.string.home_feed_title), style = type.title.copy(color = colors.textPrimary), modifier = Modifier.fillMaxWidth())
         // Four equal slots: the pictures of the first games, then a tile for the rest. Empty slots keep the pictures their size.
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
             shown.forEach { game ->
@@ -365,29 +428,14 @@ private fun FeedCard(
             }
             repeat(FEED_PREVIEW + 1 - shown.size - if (tileText != null) 1 else 0) { Spacer(Modifier.weight(1f)) }
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            modifier = Modifier
-                .testTag("wordLanguageRow")
-                .fillMaxWidth()
-                .clip(Radius.control)
-                .background(colors.bgRaised)
-                .heightIn(min = 48.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit)
-                .padding(horizontal = Spacing.md),
-        ) {
-            BasicText(stringResource(Res.string.home_word_language), style = type.body.copy(color = colors.textSecondary), modifier = Modifier.weight(1f))
-            BasicText(wordLanguage.nativeName(), style = type.label.copy(color = colors.textPrimary))
-            ForwardChevron(colors.textSecondary)
-        }
-        AppButton(stringResource(Res.string.home_start_feed) + "  →", onStart, modifier = Modifier.testTag("startFeedHome"), primary = true)
+        AppButton(stringResource(Res.string.home_start_feed), onStart, modifier = Modifier.testTag("startFeedHome"), primary = true)
+    }
     }
 }
 
 /** The first few rows of today's speed table. No surface: the rows sit on the page, set apart by hairlines. */
 @Composable
-private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boolean) {
+private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boolean, game: GameKind) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     when {
@@ -406,7 +454,10 @@ private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boole
                         modifier = Modifier.weight(1f),
                         maxLines = 1,
                     )
-                    BasicText(stringResource(Res.string.ranks_guesses, row.guesses), style = type.label.copy(color = colors.textSecondary))
+                    BasicText(
+                        text = if (game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses),
+                        style = type.label.copy(color = colors.textSecondary),
+                    )
                     BasicText(formatDuration(row.durationMs), style = type.label.copy(color = colors.textPrimary))
                 }
             }

@@ -31,7 +31,7 @@ class SyncCoordinatorTest {
     }
 
     private fun result(id: String) =
-        FinishedRound(id, Mode.ENDLESS, Language.EN, "CRANE", listOf("CRANE"), Outcome.WON, false, 1_000L)
+        FinishedRound(id, Mode.ENDLESS, Language.EN, "CRANE", listOf("CRANE"), Outcome.WON, 1_000L)
 
     private fun TestScope.coordinator(repo: GameRepository): SyncCoordinator {
         // The fake cloud acts for whoever is signed in right now.

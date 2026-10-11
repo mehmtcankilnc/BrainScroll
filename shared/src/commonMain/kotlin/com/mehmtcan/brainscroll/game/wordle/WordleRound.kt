@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.wordle
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.guide.GuideTask
+import com.mehmtcan.brainscroll.game.guide.WordGuide
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 
@@ -23,11 +25,11 @@ data class RoundSnapshot(
     val errorTick: Int,
     /** Best known result per keyboard letter: Correct beats Present beats Absent. */
     val letterStates: Map<Char, LetterResult>,
-    override val skipped: Boolean,
     /** A guess that was typed and sent but not answered yet (daily puzzle: the server colors it). Drawn as a row. */
     val pending: String? = null,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = status != WordleStatus.Playing
+    override val isWon: Boolean get() = status == WordleStatus.Won
     override val kind: GameKind get() = GameKind.Word
 }
 
@@ -41,19 +43,29 @@ class WordleRound(
     private val wordList: WordList,
     override val id: String = "round-$index",
 ) : FeedRound {
-    private val language = wordList.language
+    val language = wordList.language
     private var input = ""
     private var error: GuessError? = null
     private var errorTick = 0
 
     override val kind: GameKind get() = GameKind.Word
 
-    override var skipped = false
-        internal set
+    override var assisted = false
+        private set
 
-    override fun markSkipped() {
-        skipped = true
+    override fun markAssisted() {
+        assisted = true
     }
+
+    override fun guideTask(): GuideTask? {
+        if (isFinished) return null
+        val answer = game.secretAnswer
+        val state = game.state
+        val rows = state.rows.map { row -> row.results }
+        return { WordGuide.step(answer, rows, state.status) }
+    }
+
+
 
     /** True while nothing has been typed or guessed, so the round can still be swapped for another one. */
     override val isUntouched: Boolean get() = input.isEmpty() && game.state.rows.isEmpty()
@@ -94,8 +106,8 @@ class WordleRound(
         answer = game.secretAnswer,
         guesses = game.state.rows.map { it.word },
         input = input,
-        skipped = skipped,
         position = index,
+        assisted = assisted,
     )
 
     override fun toFinished(finishedAt: Long) = toFinished(finishedAt, Mode.ENDLESS)
@@ -107,7 +119,7 @@ class WordleRound(
         answer = game.secretAnswer,
         guesses = game.state.rows.map { it.word },
         outcome = if (game.state.status == WordleStatus.Won) Outcome.WON else Outcome.LOST,
-        wasSkipped = skipped,
+        assisted = assisted,
         finishedAt = finishedAt,
     )
 
@@ -126,7 +138,6 @@ class WordleRound(
             error = error,
             errorTick = errorTick,
             letterStates = keyStatesOf(state.rows),
-            skipped = skipped,
         )
     }
 
@@ -136,7 +147,7 @@ class WordleRound(
             val round = WordleRound(index, WordleGame(wordList, stored.answer), wordList, stored.id)
             stored.guesses.forEach { round.game.perform(WordleAction.Submit(it)) }
             stored.input.forEach { round.type(it) }
-            round.skipped = stored.skipped
+            round.assisted = stored.assisted
             return round
         }
     }

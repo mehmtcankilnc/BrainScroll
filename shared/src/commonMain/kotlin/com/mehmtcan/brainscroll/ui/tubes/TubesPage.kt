@@ -27,6 +27,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.LocalGuide
+import com.mehmtcan.brainscroll.ui.feed.guideHighlight
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,7 +75,6 @@ import brainscroll.shared.generated.resources.a11y_tubes_moves
 import brainscroll.shared.generated.resources.a11y_tubes_restart
 import brainscroll.shared.generated.resources.a11y_tubes_undo
 import brainscroll.shared.generated.resources.game_tubes
-import brainscroll.shared.generated.resources.swipe_hint
 import brainscroll.shared.generated.resources.tubes_hint
 import brainscroll.shared.generated.resources.tubes_moves
 import brainscroll.shared.generated.resources.tubes_result
@@ -97,7 +100,6 @@ import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.popOnAppear
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -144,7 +146,6 @@ fun TubesPage(
     onRestart: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -181,8 +182,6 @@ fun TubesPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_tubes), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Chip(
             text = stringResource(Res.string.tubes_moves, state.moves),
@@ -310,7 +309,7 @@ private fun Board(
                     selected = selected == index,
                     width = width,
                     height = height,
-                    modifier = Modifier.offset(left(index).dp, top(index).dp),
+                    modifier = Modifier.offset(left(index).dp, top(index).dp).guideHighlight(guidedTube(index, selected), RoundedCornerShape(14.dp)),
                     pour = pour?.takeIf { index == it.animation.from },
                     onClick = { onTap(index) },
                 )
@@ -654,10 +653,21 @@ private fun TubesResultCard(page: TubesSnapshot, isFavorite: Boolean, onToggleFa
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }
         HeartButton(filled = isFavorite, onClick = onToggleFavorite, modifier = Modifier.align(Alignment.TopEnd))
     }
+}
+
+/**
+ * The guide says "pour the first tube into the second": the first is ringed while nothing is picked up, and once it is
+ * picked up the second one is ringed.
+ */
+@Composable
+private fun guidedTube(index: Int, selected: Int?): Boolean {
+    val cells = LocalGuide.current?.cells ?: return false
+    if (cells.size != 2) return false
+    return if (selected == null) index == cells[0] else selected == cells[0] && index == cells[1]
 }

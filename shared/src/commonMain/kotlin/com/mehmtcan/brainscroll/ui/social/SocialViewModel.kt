@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.data.GameRepository
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.social.Board
 import com.mehmtcan.brainscroll.social.DailyRow
@@ -54,6 +55,10 @@ data class SocialUiState(
     val inviteCode: String?,
     val section: Section,
     val language: Language,
+    /** The game the speed table is of: today's game for today, the chosen one for all time. */
+    val game: GameKind,
+    /** Today's daily game. The speed table of all time can be switched to any other game. */
+    val todayGame: GameKind,
     val scope: DailyScope,
     val kind: StreakKind,
     /** Only my friends (and me) on the table instead of everyone. Only for [Access.Ready]. */
@@ -106,6 +111,8 @@ class SocialViewModel(
     /** Friend invite codes that arrived through a link. */
     invites: SharedFlow<String> = MutableSharedFlow(),
     private val telemetry: Telemetry = NoTelemetry,
+    /** The game of today's daily puzzle. The speed table of today is the table of this game. */
+    private val todayGame: () -> GameKind = { GameKind.Word },
 ) : ViewModel() {
 
     private var userId: String? = null
@@ -116,6 +123,7 @@ class SocialViewModel(
     private var section = Section.Speed
     private var language = initialLanguage
     private var scope = DailyScope.Today
+    private var chosenGame: GameKind? = null
     private var kind = StreakKind.Current
     private var friendsOnly = false
 
@@ -130,6 +138,7 @@ class SocialViewModel(
     private var job: Job? = null
 
     private var previewLanguage: Language? = null
+    private var previewGame: GameKind? = null
     private var previewJob: Job? = null
     private val _preview = MutableStateFlow(SpeedPreview())
 
@@ -162,22 +171,24 @@ class SocialViewModel(
     /** The retry button. */
     fun refresh() = reload()
 
-    /** The home page wants today's fastest players in [language]: the last view at once, then the server's. */
+    /** The home page wants today's fastest players (of today's game, in [language] for the word puzzle): the last view at once, then the server's. */
     fun loadPreview(language: Language) {
-        if (language != previewLanguage) _preview.value = SpeedPreview()
+        val game = todayGame()
+        if (language != previewLanguage || game != previewGame) _preview.value = SpeedPreview()
         previewLanguage = language
+        previewGame = game
         previewJob?.cancel()
         val user = userId
         if (user == null) {
             _preview.value = SpeedPreview(failed = true)
             return
         }
-        val key = "board:preview:${language.name}"
+        val key = "board:preview:${game.id}:${language.name}"
         val cachedRows = cached<Board<DailyRow>>(key)?.rows.orEmpty()
         _preview.value = SpeedPreview(rows = cachedRows.take(PREVIEW_ROWS), loading = true)
         previewJob = viewModelScope.launch {
             try {
-                val board = api.dailyBoard(language, DailyScope.Today, false)
+                val board = speedBoard(DailyScope.Today, game, false, language)
                 cache(key, socialJson.encodeToString(board))
                 if (user == userId) _preview.value = SpeedPreview(rows = board.rows.take(PREVIEW_ROWS))
             } catch (e: CancellationException) {
@@ -199,6 +210,16 @@ class SocialViewModel(
         language = next
         reload()
     }
+
+    /** The game of the all-time speed table. */
+    fun selectGame(next: GameKind) {
+        if (next == chosenGame) return
+        chosenGame = next
+        if (scope == DailyScope.AllTime) reload()
+    }
+
+    /** Today's table is of today's game; the table of all time is of the chosen game, today's until one is chosen. */
+    private fun effectiveGame(): GameKind = if (scope == DailyScope.Today) todayGame() else (chosenGame ?: todayGame())
 
     fun selectScope(next: DailyScope) {
         if (next == scope) return
@@ -399,7 +420,7 @@ class SocialViewModel(
         job = viewModelScope.launch {
             try {
                 when (section) {
-                    Section.Speed -> speed = api.dailyBoard(language, scope, friendsOnly).also { cache(key, socialJson.encodeToString(it)) }
+                    Section.Speed -> speed = speedBoard(scope, effectiveGame(), friendsOnly).also { cache(key, socialJson.encodeToString(it)) }
                     Section.Streak -> streak = api.streakBoard(kind, friendsOnly).also { cache(key, socialJson.encodeToString(it)) }
                     Section.Friends -> friends = api.friends().also { cache(key, socialJson.encodeToString(it)) }
                 }
@@ -421,8 +442,12 @@ class SocialViewModel(
         }
     }
 
+    /** The word puzzle has its own table (guesses first); every other game has the table of times and moves. */
+    private suspend fun speedBoard(scope: DailyScope, game: GameKind, friendsOnly: Boolean, wordLanguage: Language = language): Board<DailyRow> =
+        if (game == GameKind.Word) api.dailyBoard(wordLanguage, scope, friendsOnly) else api.gameBoard(game, scope, friendsOnly)
+
     private fun cacheKey() = when (section) {
-        Section.Speed -> "board:speed:${language.name}:${scope.name}:$friendsOnly"
+        Section.Speed -> "board:speed:${effectiveGame().id}:${language.name}:${scope.name}:$friendsOnly"
         Section.Streak -> "board:streak:${kind.name}:$friendsOnly"
         Section.Friends -> "friends"
     }
@@ -463,6 +488,8 @@ class SocialViewModel(
         inviteCode = profile?.inviteCode,
         section = section,
         language = language,
+        game = effectiveGame(),
+        todayGame = todayGame(),
         scope = scope,
         kind = kind,
         friendsOnly = friendsOnly,

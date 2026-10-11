@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -66,7 +69,6 @@ import brainscroll.shared.generated.resources.pipes_moves
 import brainscroll.shared.generated.resources.pipes_par
 import brainscroll.shared.generated.resources.pipes_result
 import brainscroll.shared.generated.resources.pipes_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.pipes.PipesGenerator
 import com.mehmtcan.brainscroll.game.pipes.PipesResult
@@ -79,7 +81,6 @@ import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
@@ -114,7 +115,6 @@ fun PipesPage(
     onRestart: () -> Boolean,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -132,8 +132,6 @@ fun PipesPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_pipes), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Chip(
@@ -173,16 +171,18 @@ fun PipesPage(
                     Row(horizontalArrangement = Arrangement.spacedBy(TileGap)) {
                         for (column in 0 until state.size) {
                             val index = row * state.size + column
-                            PipeTile(
-                                row = row + 1,
-                                column = column + 1,
-                                mask = state.tiles[index],
-                                matched = state.matched[index],
-                                labels = labels,
-                                playing = !won,
-                                size = tile,
-                                onClick = { if (onTurn(index) != PipesResult.Ignored) haptics.perform(HapticKind.Light) },
-                            )
+                            GuideMark(isGuided(index), Radius.tile) {
+                                PipeTile(
+                                    row = row + 1,
+                                    column = column + 1,
+                                    mask = state.tiles[index],
+                                    matched = state.matched[index],
+                                    labels = labels,
+                                    playing = !won,
+                                    size = tile,
+                                    onClick = { if (onTurn(index) != PipesResult.Ignored) haptics.perform(HapticKind.Light) },
+                                )
+                            }
                         }
                     }
                 }
@@ -360,7 +360,7 @@ private fun PipesResultCard(page: PipesSnapshot, isFavorite: Boolean, onToggleFa
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

@@ -57,6 +57,29 @@ class FeedPersistenceTest {
     }
 
     @Test
+    fun aGuidedRoundIsSavedAsAssistedEvenBeforeItIsStarted() {
+        val store = FakeStore()
+        val f = feed(store)
+        f.ensureSize(1)
+        f.markGuided(0)
+        assertTrue(store.progress.values.single().assisted)
+    }
+
+    @Test
+    fun theAssistedMarkSurvivesARestartAndReachesTheResult() {
+        val store = FakeStore()
+        val first = feed(store)
+        first.ensureSize(1)
+        first.markGuided(0)
+        first.type(0, 'c')
+
+        val second = feed(store, restored = store.progress.values.toList())
+        second.backspace(0) // the letter typed before the restart is still there
+        second.playToTheEnd(0)
+        assertTrue(store.results.single().assisted, "the finished result says the guide was used")
+    }
+
+    @Test
     fun untouchedRoundsAreNotSaved() {
         val store = FakeStore()
         feed(store).ensureSize(3)
@@ -99,15 +122,6 @@ class FeedPersistenceTest {
     }
 
     @Test
-    fun skippingSavesTheRoundEvenWhenNothingWasTyped() {
-        val store = FakeStore()
-        val f = feed(store)
-        f.ensureSize(2)
-        f.leave(0)
-        assertTrue(store.progress.values.single().skipped)
-    }
-
-    @Test
     fun aFinishedRoundMovesToTheHistory() {
         val store = FakeStore()
         val f = feed(store, time = { 42_000L })
@@ -119,17 +133,6 @@ class FeedPersistenceTest {
         assertEquals(Mode.ENDLESS, result.mode)
         assertEquals(Language.EN, result.language)
         assertEquals(if (result.guesses.last() == result.answer) Outcome.WON else Outcome.LOST, result.outcome)
-        assertFalse(result.wasSkipped)
-    }
-
-    @Test
-    fun aRoundThatWasSkippedAndLaterFinishedIsMarkedAsSkipped() {
-        val store = FakeStore()
-        val f = feed(store)
-        f.ensureSize(2)
-        f.leave(0)
-        f.playToTheEnd(0)
-        assertTrue(store.results.single().wasSkipped)
     }
 
     @Test
@@ -146,8 +149,8 @@ class FeedPersistenceTest {
     @Test
     fun restoredRoundsComeBackExactlyAsTheyWereLeft() {
         val stored = listOf(
-            StoredRound("a", Language.EN, "CRANE", listOf("SLATE"), "GH", skipped = true, position = 4),
-            StoredRound("b", Language.TR, "KİTAP", emptyList(), "KI", skipped = false, position = 9),
+            StoredRound("a", Language.EN, "CRANE", listOf("SLATE"), "GH", position = 4),
+            StoredRound("b", Language.TR, "KİTAP", emptyList(), "KI", position = 9),
         )
         val f = feed(FakeStore(), restored = stored)
         val rounds = f.snapshot().rounds
@@ -156,7 +159,6 @@ class FeedPersistenceTest {
         assertEquals(listOf(0, 1), rounds.map { it.index })
         assertEquals(1, rounds[0].rows.size)
         assertEquals("GH", rounds[0].input)
-        assertTrue(rounds[0].skipped)
         assertEquals(Language.TR, rounds[1].language)
         assertEquals("KI", rounds[1].input)
     }
@@ -165,8 +167,8 @@ class FeedPersistenceTest {
     fun restoredRoundsAreSavedAgainWithTheirNewPositions() {
         val store = FakeStore()
         val stored = listOf(
-            StoredRound("a", Language.EN, "CRANE", emptyList(), "C", skipped = false, position = 7),
-            StoredRound("b", Language.EN, "SLATE", emptyList(), "S", skipped = false, position = 12),
+            StoredRound("a", Language.EN, "CRANE", emptyList(), "C", position = 7),
+            StoredRound("b", Language.EN, "SLATE", emptyList(), "S", position = 12),
         )
         feed(store, restored = stored)
         assertEquals(listOf(0, 1), store.progress.values.map { it.position })
@@ -174,19 +176,11 @@ class FeedPersistenceTest {
 
     @Test
     fun newRoundsAreCreatedAfterTheRestoredOnes() {
-        val stored = listOf(StoredRound("a", Language.EN, "CRANE", emptyList(), "C", skipped = false, position = 0))
+        val stored = listOf(StoredRound("a", Language.EN, "CRANE", emptyList(), "C", position = 0))
         val f = feed(FakeStore(), restored = stored)
         f.ensureSize(3)
         assertEquals(3, f.size)
         assertEquals("C", f.snapshot().rounds[0].input) // the restored round stays first
-    }
-
-    @Test
-    fun theLanguageIsLockedWhenTouchedRoundsWereRestored() {
-        val stored = listOf(StoredRound("a", Language.EN, "CRANE", emptyList(), "C", skipped = false, position = 0))
-        val f = feed(FakeStore(), restored = stored)
-        assertFalse(f.snapshot().canChangeLanguage)
-        assertFalse(f.setLanguage(Language.TR))
     }
 
     @Test
@@ -200,18 +194,11 @@ class FeedPersistenceTest {
     }
 
     @Test
-    fun skipsAreAvailableAgainInANewSession() {
-        // A new feed (cold start) starts with the full skip allowance, even if progress was restored.
-        val stored = listOf(StoredRound("a", Language.EN, "CRANE", emptyList(), "C", skipped = true, position = 0))
-        assertEquals(1, feed(FakeStore(), restored = stored).skipsLeft)
-    }
-
-    @Test
     fun roundsInALanguageWithoutAWordListAreIgnored() {
         val onlyEnglish = EndlessFeed(
             wordLists = mapOf(Language.EN to en),
             startLanguage = Language.EN,
-            restored = listOf(StoredRound("t", Language.TR, "KİTAP", emptyList(), "K", skipped = false, position = 0)),
+            restored = listOf(StoredRound("t", Language.TR, "KİTAP", emptyList(), "K", position = 0)),
         )
         assertEquals(0, onlyEnglish.size)
     }

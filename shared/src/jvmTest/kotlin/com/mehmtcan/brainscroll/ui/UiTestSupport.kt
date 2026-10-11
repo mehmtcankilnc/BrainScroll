@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.platform.LocalDensity
@@ -89,6 +90,8 @@ internal fun ComposeUiTest.start(
     games: List<GameKind> = listOf(GameKind.Word),
     /** The app opens on the home tab. Most tests are about the feed, so they go there; the home tests stay. */
     openFeed: Boolean = true,
+    /** The game of the daily puzzle. The word puzzle unless a test is about another game: most tests were written for it. */
+    dailyGame: (Long) -> GameKind = { GameKind.Word },
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -102,7 +105,7 @@ internal fun ComposeUiTest.start(
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
         ) {
             Box(Modifier.requiredSize(390.dp, 740.dp)) {
-                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games)
+                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame)
             }
         }
     }
@@ -155,9 +158,21 @@ internal fun ComposeUiTest.typeWord(word: String) {
     enter()
 }
 
+/**
+ * Makes the word puzzles of the feed English only: back to the home tab, into the feed editor, English on and Turkish
+ * off, and the feed is started again.
+ */
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.switchToEnglish() {
-    if (onAllNodesWithText("TR").fetchSemanticsNodes().isNotEmpty()) onNodeWithText("TR").performClick()
+    goHome()
+    clickAny("Akışın", "Your feed")
+    waitForIdle()
+    onNodeWithTag("languageEN").performClick()
+    waitForIdle()
+    val turkishOn = onNodeWithTag("languageTR").fetchSemanticsNode().config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Selected) == true
+    if (turkishOn) onNodeWithTag("languageTR").performClick()
+    waitForIdle()
+    onNodeWithTag("startFeed").performClick()
     waitForIdle()
 }
 

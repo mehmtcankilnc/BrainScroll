@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.lights
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.guide.GuideTask
+import com.mehmtcan.brainscroll.game.guide.LightsGuide
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -16,7 +18,6 @@ data class LightsSnapshot(
     val state: LightsState,
     /** Time spent so far, as the round counts it (see [LightsRound]). */
     val durationMs: Long,
-    override val skipped: Boolean,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status == LightsStatus.Won
     override val kind: GameKind get() = GameKind.Lights
@@ -49,16 +50,23 @@ class LightsRound(
 
     override val kind: GameKind get() = GameKind.Lights
 
-    override var skipped = false
+    override var assisted = false
         private set
+
+    override fun markAssisted() {
+        assisted = true
+    }
+
+    override fun guideTask(): GuideTask? {
+        if (isFinished) return null
+        val state = game.state
+        return { LightsGuide.step(state) }
+    }
 
     override val isFinished: Boolean get() = game.isFinished
 
     override val isUntouched: Boolean get() = actions.isEmpty()
 
-    override fun markSkipped() {
-        skipped = true
-    }
 
     fun tap(cell: Int): LightsResult = game.tap(cell).also { if (it != LightsResult.Ignored) record("t$cell") }
 
@@ -71,7 +79,7 @@ class LightsRound(
         lastActionAt = time
     }
 
-    override fun snapshot() = LightsSnapshot(id, index, game.state, elapsedMs, skipped)
+    override fun snapshot() = LightsSnapshot(id, index, game.state, elapsedMs)
 
     /** "5x5x7:seed": the size, the number of taps the board was made with, and the seed. */
     private fun encodedBoard() = "${size}x${size}x$taps:$seed"
@@ -82,8 +90,8 @@ class LightsRound(
         answer = encodedBoard(),
         guesses = actions.toList(),
         input = elapsedMs.toString(),
-        skipped = skipped,
         position = index,
+        assisted = assisted,
         game = GameKind.Lights,
     )
 
@@ -98,7 +106,7 @@ class LightsRound(
         answer = encodedBoard(),
         guesses = listOf(game.state.moves.toString()),
         outcome = Outcome.WON,
-        wasSkipped = skipped,
+        assisted = assisted,
         finishedAt = finishedAt,
         durationMs = elapsedMs,
         game = GameKind.Lights,
@@ -133,7 +141,7 @@ class LightsRound(
                 round.actions += action
             }
             round.elapsedMs = stored.input.toLongOrNull() ?: 0L
-            round.skipped = stored.skipped
+            round.assisted = stored.assisted
             return round
         }
     }

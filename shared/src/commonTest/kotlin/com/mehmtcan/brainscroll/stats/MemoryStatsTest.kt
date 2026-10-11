@@ -16,13 +16,13 @@ class MemoryStatsTest {
 
     private fun word(outcome: Outcome, guesses: Int = 3) = FinishedRound(
         id = "w${clock}", mode = Mode.ENDLESS, language = Language.EN, answer = "CRANE",
-        guesses = List(guesses) { "WORD$it" }, outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = List(guesses) { "WORD$it" }, outcome = outcome, finishedAt = clock++,
     )
 
     /** A memory result: the flips are the guesses, two flips make a move. */
     private fun memory(outcome: Outcome, moves: Int = 8, durationMs: Long? = 30_000) = FinishedRound(
         id = "m${clock}", mode = Mode.ENDLESS, language = Language.EN, answer = "0,1,2,0,1,2",
-        guesses = List(moves * 2) { it.toString() }, outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = List(moves * 2) { it.toString() }, outcome = outcome, finishedAt = clock++,
         durationMs = durationMs, game = GameKind.Memory,
     )
 
@@ -79,7 +79,7 @@ class MemoryStatsTest {
 
     @Test
     fun dailyResultsAreNeverMemory() {
-        val daily = FinishedRound("d1", Mode.DAILY, Language.EN, "CRANE", listOf("CRANE"), Outcome.WON, false, 5L, durationMs = 9_000)
+        val daily = FinishedRound("d1", Mode.DAILY, Language.EN, "CRANE", listOf("CRANE"), Outcome.WON, 5L, durationMs = 9_000)
         assertEquals(0, computeMemoryStats(listOf(daily)).played)
     }
 }

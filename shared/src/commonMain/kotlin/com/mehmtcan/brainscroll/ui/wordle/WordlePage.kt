@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -20,11 +21,9 @@ import brainscroll.shared.generated.resources.game_word_puzzle
 import brainscroll.shared.generated.resources.key_enter
 import brainscroll.shared.generated.resources.result_lost
 import brainscroll.shared.generated.resources.result_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.ui.components.HeartButton
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -45,7 +44,6 @@ fun WordlePage(
     onEnter: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -59,11 +57,6 @@ fun WordlePage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(
-            text = stringResource(Res.string.game_word_puzzle),
-            style = type.heading.copy(color = colors.textPrimary),
-        )
-        HowToPlayButton(onHowToPlay)
 
         WordleGrid(round, modifier = Modifier.weight(1f).fillMaxWidth())
 
@@ -109,7 +102,7 @@ private fun ResultCard(round: RoundSnapshot, isFavorite: Boolean, onToggleFavori
                 style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

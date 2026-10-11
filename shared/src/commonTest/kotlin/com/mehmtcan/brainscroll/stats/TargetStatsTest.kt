@@ -15,12 +15,12 @@ class TargetStatsTest {
 
     private fun word(outcome: Outcome) = FinishedRound(
         id = "w$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "CRANE",
-        guesses = listOf("A", "B"), outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf("A", "B"), outcome = outcome, finishedAt = clock++,
     )
 
     private fun target(moves: Int, durationMs: Long) = FinishedRound(
         id = "t$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "2367>48",
-        guesses = listOf(moves.toString()), outcome = Outcome.WON, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf(moves.toString()), outcome = Outcome.WON, finishedAt = clock++,
         durationMs = durationMs, game = GameKind.Target,
     )
 

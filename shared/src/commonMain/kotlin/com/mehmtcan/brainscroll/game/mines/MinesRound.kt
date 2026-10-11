@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.mines
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.guide.GuideTask
+import com.mehmtcan.brainscroll.game.guide.MinesGuide
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -16,9 +18,9 @@ data class MinesSnapshot(
     val state: MinesState,
     /** Time spent so far, as the round counts it (see [MinesRound]). */
     val durationMs: Long,
-    override val skipped: Boolean,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status != MinesStatus.Playing
+    override val isWon: Boolean get() = state.status == MinesStatus.Won
     override val kind: GameKind get() = GameKind.Mines
 }
 
@@ -50,16 +52,23 @@ class MinesRound(
 
     override val kind: GameKind get() = GameKind.Mines
 
-    override var skipped = false
+    override var assisted = false
         private set
+
+    override fun markAssisted() {
+        assisted = true
+    }
+
+    override fun guideTask(): GuideTask? {
+        if (isFinished) return null
+        val state = game.state
+        return { MinesGuide.step(state) }
+    }
 
     override val isFinished: Boolean get() = game.isFinished
 
     override val isUntouched: Boolean get() = actions.isEmpty()
 
-    override fun markSkipped() {
-        skipped = true
-    }
 
     fun open(cell: Int): MinesResult = game.open(cell).also { if (it != MinesResult.Ignored) record("o$cell") }
 
@@ -74,7 +83,7 @@ class MinesRound(
         lastActionAt = time
     }
 
-    override fun snapshot() = MinesSnapshot(id, index, game.state, elapsedMs, skipped)
+    override fun snapshot() = MinesSnapshot(id, index, game.state, elapsedMs)
 
     /** "8x8x10:seed:first": the size, the seed and the cell of the first open (-1 before that). */
     private fun encodedBoard() = "${rows}x${cols}x$mineCount:$seed:${game.firstOpen}"
@@ -85,8 +94,8 @@ class MinesRound(
         answer = encodedBoard(),
         guesses = actions.toList(),
         input = elapsedMs.toString(),
-        skipped = skipped,
         position = index,
+        assisted = assisted,
         game = GameKind.Mines,
     )
 
@@ -101,7 +110,7 @@ class MinesRound(
         answer = encodedBoard(),
         guesses = listOf(game.state.moves.toString()),
         outcome = if (game.state.status == MinesStatus.Won) Outcome.WON else Outcome.LOST,
-        wasSkipped = skipped,
+        assisted = assisted,
         finishedAt = finishedAt,
         durationMs = elapsedMs,
         game = GameKind.Mines,
@@ -137,7 +146,7 @@ class MinesRound(
                 round.actions += action
             }
             round.elapsedMs = stored.input.toLongOrNull() ?: 0L
-            round.skipped = stored.skipped
+            round.assisted = stored.assisted
             return round
         }
     }

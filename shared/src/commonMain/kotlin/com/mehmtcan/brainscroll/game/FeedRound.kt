@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.game
 
+import com.mehmtcan.brainscroll.game.guide.GuideTask
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.StoredRound
 
@@ -42,13 +43,15 @@ interface PageSnapshot {
     /** Stable id of the puzzle; also the id of its saved result (favorites use it). */
     val id: String
     val index: Int
-    val skipped: Boolean
     val isFinished: Boolean
+
+    /** Finished and solved. Differs from [isFinished] in the games that can be lost (word, memory, mines, sudoku). */
+    val isWon: Boolean get() = isFinished
     val kind: GameKind
 }
 
 /**
- * One page of the feed: a puzzle with its own state. The feed treats all games alike for skipping, saving and
+ * One page of the feed: a puzzle with its own state. The feed treats all games alike for saving and
  * the answer streak, and only the game itself knows its moves. Mutable on purpose (a round is the single owner of
  * its state); [snapshot] hands out immutable copies for the UI.
  */
@@ -56,16 +59,23 @@ interface FeedRound {
     val kind: GameKind
     val index: Int
     val id: String
-    val skipped: Boolean
     val isFinished: Boolean
 
     /** True while nothing has been done yet, so the page can still be swapped for another puzzle. */
     val isUntouched: Boolean
 
-    /** Called when the player left this puzzle forward unfinished. */
-    fun markSkipped()
-
     fun snapshot(): PageSnapshot
+
+    /** True once the guide gave a step for this puzzle. Such a puzzle is neutral: no streak, no statistics. */
+    val assisted: Boolean
+
+    fun markAssisted()
+
+    /**
+     * The next step of the guide, as work that can run anywhere (it only uses what it copied now), or null if this
+     * puzzle is over. The page can ask for it without waiting.
+     */
+    fun guideTask(): GuideTask?
 
     /** What has to be saved to rebuild this round later. */
     fun toStored(): StoredRound

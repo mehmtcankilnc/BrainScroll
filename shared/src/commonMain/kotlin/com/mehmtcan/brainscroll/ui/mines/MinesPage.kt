@@ -17,6 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
+import com.mehmtcan.brainscroll.ui.motion.popOnAppear
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,7 +68,6 @@ import brainscroll.shared.generated.resources.mines_lost
 import brainscroll.shared.generated.resources.mines_result_lost
 import brainscroll.shared.generated.resources.mines_result_won
 import brainscroll.shared.generated.resources.mines_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
@@ -77,7 +82,6 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollColors
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
@@ -109,7 +113,6 @@ fun MinesPage(
     onChord: (Int) -> MinesResult,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -146,8 +149,6 @@ fun MinesPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_mines), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Chip(
             text = stringResource(Res.string.mines_left, state.minesLeft),
@@ -158,6 +159,7 @@ fun MinesPage(
 
         Board(
             state = state,
+            exploding = justFinished && state.status == MinesStatus.Lost,
             flagMode = flagMode,
             onOpen = ::open,
             onFlag = ::flag,
@@ -194,6 +196,7 @@ fun MinesPage(
 @Composable
 private fun Board(
     state: MinesState,
+    exploding: Boolean,
     flagMode: Boolean,
     onOpen: (Int) -> Unit,
     onFlag: (Int) -> Unit,
@@ -205,28 +208,51 @@ private fun Board(
         val byHeight = (maxHeight - CellGap * (state.rows - 1)) / state.rows
         val cellSize: Dp = minOf(MaxCell, byWidth, byHeight)
 
+        val density = LocalDensity.current
+        val shake = rememberBlastShake(exploding)
+        val gridWidth = cellSize * state.cols + CellGap * (state.cols - 1)
+        val gridHeight = cellSize * state.rows + CellGap * (state.rows - 1)
+        Box(
+            Modifier
+                .size(gridWidth, gridHeight)
+                // A shake that dies down when a mine goes off.
+                .graphicsLayer { translationX = sin(shake.value * PI.toFloat() * 9f) * (1f - shake.value) * with(density) { 10.dp.toPx() } },
+        ) {
         Column(verticalArrangement = Arrangement.spacedBy(CellGap)) {
             for (row in 0 until state.rows) {
                 Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                     for (column in 0 until state.cols) {
                         val index = row * state.cols + column
-                        Cell(
-                            row = row + 1,
-                            column = column + 1,
-                            number = state.numbers[index],
-                            flagged = index in state.flagged,
-                            mine = index in state.mineCells,
-                            exploded = index == state.exploded,
-                            playing = state.status == MinesStatus.Playing,
-                            flagMode = flagMode,
-                            size = cellSize,
-                            onOpen = { onOpen(index) },
-                            onFlag = { onFlag(index) },
-                            onChord = { onChord(index) },
-                        )
+                        GuideMark(isGuided(index), Radius.tile) {
+                            Cell(
+                                row = row + 1,
+                                column = column + 1,
+                                number = state.numbers[index],
+                                flagged = index in state.flagged,
+                                mine = index in state.mineCells,
+                                exploded = index == state.exploded,
+                                playing = state.status == MinesStatus.Playing,
+                                flagMode = flagMode,
+                                size = cellSize,
+                                onOpen = { onOpen(index) },
+                                onFlag = { onFlag(index) },
+                                onChord = { onChord(index) },
+                            )
+                        }
                     }
                 }
             }
+        }
+        if (state.exploded >= 0) {
+            val row = state.exploded / state.cols
+            val column = state.exploded % state.cols
+            MineExplosion(
+                play = exploding,
+                centerX = (cellSize + CellGap) * column + cellSize / 2,
+                centerY = (cellSize + CellGap) * row + cellSize / 2,
+                cell = cellSize,
+            )
+        }
         }
     }
 }
@@ -280,6 +306,7 @@ private fun Cell(
     Box(
         modifier = Modifier
             .size(size)
+            .popOnAppear(open || mine || flagged)
             .testTag("mineCell")
             .semantics(mergeDescendants = true) {
                 contentDescription = description
@@ -380,7 +407,7 @@ private fun MinesResultCard(page: MinesSnapshot, isFavorite: Boolean, onToggleFa
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

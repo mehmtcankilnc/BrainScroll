@@ -31,8 +31,8 @@ private class Piece(
 )
 
 /**
- * A burst of confetti from the top of the screen, once. docs/design.md section 6: only for a won daily puzzle
- * and for streak milestones. It draws nothing when the player asked for reduced motion, and never takes touches.
+ * A burst of confetti from the top of the screen, once. It celebrates a won puzzle (the daily one and every game in
+ * the feed) and the streak milestones of the daily puzzle. It draws nothing when the player asked for reduced motion, and never takes touches.
  * The pieces are the same every time (a fixed seed), so a screenshot test is stable.
  */
 @Composable

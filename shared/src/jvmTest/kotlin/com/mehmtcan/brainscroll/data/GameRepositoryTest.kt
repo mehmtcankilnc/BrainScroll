@@ -5,6 +5,7 @@ import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
 import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.game.wordle.StoredRound
@@ -39,17 +40,16 @@ class GameRepositoryTest {
         answer = "CRANE",
         guesses = guesses,
         outcome = outcome,
-        wasSkipped = false,
         finishedAt = at,
     )
 
     private fun stored(id: String, position: Int, input: String = "", guesses: List<String> = emptyList()) =
-        StoredRound(id, Language.TR, "KİTAP", guesses, input, skipped = false, position = position)
+        StoredRound(id, Language.TR, "KİTAP", guesses, input, position = position)
 
     @Test
     fun anUnfinishedRoundSurvivesARoundTrip() {
         val repo = newRepository()
-        val round = StoredRound("a", Language.TR, "ÇİÇEK", listOf("KİTAP", "KIRIK"), "ÇİÇ", skipped = true, position = 3)
+        val round = StoredRound("a", Language.TR, "ÇİÇEK", listOf("KİTAP", "KIRIK"), "ÇİÇ", position = 3)
         repo.saveProgress(round)
         assertEquals(listOf(round), repo.unfinishedRounds())
     }
@@ -163,13 +163,35 @@ class GameRepositoryTest {
     }
 
     @Test
-    fun languageSettingIsRememberedAndEmptyByDefault() {
+    fun theGuideMarkIsKeptInProgressAndInTheHistory() {
         val repo = newRepository()
-        assertNull(repo.savedLanguage())
-        repo.saveLanguage(Language.TR)
-        assertEquals(Language.TR, repo.savedLanguage())
-        repo.saveLanguage(Language.EN)
-        assertEquals(Language.EN, repo.savedLanguage())
+        repo.saveProgress(stored("p1", position = 0, input = "KI").copy(assisted = true))
+        repo.saveProgress(stored("p2", position = 1, input = "AB"))
+        assertEquals(listOf(true, false), repo.unfinishedRounds().sortedBy { it.position }.map { it.assisted })
+
+        repo.finish(finished("r1").copy(assisted = true))
+        repo.finish(finished("r2", at = 2_000L))
+        assertEquals(listOf(true, false), repo.history().map { it.assisted })
+    }
+
+    @Test
+    fun wordLanguagesAreRememberedAndEmptyByDefault() {
+        val repo = newRepository()
+        assertNull(repo.savedWordLanguages())
+        repo.saveWordLanguages(listOf(Language.TR))
+        assertEquals(listOf(Language.TR), repo.savedWordLanguages())
+        repo.saveWordLanguages(listOf(Language.TR, Language.EN))
+        assertEquals(listOf(Language.EN, Language.TR), repo.savedWordLanguages())
+    }
+
+    @Test
+    fun appLanguageIsRememberedAndCanGoBackToTheDevice() {
+        val repo = newRepository()
+        assertNull(repo.savedAppLanguage())
+        repo.saveAppLanguage(AppLanguage.TR)
+        assertEquals(AppLanguage.TR, repo.savedAppLanguage())
+        repo.saveAppLanguage(null)
+        assertNull(repo.savedAppLanguage())
     }
 
     @Test
@@ -188,7 +210,6 @@ class GameRepositoryTest {
         }
         first.type(1, 'c')
         first.type(1, 'r')
-        first.leave(2)
         val streakAfterFirst = first.answerStreak
 
         // Second run: a new feed built from what the repository saved.
@@ -201,10 +222,8 @@ class GameRepositoryTest {
 
         assertEquals(streakAfterFirst, second.answerStreak)
         assertEquals(1, repo.history().size)
-        assertEquals(2, rounds.size) // the finished puzzle is history, the other two come back
+        assertEquals(1, rounds.size) // the finished puzzle is history, the started one comes back; an untouched one is not saved
         assertEquals("CR", rounds[0].input)
-        assertTrue(rounds[1].skipped)
-        assertEquals(1, second.skipsLeft) // a new session has its skip again
     }
 
     @Test
@@ -214,7 +233,8 @@ class GameRepositoryTest {
         repository.finish(finished("r2", at = 2_000L))
         repository.setFavorite("r1", true, now = 5L)
         repository.saveProgress(stored("p1", position = 0, input = "KI"))
-        repository.saveLanguage(Language.TR)
+        repository.saveWordLanguages(listOf(Language.TR))
+        repository.saveAppLanguage(AppLanguage.TR)
         repository.setTelemetryEnabled(false)
         repository.putPendingCrash("{}")
         repository.setSyncedUserId("user-1")
@@ -230,7 +250,8 @@ class GameRepositoryTest {
         assertEquals(0, repository.pendingCount())
         assertNull(repository.syncedUserId())
         assertNull(repository.cachedText("social:user-1:friends"))
-        assertEquals(Language.TR, repository.savedLanguage(), "the chosen puzzle language is not about the account")
+        assertEquals(listOf(Language.TR), repository.savedWordLanguages(), "the chosen puzzle language is not about the account")
+        assertEquals(AppLanguage.TR, repository.savedAppLanguage(), "nor is the app language")
         assertFalse(repository.telemetryEnabled(), "neither is the privacy choice")
         assertNull(repository.pendingCrash())
         // And it keeps working afterwards.

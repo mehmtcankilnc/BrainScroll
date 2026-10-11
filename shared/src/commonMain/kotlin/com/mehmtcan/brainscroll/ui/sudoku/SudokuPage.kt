@@ -22,6 +22,9 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuided
+import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +78,6 @@ import brainscroll.shared.generated.resources.sudoku_notes
 import brainscroll.shared.generated.resources.sudoku_result_lost
 import brainscroll.shared.generated.resources.sudoku_result_won
 import brainscroll.shared.generated.resources.sudoku_won
-import brainscroll.shared.generated.resources.swipe_hint
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.sudoku.SudokuGenerator
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
@@ -88,7 +90,6 @@ import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
-import com.mehmtcan.brainscroll.ui.howto.HowToPlayButton
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
@@ -124,7 +125,6 @@ fun SudokuPage(
     onErase: (cell: Int) -> SudokuResult,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onHowToPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = BrainScrollTheme.colors
@@ -181,8 +181,6 @@ fun SudokuPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.sm))
-        BasicText(stringResource(Res.string.game_sudoku), style = type.heading.copy(color = colors.textPrimary))
-        HowToPlayButton(onHowToPlay)
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
             Chip(
@@ -243,21 +241,23 @@ private fun Board(state: SudokuState, selected: Int?, wave: Wave, onSelect: (Int
                     for (column in 0 until size) {
                         if (column == 3 || column == 6) Spacer(Modifier.width(BoxExtra))
                         val index = row * size + column
-                        Cell(
-                            row = row + 1,
-                            column = column + 1,
-                            value = state.values[index],
-                            notes = state.notes[index],
-                            given = state.isGiven(index),
-                            wrong = index in state.wrong,
-                            isSelected = index == selected,
-                            isPeer = index in selectedPeers,
-                            sameDigit = selectedValue != 0 && state.values[index] == selectedValue,
-                            size = cellSize,
-                            waveId = wave.id,
-                            waveDelay = wave.delays[index],
-                            onClick = { onSelect(index) },
-                        )
+                        GuideMark(isGuided(index), Radius.tile) {
+                            Cell(
+                                row = row + 1,
+                                column = column + 1,
+                                value = state.values[index],
+                                notes = state.notes[index],
+                                given = state.isGiven(index),
+                                wrong = index in state.wrong,
+                                isSelected = index == selected,
+                                isPeer = index in selectedPeers,
+                                sameDigit = selectedValue != 0 && state.values[index] == selectedValue,
+                                size = cellSize,
+                                waveId = wave.id,
+                                waveDelay = wave.delays[index],
+                                onClick = { onSelect(index) },
+                            )
+                        }
                     }
                 }
             }
@@ -532,7 +532,7 @@ private fun SudokuResultCard(page: SudokuSnapshot, isFavorite: Boolean, onToggle
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(
-                text = "↑  " + stringResource(Res.string.swipe_hint),
+                text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
             )
         }

@@ -58,7 +58,7 @@ class DatabaseMigrationTest {
 
         assertEquals(listOf("r1", "r2"), repo.history().map { it.id })
         assertEquals(true, repo.isFavorite("r1"))
-        assertEquals(com.mehmtcan.brainscroll.game.wordle.Language.TR, repo.savedLanguage())
+        assertEquals(listOf(com.mehmtcan.brainscroll.game.wordle.Language.TR), repo.savedWordLanguages())
         assertEquals(listOf("p1"), repo.unfinishedRounds().map { it.id })
     }
 
@@ -136,7 +136,6 @@ class DatabaseMigrationTest {
                 answer = "CRANE",
                 guesses = listOf("CRANE"),
                 outcome = com.mehmtcan.brainscroll.game.wordle.Outcome.WON,
-                wasSkipped = false,
                 finishedAt = 3_000L,
                 durationMs = 92_500L,
             ),

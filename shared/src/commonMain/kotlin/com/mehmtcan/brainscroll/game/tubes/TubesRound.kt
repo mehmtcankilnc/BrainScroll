@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.tubes
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.guide.GuideTask
+import com.mehmtcan.brainscroll.game.guide.TubesGuide
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -16,7 +18,6 @@ data class TubesSnapshot(
     val state: TubesState,
     /** Time spent so far, as the round counts it (see [TubesRound]). */
     val durationMs: Long,
-    override val skipped: Boolean,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status == TubesStatus.Won
     override val kind: GameKind get() = GameKind.Tubes
@@ -48,16 +49,23 @@ class TubesRound(
 
     override val kind: GameKind get() = GameKind.Tubes
 
-    override var skipped = false
+    override var assisted = false
         private set
+
+    override fun markAssisted() {
+        assisted = true
+    }
+
+    override fun guideTask(): GuideTask? {
+        if (isFinished) return null
+        val state = game.state
+        return { TubesGuide.step(state) }
+    }
 
     override val isFinished: Boolean get() = game.isFinished
 
     override val isUntouched: Boolean get() = actions.isEmpty()
 
-    override fun markSkipped() {
-        skipped = true
-    }
 
     fun pour(from: Int, to: Int): PourResult {
         val result = game.pour(from, to)
@@ -76,7 +84,7 @@ class TubesRound(
         lastActionAt = time
     }
 
-    override fun snapshot() = TubesSnapshot(id, index, game.state, elapsedMs, skipped)
+    override fun snapshot() = TubesSnapshot(id, index, game.state, elapsedMs)
 
     private fun encodedLayout() = layout.joinToString("|") { tube -> tube.joinToString("") }
 
@@ -86,8 +94,8 @@ class TubesRound(
         answer = encodedLayout(),
         guesses = actions.toList(),
         input = elapsedMs.toString(),
-        skipped = skipped,
         position = index,
+        assisted = assisted,
         game = GameKind.Tubes,
     )
 
@@ -102,7 +110,7 @@ class TubesRound(
         answer = encodedLayout(),
         guesses = listOf(game.state.moves.toString()),
         outcome = Outcome.WON,
-        wasSkipped = skipped,
+        assisted = assisted,
         finishedAt = finishedAt,
         durationMs = elapsedMs,
         game = GameKind.Tubes,
@@ -139,7 +147,7 @@ class TubesRound(
                 round.actions += action
             }
             round.elapsedMs = stored.input.toLongOrNull() ?: 0L
-            round.skipped = stored.skipped
+            round.assisted = stored.assisted
             return round
         }
     }

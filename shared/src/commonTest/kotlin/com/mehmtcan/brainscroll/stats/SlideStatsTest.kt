@@ -15,12 +15,12 @@ class SlideStatsTest {
 
     private fun word(outcome: Outcome) = FinishedRound(
         id = "w$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "CRANE",
-        guesses = listOf("A", "B"), outcome = outcome, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf("A", "B"), outcome = outcome, finishedAt = clock++,
     )
 
     private fun slide(moves: Int, durationMs: Long) = FinishedRound(
         id = "l$clock", mode = Mode.ENDLESS, language = Language.EN, answer = "3x4x80:5",
-        guesses = listOf(moves.toString()), outcome = Outcome.WON, wasSkipped = false, finishedAt = clock++,
+        guesses = listOf(moves.toString()), outcome = Outcome.WON, finishedAt = clock++,
         durationMs = durationMs, game = GameKind.Slide,
     )
 

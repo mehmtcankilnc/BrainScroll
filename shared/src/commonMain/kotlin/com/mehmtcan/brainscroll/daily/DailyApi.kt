@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.daily
 
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.game.wordle.LetterResult
 
 enum class DailyStatus { NotStarted, Playing, Won, Lost }
@@ -45,7 +47,7 @@ sealed class DailyException(message: String) : Exception(message) {
 }
 
 /**
- * The daily puzzle on the server. Three operations, nothing else: the answer, the coloring and the clock all
+ * The daily puzzle on the server. Three operations for the word puzzle and one for the other games, nothing else: the answer, the coloring and the clock all
  * live on the server. Implementations throw [DailyException].
  */
 interface DailyApi {
@@ -57,4 +59,11 @@ interface DailyApi {
 
     /** Sends one guess and gets it back colored. */
     suspend fun guess(language: Language, word: String): DailyState
+
+    /**
+     * Tells the server a finished daily puzzle of a game other than the word puzzle (the board comes from the day, the
+     * time is the app's). [moves] and [durationMs] are the app's own numbers; the server refuses ones that cannot be
+     * real. Sending the same day again changes nothing.
+     */
+    suspend fun submitGameResult(game: GameKind, outcome: Outcome, moves: Int, durationMs: Long, language: Language)
 }

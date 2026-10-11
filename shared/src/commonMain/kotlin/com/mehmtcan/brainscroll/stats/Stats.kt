@@ -9,14 +9,15 @@ import com.mehmtcan.brainscroll.game.wordle.Outcome
 
 /**
  * The answer streak of the endless feed, derived from the saved history (docs/decisions.md):
- * every win adds one, a loss resets it. Puzzles that were skipped and never finished are not in the history,
- * so skipping does not break it. [history] must be oldest first, as the repository returns it.
+ * every win adds one, a loss resets it. Puzzles that were left unfinished are not in the history,
+ * so leaving one does not break it. A puzzle done with the guide is neutral: it neither adds nor breaks. [history] must be
+ * oldest first, as the repository returns it.
  */
 object Streaks {
     fun current(history: List<FinishedRound>): Int {
         var streak = 0
         for (round in history.asReversed()) {
-            if (round.mode != Mode.ENDLESS) continue
+            if (round.mode != Mode.ENDLESS || round.assisted) continue // a puzzle done with the guide is neutral
             if (round.outcome == Outcome.LOST) break
             streak++
         }
@@ -27,7 +28,7 @@ object Streaks {
         var best = 0
         var run = 0
         for (round in history) {
-            if (round.mode != Mode.ENDLESS) continue
+            if (round.mode != Mode.ENDLESS || round.assisted) continue
             run = if (round.outcome == Outcome.WON) run + 1 else 0
             if (run > best) best = run
         }
@@ -43,8 +44,6 @@ data class Stats(
     val bestStreak: Int,
     /** How many puzzles were won with 1, 2, ... guesses. Index 0 is "won in 1 guess". */
     val guessDistribution: List<Int>,
-    /** Puzzles that were finished after the player had left them once. */
-    val finishedAfterSkip: Int,
     /** The fastest win that has a time. Only daily puzzles are timed (by the server), so it is null for endless. */
     val bestTimeMs: Long? = null,
 ) {
@@ -68,7 +67,7 @@ fun computeStats(
     game: GameKind? = null,
 ): Stats {
     val results = history.filter {
-        it.mode == mode && (language == null || it.language == language) && (game == null || it.game == game)
+        it.mode == mode && !it.assisted && (language == null || it.language == language) && (game == null || it.game == game)
     }
     val wins = results.filter { it.outcome == Outcome.WON }
     val distribution = MutableList(maxAttempts) { 0 }
@@ -84,7 +83,6 @@ fun computeStats(
         currentStreak = if (endless) Streaks.current(results) else 0,
         bestStreak = if (endless) Streaks.best(results) else 0,
         guessDistribution = distribution,
-        finishedAfterSkip = results.count { it.wasSkipped },
         bestTimeMs = wins.filter { it.game == GameKind.Word }.mapNotNull { it.durationMs }.minOrNull(),
     )
 }
@@ -103,7 +101,7 @@ data class MemoryStats(
 
 /** Memory statistics from the saved history. A move is two flipped cards, and the flips are saved in the guesses. */
 fun computeMemoryStats(history: List<FinishedRound>): MemoryStats {
-    val results = history.filter { it.game == GameKind.Memory && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Memory && it.mode == Mode.ENDLESS && !it.assisted }
     val wins = results.filter { it.outcome == Outcome.WON }
     return MemoryStats(
         played = results.size,
@@ -143,13 +141,13 @@ data class SudokuStats(
 }
 
 fun computeSudokuStats(history: List<FinishedRound>): SudokuStats {
-    val results = history.filter { it.game == GameKind.Sudoku && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Sudoku && it.mode == Mode.ENDLESS && !it.assisted }
     val wins = results.filter { it.outcome == Outcome.WON }
     return SudokuStats(played = results.size, won = wins.size, bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull())
 }
 
 fun computeMinesStats(history: List<FinishedRound>): MinesStats {
-    val results = history.filter { it.game == GameKind.Mines && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Mines && it.mode == Mode.ENDLESS && !it.assisted }
     val wins = results.filter { it.outcome == Outcome.WON }
     return MinesStats(played = results.size, won = wins.size, bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull())
 }
@@ -164,7 +162,7 @@ data class LightsStats(
 )
 
 fun computeLightsStats(history: List<FinishedRound>): LightsStats {
-    val results = history.filter { it.game == GameKind.Lights && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Lights && it.mode == Mode.ENDLESS && !it.assisted }
     return LightsStats(
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
@@ -182,7 +180,7 @@ data class SlideStats(
 )
 
 fun computeSlideStats(history: List<FinishedRound>): SlideStats {
-    val results = history.filter { it.game == GameKind.Slide && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Slide && it.mode == Mode.ENDLESS && !it.assisted }
     return SlideStats(
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
@@ -200,7 +198,7 @@ data class TargetStats(
 )
 
 fun computeTargetStats(history: List<FinishedRound>): TargetStats {
-    val results = history.filter { it.game == GameKind.Target && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Target && it.mode == Mode.ENDLESS && !it.assisted }
     return TargetStats(
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
@@ -218,7 +216,7 @@ data class PipesStats(
 )
 
 fun computePipesStats(history: List<FinishedRound>): PipesStats {
-    val results = history.filter { it.game == GameKind.Pipes && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Pipes && it.mode == Mode.ENDLESS && !it.assisted }
     return PipesStats(
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
@@ -227,7 +225,7 @@ fun computePipesStats(history: List<FinishedRound>): PipesStats {
 }
 
 fun computeTubesStats(history: List<FinishedRound>): TubesStats {
-    val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS }
+    val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS && !it.assisted }
     return TubesStats(
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),

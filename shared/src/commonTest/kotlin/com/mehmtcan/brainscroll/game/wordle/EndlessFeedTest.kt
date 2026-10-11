@@ -13,8 +13,8 @@ class EndlessFeedTest {
     private val en = WordList(Language.EN, 5, valid = words, answers = words)
     private val tr = WordList(Language.TR, 5, valid = listOf("çiçek", "kırık", "kitap"), answers = listOf("çiçek", "kırık", "kitap"))
 
-    private fun feed(random: Random = Random(1), skips: Int = 1) =
-        EndlessFeed(mapOf(Language.EN to en, Language.TR to tr), Language.EN, random, skips)
+    private fun feed(random: Random = Random(1)) =
+        EndlessFeed(mapOf(Language.EN to en, Language.TR to tr), Language.EN, random)
 
     /** Types [word] into round [index] and submits it. */
     private fun EndlessFeed.guess(index: Int, word: String) {
@@ -64,6 +64,30 @@ class EndlessFeedTest {
     }
 
     @Test
+    fun aPuzzleDoneWithTheGuideIsNeutralForTheStreak() {
+        val f = feed()
+        f.ensureSize(4)
+        f.markGuided(0)
+        f.win(0)
+        assertEquals(0, f.answerStreak, "a guided win does not add")
+        f.win(1)
+        assertEquals(1, f.answerStreak)
+        f.markGuided(2)
+        f.lose(2)
+        assertEquals(1, f.answerStreak, "a guided loss does not break it either")
+    }
+
+    @Test
+    fun theGuideHasAStepForAWordPuzzleThatIsNotOver() {
+        val f = feed()
+        f.ensureSize(1)
+        val step = f.guideTask(0)!!.invoke()
+        assertEquals(com.mehmtcan.brainscroll.game.guide.GuideReason.WordLetter, step?.reason)
+        f.win(0)
+        assertEquals(null, f.guideTask(0), "a puzzle that is over has no guide")
+    }
+
+    @Test
     fun winningRaisesTheAnswerStreak() {
         val f = feed()
         f.ensureSize(2)
@@ -93,55 +117,6 @@ class EndlessFeedTest {
     }
 
     @Test
-    fun leavingAnUnfinishedRoundUsesTheOnlySkip() {
-        val f = feed()
-        f.ensureSize(3)
-        assertTrue(f.leave(0))
-        assertEquals(0, f.snapshot().skipsLeft)
-        assertTrue(f.snapshot().rounds[0].skipped)
-        assertFalse(f.canLeave(1))
-        assertFalse(f.leave(1))
-    }
-
-    @Test
-    fun skippingDoesNotBreakTheStreak() {
-        val f = feed()
-        f.ensureSize(3)
-        f.win(0)
-        f.leave(1)
-        f.win(2)
-        assertEquals(2, f.answerStreak)
-    }
-
-    @Test
-    fun leavingAFinishedRoundIsFreeAndCannotBeBlocked() {
-        val f = feed()
-        f.ensureSize(2)
-        f.win(0)
-        assertTrue(f.leave(0))
-        assertEquals(1, f.snapshot().skipsLeft)
-    }
-
-    @Test
-    fun aSkippedRoundCanBeLeftAgainWithoutPayingTwice() {
-        val f = feed()
-        f.ensureSize(2)
-        f.leave(0)
-        assertTrue(f.canLeave(0))
-        assertTrue(f.leave(0))
-        assertEquals(0, f.snapshot().skipsLeft)
-    }
-
-    @Test
-    fun aSkippedRoundCanBeResumedAndCounts() {
-        val f = feed()
-        f.ensureSize(2)
-        f.leave(0)
-        f.win(0)
-        assertEquals(1, f.answerStreak)
-    }
-
-    @Test
     fun partialProgressIsKeptInTheSnapshot() {
         val f = feed()
         f.ensureSize(2)
@@ -151,11 +126,10 @@ class EndlessFeedTest {
     }
 
     @Test
-    fun languageCanBeChosenBeforeTheFeedStarts() {
+    fun theWordLanguageCanBeChangedForTheUntouchedPages() {
         val f = feed()
         f.ensureSize(3)
-        assertTrue(f.snapshot().canChangeLanguage)
-        assertTrue(f.setLanguage(Language.TR))
+        f.setWordLanguage(Language.TR, fromIndex = 0)
         assertEquals(Language.TR, f.language)
         assertTrue(f.snapshot().rounds.all { it.language == Language.TR })
     }
@@ -163,52 +137,40 @@ class EndlessFeedTest {
     @Test
     fun newRoundsUseTheCurrentLanguage() {
         val f = feed()
-        f.setLanguage(Language.TR)
+        f.setWordLanguage(Language.TR, fromIndex = 0)
         f.ensureSize(2)
         assertTrue(f.snapshot().rounds.all { it.language == Language.TR })
     }
 
     @Test
-    fun typingALetterLocksTheLanguage() {
+    fun aStartedPuzzleKeepsItsLanguage() {
         val f = feed()
-        f.ensureSize(2)
+        f.ensureSize(3)
         f.type(0, 'c')
-        assertFalse(f.snapshot().canChangeLanguage)
-        assertFalse(f.setLanguage(Language.TR))
-        assertEquals(Language.EN, f.language)
-        assertTrue(f.snapshot().rounds.all { it.language == Language.EN })
+        f.setWordLanguage(Language.TR, fromIndex = 0)
+        assertEquals(Language.EN, f.snapshot().rounds[0].language)
+        assertEquals(Language.TR, f.snapshot().rounds[1].language)
     }
 
     @Test
-    fun skippingLocksTheLanguage() {
+    fun withTwoLanguagesPuzzlesComeInBothOfThem() {
+        val f = EndlessFeed(mapOf(Language.EN to en, Language.TR to tr), Language.EN, Random(1), startLanguages = listOf(Language.EN, Language.TR))
+        f.ensureSize(30)
+        assertEquals(setOf(Language.EN, Language.TR), f.snapshot().rounds.map { it.language }.toSet())
+    }
+
+    @Test
+    fun turningALanguageOffRedrawsTheUntouchedPagesInIt() {
+        val f = EndlessFeed(mapOf(Language.EN to en, Language.TR to tr), Language.EN, Random(1), startLanguages = listOf(Language.EN, Language.TR))
+        f.ensureSize(30)
+        f.setWordLanguages(setOf(Language.TR), fromIndex = 0)
+        assertTrue(f.snapshot().rounds.all { it.language == Language.TR })
+    }
+
+    @Test
+    fun theLastLanguageCannotBeTurnedOff() {
         val f = feed()
-        f.ensureSize(2)
-        f.leave(0)
-        assertFalse(f.setLanguage(Language.TR))
-    }
-
-    @Test
-    fun deletingTheTypedLettersDoesNotUnlockTheLanguageOnceAGuessWasMade() {
-        val f = feed()
-        f.ensureSize(2)
-        f.guess(0, "crane")
-        assertFalse(f.setLanguage(Language.TR))
-    }
-
-    @Test
-    fun streakAndSkipsAreNotTouchedByAnAllowedLanguageChange() {
-        val f = feed()
-        f.ensureSize(2)
-        f.setLanguage(Language.TR)
-        assertEquals(0, f.answerStreak)
-        assertEquals(1, f.skipsLeft)
-    }
-
-    @Test
-    fun noSkipsMeansLeavingAnUnfinishedRoundIsBlocked() {
-        val f = feed(skips = 0)
-        f.ensureSize(2)
-        assertFalse(f.canLeave(0))
-        assertFalse(f.leave(0))
+        f.setWordLanguages(emptySet(), fromIndex = 0)
+        assertEquals(listOf(Language.EN), f.wordLanguages)
     }
 }

@@ -30,12 +30,14 @@ import kotlin.random.Random
 data class FeedSnapshot(
     /** One entry per page of the feed, in order, whatever the game of that page. */
     val pages: List<PageSnapshot>,
+    /** The language of the pages of other games and the first of [wordLanguages]. */
     val language: Language,
-    /** Consecutive solved puzzles, all games together. A loss resets it, skipping does not. */
+    /** The languages the word puzzles of this feed come in, one or more. */
+    val wordLanguages: List<Language>,
+    /** Consecutive solved puzzles, all games together. A loss resets it, leaving a puzzle unfinished does not. */
     val answerStreak: Int,
-    val skipsLeft: Int,
-    /** False once the feed has been started: the language is fixed for the rest of the session. */
-    val canChangeLanguage: Boolean,
+    /** A puzzle was started and not finished: there is a feed to go on with. */
+    val hasUnfinished: Boolean,
 ) {
     /**
      * The word puzzles among the pages, in order. This is the same as [pages] in a feed that only has word puzzles,
@@ -49,19 +51,15 @@ data class FeedSnapshot(
  * (word puzzle, memory match, word puzzle, ...).
  *
  * Rules:
- * - Answer streak: +1 for a win, back to 0 for a loss, in any game. Skipping does not break it.
- * - One skip per feed ("akış" = session: a cold start, or the first action after [SESSION_IDLE_MILLIS] of
- *   inactivity, gives a fresh skip, docs/decisions.md). Leaving an unfinished puzzle forward uses it.
- *   A puzzle that was skipped can be resumed later; finishing it counts like any other.
+ * - Answer streak: +1 for a win, back to 0 for a loss, in any game. Leaving a puzzle unfinished does not break it.
  * - Word answers do not repeat until the whole pool of that language has been used.
- * - The word language can only be chosen before the first letter is typed or the first skip. It does not touch
- *   memory pages.
+ * - The word puzzles come in one or more languages ([setWordLanguages]); with several, each puzzle gets one of them
+ *   at random. The other games do not use a language.
  */
 class EndlessFeed(
     private val wordLists: Map<Language, WordList>,
     startLanguage: Language,
     private val random: Random = Random.Default,
-    private val maxSkips: Int = 999, // TEST: normal value is 1
     private val store: FeedStore = NoFeedStore,
     /** Unfinished puzzles from an earlier run. They become the first pages, in their saved order. */
     restored: List<StoredRound> = emptyList(),
@@ -71,6 +69,8 @@ class EndlessFeed(
     private val newId: () -> String = { Random.nextLong().toULong().toString(16) },
     /** The games of the feed and their order: each page is followed by the next game in this list, round and round. */
     games: List<GameKind> = listOf(GameKind.Word),
+    /** The languages of the word puzzles; each new word puzzle is in one of them, chosen at random. */
+    startLanguages: List<Language> = listOf(startLanguage),
 ) {
     /** Every game this feed can show, in order. [games] is the part of it the player switched on. */
     private val allGames: List<GameKind> = games
@@ -80,20 +80,17 @@ class EndlessFeed(
     private val counted = mutableSetOf<Int>()
     private val bags = mutableMapOf<Language, ArrayDeque<String>>()
 
-    var language: Language = startLanguage
+    var wordLanguages: List<Language> = startLanguages.ifEmpty { listOf(startLanguage) }
         private set
+
+    /** The language for everything that is not a word puzzle: the first of [wordLanguages]. */
+    val language: Language get() = wordLanguages.first()
     var answerStreak = startStreak
         private set
-    var skipsLeft = maxSkips
-        private set
-
-    /** The last time the player did something in the feed. A long pause makes the next action start a new session. */
-    private var lastActivityAt = now()
-
     val size: Int get() = rounds.size
 
     init {
-        require(wordLists.containsKey(startLanguage)) { "no word list for $startLanguage" }
+        if (GameKind.Word in games) wordLanguages.forEach { require(wordLists.containsKey(it)) { "no word list for $it" } }
         require(games.isNotEmpty()) { "a feed needs at least one game" }
         for (stored in restored) {
             val round: FeedRound? = when (stored.game) {
@@ -136,7 +133,7 @@ class EndlessFeed(
 
     /**
      * Switches games on or off for the pages that are still to come. Pages from [fromIndex] on that were not touched
-     * and belong to a game that is now off are replaced; started, finished and skipped pages stay as they are.
+     * and belong to a game that is now off are replaced; started and finished pages stay as they are.
      * At least one game stays on: an empty [enabled] (or one with no known game) changes nothing.
      */
     fun setEnabledGames(enabled: Set<GameKind>, fromIndex: Int) {
@@ -145,65 +142,46 @@ class EndlessFeed(
         games = next
         for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
             val round = rounds[i]
-            if (round.isUntouched && !round.skipped && round.kind !in games) {
+            if (round.isUntouched && !round.assisted && round.kind !in games) {
                 rounds[i] = newRound(i, kindAfter(rounds.getOrNull(i - 1)?.kind))
             }
         }
     }
 
     /**
-     * Changes the language of the word puzzles that come from now on, also after the feed has been started (unlike
-     * [setLanguage]). Word pages from [fromIndex] on that were not touched are drawn again in the new language;
-     * puzzles that were started keep the language they began in.
+     * Changes the languages of the word puzzles that come from now on. Word pages from [fromIndex] on that were not
+     * touched and are in a language that is now off are drawn again; puzzles that were started keep the language they
+     * began in. An empty [languages] (or one with no known language) changes nothing.
      */
-    fun setWordLanguage(newLanguage: Language, fromIndex: Int) {
-        require(wordLists.containsKey(newLanguage)) { "no word list for $newLanguage" }
-        if (newLanguage == language) return
-        language = newLanguage
+    fun setWordLanguages(languages: Set<Language>, fromIndex: Int) {
+        val next = Language.entries.filter { it in languages && wordLists.containsKey(it) }
+        if (next.isEmpty() || next == wordLanguages) return
+        wordLanguages = next
         for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
             val round = rounds[i]
-            if (round.kind == GameKind.Word && round.isUntouched && !round.skipped) rounds[i] = newRound(i, GameKind.Word)
+            if (round is WordleRound && round.isUntouched && !round.assisted && round.language !in next) rounds[i] = newRound(i, GameKind.Word)
         }
     }
 
-
-    /**
-     * Starts a new session if the player has been away for [SESSION_IDLE_MILLIS] or more: the skip is available again.
-     * Returns true if it did, so the caller can redraw. The answer streak and the puzzles themselves are not touched.
-     */
-    fun startNewSessionIfIdle(): Boolean {
-        val time = now()
-        if (time - lastActivityAt < SESSION_IDLE_MILLIS) return false
-        lastActivityAt = time
-        val changed = skipsLeft != maxSkips
-        skipsLeft = maxSkips
-        return changed
-    }
-
-    private fun touch() {
-        startNewSessionIfIdle()
-        lastActivityAt = now()
-    }
+    /** The same for a feed with one word language. */
+    fun setWordLanguage(newLanguage: Language, fromIndex: Int) = setWordLanguages(setOf(newLanguage), fromIndex)
 
     // --- Word puzzle actions (ignored on a page of another game) ---
 
     fun type(index: Int, letter: Char) {
         val round = rounds[index] as? WordleRound ?: return
-        touch()
         round.type(letter)
         persist(round)
     }
 
     fun backspace(index: Int) {
         val round = rounds[index] as? WordleRound ?: return
-        touch()
         round.backspace()
         persist(round)
     }
 
     fun submit(index: Int) {
         val round = rounds[index] as? WordleRound ?: return
-        touch()
         round.submit()
         afterMove(index, round)
     }
@@ -213,7 +191,6 @@ class EndlessFeed(
     /** Turns over card [card] of the memory board on page [index]. */
     fun flip(index: Int, card: Int): FlipResult {
         val round = rounds[index] as? MemoryRound ?: return FlipResult.Ignored
-        touch()
         val result = round.flip(card)
         if (result != FlipResult.Ignored) afterMove(index, round)
         return result
@@ -229,7 +206,6 @@ class EndlessFeed(
     /** Pours tube [from] into tube [to] on the tubes board of page [index]. */
     fun pour(index: Int, from: Int, to: Int): PourResult {
         val round = rounds[index] as? TubesRound ?: return PourResult.Ignored
-        touch()
         val result = round.pour(from, to)
         if (result != PourResult.Ignored) afterMove(index, round)
         return result
@@ -238,14 +214,12 @@ class EndlessFeed(
     /** Takes back the last pour on page [index]. Returns false when there was nothing to take back. */
     fun undo(index: Int): Boolean {
         val round = rounds[index] as? TubesRound ?: return false
-        touch()
         return round.undo().also { if (it) persist(round) }
     }
 
     /** Puts the tubes of page [index] back as they were at the start. Returns false when nothing had changed. */
     fun restart(index: Int): Boolean {
         val round = rounds[index] as? TubesRound ?: return false
-        touch()
         return round.restart().also { if (it) persist(round) }
     }
 
@@ -254,7 +228,6 @@ class EndlessFeed(
     /** Opens [cell] on the minesweeper board of page [index]. */
     fun openCell(index: Int, cell: Int): MinesResult {
         val round = rounds[index] as? MinesRound ?: return MinesResult.Ignored
-        touch()
         val result = round.open(cell)
         if (result != MinesResult.Ignored) afterMove(index, round)
         return result
@@ -263,14 +236,12 @@ class EndlessFeed(
     /** Flags or unflags [cell] on page [index]. Returns false when that was not possible. */
     fun flagCell(index: Int, cell: Int): Boolean {
         val round = rounds[index] as? MinesRound ?: return false
-        touch()
         return round.flag(cell).also { if (it) persist(round) }
     }
 
     /** Opens the neighbors of the open number [cell] that are not flagged, when its flags match its number. */
     fun chordCell(index: Int, cell: Int): MinesResult {
         val round = rounds[index] as? MinesRound ?: return MinesResult.Ignored
-        touch()
         val result = round.chord(cell)
         if (result != MinesResult.Ignored) afterMove(index, round)
         return result
@@ -281,7 +252,6 @@ class EndlessFeed(
     /** Taps [cell] on the Lights Out board of page [index]. */
     fun tapLight(index: Int, cell: Int): LightsResult {
         val round = rounds[index] as? LightsRound ?: return LightsResult.Ignored
-        touch()
         val result = round.tap(cell)
         if (result != LightsResult.Ignored) afterMove(index, round)
         return result
@@ -290,7 +260,6 @@ class EndlessFeed(
     /** Puts the lights of page [index] back as they were at the start. Returns false when nothing had changed. */
     fun restartLights(index: Int): Boolean {
         val round = rounds[index] as? LightsRound ?: return false
-        touch()
         return round.restart().also { if (it) persist(round) }
     }
 
@@ -299,7 +268,6 @@ class EndlessFeed(
     /** Taps the tile in [cell] on the sliding puzzle of page [index]. */
     fun slideTile(index: Int, cell: Int): SlideResult {
         val round = rounds[index] as? SlideRound ?: return SlideResult.Ignored
-        touch()
         val result = round.slide(cell)
         if (result != SlideResult.Ignored) afterMove(index, round)
         return result
@@ -308,7 +276,6 @@ class EndlessFeed(
     /** Puts the tiles of page [index] back as they were at the start. Returns false when nothing had changed. */
     fun restartSlide(index: Int): Boolean {
         val round = rounds[index] as? SlideRound ?: return false
-        touch()
         return round.restart().also { if (it) persist(round) }
     }
 
@@ -317,7 +284,6 @@ class EndlessFeed(
     /** Combines the numbers [firstId] and [secondId] with [op] on the target number game of page [index]. */
     fun combineNumbers(index: Int, firstId: Int, op: Op, secondId: Int): TargetResult {
         val round = rounds[index] as? TargetRound ?: return TargetResult.Ignored
-        touch()
         val result = round.combine(firstId, op, secondId)
         if (result != TargetResult.Ignored) afterMove(index, round)
         return result
@@ -330,14 +296,12 @@ class EndlessFeed(
     /** Takes back the last operation on page [index]. Returns false when there was nothing to take back. */
     fun undoNumbers(index: Int): Boolean {
         val round = rounds[index] as? TargetRound ?: return false
-        touch()
         return round.undo().also { if (it) persist(round) }
     }
 
     /** Puts the numbers of page [index] back as they were at the start. Returns false when nothing had been done. */
     fun restartNumbers(index: Int): Boolean {
         val round = rounds[index] as? TargetRound ?: return false
-        touch()
         return round.restart().also { if (it) persist(round) }
     }
 
@@ -346,7 +310,6 @@ class EndlessFeed(
     /** Turns the tile in [cell] on the pipes board of page [index]. */
     fun turnPipe(index: Int, cell: Int): PipesResult {
         val round = rounds[index] as? PipesRound ?: return PipesResult.Ignored
-        touch()
         val result = round.tap(cell)
         if (result != PipesResult.Ignored) afterMove(index, round)
         return result
@@ -355,7 +318,6 @@ class EndlessFeed(
     /** Puts the tiles of page [index] back as they were at the start. Returns false when nothing had changed. */
     fun restartPipes(index: Int): Boolean {
         val round = rounds[index] as? PipesRound ?: return false
-        touch()
         return round.restart().also { if (it) persist(round) }
     }
 
@@ -364,7 +326,6 @@ class EndlessFeed(
     /** Puts [digit] in [cell] of the sudoku board of page [index]. A wrong digit is a mistake; the third one loses. */
     fun placeDigit(index: Int, cell: Int, digit: Int): SudokuResult {
         val round = rounds[index] as? SudokuRound ?: return SudokuResult.Ignored
-        touch()
         val result = round.place(cell, digit)
         if (result != SudokuResult.Ignored) afterMove(index, round)
         return result
@@ -373,14 +334,12 @@ class EndlessFeed(
     /** Switches the pencil note [digit] on or off in [cell] of page [index]. */
     fun toggleNote(index: Int, cell: Int, digit: Int): SudokuResult {
         val round = rounds[index] as? SudokuRound ?: return SudokuResult.Ignored
-        touch()
         return round.toggleNote(cell, digit).also { if (it != SudokuResult.Ignored) persist(round) }
     }
 
     /** Takes back a wrong digit or the notes of [cell] on page [index]. */
     fun eraseCell(index: Int, cell: Int): SudokuResult {
         val round = rounds[index] as? SudokuRound ?: return SudokuResult.Ignored
-        touch()
         return round.erase(cell).also { if (it != SudokuResult.Ignored) persist(round) }
     }
 
@@ -388,47 +347,33 @@ class EndlessFeed(
     private fun afterMove(index: Int, round: FeedRound) {
         if (round.isFinished && counted.add(index)) {
             val result = round.toFinished(finishedAt = now())
-            answerStreak = if (result.outcome == Outcome.WON) answerStreak + 1 else 0
+            // A puzzle done with the guide is neutral: the streak neither grows nor breaks.
+            if (!result.assisted) answerStreak = if (result.outcome == Outcome.WON) answerStreak + 1 else 0
             store.finish(result)
         } else {
             persist(round)
         }
     }
 
-    /** Whether the player may leave round [index] forward right now. Does not use the skip. */
-    fun canLeave(index: Int): Boolean {
-        val round = rounds[index]
-        return round.isFinished || round.skipped || skipsLeft > 0
-    }
-
-    /** Leaves round [index] forward, using the skip if it is needed. Returns false if that is not allowed. */
-    fun leave(index: Int): Boolean {
-        touch()
-        val round = rounds[index]
-        if (round.isFinished || round.skipped) return true
-        if (skipsLeft == 0) return false
-        skipsLeft--
-        round.markSkipped()
-        persist(round)
-        return true
-    }
-
-    /** True once the player did something on a page or skipped one. From then on the language is locked. */
-    val hasStarted: Boolean get() = rounds.any { !it.isUntouched || it.skipped }
+    /** The next step of the guide for page [index] as work to run anywhere, or null if the puzzle is over. */
+    fun guideTask(index: Int): com.mehmtcan.brainscroll.game.guide.GuideTask? = rounds.getOrNull(index)?.guideTask()
 
     /**
-     * Switches the language of the word puzzles in the feed. Only possible before the feed has been started;
-     * returns false (and changes nothing) afterwards. Pages of other games are not touched.
+     * The guide gave a step for page [index]: from now on the puzzle is neutral (no streak, no statistics) and is saved
+     * so, also when it was not started yet.
      */
-    fun setLanguage(newLanguage: Language): Boolean {
-        require(wordLists.containsKey(newLanguage)) { "no word list for $newLanguage" }
-        if (hasStarted) return false
-        language = newLanguage
-        for (i in rounds.indices) {
-            if (rounds[i].kind == GameKind.Word) rounds[i] = newRound(i, GameKind.Word)
-        }
-        return true
+    fun markGuided(index: Int) {
+        val round = rounds.getOrNull(index) ?: return
+        if (round.isFinished || round.assisted) return
+        round.markAssisted()
+        store.saveProgress(round.toStored())
     }
+
+    /** The first page whose puzzle was started and is not finished, or null. The feed "to go on with". */
+    fun firstUnfinishedIndex(): Int? = rounds.indexOfFirst { !it.isUntouched && !it.isFinished }.takeIf { it >= 0 }
+
+    /** True once the player did something on a page. */
+    val hasStarted: Boolean get() = rounds.any { !it.isUntouched }
 
     /**
      * Sets the answer streak from outside. Used after a cloud sync brought in results from another device:
@@ -441,14 +386,14 @@ class EndlessFeed(
     fun snapshot() = FeedSnapshot(
         pages = rounds.map { it.snapshot() },
         language = language,
+        wordLanguages = wordLanguages,
         answerStreak = answerStreak,
-        skipsLeft = skipsLeft,
-        canChangeLanguage = !hasStarted,
+        hasUnfinished = firstUnfinishedIndex() != null,
     )
 
     private fun newRound(index: Int, kind: GameKind): FeedRound = when (kind) {
         GameKind.Word -> {
-            val list = wordLists.getValue(language)
+            val list = wordLists.getValue(wordLanguages.random(random))
             WordleRound(index, WordleGame(list, nextAnswer(list)), list, newId())
         }
         GameKind.Memory -> MemoryRound(index, newId(), MemoryGame.newLayout(random), language, now)
@@ -465,7 +410,7 @@ class EndlessFeed(
     private fun persist(round: FeedRound) {
         when {
             round.isFinished -> Unit // `finish` already moved it to the history
-            round.isUntouched && !round.skipped -> store.deleteProgress(round.id)
+            round.isUntouched -> store.deleteProgress(round.id)
             else -> store.saveProgress(round.toStored())
         }
     }
@@ -478,5 +423,3 @@ class EndlessFeed(
     }
 }
 
-/** A session ends after 30 minutes without any action in the feed (docs/decisions.md). */
-const val SESSION_IDLE_MILLIS = 30L * 60 * 1000

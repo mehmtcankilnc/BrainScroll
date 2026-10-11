@@ -269,7 +269,6 @@ class DailyViewModel(
                 answer = answer,
                 guesses = state.guesses.map { it.word },
                 outcome = if (state.status == DailyStatus.Won) Outcome.WON else Outcome.LOST,
-                wasSkipped = false,
                 finishedAt = state.finishedAtMs ?: state.serverNowMs,
                 durationMs = state.durationMs,
                 puzzleDay = state.dayIndex,
@@ -325,7 +324,6 @@ class DailyViewModel(
             error = null,
             errorTick = errorTick,
             letterStates = keyStatesOf(rows),
-            skipped = false,
             pending = pending,
         )
     }

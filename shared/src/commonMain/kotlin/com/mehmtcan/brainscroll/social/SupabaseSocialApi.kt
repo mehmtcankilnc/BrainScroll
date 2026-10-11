@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.social
 
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.exceptions.RestException
@@ -26,6 +27,13 @@ class SupabaseSocialApi(private val client: SupabaseClient) : SocialApi {
             put("p_scope", if (scope == DailyScope.Today) "TODAY" else "ALL_TIME")
             put("p_friends", friendsOnly)
         })
+
+    override suspend fun gameBoard(game: GameKind, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow> =
+        parse<Board<GameRowDto>>(call("get_daily_game_leaderboard") {
+            put("p_game", game.id)
+            put("p_scope", if (scope == DailyScope.Today) "TODAY" else "ALL_TIME")
+            put("p_friends", friendsOnly)
+        }).let { board -> Board(board.rows.map { it.toRow() }, board.me?.toRow()) }
 
     override suspend fun streakBoard(kind: StreakKind, friendsOnly: Boolean): Board<StreakRow> =
         parse(call("get_streak_leaderboard") {
@@ -98,3 +106,15 @@ private inline fun <reified T> parse(json: String): T =
     } catch (e: Exception) {
         throw SocialException.Unavailable() // an answer we cannot read is as good as no answer
     }
+
+/** A row of `get_daily_game_leaderboard`: moves instead of guesses. */
+@kotlinx.serialization.Serializable
+internal data class GameRowDto(
+    val rank: Int,
+    val username: String,
+    val moves: Int,
+    @kotlinx.serialization.SerialName("duration_ms") val durationMs: Long,
+    @kotlinx.serialization.SerialName("is_me") val isMe: Boolean = false,
+) {
+    fun toRow() = DailyRow(rank = rank, username = username, guesses = moves, durationMs = durationMs, isMe = isMe)
+}

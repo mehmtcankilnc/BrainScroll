@@ -62,6 +62,9 @@ import com.mehmtcan.brainscroll.daily.DailyStatus
 import com.mehmtcan.brainscroll.daily.formatCountdown
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.ui.home.nativeName
+import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
+import com.mehmtcan.brainscroll.ui.streak.StreakKind
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.components.AppButton
 import com.mehmtcan.brainscroll.ui.components.ChevronButton
@@ -104,6 +107,7 @@ fun DailyScreen(viewModel: DailyViewModel, onBack: () -> Unit, modifier: Modifie
     LaunchedEffect(viewModel) { viewModel.onShown() }
 
     var notice by remember { mutableStateOf<Pair<StringResource, Int>?>(null) }
+    var streakInfo by remember { mutableStateOf(false) }
     var noticeId by remember { mutableLongStateOf(0) }
     val haptics = LocalHaptics.current
     LaunchedEffect(viewModel) {
@@ -149,7 +153,7 @@ fun DailyScreen(viewModel: DailyViewModel, onBack: () -> Unit, modifier: Modifie
             },
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            DailyHeader(ui, onBack = onBack, onLanguage = viewModel::selectLanguage)
+            DailyHeader(ui, onBack = onBack, onStreak = { streakInfo = true })
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (ui.phase) {
                     DailyPhase.Loading -> Message(stringResource(Res.string.daily_loading))
@@ -163,11 +167,20 @@ fun DailyScreen(viewModel: DailyViewModel, onBack: () -> Unit, modifier: Modifie
         notice?.let { (text, _) ->
             NoticePill(stringResource(text), Modifier.align(Alignment.TopCenter).padding(top = 48.dp))
         }
+        if (streakInfo) {
+            StreakInfoSheet(
+                StreakKind.Daily,
+                current = ui.dayStreak.current,
+                best = ui.dayStreak.best,
+                freezes = ui.dayStreak.freezesAvailable,
+                onClose = { streakInfo = false },
+            )
+        }
     }
 }
 
 @Composable
-private fun DailyHeader(ui: DailyUiState, onBack: () -> Unit, onLanguage: (Language) -> Unit) {
+private fun DailyHeader(ui: DailyUiState, onBack: () -> Unit, onStreak: () -> Unit) {
     val colors = BrainScrollTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = Spacing.lg),
@@ -181,20 +194,12 @@ private fun DailyHeader(ui: DailyUiState, onBack: () -> Unit, onLanguage: (Langu
                 text = ui.dayStreak.current.toString(),
                 textColor = colors.streakDay,
                 description = stringResource(Res.string.a11y_day_streak, ui.dayStreak.current),
+                onClick = onStreak,
             ) { FlameIcon(colors.streakDay) }
         }
         Spacer(Modifier.weight(1f))
-        // Two puzzles a day, one per language. Both can be played.
-        Language.entries.forEach { language ->
-            val selected = language == ui.language
-            Chip(
-                text = language.name,
-                textColor = if (selected) colors.textPrimary else colors.textSecondary,
-                raised = selected,
-                selected = selected,
-                onClick = { onLanguage(language) },
-            )
-        }
+        // The puzzle is in the language of the app. Only shown, not a switch.
+        Chip(text = ui.language.nativeName(), textColor = colors.textSecondary)
     }
 }
 

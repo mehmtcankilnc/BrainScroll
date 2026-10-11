@@ -24,7 +24,6 @@ class StatsTest {
         answer = "CRANE",
         guesses = List(guesses) { "WORD$it" },
         outcome = outcome,
-        wasSkipped = skipped,
         finishedAt = clock++,
     )
 
@@ -86,12 +85,6 @@ class StatsTest {
         assertEquals(1, tr.won)
         assertEquals(1, tr.currentStreak)
         assertEquals(3, computeStats(history).played)
-    }
-
-    @Test
-    fun finishedAfterSkipIsCounted() {
-        val history = listOf(round(Outcome.WON, skipped = true), won(), round(Outcome.LOST, skipped = true))
-        assertEquals(2, computeStats(history).finishedAfterSkip)
     }
 
     @Test

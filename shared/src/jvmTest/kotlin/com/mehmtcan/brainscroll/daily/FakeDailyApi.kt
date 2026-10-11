@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.daily
 
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.game.wordle.evaluateGuess
 import kotlinx.coroutines.CompletableDeferred
 
@@ -33,6 +35,15 @@ class FakeDailyApi(
     var gate: CompletableDeferred<Unit>? = null
 
     val calls = mutableListOf<String>()
+
+    /** The results of the other games the app sent: "game:outcome:moves:duration". */
+    val gameResults = mutableListOf<String>()
+
+    override suspend fun submitGameResult(game: GameKind, outcome: Outcome, moves: Int, durationMs: Long, language: Language) {
+        calls += "submitGameResult"
+        failure?.let { throw it }
+        gameResults += "${game.id}:${outcome.name}:$moves:$durationMs"
+    }
 
     /** Pretends the player already played on another phone. */
     fun prefill(language: Language, words: List<String>, startedAt: Long = clock) {

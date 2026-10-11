@@ -88,6 +88,12 @@ interface SocialApi {
 
     suspend fun dailyBoard(language: com.mehmtcan.brainscroll.game.wordle.Language, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow>
 
+    /**
+     * The speed table of a game other than the word puzzle: the shortest time first, then the fewest moves. A row is a
+     * [DailyRow] whose `guesses` is the number of moves.
+     */
+    suspend fun gameBoard(game: com.mehmtcan.brainscroll.game.GameKind, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow>
+
     suspend fun streakBoard(kind: StreakKind, friendsOnly: Boolean): Board<StreakRow>
 
     suspend fun friends(): FriendsState

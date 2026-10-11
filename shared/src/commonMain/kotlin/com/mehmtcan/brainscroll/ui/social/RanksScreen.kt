@@ -50,7 +50,6 @@ import brainscroll.shared.generated.resources.filter_everyone
 import brainscroll.shared.generated.resources.filter_kind
 import brainscroll.shared.generated.resources.filter_language
 import brainscroll.shared.generated.resources.filter_period
-import brainscroll.shared.generated.resources.filter_title
 import brainscroll.shared.generated.resources.filter_who
 import brainscroll.shared.generated.resources.filter_friends
 import brainscroll.shared.generated.resources.friends_accept
@@ -90,6 +89,9 @@ import brainscroll.shared.generated.resources.ranks_speed_caption
 import brainscroll.shared.generated.resources.ranks_stale
 import brainscroll.shared.generated.resources.ranks_streak_caption
 import brainscroll.shared.generated.resources.ranks_streaks
+import brainscroll.shared.generated.resources.ranks_moves
+import brainscroll.shared.generated.resources.ranks_today_game
+import brainscroll.shared.generated.resources.filter_game
 import brainscroll.shared.generated.resources.ranks_you
 import brainscroll.shared.generated.resources.scope_all_time
 import brainscroll.shared.generated.resources.scope_today
@@ -105,6 +107,10 @@ import com.mehmtcan.brainscroll.social.StreakRow
 import com.mehmtcan.brainscroll.social.inviteLink
 import com.mehmtcan.brainscroll.ui.components.AppButton
 import com.mehmtcan.brainscroll.ui.components.Chip
+import com.mehmtcan.brainscroll.ui.components.SegmentedControl
+import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.ui.home.displayName
+import com.mehmtcan.brainscroll.ui.home.nativeName
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -122,19 +128,14 @@ data class RanksSignIn(
 fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modifier = Modifier) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.onShown() }
-    // The filters stay out of the way until asked for; the summary line says what is chosen.
-    var filtersOpen by remember { mutableStateOf(false) }
-
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        item { SectionChips(ui, viewModel, filtersOpen) { filtersOpen = !filtersOpen } }
-        if (ui.section != Section.Friends) {
-            item { FilterSummary(ui) }
-            if (filtersOpen) item { FilterPanel(ui, viewModel) }
-        }
+        item { SectionTabs(ui, viewModel) }
+        // The choices for the open table are always in view, each with its name above it.
+        if (ui.section != Section.Friends) item { Filters(ui, viewModel) }
 
         // Who may do what: anonymous players only look, friends need a username.
         when (ui.access) {
@@ -152,81 +153,79 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
     }
 }
 
-// --- Chips ---
+// --- Choices ---
 
+/** Which table: one control across the width. */
 @Composable
-private fun SectionChips(ui: SocialUiState, viewModel: SocialViewModel, filtersOpen: Boolean, onToggleFilters: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.weight(1f)) {
-            Choice(stringResource(Res.string.ranks_speed), ui.section == Section.Speed) { viewModel.selectSection(Section.Speed) }
-            Choice(stringResource(Res.string.ranks_streaks), ui.section == Section.Streak) { viewModel.selectSection(Section.Streak) }
-            Choice(stringResource(Res.string.ranks_friends), ui.section == Section.Friends) { viewModel.selectSection(Section.Friends) }
-        }
-        // The friends part has nothing to filter.
-        if (ui.section != Section.Friends) {
-            Choice(stringResource(Res.string.filter_title), filtersOpen, onToggleFilters)
-        }
-    }
+private fun SectionTabs(ui: SocialUiState, viewModel: SocialViewModel) {
+    val sections = listOf(Section.Speed, Section.Streak, Section.Friends)
+    SegmentedControl(
+        options = listOf(
+            stringResource(Res.string.ranks_speed),
+            stringResource(Res.string.ranks_streaks),
+            stringResource(Res.string.ranks_friends),
+        ),
+        selectedIndex = sections.indexOf(ui.section),
+        onSelect = { viewModel.selectSection(sections[it]) },
+    )
 }
 
-/** One quiet line with what the table shows now, e.g. "TR - Today - Everyone". */
+/** What the open table shows: a language and a period for speed, a kind for streaks, and whose results. */
 @Composable
-private fun FilterSummary(ui: SocialUiState) {
-    val parts = buildList {
-        when (ui.section) {
-            Section.Speed -> {
-                add(ui.language.name)
-                add(stringResource(if (ui.scope == DailyScope.Today) Res.string.scope_today else Res.string.scope_all_time))
-            }
-            else -> add(stringResource(if (ui.kind == StreakKind.Current) Res.string.kind_current else Res.string.kind_longest))
-        }
-        // Only players who can have friends have this choice.
-        if (ui.access == Access.Ready) add(stringResource(if (ui.friendsOnly) Res.string.filter_friends else Res.string.filter_everyone))
-    }
-    Caption(parts.joinToString(" · "))
-}
-
-/** The filters of the open table, each with a small label. The explanation of the table is here too. */
-@Composable
-private fun FilterPanel(ui: SocialUiState, viewModel: SocialViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+private fun Filters(ui: SocialUiState, viewModel: SocialViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         if (ui.section == Section.Speed) {
-            LabeledChips(stringResource(Res.string.filter_language)) {
-                Language.entries.forEach { language ->
-                    Choice(language.name, ui.language == language) { viewModel.selectLanguage(language) }
+            LabeledControl(stringResource(Res.string.filter_period)) {
+                SegmentedControl(
+                    options = listOf(stringResource(Res.string.scope_today), stringResource(Res.string.scope_all_time)),
+                    selectedIndex = if (ui.scope == DailyScope.Today) 0 else 1,
+                    onSelect = { viewModel.selectScope(if (it == 0) DailyScope.Today else DailyScope.AllTime) },
+                )
+            }
+            if (ui.scope == DailyScope.Today) {
+                // Today there is one daily game, so there is nothing to choose: it is named.
+                Caption(stringResource(Res.string.ranks_today_game, ui.todayGame.displayName()))
+            } else {
+                LabeledControl(stringResource(Res.string.filter_game)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        GameKind.entries.forEach { game ->
+                            Choice(game.displayName(), ui.game == game) { viewModel.selectGame(game) }
+                        }
+                    }
                 }
             }
-            LabeledChips(stringResource(Res.string.filter_period)) {
-                Choice(stringResource(Res.string.scope_today), ui.scope == DailyScope.Today) { viewModel.selectScope(DailyScope.Today) }
-                Choice(stringResource(Res.string.scope_all_time), ui.scope == DailyScope.AllTime) { viewModel.selectScope(DailyScope.AllTime) }
+            if (ui.game == GameKind.Word) {
+                LabeledControl(stringResource(Res.string.filter_language)) {
+                    SegmentedControl(
+                        options = Language.entries.map { it.nativeName() },
+                        selectedIndex = Language.entries.indexOf(ui.language),
+                        onSelect = { viewModel.selectLanguage(Language.entries[it]) },
+                    )
+                }
             }
         } else {
-            LabeledChips(stringResource(Res.string.filter_kind)) {
-                Choice(stringResource(Res.string.kind_current), ui.kind == StreakKind.Current) { viewModel.selectKind(StreakKind.Current) }
-                Choice(stringResource(Res.string.kind_longest), ui.kind == StreakKind.Longest) { viewModel.selectKind(StreakKind.Longest) }
+            LabeledControl(stringResource(Res.string.filter_kind)) {
+                SegmentedControl(
+                    options = listOf(stringResource(Res.string.kind_current), stringResource(Res.string.kind_longest)),
+                    selectedIndex = if (ui.kind == StreakKind.Current) 0 else 1,
+                    onSelect = { viewModel.selectKind(if (it == 0) StreakKind.Current else StreakKind.Longest) },
+                )
             }
         }
         if (ui.access == Access.Ready) {
-            LabeledChips(stringResource(Res.string.filter_who)) {
-                Choice(stringResource(Res.string.filter_everyone), !ui.friendsOnly) { viewModel.selectFriendsOnly(false) }
-                Choice(stringResource(Res.string.filter_friends), ui.friendsOnly) { viewModel.selectFriendsOnly(true) }
+            LabeledControl(stringResource(Res.string.filter_who)) {
+                SegmentedControl(
+                    options = listOf(stringResource(Res.string.filter_everyone), stringResource(Res.string.filter_friends)),
+                    selectedIndex = if (ui.friendsOnly) 1 else 0,
+                    onSelect = { viewModel.selectFriendsOnly(it == 1) },
+                )
             }
         }
         Caption(stringResource(if (ui.section == Section.Speed) Res.string.ranks_speed_caption else Res.string.ranks_streak_caption))
     }
 }
 
-@Composable
-private fun LabeledChips(label: String, chips: @Composable () -> Unit) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.width(56.dp)) { Caption(label) }
-        chips()
-    }
-}
-
+/** One choice among a few that do not fit in a segmented control (the games): a chip, the chosen one is lifted. */
 @Composable
 private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
     val colors = BrainScrollTheme.colors
@@ -239,6 +238,14 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
+@Composable
+private fun LabeledControl(label: String, control: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Caption(label)
+        control()
+    }
+}
+
 // --- Speed and streak tables ---
 
 private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewModel) {
@@ -247,7 +254,7 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
             rank = row.rank,
             name = row.username,
             isMe = row.isMe,
-            value = "${stringResource(Res.string.ranks_guesses, row.guesses)} · ${formatDuration(row.durationMs)}",
+            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
         )
     }
 }
@@ -390,10 +397,11 @@ private fun AddFriend(viewModel: SocialViewModel) {
     var code by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Choice(stringResource(Res.string.friends_add_code), byCode) { byCode = true }
-            Choice(stringResource(Res.string.friends_add_name), !byCode) { byCode = false }
-        }
+        SegmentedControl(
+            options = listOf(stringResource(Res.string.friends_add_code), stringResource(Res.string.friends_add_name)),
+            selectedIndex = if (byCode) 0 else 1,
+            onSelect = { byCode = it == 0 },
+        )
         if (byCode) {
             TextAction(
                 value = code,

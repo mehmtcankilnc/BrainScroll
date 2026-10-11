@@ -325,7 +325,7 @@ class DailyViewModelTest {
         repo.finish(
             FinishedRound(
                 id = "yesterday", mode = Mode.DAILY, language = Language.EN, answer = "SLATE", guesses = listOf("SLATE"),
-                outcome = Outcome.WON, wasSkipped = false, finishedAt = IstanbulDay.startOfDay(20_732) + 1_000,
+                outcome = Outcome.WON, finishedAt = IstanbulDay.startOfDay(20_732) + 1_000,
                 durationMs = 5_000,
             ),
         )

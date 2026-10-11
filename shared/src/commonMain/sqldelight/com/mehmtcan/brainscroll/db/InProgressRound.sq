@@ -7,7 +7,7 @@ CREATE TABLE in_progress_round (
     answer TEXT NOT NULL,
     guesses TEXT NOT NULL,          -- accepted guesses, comma separated
     input TEXT NOT NULL,            -- letters typed for the next guess
-    was_skipped INTEGER NOT NULL,
+    was_skipped INTEGER NOT NULL, -- 1 if the player used the guide (the column was "skipped" once)
     position INTEGER NOT NULL       -- order in the feed
 );
 

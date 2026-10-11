@@ -11,16 +11,21 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.game.wordle.StoredRound
+import com.mehmtcan.brainscroll.game.daily.DAILY_GAME_ID_PREFIX
 import com.mehmtcan.brainscroll.time.IstanbulDay
+import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
 
 internal const val DATABASE_FILE = "brainscroll.db"
 
 private const val SETTING_LANGUAGE = "word_language"
+private const val SETTING_WORD_LANGUAGES = "word_languages"
+private const val SETTING_APP_LANGUAGE = "app_language"
 private const val SETTING_SYNCED_USER = "synced_user_id"
 private const val SETTING_TELEMETRY = "telemetry_enabled"
 private const val SETTING_GAMES = "feed_games"
 private const val SETTING_PENDING_CRASH = "pending_crash"
 private const val SETTING_MERGE_TICKET = "merge_ticket"
+private const val SETTING_DAILY_SENT = "daily_sent:"
 
 /**
  * Reads and writes everything the app keeps on the device. It is the only place that knows the tables;
@@ -45,7 +50,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             answer = round.answer,
             guesses = round.guesses.joinToString(","),
             input = round.input,
-            was_skipped = if (round.skipped) 1 else 0,
+            was_skipped = if (round.assisted) 1 else 0, // the column was "skipped" once; it now says the guide was used
             position = round.position.toLong(),
         )
     }
@@ -79,7 +84,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             answer = result.answer,
             guesses = result.guesses.joinToString(","),
             outcome = result.outcome.name,
-            was_skipped = if (result.wasSkipped) 1 else 0,
+            was_skipped = if (result.assisted) 1 else 0,
             finished_at = result.finishedAt,
             day_index = result.dayIndex,
             duration_ms = result.durationMs,
@@ -87,7 +92,26 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
     }
 
     /** Rows of a game this version of the app does not know (written by a newer one) are left out. */
-    fun unfinishedRounds(): List<StoredRound> = progress.selectAll().executeAsList().mapNotNull { it.toStoredOrNull() }
+    fun unfinishedRounds(): List<StoredRound> =
+        progress.selectAll().executeAsList().mapNotNull { it.toStoredOrNull() }.filterNot { it.id.startsWith(DAILY_GAME_ID_PREFIX) }
+
+    /** Forgets every unfinished puzzle of the feed (the daily puzzle of the day is not part of it). */
+    fun clearFeedProgress() {
+        db.transaction {
+            progress.selectAll().executeAsList().filterNot { it.id.startsWith(DAILY_GAME_ID_PREFIX) }.forEach { progress.deleteById(it.id) }
+        }
+    }
+
+    /** The unfinished daily puzzle with this id (see [dailyGameId]), if there is one. The feed does not see these. */
+    fun unfinishedDailyRound(id: String): StoredRound? =
+        progress.selectAll().executeAsList().firstOrNull { it.id == id }?.toStoredOrNull()
+
+    /** True once the server was told the result of a daily puzzle of another game than the word puzzle. */
+    fun dailyResultSent(id: String): Boolean = settings.get(SETTING_DAILY_SENT + id).executeAsOneOrNull() == "1"
+
+    fun markDailyResultSent(id: String) {
+        settings.put(SETTING_DAILY_SENT + id, "1")
+    }
 
     // --- History ---
 
@@ -117,7 +141,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
                 answer = it.answer,
                 guesses = it.guesses.toGuessList(),
                 outcome = Outcome.valueOf(it.outcome),
-                wasSkipped = it.was_skipped == 1L,
+                assisted = it.was_skipped == 1L,
                 finishedAt = it.finished_at,
                 durationMs = it.duration_ms,
                 puzzleDay = it.day_index.takeIf { day -> day != IstanbulDay.dayIndex(it.finished_at) },
@@ -126,11 +150,25 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     // --- Settings ---
 
-    fun savedLanguage(): Language? =
-        settings.get(SETTING_LANGUAGE).executeAsOneOrNull()?.let { name -> Language.entries.firstOrNull { it.name == name } }
+    /**
+     * The languages of the word puzzles in the feed (one or more), or null if the player never chose (then the app
+     * language is used). Also reads the single language an older version saved.
+     */
+    fun savedWordLanguages(): List<Language>? {
+        val stored = settings.get(SETTING_WORD_LANGUAGES).executeAsOneOrNull() ?: settings.get(SETTING_LANGUAGE).executeAsOneOrNull()
+        val names = stored?.split(",") ?: return null
+        return Language.entries.filter { it.name in names }.takeIf { it.isNotEmpty() }
+    }
 
-    fun saveLanguage(language: Language) {
-        settings.put(SETTING_LANGUAGE, language.name)
+    fun saveWordLanguages(languages: Collection<Language>) {
+        settings.put(SETTING_WORD_LANGUAGES, languages.joinToString(",") { it.name })
+    }
+
+    /** The language of the app's texts the player chose, or null to follow the device. */
+    fun savedAppLanguage(): AppLanguage? = AppLanguage.fromTag(settings.get(SETTING_APP_LANGUAGE).executeAsOneOrNull())
+
+    fun saveAppLanguage(language: AppLanguage?) {
+        if (language == null) settings.deleteKey(SETTING_APP_LANGUAGE) else settings.put(SETTING_APP_LANGUAGE, language.tag)
     }
 
     /** The games the player wants in the feed, or null if they never chose (then all of them). Unknown ids are ignored. */
@@ -145,7 +183,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     /**
      * Removes everything about the player from the device: results, favorites, unfinished puzzles, the upload
-     * queue and the cached tables. Only the chosen puzzle language and the privacy choice stay. Done after the account was deleted on
+     * queue and the cached tables. Only the chosen languages and the privacy choice stay. Done after the account was deleted on
      * the server, so a new anonymous account does not receive the old history.
      */
     fun wipeLocalData() {
@@ -154,7 +192,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             results.deleteAll()
             progress.deleteAll()
             queue.deleteAll()
-            settings.deleteAllExcept(SETTING_LANGUAGE, SETTING_TELEMETRY)
+            settings.deleteAllExcept(listOf(SETTING_LANGUAGE, SETTING_WORD_LANGUAGES, SETTING_APP_LANGUAGE, SETTING_TELEMETRY))
         }
     }
 
@@ -278,7 +316,7 @@ private fun Game_result.toFinishedOrNull(): FinishedRound? = FinishedRound(
     answer = answer,
     guesses = guesses.toGuessList(),
     outcome = Outcome.valueOf(outcome),
-    wasSkipped = was_skipped == 1L,
+    assisted = was_skipped == 1L,
     finishedAt = finished_at,
     durationMs = duration_ms,
     puzzleDay = day_index.takeIf { it != IstanbulDay.dayIndex(finished_at) },
@@ -291,6 +329,6 @@ private fun In_progress_round.toStoredOrNull(): StoredRound? = StoredRound(
     answer = answer,
     guesses = guesses.toGuessList(),
     input = input,
-    skipped = was_skipped == 1L,
+    assisted = was_skipped == 1L,
     position = position.toInt(),
 )

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** Renders the real feed headlessly at phone size, plays it, and saves screenshots to build/screenshots. */
@@ -18,7 +19,7 @@ import kotlin.test.assertTrue
 class FeedScreenTest {
 
     @Test
-    fun playsARoundWithFeedbackAndSkipRules() = runComposeUiTest {
+    fun playsARoundWithFeedbackAndLeavesItUnfinished() = runComposeUiTest {
         start()
         switchToEnglish()
         snap("1_start_en")
@@ -36,42 +37,14 @@ class FeedScreenTest {
         mainClock.advanceTimeBy(2000)
         snap("3_after_first_guess")
 
-        // Swipe to the next puzzle without finishing: uses the single skip.
+        // Swipe to the next puzzle without finishing: the feed scrolls freely, nothing is blocked or counted.
         swipeFeedUp()
         mainClock.advanceTimeBy(1500)
         waitForIdle()
-        snap("4_skipped_to_next")
-        // The chip text follows the device language ("Atla 0" in Turkish, "Skip 0" in English).
-        assertTrue(
-            onAllNodesWithText("Skip 0").fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Atla 0").fetchSemanticsNodes().isNotEmpty(),
-            "skip chip should show 0 left",
-        )
+        snap("4_left_unfinished")
+        assertFalse(hasAnyText("Skip", "Atla"), "there is no skip any more")
+        assertFalse(hasAnyText("Finish this puzzle first", "Önce bu bulmacayı bitir"))
 
-        // Another unfinished puzzle: the skip is gone, so the page must not move at all (no slide and bounce back).
-        val before = visibleInputRow()
-        // Freeze the clock: with auto-advance the test would wait for every animation to finish and miss a slide.
-        mainClock.autoAdvance = false
-        swipeFeedUp()
-        mainClock.advanceTimeBy(100)
-        snap("5_blocked_midway")
-        val during = visibleInputRow()
-        assertEquals(before, during, "the page moved although forward is blocked")
-        assertTrue(
-            onAllNodesWithText("Önce bu bulmacayı bitir").fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Finish this puzzle first").fetchSemanticsNodes().isNotEmpty(),
-            "a message should explain why",
-        )
-    }
-
-    @Test
-    fun languageIsLockedOnceTheFeedHasStarted() = runComposeUiTest {
-        start()
-        switchToEnglish()
-        onNodeWithText("EN").assertHasClickAction()
-        key('C')
-        waitForIdle()
-        onNodeWithText("EN").assertHasNoClickAction()
     }
 
     @Test

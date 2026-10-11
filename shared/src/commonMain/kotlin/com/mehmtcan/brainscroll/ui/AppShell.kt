@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +37,7 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -73,7 +75,10 @@ import com.mehmtcan.brainscroll.ui.components.ChevronButton
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.ui.daily.DailyScreen
+import com.mehmtcan.brainscroll.ui.daily.DailyGameScreen
+import com.mehmtcan.brainscroll.ui.daily.DailyGameViewModel
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.home.FeedEditorScreen
 import com.mehmtcan.brainscroll.ui.home.HomeScreen
 import com.mehmtcan.brainscroll.ui.feed.FeedScreen
@@ -86,6 +91,8 @@ import com.mehmtcan.brainscroll.ui.profile.ProfileTarget
 import com.mehmtcan.brainscroll.ui.profile.SettingsPage
 import com.mehmtcan.brainscroll.ui.profile.StatsPage
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
+import com.mehmtcan.brainscroll.ui.profile.LanguageUi
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -105,7 +112,13 @@ private enum class SubPage { Daily, Ranks, Stats, Favorites, Settings, FeedEdito
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialViewModel: SocialViewModel) {
+fun AppShell(
+    viewModel: FeedViewModel,
+    dailyViewModel: DailyViewModel,
+    dailyGameViewModel: DailyGameViewModel,
+    socialViewModel: SocialViewModel,
+    appLanguage: AppLanguage? = null,
+) {
     val colors = BrainScrollTheme.colors
     var tab by remember { mutableStateOf(Tab.Home) }
     var subPage by remember { mutableStateOf<SubPage?>(null) }
@@ -153,10 +166,12 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
         if (subPage != null) subPage = null else tab = Tab.Home
     }
 
-    // The feed and the sub pages have no tab bar, so then the content keeps clear of the bottom edge itself.
-    val showTabBar = subPage == null && tab != Tab.Feed
+    // The sub pages have no tab bar, so then the content keeps clear of the bottom edge itself. The feed keeps it.
+    val showTabBar = subPage == null
     val contentInsets = if (showTabBar) WindowInsetsSides.Top + WindowInsetsSides.Horizontal
     else WindowInsetsSides.Top + WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+    // A new app language builds the screens again, so every text is read in the new language. The tab and the open page stay.
+    key(appLanguage) {
     Column(modifier = Modifier.fillMaxSize().background(colors.bgPage)) {
         Box(
             modifier = Modifier
@@ -167,10 +182,15 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
             if (subPage != null) {
                 Column(Modifier.fillMaxSize()) {
                     // The daily page has a header row of its own, so its back button lives there.
-                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor) BackBar(onBack = { subPage = null })
+                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor) BackBar(onBack = { subPage = null }, title = if (subPage == SubPage.Ranks) stringResource(Res.string.tab_ranks) else null)
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         when (subPage) {
-                            SubPage.Daily -> DailyScreen(dailyViewModel, onBack = { subPage = null })
+                            SubPage.Daily -> {
+                                // The game of the day: the word puzzle has its own screen, every other game plays like in the feed.
+                                val dailyGame by dailyGameViewModel.ui.collectAsStateWithLifecycle()
+                                if (dailyGame.game == GameKind.Word) DailyScreen(dailyViewModel, onBack = { subPage = null })
+                                else DailyGameScreen(dailyGameViewModel, onBack = { subPage = null })
+                            }
                             SubPage.Ranks -> RanksScreen(
                                 viewModel = socialViewModel,
                                 signIn = RanksSignIn(
@@ -184,7 +204,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                                 onBack = { subPage = null },
                                 onStartFeed = {
                                     subPage = null
-                                    viewModel.prepareFeed()
+                                    viewModel.startNewFeed()
                                     tab = Tab.Feed
                                 },
                             )
@@ -201,6 +221,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                                     onDeleteAccount = viewModel::deleteAccount,
                                 ),
                                 privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
+                                language = LanguageUi(selected = appLanguage, onSelect = viewModel::setAppLanguage),
                             )
                             null -> Unit
                         }
@@ -210,12 +231,17 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                 Tab.Home -> HomeScreen(
                     feedViewModel = viewModel,
                     dailyViewModel = dailyViewModel,
+                    dailyGameViewModel = dailyGameViewModel,
                     socialViewModel = socialViewModel,
                     onOpenDaily = { subPage = SubPage.Daily },
                     onOpenRanks = { subPage = SubPage.Ranks },
                     onOpenFeedEditor = { subPage = SubPage.FeedEditor },
                     onStartFeed = {
-                        viewModel.prepareFeed()
+                        viewModel.startNewFeed()
+                        tab = Tab.Feed
+                    },
+                    onContinueFeed = {
+                        viewModel.continueFeed()
                         tab = Tab.Feed
                     },
                 )
@@ -225,6 +251,7 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
                     LaunchedEffect(Unit) { viewModel.refreshProfile() }
                     ProfileScreen(
                         profile = profileState,
+                        account = accountState,
                         onOpen = { target ->
                             subPage = when (target) {
                                 ProfileTarget.Stats -> SubPage.Stats
@@ -243,11 +270,12 @@ fun AppShell(viewModel: FeedViewModel, dailyViewModel: DailyViewModel, socialVie
         }
         if (showTabBar) {
             TabBar(selected = tab, onSelect = {
-                // The feed opens on a page of a game that is switched on, wherever it was left.
-                if (it == Tab.Feed) viewModel.prepareFeed()
+                // A feed left half done is gone on with; with none, a new one is made from the player's choices.
+                if (it == Tab.Feed && tab != Tab.Feed) viewModel.openFeedTab()
                 tab = it
             })
         }
+    }
     }
 }
 
@@ -342,16 +370,28 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
     }
 }
 
-/** The strip above a sub page: only a back chevron. The page below brings its own title. */
+/** The strip above a sub page: a back chevron and, when the page has no title of its own, its name beside it. */
 @Composable
-private fun BackBar(onBack: () -> Unit) {
-    ChevronButton(
-        description = stringResource(Res.string.back),
-        color = BrainScrollTheme.colors.textPrimary,
-        onClick = onBack,
-        modifier = Modifier.padding(start = Spacing.sm),
-        touch = 48.dp,
-    )
+private fun BackBar(onBack: () -> Unit, title: String? = null) {
+    val colors = BrainScrollTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = Spacing.sm, end = Spacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ChevronButton(
+            description = stringResource(Res.string.back),
+            color = colors.textPrimary,
+            onClick = onBack,
+            touch = 48.dp,
+        )
+        if (title != null) {
+            BasicText(
+                text = title,
+                style = BrainScrollTheme.typography.title.copy(color = colors.textPrimary),
+                modifier = Modifier.padding(start = Spacing.xs).semantics { heading() },
+            )
+        }
+    }
 }
 
 private val TAB_BAR_HEIGHT = 56.dp
