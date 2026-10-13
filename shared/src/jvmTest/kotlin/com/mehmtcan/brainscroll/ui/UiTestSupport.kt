@@ -95,6 +95,8 @@ internal fun ComposeUiTest.start(
     openFeed: Boolean = true,
     /** The game of the daily puzzle. The word puzzle unless a test is about another game: most tests were written for it. */
     dailyGame: (Long) -> GameKind = { GameKind.Word },
+    /** The size of the screen in dp. A small phone is about 360 x 600 once the system bars are taken off. */
+    screen: Pair<Int, Int> = 390 to 740,
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -107,7 +109,7 @@ internal fun ComposeUiTest.start(
             LocalViewModelStoreOwner provides owner,
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
         ) {
-            Box(Modifier.requiredSize(390.dp, 740.dp)) {
+            Box(Modifier.requiredSize(screen.first.dp, screen.second.dp)) {
                 App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame)
             }
         }

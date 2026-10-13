@@ -12,6 +12,11 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawOutline
@@ -30,28 +35,35 @@ val LocalGuide = compositionLocalOf<GuideStep?> { null }
 fun isGuided(index: Int): Boolean = LocalGuide.current?.cells?.contains(index) == true
 
 /**
- * A pulsing ring around a thing the guide points at, in the color of the text so it shows on every board and in both
- * themes. The ring does not move when motion is reduced. Without [on] the modifier does nothing.
+ * Points at a thing with a thick white ring that runs along its own edge, on the inside: the outer edge of the ring is the
+ * edge of the thing, with the same corners, so nothing is left between the two and nothing lies over the things around it.
+ * The ring breathes (its strength rises and falls); it does not move or change the size of the thing, and it stays at full
+ * strength when motion is reduced. Without [on] the modifier does nothing.
  */
 @Composable
 fun Modifier.guideHighlight(on: Boolean, shape: Shape): Modifier {
     if (!on) return this
-    val color = BrainScrollTheme.colors.textPrimary
+    val ring = BrainScrollTheme.colors.textPrimary
     val reduce = LocalReduceMotion.current
     val pulse by rememberInfiniteTransition().animateFloat(
-        initialValue = 0.35f,
+        initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(650, easing = LinearEasing), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(tween(600, easing = LinearEasing), RepeatMode.Reverse),
     )
-    val alpha = if (reduce) 1f else pulse
+    val beat = if (reduce) 1f else pulse
     return this.testTag("guideMark").drawWithContent {
         drawContent()
-        val width = 3.dp.toPx()
-        inset(width / 2) {
-            drawOutline(shape.createOutline(size, layoutDirection, this), color.copy(alpha = alpha), style = Stroke(width))
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val edge = Path().apply { addOutline(outline) }
+        // A stroke twice as wide as the ring, along the edge, cut to the inside of the edge: what is left is a band of
+        // the ring's width whose outer side has exactly the corners of the thing.
+        clipPath(edge) {
+            drawOutline(outline, ring.copy(alpha = 0.55f + 0.45f * beat), style = Stroke(width = 2 * RING_WIDTH.toPx()))
         }
     }
 }
+
+private val RING_WIDTH = 3.5.dp
 
 /**
  * Wraps one cell so the guide can ring it without the cell knowing. The wrapper is always there, so the cell keeps its

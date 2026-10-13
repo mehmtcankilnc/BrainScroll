@@ -5,6 +5,9 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.pipes.PipesGenerator
@@ -60,6 +63,87 @@ class PipesUiTest {
         assertTrue(hasAnyText("Boru bağla", "Pipes"))
         assertTrue(hasAnyText("Hamle 0", "Moves 0"))
         assertTrue(onAllNodesWithTag("pipeTile").fetchSemanticsNodes().size == 25)
+    }
+
+    /**
+     * What is drawn must be what the board is: on every tile, every open side is drawn (green when it meets the neighbor,
+     * gray when it is an open end) and a side that is not open is not drawn at all. Read from the pixels of the screen.
+     */
+    private fun ComposeUiTest.assertDrawingMatchesTheBoard(note: String) {
+        val image = onRoot().captureToImage().toPixelMap()
+        val nodes = onAllNodesWithTag("pipeTile").fetchSemanticsNodes()
+        val sides = listOf(PipesGenerator.NORTH, PipesGenerator.EAST, PipesGenerator.SOUTH, PipesGenerator.WEST)
+        val dx = listOf(0f, 1f, 0f, -1f)
+        val dy = listOf(-1f, 0f, 1f, 0f)
+        for ((index, node) in nodes.withIndex()) {
+            val bounds = node.boundsInRoot
+            val mask = node.config[PipesTileMask]
+            val open = node.config[PipesTileOpenEnds]
+            for (k in 0 until 4) {
+                // A little way out of the hub, where every arm (joined or open) has been drawn.
+                val x = (bounds.center.x + dx[k] * bounds.width * 0.22f).toInt()
+                val y = (bounds.center.y + dy[k] * bounds.height * 0.22f).toInt()
+                val pixel = image[x, y]
+                val green = pixel.green > pixel.red + 0.15f && pixel.green > pixel.blue + 0.15f
+                val gray = !green && pixel.red > 0.3f && kotlin.math.abs(pixel.red - pixel.green) < 0.05f
+                val side = sides[k]
+                val expected = when {
+                    mask and side == 0 -> "nothing"
+                    open and side != 0 -> "gray"
+                    else -> "green"
+                }
+                val drawn = if (green) "green" else if (gray) "gray" else "nothing"
+                assertEquals(expected, drawn, "$note: tile $index, side $k")
+            }
+        }
+    }
+
+    @Test
+    fun whateverIsDrawnIsWhatTheBoardIsAfterQuickTaps() = runComposeUiTest {
+        openPipes()
+        assertDrawingMatchesTheBoard("at the start")
+        // Quick taps: several in a row without the clock moving, then everything settles.
+        mainClock.autoAdvance = false
+        val random = kotlin.random.Random(3)
+        repeat(40) {
+            val cell = random.nextInt(25)
+            repeat(1 + random.nextInt(3)) { onAllNodesWithTag("pipeTile")[cell].performClick() }
+            if (it % 5 == 4) mainClock.advanceTimeBy(60)
+        }
+        mainClock.advanceTimeBy(1_000)
+        mainClock.autoAdvance = true
+        waitForIdle()
+        snap("165_pipes_after_quick_taps")
+        assertDrawingMatchesTheBoard("after quick taps")
+    }
+
+    /**
+     * The case that left a tile with its joined arms drawn a quarter turn off: a tile is turned and the sides that meet
+     * their neighbors are the same ones as before the turn (so the picture of what is joined did not change, only the
+     * angle). The tile is found by trying taps, and the drawing is checked after each one that is such a case.
+     */
+    @Test
+    fun aTurnThatLeavesTheJoinedSidesAsTheyWereStillDrawsThemRight() = runComposeUiTest {
+        openPipes()
+        var found = 0
+        val random = kotlin.random.Random(11)
+        repeat(150) {
+            val cell = random.nextInt(25)
+            val node = onAllNodesWithTag("pipeTile")[cell].fetchSemanticsNode()
+            val before = node.config[PipesTileMask]
+            val joinedBefore = before and node.config[PipesTileOpenEnds].inv()
+            tap(cell)
+            mainClock.advanceTimeBy(400)
+            waitForIdle()
+            val after = onAllNodesWithTag("pipeTile")[cell].fetchSemanticsNode()
+            val joinedAfter = after.config[PipesTileMask] and after.config[PipesTileOpenEnds].inv()
+            if (after.config[PipesTileMask] != before && joinedAfter == joinedBefore && joinedAfter != 0) {
+                found++
+                if (found == 1) snap("166_pipes_joined_case")
+                assertDrawingMatchesTheBoard("turn $it of tile $cell, joined sides unchanged")
+            }
+        }
+        println("PIPES-CASES found=$found")
     }
 
     @Test

@@ -177,6 +177,7 @@ fun PipesPage(
                                     column = column + 1,
                                     mask = state.tiles[index],
                                     matched = state.matched[index],
+                                    moves = state.moves,
                                     labels = labels,
                                     playing = !won,
                                     size = tile,
@@ -221,22 +222,36 @@ private const val TURN_MILLIS = 150
  * turns the tile has been turned since ([quarterTurns], which only goes up). The pipes on show are [base] turned
  * [quarterTurns] times. [update] is called with the tile of the moment; it is safe to call again with the same tile.
  */
-private class TileTurn(mask: Int) {
+private class TileTurn(mask: Int, moves: Int) {
     var base = mask
         private set
     var quarterTurns = 0
         private set
     private var seen = mask
+    private var seenMoves = moves
 
-    fun update(mask: Int) {
-        if (mask == seen) return
-        if (mask == PipesGenerator.rotate(seen)) {
-            quarterTurns++
+    /**
+     * [moves] is the number of taps of the whole board so far (a restart does not change it). A tile that changed while
+     * the taps went up was turned by them (a tap may reach it more than once between two looks); a tile that changed
+     * while they did not was put back by a restart. Telling them apart by the pipes alone does not work: a restart can
+     * leave a tile looking as if it had just been turned once.
+     */
+    fun update(mask: Int, moves: Int) {
+        if (mask == seen) {
+            seenMoves = moves
+            return
+        }
+        val taps = moves - seenMoves
+        var turned = seen
+        repeat(taps.coerceIn(0, 4)) { turned = PipesGenerator.rotate(turned) }
+        if (taps > 0 && mask == turned) {
+            quarterTurns += taps.coerceAtMost(4)
         } else {
             // Not a turn (a restart): the tile now shows these pipes at the angle it has, so the starting position moves.
             base = backBy(mask, quarterTurns)
         }
         seen = mask
+        seenMoves = moves
     }
 
     /** Sides (of the tile as it is on show) in the starting position, to draw them under the angle. */
@@ -256,7 +271,7 @@ internal val Sides = listOf(PipesGenerator.NORTH, PipesGenerator.EAST, PipesGene
 
 /** One tile. It turns a quarter clockwise when it is tapped; a restart changes it without a turn. */
 @Composable
-private fun PipeTile(row: Int, column: Int, mask: Int, matched: Int, labels: PipesLabels, playing: Boolean, size: Dp, onClick: () -> Unit) {
+private fun PipeTile(row: Int, column: Int, mask: Int, matched: Int, moves: Int, labels: PipesLabels, playing: Boolean, size: Dp, onClick: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val extraBorder = if (LocalHighContrast.current) 1f else 0f
     val reduce = LocalReduceMotion.current
@@ -266,8 +281,8 @@ private fun PipeTile(row: Int, column: Int, mask: Int, matched: Int, labels: Pip
     // glides to the next quarter. So the first frame of a turn still shows the old position: the new one is never seen
     // before the turn starts. A change that is not a tap's turn (a restart) moves the starting position instead, so the
     // angle stays where it is and the tile simply shows the new pipes.
-    val turn = remember { TileTurn(mask) }
-    turn.update(mask)
+    val turn = remember { TileTurn(mask, moves) }
+    turn.update(mask, moves)
     val angle by animateFloatAsState(
         targetValue = turn.quarterTurns * 90f,
         animationSpec = if (reduce) snap() else tween(TURN_MILLIS, easing = Motion.Standard),
@@ -310,8 +325,13 @@ private fun PipeTile(row: Int, column: Int, mask: Int, matched: Int, labels: Pip
             ),
         contentAlignment = Alignment.Center,
     ) {
+        // What to draw is worked out here, while composing, and the drawing only receives the values. (Reading the mutable
+        // [turn] inside the drawing left a tile with stale pipes: the drawing was kept as it was when only [turn] changed
+        // under it, so after quick taps a tile could show joined arms the wrong way round.)
+        val baseMask = turn.base
+        val baseMatched = turn.baseSides(matched)
         Canvas(Modifier.size(size).graphicsLayer { rotationZ = angle }) {
-            drawPipes(turn.base, turn.baseSides(matched), colors.correctFill, colors.borderStrong, colors.textSecondary)
+            drawPipes(baseMask, baseMatched, colors.correctFill, colors.borderStrong, colors.textSecondary)
         }
     }
 }

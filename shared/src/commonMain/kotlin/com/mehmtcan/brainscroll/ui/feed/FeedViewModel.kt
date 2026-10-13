@@ -141,6 +141,11 @@ class FeedViewModel(
     private var feed: EndlessFeed? = null
     private var favoriteIds: Set<String> = emptySet()
 
+    private val _syncTick = MutableStateFlow(0)
+
+    /** Goes up every time a sync brought the cloud's state in, so screens that keep their own copy (the daily puzzle) look again. */
+    val syncTick: StateFlow<Int> = _syncTick
+
     private val _state = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val state: StateFlow<FeedUiState> = _state
 
@@ -741,6 +746,7 @@ class FeedViewModel(
 
     /** The cloud may have brought in results and favorites from another device: reload what depends on them. */
     private fun afterSync() {
+        _syncTick.value += 1
         favoriteIds = repository.favoriteResults().map { it.id }.toSet()
         if (feed != null) publish()
         refreshProfile()

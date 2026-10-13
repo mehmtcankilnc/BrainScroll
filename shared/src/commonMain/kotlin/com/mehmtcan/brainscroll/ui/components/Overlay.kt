@@ -6,7 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -113,7 +115,9 @@ fun ModalSheet(
         }
         BackHandler(enabled = true, onBack = close)
 
-        Box(modifier = modifier.fillMaxSize().testTag(tag)) {
+        BoxWithConstraints(modifier = modifier.fillMaxSize().testTag(tag)) {
+            // The sheet is never taller than 90% of the screen; a part of the content that can scroll (weight) gives way first.
+            val tallest = maxHeight * 0.9f
             // The dark area: tapping it closes the sheet, and it keeps touches and swipes away from the page below.
             Box(
                 Modifier
@@ -126,6 +130,7 @@ fun ModalSheet(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .heightIn(max = tallest)
                     .graphicsLayer { translationY = (1f - progress.value) * size.height }
                     .background(colors.bgSurface, Radius.sheet)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})

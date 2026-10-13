@@ -280,9 +280,40 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
         }
     }
 
-    /** Adds results that exist in the cloud but not here. They are not queued, they come from the cloud. */
+    /**
+     * Adds results that exist in the cloud but not here. They are not queued, they come from the cloud. Known ids stay
+     * untouched, with one exception: a daily result has the same id on every device (`daily-<day>-<game>`), and the cloud
+     * keeps only one per account and day. If this device made another one while it was anonymous (and the account the
+     * player then signed in to already had its own), the cloud's one is the result of that day, so it replaces the local
+     * one. Otherwise the result card would show moves and a time that the tables do not.
+     */
     fun mergeRemoteResults(remote: List<FinishedRound>) {
-        db.transaction { remote.forEach { insertResultRow(it) } } // INSERT OR IGNORE: known ids stay untouched
+        db.transaction {
+            for (result in remote) {
+                val local = results.selectById(result.id).executeAsOneOrNull()?.toFinishedOrNull()
+                if (local != null && result.mode == Mode.DAILY && local.differsFrom(result)) replaceResultRow(result)
+                else insertResultRow(result) // INSERT OR IGNORE
+            }
+        }
+    }
+
+    private fun FinishedRound.differsFrom(other: FinishedRound) =
+        outcome != other.outcome || durationMs != other.durationMs || guesses != other.guesses
+
+    private fun replaceResultRow(result: FinishedRound) {
+        results.replaceResult(
+            id = result.id,
+            game = result.game.id,
+            mode = result.mode.name,
+            language = result.language.name,
+            answer = result.answer,
+            guesses = result.guesses.joinToString(","),
+            outcome = result.outcome.name,
+            was_skipped = if (result.assisted) 1 else 0,
+            finished_at = result.finishedAt,
+            day_index = result.dayIndex,
+            duration_ms = result.durationMs,
+        )
     }
 
     /** Applies cloud favorites, newest write wins. They are not queued, they come from the cloud. */

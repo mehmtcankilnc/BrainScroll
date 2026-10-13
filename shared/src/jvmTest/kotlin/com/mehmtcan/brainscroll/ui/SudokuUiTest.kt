@@ -64,6 +64,28 @@ class SudokuUiTest {
     }
 
     @Test
+    fun theHighlightOfASelectedDigit() = runComposeUiTest {
+        openSudoku()
+        val given = values().indexOfFirst { it in 1..9 }
+        tapCell(given)
+        snap("127_sudoku_selected_digit")
+    }
+
+    @Test
+    fun allNineNotesInSomeCells() = runComposeUiTest {
+        openSudoku()
+        onNodeWithTag("sudokuNotes").performClick()
+        waitForIdle()
+        val empty = values().indices.filter { values()[it] == 0 }
+        for (cell in empty.take(12)) {
+            tapCell(cell)
+            for (digit in 1..9) key(digit)
+        }
+        tapCell(empty[5])
+        snap("128_sudoku_all_notes")
+    }
+
+    @Test
     fun theSecondPageIsABoardOfEightyOneCellsWithTheGivensFilledIn() = runComposeUiTest {
         openSudoku()
         snap("120_sudoku_start")

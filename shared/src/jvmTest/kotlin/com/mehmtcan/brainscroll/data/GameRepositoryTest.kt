@@ -46,6 +46,27 @@ class GameRepositoryTest {
         StoredRound(id, Language.TR, "KİTAP", guesses, input, position = position)
 
     @Test
+    fun aDailyResultFromTheCloudReplacesTheOneMadeWhileAnonymous() {
+        val repo = newRepository()
+        fun daily(moves: String, ms: Long) = finished("daily-100-pipes", at = 5_000L).copy(
+            mode = Mode.DAILY, game = com.mehmtcan.brainscroll.game.GameKind.Pipes, guesses = listOf(moves), durationMs = ms,
+        )
+        repo.finish(daily("87", 120_000))
+        repo.mergeRemoteResults(listOf(daily("35", 40_000)))
+        val kept = repo.history().single { it.id == "daily-100-pipes" }
+        assertEquals(listOf("35"), kept.guesses, "the cloud's result of the day is the result")
+        assertEquals(40_000L, kept.durationMs)
+    }
+
+    @Test
+    fun anEndlessResultThatIsKnownAlreadyIsNotReplaced() {
+        val repo = newRepository()
+        repo.finish(finished("e1", guesses = listOf("SLATE")))
+        repo.mergeRemoteResults(listOf(finished("e1", guesses = listOf("CRANE", "SLATE"))))
+        assertEquals(listOf("SLATE"), repo.history().single().guesses)
+    }
+
+    @Test
     fun theBestCountOfASingleFeedIsKeptOnTheDevice() {
         val repo = newRepository()
         assertEquals(0, repo.bestFlow())

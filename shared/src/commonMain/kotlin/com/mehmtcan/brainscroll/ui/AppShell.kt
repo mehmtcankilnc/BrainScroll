@@ -175,6 +175,14 @@ fun AppShell(
     val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
     val social by socialViewModel.ui.collectAsStateWithLifecycle()
     val feedState by viewModel.state.collectAsStateWithLifecycle()
+    // What the cloud brought in (after signing in to an existing account, for one) may change today's daily result.
+    val syncTick by viewModel.syncTick.collectAsStateWithLifecycle()
+    LaunchedEffect(syncTick) {
+        if (syncTick > 0) {
+            dailyGameViewModel.refresh()
+            dailyViewModel.onShown()
+        }
+    }
     var replaying by remember { mutableStateOf<FinishedRound?>(null) }
     val playAgain = { round: FinishedRound ->
         subPage = null
@@ -310,7 +318,8 @@ fun AppShell(
             }
             accountNotice?.let { notice ->
                 val text = if (notice.name != null) stringResource(notice.text, notice.name) else stringResource(notice.text)
-                NoticePill(text, Modifier.align(Alignment.TopCenter), notice.detail)
+                // At the bottom, just over the tab bar, as wide as the cards of the profile.
+                NoticePill(text, Modifier.align(Alignment.BottomCenter).padding(horizontal = Spacing.lg, vertical = Spacing.md).fillMaxWidth(), notice.detail, onDismiss = { accountNotice = null })
             }
         }
         if (showTabBar) {

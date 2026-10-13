@@ -2,7 +2,6 @@ package com.mehmtcan.brainscroll.ui.feed
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -188,24 +187,24 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 ) { index ->
                     GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page })
                 }
-                notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
+                notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET), onDismiss = { notice = null }) }
             }
-            // What the guide says goes in a slot under the board that is always there, so the board does not change size
-            // (and does not redraw) when the sentence comes and goes: only the sentence fades.
-            Box(Modifier.fillMaxWidth().height(GuideSlotHeight).padding(horizontal = Spacing.lg, vertical = Spacing.xs)) {
-                // Keeps the last step while the sentence fades away.
-                val shown = remember { mutableStateOf(guide) }
-                if (guide != null) shown.value = guide
-                val alpha by animateFloatAsState(if (guide != null) 1f else 0f)
-                if (alpha > 0f) {
-                    shown.value?.let { step ->
-                        GuideBanner(
-                            step = step,
-                            onClose = viewModel::clearGuide,
-                            modifier = Modifier.graphicsLayer { this.alpha = alpha },
-                            onRestart = restartOf(viewModel, current.kind)?.let { restart -> { restart(page) } },
-                        )
-                    }
+        }
+        // What the guide says takes the place of the top bar for as long as it is shown. It is over the bar and not in the
+        // layout, so the board keeps its size and its place, and it is never over the board (or the thing it points at).
+        run {
+            // Keeps the last step while the sentence fades away.
+            val shown = remember { mutableStateOf(guide) }
+            if (guide != null) shown.value = guide
+            val alpha by animateFloatAsState(if (guide != null) 1f else 0f)
+            if (alpha > 0f) {
+                shown.value?.let { step ->
+                    GuideBanner(
+                        step = step,
+                        onClose = viewModel::clearGuide,
+                        modifier = Modifier.align(Alignment.TopCenter).graphicsLayer { this.alpha = alpha },
+                        onRestart = restartOf(viewModel, current.kind)?.let { restart -> { restart(page) } },
+                    )
                 }
             }
         }

@@ -225,7 +225,7 @@ private fun FilterBar(ui: SocialUiState, viewModel: SocialViewModel) {
     if (open) {
         ModalSheet(onDismiss = { open = false }, tag = "ranksFilters") { close ->
             BasicText(stringResource(Res.string.ranks_filters), style = type.title.copy(color = colors.textPrimary))
-            Column(Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
+            Column(Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 Filters(ui, viewModel)
             }
             AppButton(stringResource(Res.string.howto_done), close, primary = true)

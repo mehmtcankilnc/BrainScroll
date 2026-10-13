@@ -7,6 +7,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.account.AccountState
@@ -93,6 +95,22 @@ class AccountUiTest {
         // The small print tells what went wrong, so a failure can be diagnosed from a screenshot.
         assertTrue(hasAnyText("apple error 1000"))
         snap("12_sign_in_failed")
+
+        // The x closes it.
+        onNodeWithTag("noticeClose").performClick()
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("noticeClose").fetchSemanticsNodes().isEmpty(), "the message is gone")
+    }
+
+    @Test
+    fun aMessageCanBeSwipedAway() = runComposeUiTest {
+        val cloud = TestCloud()
+        start(cloud)
+        openProfile()
+        cloud.account.events.tryEmit(AccountEvent.SignInFailed("apple error 1000"))
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("noticeClose").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithText("Giriş yapılamadı", substring = true, ignoreCase = true).performTouchInput { swipeRight() }
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("noticeClose").fetchSemanticsNodes().isEmpty() }
     }
 
     @Test

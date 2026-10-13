@@ -2,6 +2,11 @@ package com.mehmtcan.brainscroll.ui.sudoku
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -104,8 +109,14 @@ import org.jetbrains.compose.resources.stringResource
 private val BottomAreaHeight = 152.dp
 private val CellGap = 2.dp
 
-/** The extra room between two boxes, on top of the two cell gaps. */
-private val BoxExtra = 4.dp
+/** The cells are nearly square, like the squares of a printed sudoku. */
+private val CellShape = RoundedCornerShape(3.dp)
+
+/** Inside the border of the whole board. */
+private val FramePadding = 2.dp
+
+/** The extra thickness of the line between two boxes, on top of the two cell gaps: the lines between boxes are thicker than between cells. */
+private val BoxExtra = 3.dp
 private val MaxCell = 44.dp
 private val KeyHeight = 56.dp
 private val KeyGap = 4.dp
@@ -211,25 +222,40 @@ fun SudokuPage(
     }
 }
 
-/** The 81 cells as equal squares, as large as the room allows, with a wider gap between the nine boxes. */
+/**
+ * The 81 cells as equal squares, as large as the room allows, in rows (so a screen reader and the tests meet them row by
+ * row). Behind them the nine 3x3 boxes are drawn as lighter panels with a clear gap between them, and the cells are dark
+ * squares set into them, so the boxes can be told apart at a glance.
+ */
 @Composable
 private fun Board(state: SudokuState, selected: Int?, wave: Wave, onSelect: (Int) -> Unit, modifier: Modifier) {
+    val colors = BrainScrollTheme.colors
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val size = SudokuGenerator.SIZE
-        val gaps = CellGap * 6 + (CellGap * 2 + BoxExtra) * 2
+        val gaps = CellGap * 6 + (CellGap * 2 + BoxExtra) * 2 + FramePadding * 2 + 4.dp
         val cellSize: Dp = minOf(MaxCell, (maxWidth - gaps) / size, (maxHeight - gaps) / size)
 
         val selectedValue = selected?.let { state.values[it] } ?: 0
         val selectedPeers = selected?.let { SudokuGenerator.peers(it).toSet() } ?: emptySet()
 
-        Column(verticalArrangement = Arrangement.spacedBy(CellGap)) {
+        // One square for the whole board: the lines between the cells are the (thin) gaps that let this background show,
+        // and the lines between the nine boxes are the same but thicker. The whole square has a border of its own.
+        val lines = lerp(colors.bgPage, colors.borderStrong, 0.5f)
+        val frame = RoundedCornerShape(6.dp)
+        Column(
+            modifier = Modifier
+                .background(lines, frame)
+                .border(2.dp, colors.borderStrong, frame)
+                .padding(FramePadding),
+            verticalArrangement = Arrangement.spacedBy(CellGap),
+        ) {
             for (row in 0 until size) {
                 if (row == 3 || row == 6) Spacer(Modifier.height(BoxExtra))
                 Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                     for (column in 0 until size) {
                         if (column == 3 || column == 6) Spacer(Modifier.width(BoxExtra))
                         val index = row * size + column
-                        GuideMark(isGuided(index), Radius.tile) {
+                        GuideMark(isGuided(index), CellShape) {
                             Cell(
                                 row = row + 1,
                                 column = column + 1,
@@ -271,7 +297,7 @@ private fun Cell(
 ) {
     val colors = BrainScrollTheme.colors
     val extraBorder = if (LocalHighContrast.current) 1f else 0f
-    val shape = Radius.tile
+    val shape = CellShape
 
     val notesText = (1..9).filter { notes and (1 shl (it - 1)) != 0 }.joinToString(", ")
     val description = when {
@@ -288,15 +314,18 @@ private fun Cell(
         else -> 0
     }
 
+    // What the player is on keeps the colors it always had: the cell, the same digit and the row, column and box (the
+    // peers) are a lighter gray, the cell itself and the same digit with a yellow outline.
     val background = when {
         wrong -> colors.error.copy(alpha = 0.28f)
-        isSelected || sameDigit || isPeer -> colors.bgRaised
+        isSelected || sameDigit || isPeer -> lerp(colors.bgRaised, colors.borderStrong, 0.12f)
         else -> colors.bgSurface
     }
     val border = when {
-        isSelected -> (2f + extraBorder).dp to colors.pendingFill
-        sameDigit -> (1.5f + extraBorder).dp to colors.pendingFill.copy(alpha = 0.55f)
-        else -> (1f + extraBorder).dp to colors.borderStrong.copy(alpha = 0.3f)
+        isSelected -> (2.5f + extraBorder).dp to colors.pendingFill
+        // The same digit elsewhere: the same bright yellow as the cell itself, a little thinner (a dimmed yellow looked brown).
+        sameDigit -> (1.5f + extraBorder).dp to colors.pendingFill
+        else -> 0.dp to colors.borderStrong
     }
     val density = LocalDensity.current
 
@@ -326,9 +355,10 @@ private fun Cell(
                 cellValue = shown
                 role = Role.Button
             }
+            .background(colors.bgSurface, shape)
             .background(background, shape)
             .background(colors.correctFill.copy(alpha = flash.value * 0.55f), shape)
-            .border(border.first, border.second, shape)
+            .then(if (border.first.value > 0f) Modifier.border(border.first, border.second, shape) else Modifier)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

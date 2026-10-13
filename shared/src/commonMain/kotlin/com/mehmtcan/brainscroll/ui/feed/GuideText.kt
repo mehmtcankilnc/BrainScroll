@@ -9,7 +9,9 @@ import com.mehmtcan.brainscroll.ui.components.AppTextButton
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.ui.components.CloseButton
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
@@ -95,14 +97,18 @@ fun GuideBanner(step: GuideStep, onClose: () -> Unit, modifier: Modifier = Modif
     Row(
         modifier = modifier
             .testTag("guideBanner")
-            .fillMaxSize()
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.sm, vertical = 2.dp)
+            .heightIn(min = 52.dp)
             .background(colors.bgRaised, Radius.card)
+            // The bar under the card must not get the touches that land on the card.
+            .pointerInput(Unit) { detectTapGestures { } }
             .padding(start = Spacing.md)
             .semantics { liveRegion = LiveRegionMode.Polite },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(vertical = Spacing.xs),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             BasicText(guideText(step), style = type.body.copy(color = colors.textPrimary), maxLines = 4, overflow = TextOverflow.Ellipsis)
@@ -113,6 +119,3 @@ fun GuideBanner(step: GuideStep, onClose: () -> Unit, modifier: Modifier = Modif
         CloseButton(onClose, tag = "guideClose")
     }
 }
-
-/** The room under the board that is kept for the guide's sentence, so the board never changes size when it appears. */
-val GuideSlotHeight = 96.dp

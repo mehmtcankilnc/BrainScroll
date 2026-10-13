@@ -18,6 +18,11 @@ insertResult:
 INSERT OR IGNORE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- A daily result that the server holds for the signed-in account wins over the one this device made while anonymous.
+replaceResult:
+INSERT OR REPLACE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 selectAll:
 SELECT * FROM game_result ORDER BY finished_at ASC, id ASC;
 

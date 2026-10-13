@@ -30,6 +30,65 @@ class GuideUiTest {
     }
 
     @Test
+    fun theGuideOnLightsOut() = runComposeUiTest {
+        start(openFeed = false, games = listOf(GameKind.Lights))
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("lightCell").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isNotEmpty() }
+        mainClock.advanceTimeBy(500)
+        snap("213_guide_lights")
+        assertTrue(onAllNodesWithTag("guideMark").fetchSemanticsNodes().size == 1, "one light is ringed")
+    }
+
+    @Test
+    fun aLongGuideSentenceOnSudoku() = runComposeUiTest {
+        start(openFeed = false, games = listOf(GameKind.Sudoku))
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("sudokuCell").fetchSemanticsNodes().size >= 81 }
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isNotEmpty() }
+        mainClock.advanceTimeBy(500)
+        snap("214_guide_sudoku")
+    }
+
+    @Test
+    fun aLongGuideSentenceWithBigText() = runComposeUiTest {
+        start(openFeed = false, games = listOf(GameKind.Sudoku), fontScale = 1.3f)
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("sudokuCell").fetchSemanticsNodes().size >= 81 }
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isNotEmpty() }
+        mainClock.advanceTimeBy(500)
+        snap("215_guide_sudoku_big_text")
+    }
+
+    @Test
+    fun theGuideOnACellWithAllNineNotes() = runComposeUiTest {
+        start(openFeed = false, games = listOf(GameKind.Sudoku))
+        openTab("Akış", "Feed")
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("sudokuCell").fetchSemanticsNodes().size >= 81 }
+        // Which cell does the guide point at? Then take the guide away, write all nine notes in that cell, ask again.
+        onAllNodesWithTag("guideButton")[0].performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("guideMark").fetchSemanticsNodes().isNotEmpty() }
+        val target = onAllNodesWithTag("guideMark")[0].fetchSemanticsNode().boundsInRoot.center
+        val index = onAllNodesWithTag("sudokuCell").fetchSemanticsNodes().indexOfFirst {
+            kotlin.math.abs(it.boundsInRoot.center.x - target.x) < 2f && kotlin.math.abs(it.boundsInRoot.center.y - target.y) < 2f
+        }
+        assertTrue(index >= 0, "the cell of the guide was found")
+        onAllNodesWithTag("guideClose")[0].performClick()
+        waitForIdle()
+        onAllNodesWithTag("sudokuNotes")[0].performClick()
+        onAllNodesWithTag("sudokuCell")[index].performClick()
+        for (digit in 1..9) onAllNodesWithTag("sudokuKey$digit")[0].performClick()
+        onAllNodesWithTag("sudokuNotes")[0].performClick()
+        onAllNodesWithTag("guideButton")[0].performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isNotEmpty() }
+        mainClock.advanceTimeBy(300)
+        snap("216_guide_cell_with_notes")
+    }
+
+    @Test
     fun theCrossClosesTheGuideSentence() = runComposeUiTest {
         openMinesFeed()
         onNodeWithTag("guideButton").performClick()

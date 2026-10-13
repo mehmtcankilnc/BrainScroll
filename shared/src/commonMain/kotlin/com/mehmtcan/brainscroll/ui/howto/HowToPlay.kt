@@ -175,7 +175,7 @@ fun HowToPlaySheet(kind: GameKind, onClose: () -> Unit, modifier: Modifier = Mod
             modifier = Modifier.semantics { heading() },
         )
         Column(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
             content.steps.forEachIndexed { index, step ->

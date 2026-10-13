@@ -18,6 +18,7 @@ import brainscroll.shared.generated.resources.favorites_all
 import brainscroll.shared.generated.resources.favorites_record
 import brainscroll.shared.generated.resources.favorites_replay
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -280,7 +281,7 @@ private fun AccountCard(account: AccountState, username: String?, onSignIn: () -
             BasicText(initial, style = type.heading.copy(color = if (named) colors.correctOn else colors.textSecondary))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            BasicText(title, style = type.heading.copy(color = colors.textPrimary), maxLines = 1)
+            BasicText(title, style = type.heading.copy(color = colors.textPrimary), maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (detail != null) BasicText(detail, style = type.caption.copy(color = colors.textSecondary))
         }
         if (!named) ForwardChevron(colors.textSecondary)
@@ -305,7 +306,7 @@ private fun StreakTile(kind: StreakKind, title: String, current: Int, best: Int?
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             if (kind == StreakKind.Daily) FlameIcon(accent) else BoltIcon(accent)
-            BasicText(title, style = type.caption.copy(color = colors.textSecondary), maxLines = 1)
+            BasicText(title, style = type.caption.copy(color = colors.textSecondary), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         BasicText(current.toString(), style = type.display.copy(color = accent))
         if (best != null) BasicText(stringResource(Res.string.streak_best, best), style = type.caption.copy(color = colors.textSecondary))

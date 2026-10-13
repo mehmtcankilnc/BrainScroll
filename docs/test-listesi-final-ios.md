@@ -67,6 +67,7 @@ Her oyunun kendi bölümü aşağıda (8). Burası bütün sayfalar için ortak 
 - [ ] ?: o oyunun kurallarını **alttan kayarak açılan** panelde gösteriyor (bölüm 7).
 - [ ] Şimşek rozetine dokununca "Bu akışta çözülen" açıklama paneli açılıyor (bölüm 5).
 - [ ] Büyük yazıda üst çubuk, ampul ve alt çubuk kesilmiyor.
+- [ ] **Bildirimler (toast)** — Google ile giriş, kullanıcı adı, arkadaş ekleme gibi: ekranın **altında, alt sekme çubuğunun hemen üstünde**, profil kartları gibi yuvarlak köşeli, **yeşil çerçeveli** ve geniş kartta, kısa bir yükselme animasyonuyla çıkıyor; yazısı belirgin, 2,5 sn sonra kayboluyor (hata mesajları daha uzun).
 
 ---
 
@@ -92,8 +93,8 @@ Karar: rehbersiz kazanılan bulmaca sayısı. Kayıp ya da yarım bırakma sıf�
 Yalnız akışta (günlük bulmacada yok).
 
 - [ ] Ampul ikonu üst çubukta, streak rozetinin solunda; **bitmiş bulmacada kayboluyor**. İpucu butonu artık **yok**.
-- [ ] Ampule bas: tahtanın **altındaki sabit yerde** cümle çıkıyor (sağında **çarpı**), cümle yumuşakça beliriyor; **oyun alanı boyut değiştirmiyor, takılma yok**. Cümle halkalı hücrenin/kartın/tüpün üstünü kapatmıyor.
-- [ ] Çarpıya basınca cümle kayboluyor. Bir hamle yapınca eski adım ve halka kayboluyor, tekrar ampule basınca sonraki adım geliyor.
+- [ ] Ampule bas: cümle **üst çubuğun yerinde** (üstte, çubuğun üzerine binen kart olarak) yumuşakça beliriyor, sağında **çarpı**; **oyun alanı hiç yer değiştirmiyor, boyutu değişmiyor, takılma yok**; tahtanın altında artık **boş rehber alanı yok** (kelime bulmacası ve diğer oyunlar eskisi gibi dikey ortalı). Kart açıkken geri oku/streak çubuğu kartın altında kalıyor, kartın üstüne dokunmak çubuğa geçmiyor. Cümle halkalı hücrenin/kartın/tüpün üstünü kapatmıyor.
+- [ ] Çarpıya basınca kart kayboluyor ve çubuk geri geliyor. Bir hamle yapınca eski adım ve halka kayboluyor, tekrar ampule basınca sonraki adım geliyor.
 - [ ] Halka: hücre/kart/tüpün **kendi şeklini** izliyor (özellikle **tüplerde**: üstte hafif köşeli, altta yuvarlak), yanıp sönüyor. Hareketi azalt açıkken sabit.
 - [ ] Cümleler sığıyor: **tüplerde** "Halkalı tüpe dokun, sonra halkalanan tüpe dök." gibi kısa; uzun cümle en fazla 4 satırda "…" ile kesiliyor.
 - [ ] Mayın: ilk basışta ortadaki hücre, sonra güvenli hücre / bayrak konacak hücre; kesin hamle yoksa "Şu an kesin bir hamle yok".
@@ -110,7 +111,7 @@ Yalnız akışta (günlük bulmacada yok).
 - [ ] Karartma **alt sekme çubuğunu**, **durum çubuğunu** (üstteki saat/pil alanı) ve home göstergesi alanını da kaplıyor; hiçbiri parlak kalmıyor.
 - [ ] Kapatma: "Anladım" düğmesi, panelin dışına dokunmak ve kenardan geri kaydırma. "Kapatmak için dışına dokun" yazısı **yok**. Geri tuşu/hareketi uygulamadan ya da akıştan çıkmıyor, yalnız paneli kapatıyor.
 - [ ] Panel açıkken arkadaki oyuna dokunmak/kaydırmak çalışmıyor, kelime klavyesi yazdırmıyor.
-- [ ] Büyük yazıda panel taşmıyor, adımlar kaydırılabiliyor, "Anladım" görünür kalıyor.
+- [ ] **Küçük/kısa telefonda ve büyük yazıyla** panel ekranın en çok %90'ı kadar yükseliyor, adımlar **kaydırılıyor, "Anladım" her zaman görünür** (yazı alttan kesilip düğme kaybolmuyor). Sıralama filtre paneli de aynı.
 - [ ] Onay kutuları (yeni akış, çıkış, hesabı sil) da tüm ekranı (alt çubuk ve sistem çubukları dahil) karartıyor.
 - [ ] Kural metinleri güncel: kelime 6 deneme; hafıza 6 çift ve **hata yalnız sayılır**; 7 tüp; 10 mayın; sudoku **hata sınırı yok**; ışıklar, kayan bulmaca, hedef sayı, boru bağla kuralları doğru.
 - [ ] VoiceOver: ? düğmesi "Nasıl oynanır?" diye, panel başlığı başlık olarak okunuyor.
@@ -167,7 +168,7 @@ Her oyun için ortak kontroller: akışta sırası, yarım kalan oyun (uygulamay
 ### 8e. Sudoku
 
 - [ ] Akışta doğru sırada geliyor, başlıkta oyun adı ve "Nasıl oynanır?" (?), tahta küçük telefonda da ekrana sığıyor ve parmakla rahat kullanılıyor.
-- [ ] 9x9, ~36 dolu hücre, 3x3 kutular arasında belirgin boşluk; küçük telefonda sığıyor. Üstte "Hata: 0" çipi (**sınırsız sayaç, `/3` yok**; sıfırdan büyükse kırmızı).
+- [ ] 9x9, ~36 dolu hücre; **3x3 kutular açık renkli birer panel** üzerinde, koyu kareler olarak ve aralarında net boşlukla duruyor (kutular birbirinden bir bakışta ayrılıyor); küçük telefonda sığıyor. Seçili hücre sarı çerçeve + sarımsı dolgu, aynı rakamlar ve satır/sütun/kutu daha hafif sarımsı. Üstte "Hata: 0" çipi (**sınırsız sayaç, `/3` yok**; sıfırdan büyükse kırmızı).
 - [ ] **Numpad:** üstte **tek satırda 1-9** (yüksek, rahat vurulan tuşlar), altında iki **yuvarlak ikon butonu**: kalem (notlar) ve silgi. Notlar açıkken kalem butonu sarı çerçeveli. Butonlar renk tüplerindeki geri al/yeniden başlat ve mayındaki bayrak butonuyla **aynı görünümde**.
 - [ ] Boş hücre seç: sarı çerçeve, aynı satır/sütun/kutu açık zemin. **Doğru** sayı yerleşiyor (kalıcı, orta titreşim). **Yanlış** sayı: hücre kırmızı, "Hata" +1, uyarı; silgi ya da başka sayı ile düzelir. Aynı yanlışı tekrar basmak hata artırmıyor.
 - [ ] **Hata sınırı yok**: 3'ten fazla yanlış yapınca oyun bitmiyor, kaybetmek yok. Sonuç yalnız kazanma ("Sudoku çözüldü!").
@@ -202,7 +203,7 @@ Her oyun için ortak kontroller: akışta sırası, yarım kalan oyun (uygulamay
 
 - [ ] Akışta doğru sırada geliyor, başlıkta oyun adı ve "Nasıl oynanır?" (?), tahta küçük telefonda da ekrana sığıyor ve parmakla rahat kullanılıyor.
 - [ ] 5x5, "Hamle 0", "En az N" (genelde 25-40). Buluşan yönler yeşil ve komşuyla kesintisiz, açık uçlar gri ve ucunda halka. Karoya dokun: saat yönünde 90° dönüyor (kısa animasyon), hamle +1; hızlı dokunuşta takılma yok.
-- [ ] Baştan başla animasyonsuz, hamleyi sıfırlamıyor. "En az N" gerçekten N dokunuşla çözülüyor. Kazanma: "Tüm borular bağlandı!". Yeni tahta takılmadan geliyor.
+- [ ] **Hızlı arka arkaya dokunuşlardan sonra** (ör. aynı karoya hızlıca iki-üç kez) hiçbir karoda yanlış renk yok: bağlı kollar yeşil, tahta kenarına bakan kol ya da komşusu olmayan kol hiçbir zaman yeşil değil; iki komşu karonun birbirine bakan kolları aynı renkte. Baştan başla animasyonsuz, hamleyi sıfırlamıyor. "En az N" gerçekten N dokunuşla çözülüyor. Kazanma: "Tüm borular bağlandı!". Yeni tahta takılmadan geliyor.
 - [ ] Oyun ortak kontrolleri: yarım kalan oyun doğru geri geliyor, kalp ile favori (Profil > Favoriler'de satır), "Ana Sayfa > Düzenle" ile oyun kapatılınca yeni sayfalarda gelmiyor, hesaplı: sonuç Supabase'e gidiyor (bölüm 14), ekran okuyucu ve büyük yazı ile kullanılabiliyor.
 
 ---
@@ -259,6 +260,7 @@ Her oyun için ortak kontroller: akışta sırası, yarım kalan oyun (uygulamay
 - [ ] **Hesap silme (gerçekten siler, B hesabıyla):** hazırlık: giriş, kullanıcı adı, birkaç bulmaca çöz, bir favori, günlük bulmaca. Vazgeç yolunda hiçbir şey silinmiyor. Uçak modunda "Kalıcı olarak sil": "Hesap silinemedi…" ve **hiçbir veri silinmiyor**. Gerçek silme: "Hesap silindi", anonim hesap, istatistikler/favoriler sıfır, yeni akış, kullanıcı adı gitti, dil seçimi ve paylaşım anahtarı **korundu**, akış rekoru sıfırlandı. Aynı B hesabıyla tekrar giriş: sıfırdan yeni hesap.
 - [ ] Supabase: `select count(*) from profile where lower(username) = 'silme_testi';` → 0 (yeniden aldıysan 1). Anonim hesapta "Hesabı sil" görünmüyor.
 - [ ] **Birleştirme:** A hesabı eski EN günlük sonuç + kullanıcı adıyla çıkış yapılmış; yeni anonim kurulumda TR günlük + birkaç akış bulmacası + bir favori çöz; sonra A ile giriş: ~10 sn sonra sıralamada TR sonucum kullanıcı adımla, eski EN sonuç duruyor, gün serisi ikisini birlikte sayıyor, profil ve favori yerinde. Aynı gün aynı dilde çakışmada A'nın kendi sonucu kalıyor. Hiç kullanılmamış hesapla giriş: veri kaybolmuyor. Tarayıcıdan vazgeçince / uçak modunda giriş: uygulama bozulmuyor. Giriş sonrası ağ yokken birleştirme bir sonraki açılışta tamamlanıyor.
+- [ ] **Günün bulmacası sonucu:** anonimken günün bulmacasını (ör. boru bağla, 87 hamle) çöz; sonra bugünün bulmacasını başka bir cihazda daha önce çözmüş (35 hamle) var olan hesapla giriş yap. Birkaç saniye sonra ana sayfadaki kartta "Sonucu gör" ve sonuç ekranı **35 hamle**yi (hesabın kayıtlı sonucu) gösteriyor; sıralamadaki değerle aynı; 87 görünmüyor.
 - [ ] Supabase doğrulama: `select r.mode, r.language, r.day_index, r.duration_ms from game_result r join profile p on p.user_id = r.user_id where lower(p.username) = lower('KULLANICI_ADIN') order by r.day_index, r.language;` ve `select count(*) from auth.users where is_anonymous;` (1 azaldı).
 
 ---
