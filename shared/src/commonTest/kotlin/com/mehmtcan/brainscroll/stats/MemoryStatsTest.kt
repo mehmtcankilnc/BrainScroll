@@ -69,15 +69,6 @@ class MemoryStatsTest {
     }
 
     @Test
-    fun theAnswerStreakSpansBothGames() {
-        val history = listOf(word(Outcome.LOST), word(Outcome.WON), memory(Outcome.WON), word(Outcome.WON))
-        assertEquals(3, Streaks.current(history))
-        assertEquals(3, computeStats(history).currentStreak)
-        val broken = history + memory(Outcome.LOST)
-        assertEquals(0, Streaks.current(broken), "a memory loss breaks the streak too")
-    }
-
-    @Test
     fun dailyResultsAreNeverMemory() {
         val daily = FinishedRound("d1", Mode.DAILY, Language.EN, "CRANE", listOf("CRANE"), Outcome.WON, 5L, durationMs = 9_000)
         assertEquals(0, computeMemoryStats(listOf(daily)).played)

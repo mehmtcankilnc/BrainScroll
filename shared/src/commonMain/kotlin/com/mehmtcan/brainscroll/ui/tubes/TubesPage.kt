@@ -97,7 +97,6 @@ import com.mehmtcan.brainscroll.ui.memory.symbolColor
 import com.mehmtcan.brainscroll.ui.memory.symbolName
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
-import com.mehmtcan.brainscroll.ui.motion.popOnAppear
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -309,7 +308,7 @@ private fun Board(
                     selected = selected == index,
                     width = width,
                     height = height,
-                    modifier = Modifier.offset(left(index).dp, top(index).dp).guideHighlight(guidedTube(index, selected), RoundedCornerShape(14.dp)),
+                    modifier = Modifier.offset(left(index).dp, top(index).dp).guideHighlight(guidedTube(index, selected), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = width / 2, bottomEnd = width / 2)),
                     pour = pour?.takeIf { index == it.animation.from },
                     onClick = { onTap(index) },
                 )
@@ -405,7 +404,11 @@ private class PourGeometry(
     fun targetSegments(contents: List<Int>): List<Segment> {
         val segments = contents.map { Segment(it, 1f) }
         val added = animation.amount * poured
-        return if (added > 0.001f) segments + Segment(animation.color, added) else segments
+        // One piece per unit, like the tube will have when the pour is over: a single growing piece would show one symbol
+        // stretched and then, at the end, suddenly two.
+        val whole = added.toInt()
+        val part = added - whole
+        return segments + List(whole) { Segment(animation.color, 1f) } + if (part > 0.001f) listOf(Segment(animation.color, part)) else emptyList()
     }
 }
 
@@ -534,7 +537,6 @@ private fun Tube(
                     rotationZ = pour.angleDegrees
                 }
             }
-            .popOnAppear(sorted)
             .testTag("tube")
             .semantics(mergeDescendants = true) {
                 contentDescription = description

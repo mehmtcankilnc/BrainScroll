@@ -26,6 +26,7 @@ private const val SETTING_GAMES = "feed_games"
 private const val SETTING_PENDING_CRASH = "pending_crash"
 private const val SETTING_MERGE_TICKET = "merge_ticket"
 private const val SETTING_DAILY_SENT = "daily_sent:"
+private const val SETTING_BEST_FLOW = "best_flow"
 
 /**
  * Reads and writes everything the app keeps on the device. It is the only place that knows the tables;
@@ -177,6 +178,13 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     fun saveGames(games: Set<GameKind>) {
         settings.put(SETTING_GAMES, games.joinToString(",") { it.id })
+    }
+
+    /** The most puzzles solved in one feed so far. Kept on this device only. */
+    fun bestFlow(): Int = settings.get(SETTING_BEST_FLOW).executeAsOneOrNull()?.toIntOrNull() ?: 0
+
+    fun saveBestFlow(count: Int) {
+        settings.put(SETTING_BEST_FLOW, count.toString())
     }
 
     // --- Account deletion ---

@@ -9,7 +9,7 @@ import kotlin.random.Random
  */
 enum class CardSymbol { Circle, Triangle, Star, Heart, Diamond, Square, Plus, Moon }
 
-enum class MemoryStatus { Playing, Won, Lost }
+enum class MemoryStatus { Playing, Won }
 
 /** What one tap on a card did. */
 enum class FlipResult {
@@ -35,8 +35,8 @@ data class MemoryState(
     val matched: Set<Int>,
     /** Pairs turned over so far (every second card flipped is one move). */
     val moves: Int,
+    /** Pairs that did not match so far. There is no limit: they only count, and the game goes on. */
     val mistakes: Int,
-    val maxMistakes: Int,
     val status: MemoryStatus,
     /** True while the two face-up cards are a mismatch that has not been hidden yet. */
     val mismatchShown: Boolean,
@@ -49,12 +49,11 @@ data class Flip(val card: Int)
  * The rules of memory match, free of UI and time.
  *
  * Turn over two cards per move. Equal cards stay. Different cards are a mistake and stay face up until the next
- * tap (or until [closeMismatch] when the UI's short pause is over), so the player can look at them. The sixth mistake
- * loses the game; finding every pair wins it (docs/decisions.md).
+ * tap (or until [closeMismatch] when the UI's short pause is over), so the player can look at them. Mistakes are only
+ * counted; finding every pair wins the game, and it is never lost (docs/decisions.md).
  */
 class MemoryGame(
     private val layout: List<CardSymbol>,
-    private val maxMistakes: Int = DEFAULT_MAX_MISTAKES,
 ) : Game<MemoryState, Flip> {
 
     private val faceUp = mutableListOf<Int>()
@@ -76,7 +75,6 @@ class MemoryGame(
             matched = matched.toSet(),
             moves = moves,
             mistakes = mistakes,
-            maxMistakes = maxMistakes,
             status = status,
             mismatchShown = mismatchShown,
         )
@@ -114,7 +112,6 @@ class MemoryGame(
         faceUp += card
         mistakes++
         mismatchShown = true
-        if (mistakes >= maxMistakes) status = MemoryStatus.Lost
         return FlipResult.Mismatch
     }
 
@@ -127,7 +124,6 @@ class MemoryGame(
 
     companion object {
         const val PAIRS = 6
-        const val DEFAULT_MAX_MISTAKES = 6
 
         /** A shuffled board of [pairs] different symbols, two cards each. */
         fun newLayout(random: Random, pairs: Int = PAIRS): List<CardSymbol> {

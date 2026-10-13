@@ -115,13 +115,4 @@ class SudokuRoundTest {
     }
 
     private fun snapshotTime(r: SudokuRound) = r.snapshot().durationMs
-
-    @Test
-    fun aLostRoundIsALoss() {
-        val r = round()
-        val sol = solution()
-        for (cell in r.emptyCells().take(3)) r.place(cell, if (sol[cell] == 1) 2 else 1)
-        assertEquals(SudokuStatus.Lost, r.snapshot().state.status)
-        assertEquals(Outcome.LOST, r.toFinished(finishedAt = 1).outcome)
-    }
 }

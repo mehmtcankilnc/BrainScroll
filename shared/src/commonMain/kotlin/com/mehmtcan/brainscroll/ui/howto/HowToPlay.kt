@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.howto_button
-import brainscroll.shared.generated.resources.howto_close_hint
 import brainscroll.shared.generated.resources.howto_done
 import brainscroll.shared.generated.resources.howto_target_1
 import brainscroll.shared.generated.resources.howto_target_2
@@ -84,14 +83,14 @@ import brainscroll.shared.generated.resources.howto_word_3
 import brainscroll.shared.generated.resources.howto_word_4
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.components.AppButton
-import com.mehmtcan.brainscroll.ui.components.Chip
+import com.mehmtcan.brainscroll.ui.components.ModalSheet
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** The round "?" next to the name of the game. It opens [HowToPlaySheet]; the touch area is 48 dp. */
+/** The round "?" next to the name of the game. It opens [HowToPlaySheet]; the touch area is 40 dp wide, so the bar has room. */
 @Composable
 fun HowToIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
@@ -99,7 +98,7 @@ fun HowToIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .testTag("howToButton")
-            .size(48.dp)
+            .size(40.dp)
             .semantics { contentDescription = description }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -160,64 +159,42 @@ private fun contentOf(kind: GameKind) = when (kind) {
 }
 
 /**
- * The rules of one game as a panel over the page, in the same style as the feed settings: the scrim behind it, the
- * "Got it" button or the system back button closes it. The steps scroll if the text size is large.
+ * The rules of one game as a sheet sliding up over the whole screen. The dark area behind it, the "Got it" button or the
+ * system back button closes it. The steps scroll if the text size is large.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun HowToPlaySheet(kind: GameKind, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val content = contentOf(kind)
 
-    // Back closes the panel and nothing else (it is the innermost handler, so it goes first).
-    BackHandler(enabled = true, onBack = onClose)
-
-    Box(modifier = modifier.fillMaxSize().testTag("howToSheet")) {
-        // The scrim: tapping outside the panel closes it. It also keeps touches and swipes away from the page below.
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.55f))
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose),
+    ModalSheet(onDismiss = onClose, modifier = modifier, tag = "howToSheet") { close ->
+        BasicText(
+            text = stringResource(content.title),
+            style = type.title.copy(color = colors.textPrimary),
+            modifier = Modifier.semantics { heading() },
         )
         Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(colors.bgSurface, Radius.card)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
-                .padding(Spacing.lg),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            BasicText(
-                text = stringResource(content.title),
-                style = type.title.copy(color = colors.textPrimary),
-                modifier = Modifier.semantics { heading() },
-            )
-            Column(
-                modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                content.steps.forEachIndexed { index, step ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        // The number sits in a small circle; the text is the same size as the rest of the app.
-                        Box(
-                            modifier = Modifier.size(24.dp).background(colors.bgRaised, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            BasicText((index + 1).toString(), style = type.label.copy(color = colors.textPrimary))
-                        }
-                        BasicText(
-                            text = stringResource(step),
-                            style = type.body.copy(color = colors.textPrimary),
-                            modifier = Modifier.weight(1f),
-                        )
+            content.steps.forEachIndexed { index, step ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    // The number sits in a small circle; the text is the same size as the rest of the app.
+                    Box(
+                        modifier = Modifier.size(24.dp).background(colors.bgRaised, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        BasicText((index + 1).toString(), style = type.label.copy(color = colors.textPrimary))
                     }
+                    BasicText(
+                        text = stringResource(step),
+                        style = type.body.copy(color = colors.textPrimary),
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
-            BasicText(stringResource(Res.string.howto_close_hint), style = type.caption.copy(color = colors.textSecondary))
-            AppButton(text = stringResource(Res.string.howto_done), onClick = onClose, primary = true)
         }
+        AppButton(text = stringResource(Res.string.howto_done), onClick = close, primary = true)
     }
 }

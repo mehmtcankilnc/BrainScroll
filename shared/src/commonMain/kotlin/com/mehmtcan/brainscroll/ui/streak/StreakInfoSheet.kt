@@ -36,8 +36,10 @@ import brainscroll.shared.generated.resources.streak_now
 import brainscroll.shared.generated.resources.streak_win_1
 import brainscroll.shared.generated.resources.streak_win_2
 import brainscroll.shared.generated.resources.streak_win_3
+import brainscroll.shared.generated.resources.streak_win_4
 import brainscroll.shared.generated.resources.streak_win_title
 import com.mehmtcan.brainscroll.ui.components.AppButton
+import com.mehmtcan.brainscroll.ui.components.ModalSheet
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -48,11 +50,11 @@ enum class StreakKind { Daily, Win }
 
 /**
  * What a streak means, as a panel over the page in the same style as the rules of a game: where the number comes from,
- * what breaks it, and how far it has come. The scrim behind it, the "Got it" button or the system back button closes it.
+ * what breaks it, and how far it has come. It slides up like the rules; the dark area behind it, the "Got it" button or the
+ * system back button closes it.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun StreakInfoSheet(kind: StreakKind, current: Int, best: Int, onClose: () -> Unit, modifier: Modifier = Modifier, freezes: Int = 0) {
+fun StreakInfoSheet(kind: StreakKind, current: Int?, best: Int, onClose: () -> Unit, modifier: Modifier = Modifier, freezes: Int = 0) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val accent = if (kind == StreakKind.Daily) colors.streakDay else colors.streakAnswer
@@ -60,46 +62,26 @@ fun StreakInfoSheet(kind: StreakKind, current: Int, best: Int, onClose: () -> Un
     val lines = if (kind == StreakKind.Daily) {
         listOf(Res.string.streak_daily_1, Res.string.streak_daily_2, Res.string.streak_daily_3)
     } else {
-        listOf(Res.string.streak_win_1, Res.string.streak_win_2, Res.string.streak_win_3)
+        listOf(Res.string.streak_win_1, Res.string.streak_win_2, Res.string.streak_win_3, Res.string.streak_win_4)
     }
 
-    // Back closes the panel and nothing else.
-    BackHandler(enabled = true, onBack = onClose)
-
-    Box(modifier = modifier.fillMaxSize().testTag("streakSheet")) {
-        // The scrim: tapping outside the panel closes it, and keeps touches away from the page below.
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.55f))
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose),
-        )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(colors.bgSurface, Radius.card)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
-                .padding(Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md),
-        ) {
-            BasicText(title, style = type.title.copy(color = accent), modifier = Modifier.semantics { heading() })
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-                BasicText(stringResource(Res.string.streak_now, current), style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.testTag("streakNow"))
-                BasicText(stringResource(Res.string.streak_best, best), style = type.heading.copy(color = colors.textSecondary))
-            }
-            lines.forEachIndexed { index, line ->
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Box(Modifier.size(24.dp).background(colors.bgRaised, CircleShape), contentAlignment = Alignment.Center) {
-                        BasicText((index + 1).toString(), style = type.label.copy(color = colors.textPrimary))
-                    }
-                    BasicText(stringResource(line), style = type.body.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
-                }
-            }
-            if (kind == StreakKind.Daily) {
-                BasicText(stringResource(Res.string.daily_freeze, freezes), style = type.label.copy(color = colors.textSecondary))
-            }
-            AppButton(text = stringResource(Res.string.howto_done), onClick = onClose, primary = true, modifier = Modifier.padding(top = Spacing.xs))
+    ModalSheet(onDismiss = onClose, modifier = modifier, tag = "streakSheet") { close ->
+        BasicText(title, style = type.title.copy(color = accent), modifier = Modifier.semantics { heading() })
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+            if (current != null) BasicText(stringResource(Res.string.streak_now, current), style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.testTag("streakNow"))
+            BasicText(stringResource(Res.string.streak_best, best), style = type.heading.copy(color = colors.textSecondary))
         }
+        lines.forEachIndexed { index, line ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                Box(Modifier.size(24.dp).background(colors.bgRaised, CircleShape), contentAlignment = Alignment.Center) {
+                    BasicText((index + 1).toString(), style = type.label.copy(color = colors.textPrimary))
+                }
+                BasicText(stringResource(line), style = type.body.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+            }
+        }
+        if (kind == StreakKind.Daily) {
+            BasicText(stringResource(Res.string.daily_freeze, freezes), style = type.label.copy(color = colors.textSecondary))
+        }
+        AppButton(text = stringResource(Res.string.howto_done), onClick = close, primary = true, modifier = Modifier.padding(top = Spacing.xs))
     }
 }

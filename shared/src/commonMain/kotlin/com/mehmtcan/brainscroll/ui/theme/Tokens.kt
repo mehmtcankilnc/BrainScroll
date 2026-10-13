@@ -81,6 +81,9 @@ object Radius {
     val tile = RoundedCornerShape(8.dp)
     val control = RoundedCornerShape(12.dp)
     val card = RoundedCornerShape(16.dp)
+
+    /** A panel sliding up from the bottom edge: round on top, flat where it meets the screen. */
+    val sheet = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     val pill = RoundedCornerShape(percent = 50)
 }
 

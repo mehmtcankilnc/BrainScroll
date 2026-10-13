@@ -14,6 +14,9 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -204,6 +207,14 @@ internal fun ComposeUiTest.openProfilePage(turkish: String, english: String) {
     openTab("Profil", "Profile")
     waitForIdle()
     clickAny(turkish, english)
+    waitForIdle()
+}
+
+/** A game's line on the statistics page is closed until it is tapped: opens the one with [tag] (e.g. `statsDaily`). */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.expandStats(tag: String) {
+    onNode(hasScrollAction()).performScrollToNode(hasTestTag(tag))
+    onNodeWithTag(tag).performClick()
     waitForIdle()
 }
 

@@ -3,6 +3,7 @@ package com.mehmtcan.brainscroll.game.sudoku
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -93,7 +94,6 @@ class SudokuGameTest {
         val state = game().state
         assertEquals(SudokuStatus.Playing, state.status)
         assertEquals(0, state.mistakes)
-        assertEquals(3, state.maxMistakes)
         assertEquals(0, state.moves)
         assertTrue(state.wrong.isEmpty())
         assertEquals(state.givens, state.values)
@@ -132,18 +132,16 @@ class SudokuGameTest {
     }
 
     @Test
-    fun theThirdMistakeLosesAndTheBoardTakesNothingMore() {
+    fun mistakesAreOnlyCountedAndTheGameGoesOn() {
         val g = game()
         val cells = g.emptyCells()
-        g.place(cells[0], wrongDigit(cells[0]))
-        g.place(cells[1], wrongDigit(cells[1]))
-        assertEquals(SudokuStatus.Playing, g.state.status)
-        g.place(cells[2], wrongDigit(cells[2]))
-        assertEquals(SudokuStatus.Lost, g.state.status)
-        assertTrue(g.isFinished)
-        assertEquals(SudokuResult.Ignored, g.place(cells[3], solutionOf()[cells[3]]))
-        assertEquals(SudokuResult.Ignored, g.toggleNote(cells[3], 4))
-        assertEquals(SudokuResult.Ignored, g.erase(cells[0]))
+        for (i in 0 until 5) g.place(cells[i], wrongDigit(cells[i]))
+        assertEquals(SudokuStatus.Playing, g.state.status, "there is no limit: a sudoku is never lost")
+        assertEquals(5, g.state.mistakes)
+        assertFalse(g.isFinished)
+        // The wrong digits can be taken back and the board played on.
+        assertEquals(SudokuResult.Changed, g.erase(cells[0]))
+        assertEquals(SudokuResult.Correct, g.place(cells[0], solutionOf()[cells[0]]))
     }
 
     @Test
@@ -242,7 +240,6 @@ class SudokuGameTest {
     fun aGameNeedsSaneSettings() {
         assertFailsWith<IllegalArgumentException> { SudokuGame(1, clues = 5) }
         assertFailsWith<IllegalArgumentException> { SudokuGame(1, clues = 81) }
-        assertFailsWith<IllegalArgumentException> { SudokuGame(1, maxMistakes = 0) }
-        assertNotNull(SudokuGame(1, clues = 45, maxMistakes = 5))
+        assertNotNull(SudokuGame(1, clues = 45))
     }
 }

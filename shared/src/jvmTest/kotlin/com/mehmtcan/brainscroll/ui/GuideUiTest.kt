@@ -10,7 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** The hint and the guide under a puzzle of the feed, through the real screen (minesweeper stands in for every game). */
+/** The guide of a puzzle of the feed, through the real screen (minesweeper stands in for every game). */
 @OptIn(ExperimentalTestApi::class)
 class GuideUiTest {
 
@@ -21,22 +21,21 @@ class GuideUiTest {
     }
 
     @Test
-    fun theButtonsAreUnderAPuzzleThatIsNotOver() = runComposeUiTest {
+    fun theGuideIsALightBulbUnderTheStreakAndThereIsNoHintButton() = runComposeUiTest {
         openMinesFeed()
-        snap("210_help_row")
-        assertTrue(onAllNodesWithTag("hintButton").fetchSemanticsNodes().isNotEmpty())
+        snap("210_guide_icon")
         assertTrue(onAllNodesWithTag("guideButton").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(onAllNodesWithTag("hintButton").fetchSemanticsNodes().isEmpty(), "the general hint is gone")
+        assertTrue(onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isEmpty(), "nothing is said until the player asks")
     }
 
     @Test
-    fun theHintIsAGeneralTipAndChangesNothing() = runComposeUiTest {
+    fun theCrossClosesTheGuideSentence() = runComposeUiTest {
         openMinesFeed()
-        onNodeWithTag("hintButton").performClick()
-        waitForIdle()
-        snap("211_hint_sheet")
-        assertTrue(onAllNodesWithTag("hintSheet").fetchSemanticsNodes().isNotEmpty())
-        assertTrue(hasAnyText("İpucu: Mayın tarlası", "Hint: Minesweeper"))
-        assertTrue(onAllNodesWithTag("guideMark").fetchSemanticsNodes().isEmpty(), "a hint does not point at the board")
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithTag("guideClose").performClick()
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("guideBanner").fetchSemanticsNodes().isEmpty() }
     }
 
     @Test
@@ -47,7 +46,6 @@ class GuideUiTest {
         snap("212_guide_step")
 
         assertTrue(hasAnyText("Başlamak için ortadan bir hücre aç", "Open a cell in the middle to start"))
-        assertTrue(hasAnyText("kazanma serini değiştirmez", "will not change your win streak"))
         assertTrue(onAllNodesWithTag("guideMark").fetchSemanticsNodes().size == 1, "one cell is ringed")
 
         // Playing on makes the step old.

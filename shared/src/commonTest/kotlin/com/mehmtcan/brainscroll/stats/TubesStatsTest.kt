@@ -42,10 +42,10 @@ class TubesStatsTest {
     }
 
     @Test
-    fun aTubesWinCountsForTheAnswerStreakAndNotForTheGuessDistribution() {
+    fun aTubesWinDoesNotCountForTheGuessDistribution() {
         val history = listOf(word(Outcome.WON), tubes(20, 50_000), word(Outcome.WON))
         val all = computeStats(history)
-        assertEquals(3, all.currentStreak, "the streak spans every game")
+        assertEquals(3, all.played, "the numbers span every game")
         assertEquals(2, all.guessDistribution.sum(), "only the two word puzzles have guesses")
     }
 }

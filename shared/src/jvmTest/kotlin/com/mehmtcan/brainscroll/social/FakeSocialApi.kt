@@ -25,6 +25,9 @@ class FakeSocialApi(
 ) : SocialApi {
     val calls = mutableListOf<String>()
 
+    /** While set, a name like the random ones the phone picks (letters then three digits) cannot be saved. */
+    var failRandomNames = false
+
     /** Thrown by every call while set, to simulate being offline. */
     var failure: SocialException? = null
 
@@ -44,6 +47,7 @@ class FakeSocialApi(
 
     override suspend fun setUsername(name: String): MyProfile {
         enter("setUsername:$name")
+        if (failRandomNames && Regex("[a-z]+[0-9]{3}").matches(name)) throw SocialException.Unavailable()
         if (!member) throw SocialException.NotMember()
         if (!isValidUsername(name)) throw SocialException.InvalidUsername()
         if (name.lowercase() in listOf("fuck", "admin")) throw SocialException.UsernameNotAllowed()

@@ -10,7 +10,6 @@ import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.Outcome
 import com.mehmtcan.brainscroll.game.wordle.StoredRound
 import com.mehmtcan.brainscroll.game.wordle.WordList
-import com.mehmtcan.brainscroll.stats.Streaks
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import kotlin.random.Random
 import kotlin.test.Test
@@ -45,6 +44,14 @@ class GameRepositoryTest {
 
     private fun stored(id: String, position: Int, input: String = "", guesses: List<String> = emptyList()) =
         StoredRound(id, Language.TR, "KİTAP", guesses, input, position = position)
+
+    @Test
+    fun theBestCountOfASingleFeedIsKeptOnTheDevice() {
+        val repo = newRepository()
+        assertEquals(0, repo.bestFlow())
+        repo.saveBestFlow(7)
+        assertEquals(7, repo.bestFlow())
+    }
 
     @Test
     fun anUnfinishedRoundSurvivesARoundTrip() {
@@ -210,17 +217,15 @@ class GameRepositoryTest {
         }
         first.type(1, 'c')
         first.type(1, 'r')
-        val streakAfterFirst = first.answerStreak
 
         // Second run: a new feed built from what the repository saved.
-        val streak = Streaks.current(repo.history())
         val second = EndlessFeed(
             lists, Language.EN, Random(4), store = repo,
-            restored = repo.unfinishedRounds(), startStreak = streak, now = { 6_000L },
+            restored = repo.unfinishedRounds(), now = { 6_000L },
         )
         val rounds = second.snapshot().rounds
 
-        assertEquals(streakAfterFirst, second.answerStreak)
+        assertEquals(0, second.solvedCount, "the count of solved puzzles starts again from zero when the app is started again")
         assertEquals(1, repo.history().size)
         assertEquals(1, rounds.size) // the finished puzzle is history, the started one comes back; an untouched one is not saved
         assertEquals("CR", rounds[0].input)

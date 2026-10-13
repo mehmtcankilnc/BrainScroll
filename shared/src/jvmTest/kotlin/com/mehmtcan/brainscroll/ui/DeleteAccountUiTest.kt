@@ -40,7 +40,12 @@ class DeleteAccountUiTest {
     /** The numbers are on the statistics page, the delete button on the settings page: go to the right one first. */
     private fun ComposeUiTest.scrollProfileTo(vararg texts: String) {
         val stats = texts.any { it.startsWith("En iyi") || it.startsWith("Best") || it.startsWith("Günlük") || it.startsWith("Daily") }
-        if (stats) openProfilePage("İstatistikler", "Statistics") else openProfilePage("Ayarlar", "Settings")
+        if (stats) {
+            openProfilePage("İstatistikler", "Statistics")
+            expandStats("statsDaily")
+        } else {
+            openProfilePage("Ayarlar", "Settings")
+        }
         onNode(hasScrollAction()).performScrollToNode(texts.map { hasText(it, substring = true) }.reduce { a, b -> a or b })
         waitForIdle()
     }

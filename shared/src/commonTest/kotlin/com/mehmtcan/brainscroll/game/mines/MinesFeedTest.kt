@@ -80,7 +80,7 @@ class MinesFeedTest {
         f.ensureSize(2)
         clock += 2_000
         f.solve(0)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
         val result = store.results.single()
         assertEquals(GameKind.Mines, result.game)
         assertEquals(Outcome.WON, result.outcome)
@@ -91,14 +91,14 @@ class MinesFeedTest {
     }
 
     @Test
-    fun hittingAMineIsALossAndResetsTheStreak() {
+    fun hittingAMineIsALossAndTheCountStaysAsItWas() {
         val store = FakeStore()
         val f = feed(store, games = listOf(GameKind.Mines))
         f.ensureSize(3)
         f.solve(0)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
         f.hitMine(1, store)
-        assertEquals(0, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount, "a loss does not reset the count of solved puzzles")
         assertEquals(Outcome.LOST, store.results.last().outcome)
     }
 

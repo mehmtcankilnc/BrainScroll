@@ -55,14 +55,6 @@ class SudokuFeedTest {
         for (cell in state.values.indices) if (state.values[cell] == 0) placeDigit(index, cell, solution[cell])
     }
 
-    private fun EndlessFeed.lose(index: Int) {
-        val solution = solutionOf(index)
-        val state = board(index).state
-        for (cell in state.values.indices.filter { state.values[it] == 0 }.take(3)) {
-            placeDigit(index, cell, if (solution[cell] == 1) 2 else 1)
-        }
-    }
-
     @Test
     fun theGamesComeOneAfterTheOtherAndSudokuIsFifth() {
         val f = feed(games = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku))
@@ -80,7 +72,7 @@ class SudokuFeedTest {
         f.ensureSize(2)
         clock += 2_000
         f.solve(0)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
         val result = store.results.single()
         assertEquals(GameKind.Sudoku, result.game)
         assertEquals(Outcome.WON, result.outcome)
@@ -89,18 +81,6 @@ class SudokuFeedTest {
         f.toggleNote(0, 0, 1)
         f.eraseCell(0, 0)
         assertEquals(1, store.results.size, "a finished board takes no more actions")
-    }
-
-    @Test
-    fun threeMistakesAreALossAndResetTheStreak() {
-        val store = FakeStore()
-        val f = feed(store)
-        f.ensureSize(2)
-        f.solve(0)
-        assertEquals(1, f.snapshot().answerStreak)
-        f.lose(1)
-        assertEquals(0, f.snapshot().answerStreak)
-        assertEquals(Outcome.LOST, store.results.last().outcome)
     }
 
     @Test

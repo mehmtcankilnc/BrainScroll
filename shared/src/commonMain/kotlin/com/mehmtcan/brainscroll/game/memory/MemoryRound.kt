@@ -40,9 +40,8 @@ class MemoryRound(
     private val layout: List<CardSymbol>,
     private val language: Language,
     private val now: () -> Long = { 0L },
-    maxMistakes: Int = MemoryGame.DEFAULT_MAX_MISTAKES,
 ) : FeedRound {
-    private val game = MemoryGame(layout, maxMistakes)
+    private val game = MemoryGame(layout)
     private val flips = mutableListOf<Int>()
     private var elapsedMs = 0L
     private var lastFlipAt: Long? = null

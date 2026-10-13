@@ -21,20 +21,59 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-private const val ExplosionMillis = 850
-private const val SparkCount = 26
+private const val SparkCount = 12
 
 private class Spark(val angle: Float, val speed: Float, val size: Float, val colorIndex: Int)
 
+/** How long one small blast lasts. */
+private const val BurstMillis = 380
+
+/** The room between two blasts of the chain, in milliseconds: shorter when there are many mines, so it never drags. */
+private fun stepMillis(mines: Int): Int = (900 / maxOf(mines, 1)).coerceIn(35, 90)
+
+/** One mine in the chain: the cell it sits in and when (milliseconds after the first blast) it goes off. */
+class MineBlast(val cell: Int, val delayMillis: Int)
+
 /**
- * The blast when a mine is opened: a flash, a shock ring that spreads over the board, and sparks that fly out and fade.
- * It is drawn over the board around the cell that blew up ([centerX], [centerY] from the top left of the board), once
- * when [play] turns true. Nothing is drawn when the player asked for reduced motion, and it never takes touches.
- * The sparks come from a fixed seed so a screenshot test is stable.
+ * The order the mines go off in after one was opened: the one that was opened first, then the next closest, and so on
+ * outwards, a short moment apart. [cols] gives the distance on the board.
+ */
+fun mineChain(mines: Set<Int>, start: Int, cols: Int): List<MineBlast> {
+    if (mines.isEmpty()) return emptyList()
+    fun distance(cell: Int): Int {
+        val dr = cell / cols - start / cols
+        val dc = cell % cols - start % cols
+        return dr * dr + dc * dc
+    }
+    val step = stepMillis(mines.size)
+    return mines.sortedWith(compareBy({ distance(it) }, { it })).mapIndexed { i, cell -> MineBlast(cell, i * step) }
+}
+
+/** Milliseconds the chain needs from the first blast until the last one has faded. */
+fun mineChainMillis(chain: List<MineBlast>): Int = (chain.lastOrNull()?.delayMillis ?: 0) + BurstMillis
+
+/**
+ * The clock of the chain, in milliseconds since the first blast. It runs when [play] turns true (a mine was just opened),
+ * and stays at "everything is over" otherwise (a finished page that is shown again) or when motion is reduced.
  */
 @Composable
-fun MineExplosion(play: Boolean, centerX: Dp, centerY: Dp, cell: Dp, modifier: Modifier = Modifier) {
-    if (LocalReduceMotion.current) return
+fun rememberChainClock(play: Boolean, totalMillis: Int): Float {
+    val reduce = LocalReduceMotion.current
+    val clock = remember(play) { Animatable(if (play && !reduce) 0f else Float.MAX_VALUE) }
+    LaunchedEffect(play) {
+        if (play && !reduce) clock.animateTo(totalMillis.toFloat(), tween(totalMillis, easing = LinearEasing))
+    }
+    return clock.value
+}
+
+/**
+ * The blasts of the chain: for each mine a small flash, a ring that spreads a little and a few sparks that fade, over
+ * [BurstMillis]. Drawn over the board; [centers] gives the centre of each cell from the top left of the board. The sparks
+ * come from a fixed seed so a screenshot test is stable. Nothing is drawn when [clock] says it is over, and it never takes touches.
+ */
+@Composable
+fun MineChainBlasts(chain: List<MineBlast>, clock: Float, centers: (Int) -> Pair<Dp, Dp>, cell: Dp, modifier: Modifier = Modifier) {
+    if (chain.isEmpty() || clock >= mineChainMillis(chain)) return
     val colors = BrainScrollTheme.colors
     val palette = listOf(colors.error, colors.streakDay, colors.pendingFill, colors.textPrimary)
     val sparks = remember {
@@ -42,49 +81,44 @@ fun MineExplosion(play: Boolean, centerX: Dp, centerY: Dp, cell: Dp, modifier: M
         List(SparkCount) {
             Spark(
                 angle = random.nextFloat() * 2f * PI.toFloat(),
-                speed = 1.6f + random.nextFloat() * 3.4f,
-                size = 0.08f + random.nextFloat() * 0.12f,
+                speed = 0.7f + random.nextFloat() * 0.7f,
+                size = 0.07f + random.nextFloat() * 0.08f,
                 colorIndex = random.nextInt(palette.size),
             )
         }
     }
-    val progress = remember { Animatable(if (play) 0f else 1f) }
-    LaunchedEffect(play) {
-        if (play) {
-            progress.snapTo(0f)
-            progress.animateTo(1f, tween(ExplosionMillis, easing = LinearEasing))
-        }
-    }
-
     Canvas(modifier.fillMaxSize().testTag("mineExplosion")) {
-        val t = progress.value
-        if (t >= 1f) return@Canvas
-        val center = Offset(centerX.toPx(), centerY.toPx())
         val unit = cell.toPx()
-        val eased = FastOutSlowInEasing.transform(t)
-
-        // The flash: a bright disc that blooms quickly and is gone by a third of the way.
-        if (t < 0.35f) {
-            val f = t / 0.35f
-            drawCircle(colors.streakDay.copy(alpha = 0.85f * (1f - f)), radius = unit * (0.5f + 1.1f * f), center = center)
-            drawCircle(colors.textPrimary.copy(alpha = 0.9f * (1f - f)), radius = unit * 0.55f * (1f - f), center = center)
-        }
-        // The shock ring: spreads over the board, thinner and fainter as it goes.
-        drawCircle(
-            color = colors.error.copy(alpha = 0.8f * (1f - t)),
-            radius = unit * (0.6f + 5.5f * eased),
-            center = center,
-            style = Stroke(width = unit * 0.28f * (1f - t) + 1f),
-        )
-        // The sparks.
-        for (spark in sparks) {
-            val distance = spark.speed * eased * unit * 1.6f
-            val position = Offset(center.x + cos(spark.angle) * distance, center.y + sin(spark.angle) * distance)
+        for ((i, blast) in chain.withIndex()) {
+            val age = clock - blast.delayMillis
+            if (age < 0f || age >= BurstMillis) continue
+            val t = age / BurstMillis
+            val eased = FastOutSlowInEasing.transform(t)
+            val (cx, cy) = centers(blast.cell)
+            val center = Offset(cx.toPx(), cy.toPx())
+            // The flash: a disc that blooms a little and is gone by half of the way.
+            if (t < 0.5f) {
+                val f = t / 0.5f
+                drawCircle(colors.streakDay.copy(alpha = 0.8f * (1f - f)), radius = unit * (0.35f + 0.5f * f), center = center)
+            }
+            // The ring: spreads a little more than the cell, thinner and fainter as it goes.
             drawCircle(
-                color = palette[spark.colorIndex].copy(alpha = (1f - t) * 0.95f),
-                radius = unit * spark.size * (1f - 0.6f * t),
-                center = position,
+                color = colors.error.copy(alpha = 0.7f * (1f - t)),
+                radius = unit * (0.4f + 0.9f * eased),
+                center = center,
+                style = Stroke(width = unit * 0.12f * (1f - t) + 1f),
             )
+            // A few sparks, each blast turned a little differently.
+            for (k in 0 until SparkCount step 3) {
+                val spark = sparks[(k + i) % SparkCount]
+                val distance = spark.speed * eased * unit
+                val position = Offset(center.x + cos(spark.angle + i) * distance, center.y + sin(spark.angle + i) * distance)
+                drawCircle(
+                    color = palette[spark.colorIndex].copy(alpha = (1f - t) * 0.9f),
+                    radius = unit * spark.size * (1f - 0.6f * t),
+                    center = position,
+                )
+            }
         }
     }
 }

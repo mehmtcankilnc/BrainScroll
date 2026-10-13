@@ -54,6 +54,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,10 +73,8 @@ import brainscroll.shared.generated.resources.a11y_sudoku_note
 import brainscroll.shared.generated.resources.a11y_sudoku_notes_off
 import brainscroll.shared.generated.resources.a11y_sudoku_notes_on
 import brainscroll.shared.generated.resources.game_sudoku
-import brainscroll.shared.generated.resources.sudoku_lost
 import brainscroll.shared.generated.resources.sudoku_mistakes
 import brainscroll.shared.generated.resources.sudoku_notes
-import brainscroll.shared.generated.resources.sudoku_result_lost
 import brainscroll.shared.generated.resources.sudoku_result_won
 import brainscroll.shared.generated.resources.sudoku_won
 import com.mehmtcan.brainscroll.daily.formatDuration
@@ -86,6 +85,7 @@ import com.mehmtcan.brainscroll.game.sudoku.SudokuState
 import com.mehmtcan.brainscroll.game.sudoku.SudokuStatus
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.ui.components.Chip
+import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
@@ -107,7 +107,8 @@ private val CellGap = 2.dp
 /** The extra room between two boxes, on top of the two cell gaps. */
 private val BoxExtra = 4.dp
 private val MaxCell = 44.dp
-private val KeyHeight = 52.dp
+private val KeyHeight = 56.dp
+private val KeyGap = 4.dp
 
 /**
  * What a cell shows, for tests: 0 empty, 1..9 a digit, and `+100` for a wrong digit, `+200` for notes only (then the
@@ -135,7 +136,6 @@ fun SudokuPage(
     val status = when (state.status) {
         SudokuStatus.Playing -> WordleStatus.Playing
         SudokuStatus.Won -> WordleStatus.Won
-        SudokuStatus.Lost -> WordleStatus.Lost
     }
     OutcomeHaptics(status)
     val justFinished = rememberJustFinished(status)
@@ -184,22 +184,10 @@ fun SudokuPage(
         Spacer(Modifier.height(Spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
             Chip(
-                text = stringResource(Res.string.sudoku_mistakes, state.mistakes, state.maxMistakes),
-                textColor = if (state.mistakes >= state.maxMistakes - 1 && state.mistakes > 0) colors.error else colors.textSecondary,
-                description = stringResource(Res.string.a11y_sudoku_mistakes, state.mistakes, state.maxMistakes),
+                text = stringResource(Res.string.sudoku_mistakes, state.mistakes),
+                textColor = if (state.mistakes > 0) colors.error else colors.textSecondary,
+                description = stringResource(Res.string.a11y_sudoku_mistakes, state.mistakes),
             )
-            if (!page.isFinished) {
-                Box(Modifier.testTag("sudokuNotes")) {
-                    Chip(
-                        text = stringResource(Res.string.sudoku_notes),
-                        textColor = if (notesMode) colors.textPrimary else colors.textSecondary,
-                        onClick = { notesMode = !notesMode },
-                        raised = notesMode,
-                        selected = notesMode,
-                        description = stringResource(if (notesMode) Res.string.a11y_sudoku_notes_on else Res.string.a11y_sudoku_notes_off),
-                    )
-                }
-            }
         }
         Spacer(Modifier.height(Spacing.md))
 
@@ -216,7 +204,7 @@ fun SudokuPage(
             if (page.isFinished) {
                 SudokuResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
-                NumberPad(state = state, notesMode = notesMode, onDigit = ::digit, onErase = ::erase)
+                NumberPad(state = state, notesMode = notesMode, onDigit = ::digit, onErase = ::erase, onToggleNotes = { notesMode = !notesMode })
             }
         }
         Spacer(Modifier.height(Spacing.md))
@@ -424,19 +412,36 @@ private fun Notes(notes: Int, size: Dp, color: Color) {
     }
 }
 
-/** Nine digit keys and an eraser, in two rows. A digit that is already complete on the board is dimmed. */
+/**
+ * Two rows: the nine digits on top, tall enough to hit easily, and under them the pencil that switches to notes and the
+ * eraser as the round icon buttons of the other games. A digit that is already complete on the board is dimmed.
+ */
 @Composable
-private fun NumberPad(state: SudokuState, notesMode: Boolean, onDigit: (Int) -> Unit, onErase: () -> Unit) {
+private fun NumberPad(state: SudokuState, notesMode: Boolean, onDigit: (Int) -> Unit, onErase: () -> Unit, onToggleNotes: () -> Unit) {
     val done = (1..9).associateWith { digit ->
         state.values.indices.count { state.values[it] == digit && it !in state.wrong } >= 9
     }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            for (digit in 1..5) DigitKey(digit, notesMode, !done.getValue(digit), { onDigit(digit) }, Modifier.weight(1f))
+        Row(horizontalArrangement = Arrangement.spacedBy(KeyGap)) {
+            for (digit in 1..9) DigitKey(digit, notesMode, !done.getValue(digit), { onDigit(digit) }, Modifier.weight(1f))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            for (digit in 6..9) DigitKey(digit, notesMode, !done.getValue(digit), { onDigit(digit) }, Modifier.weight(1f))
-            EraseKey(onErase, Modifier.weight(1f))
+        // The same round buttons as the other games (undo and restart of the tubes, the flag of the mines).
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xl), modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.weight(1f))
+            val pencil = if (notesMode) BrainScrollTheme.colors.pendingFill else BrainScrollTheme.colors.textPrimary
+            val eraser = BrainScrollTheme.colors.textPrimary
+            RoundIconButton(
+                description = stringResource(if (notesMode) Res.string.a11y_sudoku_notes_on else Res.string.a11y_sudoku_notes_off),
+                onClick = onToggleNotes,
+                selected = notesMode,
+                tag = "sudokuNotes",
+            ) { drawPencil(pencil) }
+            RoundIconButton(
+                description = stringResource(Res.string.a11y_sudoku_erase),
+                onClick = onErase,
+                tag = "sudokuErase",
+            ) { drawErase(eraser) }
+            Spacer(Modifier.weight(1f))
         }
     }
 }
@@ -453,14 +458,6 @@ private fun DigitKey(digit: Int, notesMode: Boolean, enabled: Boolean, onClick: 
     }
 }
 
-@Composable
-private fun EraseKey(onClick: () -> Unit, modifier: Modifier) {
-    val color = BrainScrollTheme.colors.textPrimary
-    Key(modifier, stringResource(Res.string.a11y_sudoku_erase), "sudokuErase", true, onClick) {
-        Canvas(Modifier.size(26.dp)) { drawErase(color) }
-    }
-}
-
 /** One key of the pad: at least 48 dp tall, so it is easy to hit. */
 @Composable
 private fun Key(
@@ -469,19 +466,22 @@ private fun Key(
     tag: String,
     enabled: Boolean,
     onClick: () -> Unit,
+    selected: Boolean = false,
+    height: Dp = KeyHeight,
     content: @Composable () -> Unit,
 ) {
     val colors = BrainScrollTheme.colors
     Box(
         modifier = modifier
-            .height(KeyHeight)
+            .height(height)
             .testTag(tag)
             .alpha(if (enabled) 1f else 0.35f)
-            .background(colors.bgSurface, Radius.control)
-            .border(1.5.dp, colors.borderStrong.copy(alpha = 0.6f), Radius.control)
+            .background(if (selected) colors.bgRaised else colors.bgSurface, Radius.control)
+            .border(1.5.dp, if (selected) colors.pendingFill else colors.borderStrong.copy(alpha = 0.6f), Radius.control)
             .semantics {
                 contentDescription = description
                 role = Role.Button
+                this.selected = selected
                 if (!enabled) disabled()
             }
             .then(
@@ -490,6 +490,22 @@ private fun Key(
             ),
         contentAlignment = Alignment.Center,
     ) { content() }
+}
+
+/** A pencil lying at an angle, tip down left. */
+private fun DrawScope.drawPencil(color: Color) {
+    val s = size.minDimension
+    val stroke = Stroke(width = s * 0.1f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    val body = Path().apply {
+        moveTo(s * 0.14f, s * 0.86f)
+        lineTo(s * 0.20f, s * 0.60f)
+        lineTo(s * 0.64f, s * 0.16f)
+        lineTo(s * 0.84f, s * 0.36f)
+        lineTo(s * 0.40f, s * 0.80f)
+        close()
+    }
+    drawPath(body, color, style = stroke)
+    drawLine(color, Offset(s * 0.54f, s * 0.26f), Offset(s * 0.74f, s * 0.46f), strokeWidth = s * 0.1f, cap = StrokeCap.Round)
 }
 
 /** A backspace key: a tag pointing left with a cross in it. */
@@ -513,7 +529,7 @@ private fun DrawScope.drawErase(color: Color) {
 private fun SudokuResultCard(page: SudokuSnapshot, isFavorite: Boolean, onToggleFavorite: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    val won = page.state.status == SudokuStatus.Won
+    // A sudoku is only ever won.
     val time = formatDuration(page.durationMs)
 
     Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
@@ -523,12 +539,12 @@ private fun SudokuResultCard(page: SudokuSnapshot, isFavorite: Boolean, onToggle
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             BasicText(
-                text = stringResource(if (won) Res.string.sudoku_won else Res.string.sudoku_lost),
+                text = stringResource(Res.string.sudoku_won),
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
+                style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
             BasicText(
-                text = stringResource(if (won) Res.string.sudoku_result_won else Res.string.sudoku_result_lost, time),
+                text = stringResource(Res.string.sudoku_result_won, time),
                 style = type.body.copy(color = colors.textPrimary),
             )
             BasicText(

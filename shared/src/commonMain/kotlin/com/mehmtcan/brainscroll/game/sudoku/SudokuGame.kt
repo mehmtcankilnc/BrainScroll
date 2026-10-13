@@ -1,6 +1,6 @@
 package com.mehmtcan.brainscroll.game.sudoku
 
-enum class SudokuStatus { Playing, Won, Lost }
+enum class SudokuStatus { Playing, Won }
 
 /** What a move did. */
 enum class SudokuResult {
@@ -29,8 +29,8 @@ data class SudokuState(
     val wrong: Set<Int>,
     /** Digits placed so far (notes and erasing are not moves). */
     val moves: Int,
+    /** Wrong digits put so far. There is no limit: they only count, and the puzzle goes on. */
     val mistakes: Int,
-    val maxMistakes: Int,
     val status: SudokuStatus,
 ) {
     fun isGiven(cell: Int) = givens[cell] != 0
@@ -40,12 +40,11 @@ data class SudokuState(
  * The rules of sudoku, free of UI and time.
  *
  * The board comes from [SudokuGenerator] and depends only on [seed] and [clues]. A digit that differs from the solution
- * is a mistake and the third one loses. A correct digit is final, so only wrong digits and notes can be taken back.
+ * is a mistake: it is counted and shown, and the puzzle goes on (a sudoku is only ever won). A correct digit is final, so only wrong digits and notes can be taken back.
  */
 class SudokuGame(
     val seed: Int,
     val clues: Int = SudokuGenerator.DEFAULT_CLUES,
-    val maxMistakes: Int = DEFAULT_MAX_MISTAKES,
 ) {
     private val puzzle = SudokuGenerator.generate(seed, clues)
     private val values = puzzle.givens.copyOf()
@@ -55,7 +54,6 @@ class SudokuGame(
     private var status = SudokuStatus.Playing
 
     init {
-        require(maxMistakes >= 1) { "a game needs at least one allowed mistake" }
         require(clues in 17..80) { "too few or too many givens" }
     }
 
@@ -72,7 +70,6 @@ class SudokuGame(
             wrong = wrongCells(),
             moves = moves,
             mistakes = mistakes,
-            maxMistakes = maxMistakes,
             status = status,
         )
 
@@ -91,7 +88,6 @@ class SudokuGame(
         moves++
         if (digit != puzzle.solution[cell]) {
             mistakes++
-            if (mistakes >= maxMistakes) status = SudokuStatus.Lost
             return SudokuResult.Mistake
         }
         // The digit is settled: it cannot be a candidate anywhere around it any more.
@@ -114,9 +110,5 @@ class SudokuGame(
         values[cell] = 0
         notes[cell] = 0
         return SudokuResult.Changed
-    }
-
-    companion object {
-        const val DEFAULT_MAX_MISTAKES = 3
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -70,7 +71,8 @@ class SocialUiTest {
 
     @Test
     fun aMemberChoosesAUsernameAndThenSeesTheirPlace() = runComposeUiTest {
-        val cloud = cloud(member = true) { speedToday = table }
+        // The random name the phone picks fails to save, so the card that asks for a name is shown.
+        val cloud = cloud(member = true) { speedToday = table; failRandomNames = true }
         openRanks(cloud)
         waitForText("Kullanıcı adı seç", "Choose a username")
         snap("21_ranks_choose_username")
@@ -87,7 +89,7 @@ class SocialUiTest {
 
     @Test
     fun aTakenUsernameIsExplainedAndTheCardStays() = runComposeUiTest {
-        val cloud = cloud(member = true)
+        val cloud = cloud(member = true) { failRandomNames = true }
         openRanks(cloud)
         waitForText("Kullanıcı adı seç", "Choose a username")
         onAllNodes(hasSetTextAction())[0].performTextInput("taken")
@@ -108,7 +110,9 @@ class SocialUiTest {
         snap("23_ranks_streaks")
         assertTrue(hasAnyText("12") && hasAnyText("carol (sen)", "carol (you)"))
 
-        // The choices are always in view now: no filter button to open first.
+        // The choices are in a sheet that the filter line opens.
+        onNodeWithTag("ranksFilterBar").performClick()
+        waitForIdle()
         snap("27_ranks_filters")
         clickAny("En uzun", "Longest")
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:false" } }

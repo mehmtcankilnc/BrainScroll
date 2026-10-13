@@ -159,7 +159,8 @@ class HowToPlayUiTest {
         snap("116_howto_covers_bar")
         assertTrue(sheetShown())
         // The scrim is over the bar as well: a tap on the home arrow only closes the panel and stays in the feed.
-        onAllNodesWithContentDescription("Ana Sayfa", ignoreCase = true).onFirst().performClick()
+        val home = if (onAllNodesWithContentDescription("Ana Sayfa", ignoreCase = true).fetchSemanticsNodes().isNotEmpty()) "Ana Sayfa" else "Home"
+        onAllNodesWithContentDescription(home, ignoreCase = true).onFirst().performClick()
         waitForIdle()
         assertFalse(sheetShown())
         assertTrue(hasAnyText("Kelime bulmacası", "Word puzzle"), "still in the feed")

@@ -231,9 +231,9 @@ class HomeUiTest {
     }
 
     @Test
-    fun theFeedCardHasNoEditButtonAndNoLanguageRowButTheCardOpensTheEditor() = runComposeUiTest {
+    fun theFeedCardHasAnEditLinkAndNoLanguageRowAndTheCardOpensTheEditor() = runComposeUiTest {
         start(games = both, openFeed = false)
-        assertFalse(hasAnyText("Düzenle", "Edit"), "no edit button")
+        assertTrue(onAllNodesWithTag("editFeedLink").fetchSemanticsNodes().isNotEmpty(), "an edit link next to the title")
         assertFalse(hasAnyText("Kelime oyunlarının dili", "Word language"), "no language row")
         assertFalse(hasAnyText("→"), "no arrow on the start button")
 
@@ -256,10 +256,9 @@ class HomeUiTest {
         goHome()
 
         assertTrue(onAllNodesWithTag("continueFeed").fetchSemanticsNodes().isNotEmpty(), "the button is offered")
-        val daily = onNodeWithTag("dailyCard").fetchSemanticsNode().boundsInRoot.top
-        val button = onNodeWithTag("continueFeed").fetchSemanticsNode().boundsInRoot.top
-        val feed = onNodeWithTag("feedCard").fetchSemanticsNode().boundsInRoot.top
-        assertTrue(daily < button && button < feed, "between today's puzzle and the feed card")
+        val feed = onNodeWithTag("feedCard").fetchSemanticsNode().boundsInRoot
+        val button = onNodeWithTag("continueFeed").fetchSemanticsNode().boundsInRoot
+        assertTrue(button.top >= feed.top && button.bottom <= feed.bottom, "the button is part of the feed card")
 
         onNodeWithTag("continueFeed").performClick()
         waitUntil(timeoutMillis = 10_000) { cLetters() > 0 }
@@ -273,7 +272,11 @@ class HomeUiTest {
         key('R')
         goHome()
 
-        onNodeWithTag("startFeedHome").performClick()
+        // A new feed is started from the editor: there is no second start button on the home page.
+        assertTrue(onAllNodesWithTag("startFeedHome").fetchSemanticsNodes().isEmpty())
+        onNodeWithTag("editFeedLink").performClick()
+        waitForIdle()
+        onNodeWithTag("startFeed").performClick()
         waitForIdle()
         assertTrue(onAllNodesWithTag("confirmDialog").fetchSemanticsNodes().isNotEmpty(), "a puzzle would be forgotten: ask first")
         assertTrue(hasAnyText("Yeni akış başlatılsın mı?", "Start a new feed?"))
@@ -312,11 +315,14 @@ class HomeUiTest {
         key('C')
         goHome()
 
-        onNodeWithTag("startFeedHome").performClick()
+        onNodeWithTag("editFeedLink").performClick()
+        waitForIdle()
+        onNodeWithTag("startFeed").performClick()
         waitForIdle()
         onNodeWithTag("confirmNo").performClick()
         waitForIdle()
         assertTrue(onAllNodesWithTag("confirmDialog").fetchSemanticsNodes().isEmpty(), "the question is gone")
+        goHome()
         assertTrue(onAllNodesWithTag("continueFeed").fetchSemanticsNodes().isNotEmpty(), "and the half done puzzle is still there to continue")
     }
 

@@ -58,6 +58,7 @@ import brainscroll.shared.generated.resources.notice_now_friends
 import brainscroll.shared.generated.resources.notice_code_not_found
 import brainscroll.shared.generated.resources.notice_player_not_found
 import brainscroll.shared.generated.resources.notice_is_self
+import brainscroll.shared.generated.resources.notice_username_assigned
 import brainscroll.shared.generated.resources.notice_social_offline
 import brainscroll.shared.generated.resources.notice_social_unavailable
 import brainscroll.shared.generated.resources.notice_invite_sign_in
@@ -67,12 +68,25 @@ import com.mehmtcan.brainscroll.ui.social.RanksSignIn
 import com.mehmtcan.brainscroll.ui.social.SocialEvent
 import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import brainscroll.shared.generated.resources.tab_daily
+import brainscroll.shared.generated.resources.profile_settings
+import brainscroll.shared.generated.resources.favorites_title
+import brainscroll.shared.generated.resources.stats_title
 import brainscroll.shared.generated.resources.tab_feed
 import brainscroll.shared.generated.resources.tab_home
 import brainscroll.shared.generated.resources.tab_profile
 import com.mehmtcan.brainscroll.account.AccountEvent
 import com.mehmtcan.brainscroll.ui.components.ChevronButton
 import com.mehmtcan.brainscroll.ui.components.NoticePill
+import brainscroll.shared.generated.resources.confirm_cancel
+import brainscroll.shared.generated.resources.new_feed_confirm
+import brainscroll.shared.generated.resources.new_feed_message
+import brainscroll.shared.generated.resources.new_feed_title
+import com.mehmtcan.brainscroll.ui.feed.FeedUiState
+import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
+import com.mehmtcan.brainscroll.game.wordle.FinishedRound
+import com.mehmtcan.brainscroll.ui.components.LocalOverlayHost
+import com.mehmtcan.brainscroll.ui.components.OverlayHost
+import com.mehmtcan.brainscroll.ui.components.OverlayLayers
 import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.ui.daily.DailyScreen
 import com.mehmtcan.brainscroll.ui.daily.DailyGameScreen
@@ -159,6 +173,14 @@ fun AppShell(
     val profileState by viewModel.profile.collectAsStateWithLifecycle()
     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
     val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
+    val social by socialViewModel.ui.collectAsStateWithLifecycle()
+    val feedState by viewModel.state.collectAsStateWithLifecycle()
+    var replaying by remember { mutableStateOf<FinishedRound?>(null) }
+    val playAgain = { round: FinishedRound ->
+        subPage = null
+        viewModel.playAgain(round)
+        tab = Tab.Feed
+    }
 
     // The system back button (Android, and the back gesture) does what the on-screen back button does: close the page,
     // or leave the feed for the home tab. On the home tab and the other tabs it keeps its usual job.
@@ -171,7 +193,11 @@ fun AppShell(
     val contentInsets = if (showTabBar) WindowInsetsSides.Top + WindowInsetsSides.Horizontal
     else WindowInsetsSides.Top + WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
     // A new app language builds the screens again, so every text is read in the new language. The tab and the open page stay.
+    // The sheets and dialogs are drawn by this host over everything, the tab bar and the system bars included.
+    val overlayHost = remember { OverlayHost() }
     key(appLanguage) {
+    CompositionLocalProvider(LocalOverlayHost provides overlayHost) {
+    Box(Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(colors.bgPage)) {
         Box(
             modifier = Modifier
@@ -182,7 +208,19 @@ fun AppShell(
             if (subPage != null) {
                 Column(Modifier.fillMaxSize()) {
                     // The daily page has a header row of its own, so its back button lives there.
-                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor) BackBar(onBack = { subPage = null }, title = if (subPage == SubPage.Ranks) stringResource(Res.string.tab_ranks) else null)
+                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor) {
+                        // The title sits next to the back arrow, the same on every page.
+                        BackBar(
+                            onBack = { subPage = null },
+                            title = when (subPage) {
+                                SubPage.Ranks -> stringResource(Res.string.tab_ranks)
+                                SubPage.Stats -> stringResource(Res.string.stats_title)
+                                SubPage.Favorites -> stringResource(Res.string.favorites_title)
+                                SubPage.Settings -> stringResource(Res.string.profile_settings)
+                                else -> null
+                            },
+                        )
+                    }
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         when (subPage) {
                             SubPage.Daily -> {
@@ -209,7 +247,11 @@ fun AppShell(
                                 },
                             )
                             SubPage.Stats -> StatsPage(profileState)
-                            SubPage.Favorites -> FavoritesPage(profileState)
+                            SubPage.Favorites -> FavoritesPage(
+                                profileState,
+                                // A feed left half done is lost by this, so ask first, but only when there is one.
+                                onReplay = { round -> if ((feedState as? FeedUiState.Ready)?.feed?.hasUnfinished == true) replaying = round else playAgain(round) },
+                            )
                             SubPage.Settings -> SettingsPage(
                                 account = AccountUi(
                                     state = accountState,
@@ -219,6 +261,8 @@ fun AppShell(
                                     onSignInWithApple = viewModel::signInWithApple,
                                     onSignOut = viewModel::signOut,
                                     onDeleteAccount = viewModel::deleteAccount,
+                                    username = social.username,
+                                    onChangeUsername = socialViewModel::saveUsername,
                                 ),
                                 privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
                                 language = LanguageUi(selected = appLanguage, onSelect = viewModel::setAppLanguage),
@@ -252,6 +296,7 @@ fun AppShell(
                     ProfileScreen(
                         profile = profileState,
                         account = accountState,
+                        username = social.username,
                         onOpen = { target ->
                             subPage = when (target) {
                                 ProfileTarget.Stats -> SubPage.Stats
@@ -276,6 +321,19 @@ fun AppShell(
             })
         }
     }
+    replaying?.let { round ->
+        ConfirmDialog(
+            title = stringResource(Res.string.new_feed_title),
+            message = stringResource(Res.string.new_feed_message),
+            confirmText = stringResource(Res.string.new_feed_confirm),
+            cancelText = stringResource(Res.string.confirm_cancel),
+            onConfirm = { replaying = null; playAgain(round) },
+            onCancel = { replaying = null },
+        )
+    }
+    OverlayLayers(overlayHost)
+    }
+    }
     }
 }
 
@@ -290,6 +348,7 @@ private val INVITE_EVENTS = setOf(
 
 private fun noticeFor(kind: SocialEvent.Kind): StringResource = when (kind) {
     SocialEvent.Kind.UsernameSaved -> Res.string.notice_username_saved
+    SocialEvent.Kind.UsernameAssigned -> Res.string.notice_username_assigned
     SocialEvent.Kind.UsernameInvalid -> Res.string.notice_username_invalid
     SocialEvent.Kind.UsernameNotAllowed -> Res.string.notice_username_not_allowed
     SocialEvent.Kind.UsernameTaken -> Res.string.notice_username_taken

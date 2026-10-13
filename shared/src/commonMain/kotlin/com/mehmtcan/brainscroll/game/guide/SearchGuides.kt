@@ -117,7 +117,7 @@ object TubesGuide {
 
 /**
  * The guide of the target number: the first operation of the fewest that reach the target from the numbers on the table
- * now, found breadth first. It points at the two numbers (by their ids) and says the operation.
+ * now, found breadth first. When no way is left it says so ([GuideReason.TargetStuck]), and the player starts over. It points at the two numbers (by their ids) and says the operation.
  */
 object TargetGuide {
     private class Node(val tokens: List<Token>, val first: Triple<Int, Op, Int>?, val nextId: Int)
@@ -145,7 +145,7 @@ object TargetGuide {
             }
             frontier = next
         }
-        return null
+        return GuideStep(GuideReason.TargetStuck)
     }
 
     private fun found(state: TargetState, move: Triple<Int, Op, Int>): GuideStep {

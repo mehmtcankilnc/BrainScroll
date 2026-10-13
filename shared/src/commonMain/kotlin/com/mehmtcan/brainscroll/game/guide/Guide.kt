@@ -44,6 +44,9 @@ enum class GuideReason {
     /** The tubes are stuck: no pour finishes them from here. Undo or start again. */
     TubesStuck,
 
+    /** The numbers on the table can no longer make the target: start the puzzle over. */
+    TargetStuck,
+
     /** Combine the two numbers with the operation. */
     TargetCombine,
 

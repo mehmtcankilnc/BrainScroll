@@ -76,10 +76,34 @@ class SocialViewModelTest {
     }
 
     @Test
-    fun aMemberWithoutAUsernameIsAskedToChooseOne() = runTest {
+    fun aMemberWithoutAUsernameGetsARandomOneAndIsToldSo() = runTest {
         api.member = true
         val vm = viewModel()
+        advanceUntilIdle()
+        assertEquals(Access.Ready, vm.ui.value.access)
+        val name = assertNotNull(vm.ui.value.username)
+        assertTrue(isValidUsername(name), name)
+        assertTrue(name.any { it.isDigit() }, "a color, an animal and digits: $name")
+        assertTrue(events.any { it.kind == SocialEvent.Kind.UsernameAssigned && it.name == name })
+    }
+
+    @Test
+    fun ifTheRandomNameCannotBeSavedThePlayerIsStillAskedToChooseOne() = runTest {
+        api.member = true
+        api.failRandomNames = true
+        val vm = viewModel()
+        advanceUntilIdle()
         assertEquals(Access.NeedsUsername, vm.ui.value.access)
+    }
+
+    @Test
+    fun aMemberWhoAlreadyHasAUsernameKeepsIt() = runTest {
+        api.member = true
+        api.username = "alice"
+        val vm = viewModel()
+        advanceUntilIdle()
+        assertEquals("alice", vm.ui.value.username)
+        assertTrue(api.calls.none { it.startsWith("setUsername") })
     }
 
     @Test
@@ -97,6 +121,7 @@ class SocialViewModelTest {
     @Test
     fun badUsernamesAreExplainedAndNotSent() = runTest {
         api.member = true
+        api.username = "alice"
         val vm = viewModel()
         vm.saveUsername("no")
         vm.saveUsername("has space")
@@ -109,7 +134,7 @@ class SocialViewModelTest {
         advanceUntilIdle()
         assertTrue(events.any { it.kind == SocialEvent.Kind.UsernameNotAllowed })
         assertTrue(events.any { it.kind == SocialEvent.Kind.UsernameTaken })
-        assertEquals(Access.NeedsUsername, vm.ui.value.access)
+        assertEquals("alice", vm.ui.value.username, "a refused name changes nothing")
     }
 
     @Test
@@ -255,12 +280,9 @@ class SocialViewModelTest {
         assertTrue(events.any { it.kind == SocialEvent.Kind.InviteNeedsSignIn })
         assertTrue(api.calls.none { it.startsWith("addFriend") })
 
-        // Signs in with Google, still without a username.
+        // Signs in with Google: a random username is given, and the kept invite is used right after it.
         api.member = true
         account.value = google
-        advanceUntilIdle()
-        assertTrue(api.calls.none { it.startsWith("addFriend") })
-        vm.saveUsername("alice")
         advanceUntilIdle()
         assertTrue("addFriendByCode:ZZZZ9999" in api.calls, "the kept invite is used after the username")
         assertNotNull(vm.ui.value.username)

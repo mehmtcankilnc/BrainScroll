@@ -64,7 +64,7 @@ class TubesFeedTest {
         clock += 2_000
         f.solve(0)
         assertTrue(f.snapshot().pages[0].isFinished)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
         val result = store.results.single()
         assertEquals(GameKind.Tubes, result.game)
         assertEquals(Outcome.WON, result.outcome)
@@ -80,7 +80,7 @@ class TubesFeedTest {
         f.ensureSize(3)
         f.solve(0)
         f.solve(1)
-        assertEquals(2, f.snapshot().answerStreak)
+        assertEquals(2, f.snapshot().solvedCount)
     }
 
     @Test

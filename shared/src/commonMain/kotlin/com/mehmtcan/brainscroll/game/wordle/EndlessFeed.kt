@@ -34,8 +34,8 @@ data class FeedSnapshot(
     val language: Language,
     /** The languages the word puzzles of this feed come in, one or more. */
     val wordLanguages: List<Language>,
-    /** Consecutive solved puzzles, all games together. A loss resets it, leaving a puzzle unfinished does not. */
-    val answerStreak: Int,
+    /** Puzzles solved in this feed without the guide, all games together. Nothing but a new feed (or a new start of the app) resets it: a loss, or leaving a puzzle unfinished, does not. */
+    val solvedCount: Int,
     /** A puzzle was started and not finished: there is a feed to go on with. */
     val hasUnfinished: Boolean,
 ) {
@@ -63,8 +63,8 @@ class EndlessFeed(
     private val store: FeedStore = NoFeedStore,
     /** Unfinished puzzles from an earlier run. They become the first pages, in their saved order. */
     restored: List<StoredRound> = emptyList(),
-    /** The answer streak at start-up, derived from the saved history. */
-    startStreak: Int = 0,
+    /** How many puzzles were already solved in this flow when the feed was made (a feed that goes on after the last page was finished). */
+    startSolved: Int = 0,
     private val now: () -> Long = { 0L },
     private val newId: () -> String = { Random.nextLong().toULong().toString(16) },
     /** The games of the feed and their order: each page is followed by the next game in this list, round and round. */
@@ -85,7 +85,7 @@ class EndlessFeed(
 
     /** The language for everything that is not a word puzzle: the first of [wordLanguages]. */
     val language: Language get() = wordLanguages.first()
-    var answerStreak = startStreak
+    var solvedCount = startSolved
         private set
     val size: Int get() = rounds.size
 
@@ -347,8 +347,8 @@ class EndlessFeed(
     private fun afterMove(index: Int, round: FeedRound) {
         if (round.isFinished && counted.add(index)) {
             val result = round.toFinished(finishedAt = now())
-            // A puzzle done with the guide is neutral: the streak neither grows nor breaks.
-            if (!result.assisted) answerStreak = if (result.outcome == Outcome.WON) answerStreak + 1 else 0
+            // Only a win without the guide counts; a loss or a guided puzzle leaves the number as it is.
+            if (!result.assisted && result.outcome == Outcome.WON) solvedCount++
             store.finish(result)
         } else {
             persist(round)
@@ -375,19 +375,11 @@ class EndlessFeed(
     /** True once the player did something on a page. */
     val hasStarted: Boolean get() = rounds.any { !it.isUntouched }
 
-    /**
-     * Sets the answer streak from outside. Used after a cloud sync brought in results from another device:
-     * the streak is always derived from the saved history, so it is recomputed there and applied here.
-     */
-    fun setAnswerStreak(streak: Int) {
-        answerStreak = streak
-    }
-
     fun snapshot() = FeedSnapshot(
         pages = rounds.map { it.snapshot() },
         language = language,
         wordLanguages = wordLanguages,
-        answerStreak = answerStreak,
+        solvedCount = solvedCount,
         hasUnfinished = firstUnfinishedIndex() != null,
     )
 

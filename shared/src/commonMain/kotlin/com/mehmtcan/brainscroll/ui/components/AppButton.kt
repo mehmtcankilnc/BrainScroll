@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.BasicText
@@ -27,13 +29,15 @@ fun AppButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     primary: Boolean = false,
+    /** A red button for what cannot be taken back (deleting the account). It takes the place of [primary]. */
+    danger: Boolean = false,
 ) {
     val colors = BrainScrollTheme.colors
     Box(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .background(if (primary) colors.correctFill else colors.bgSurface, Radius.control)
+            .background(if (danger) colors.error else if (primary) colors.correctFill else colors.bgSurface, Radius.control)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -44,7 +48,7 @@ fun AppButton(
     ) {
         BasicText(
             text = text,
-            style = BrainScrollTheme.typography.label.copy(color = if (primary) colors.correctOn else colors.textPrimary),
+            style = BrainScrollTheme.typography.label.copy(color = if (danger) colors.textPrimary else if (primary) colors.correctOn else colors.textPrimary),
         )
     }
 }
@@ -74,5 +78,34 @@ fun AppOutlinedButton(
         contentAlignment = Alignment.Center,
     ) {
         BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.correctFill))
+    }
+}
+
+/**
+ * A button that is only words in the green of the app, with a small arrow after them: no outline, no fill, no italics. For
+ * the quiet action of a card (open today's puzzle) or the second choice next to a main button. At least 48 dp tall; it is as
+ * wide as its text, so give it an alignment to place it.
+ */
+@Composable
+fun AppTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = BrainScrollTheme.colors
+    Row(
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.correctFill))
+        ForwardChevron(colors.correctFill)
     }
 }

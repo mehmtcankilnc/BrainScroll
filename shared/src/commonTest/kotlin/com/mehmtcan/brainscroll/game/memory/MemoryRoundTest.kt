@@ -19,7 +19,7 @@ class MemoryRoundTest {
     private val layout = listOf(Circle, Star, Heart, Circle, Star, Heart)
     private var clock = 1_000L
 
-    private fun round(max: Int = 3) = MemoryRound(0, "m1", layout, Language.EN, { clock }, max)
+    private fun round() = MemoryRound(0, "m1", layout, Language.EN, { clock })
 
     @Test
     fun anUntouchedRoundIsUntouchedUntilTheFirstFlip() {
@@ -79,14 +79,6 @@ class MemoryRoundTest {
         assertEquals(layout.joinToString(",") { it.ordinal.toString() }, result.answer, "the board is stored as symbol numbers")
         assertEquals(5_000, result.durationMs)
         assertEquals(99_000, result.finishedAt)
-    }
-
-    @Test
-    fun enoughMistakesBecomeALostResult() {
-        val r = round(max = 2)
-        r.flip(0); r.flip(1)
-        r.flip(0); r.flip(1)
-        assertEquals(Outcome.LOST, r.toFinished(1).outcome)
     }
 
     @Test

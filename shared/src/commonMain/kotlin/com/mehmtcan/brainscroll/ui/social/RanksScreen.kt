@@ -3,6 +3,15 @@
 package com.mehmtcan.brainscroll.ui.social
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.testTag
+import brainscroll.shared.generated.resources.howto_done
+import brainscroll.shared.generated.resources.ranks_filters
+import com.mehmtcan.brainscroll.ui.components.ForwardChevron
+import com.mehmtcan.brainscroll.ui.components.ModalSheet
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -108,6 +117,7 @@ import com.mehmtcan.brainscroll.social.inviteLink
 import com.mehmtcan.brainscroll.ui.components.AppButton
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.SegmentedControl
+import com.mehmtcan.brainscroll.ui.components.TextAction
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.home.displayName
 import com.mehmtcan.brainscroll.ui.home.nativeName
@@ -135,7 +145,7 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
     ) {
         item { SectionTabs(ui, viewModel) }
         // The choices for the open table are always in view, each with its name above it.
-        if (ui.section != Section.Friends) item { Filters(ui, viewModel) }
+        if (ui.section != Section.Friends) item { FilterBar(ui, viewModel) }
 
         // Who may do what: anonymous players only look, friends need a username.
         when (ui.access) {
@@ -168,6 +178,59 @@ private fun SectionTabs(ui: SocialUiState, viewModel: SocialViewModel) {
         selectedIndex = sections.indexOf(ui.section),
         onSelect = { viewModel.selectSection(sections[it]) },
     )
+}
+
+/**
+ * The choices of the open table in one line: what is shown now ("Today · Word puzzle · Türkçe"), and a tap opens the
+ * choices in a sheet. The page itself only has the tabs, this line and the table.
+ */
+@Composable
+private fun FilterBar(ui: SocialUiState, viewModel: SocialViewModel) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    var open by remember { mutableStateOf(false) }
+    val everyone = stringResource(Res.string.filter_friends)
+    val parts = buildList {
+        if (ui.section == Section.Speed) {
+            add(stringResource(if (ui.scope == DailyScope.Today) Res.string.scope_today else Res.string.scope_all_time))
+            add((if (ui.scope == DailyScope.Today) ui.todayGame else ui.game).displayName())
+            if (ui.game == GameKind.Word) add(ui.language.nativeName())
+        } else {
+            add(stringResource(if (ui.kind == StreakKind.Current) Res.string.kind_current else Res.string.kind_longest))
+        }
+        if (ui.friendsOnly) add(everyone)
+    }
+    val description = stringResource(Res.string.ranks_filters)
+    Row(
+        modifier = Modifier
+            .testTag("ranksFilterBar")
+            .fillMaxWidth()
+            .semantics { contentDescription = description + ": " + parts.joinToString(", ") }
+            .background(colors.bgSurface, Radius.pill)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) { open = true }
+            .heightIn(min = 48.dp)
+            .padding(horizontal = Spacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        BasicText(
+            text = parts.joinToString(" · "),
+            style = type.label.copy(color = colors.textPrimary),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        ForwardChevron(colors.textSecondary, Modifier.rotate(90f))
+    }
+    if (open) {
+        ModalSheet(onDismiss = { open = false }, tag = "ranksFilters") { close ->
+            BasicText(stringResource(Res.string.ranks_filters), style = type.title.copy(color = colors.textPrimary))
+            Column(Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
+                Filters(ui, viewModel)
+            }
+            AppButton(stringResource(Res.string.howto_done), close, primary = true)
+        }
+    }
 }
 
 /** What the open table shows: a language and a period for speed, a kind for streaks, and whose results. */
@@ -511,46 +574,6 @@ private fun Body(text: String) =
 @Composable
 private fun Caption(text: String) =
     BasicText(text, style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.textSecondary))
-
-/** A text field with a button next to it. */
-@Composable
-private fun TextAction(
-    value: String,
-    onChange: (String) -> Unit,
-    hint: String,
-    actionLabel: String,
-    onAction: () -> Unit,
-    /** True inside a card (the field is darker than the card), false on the page (the field is a surface). */
-    onSurface: Boolean = true,
-) {
-    val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(48.dp)
-                .background(if (onSurface) colors.bgPage else colors.bgSurface, Radius.control)
-                .padding(horizontal = Spacing.md),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onChange,
-                singleLine = true,
-                textStyle = type.body.copy(color = colors.textPrimary),
-                cursorBrush = SolidColor(colors.textPrimary),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                modifier = Modifier.fillMaxWidth(),
-                decorationBox = { inner ->
-                    if (value.isEmpty()) BasicText(hint, style = type.body.copy(color = colors.textDisabled), maxLines = 1)
-                    inner()
-                },
-            )
-        }
-        Box(modifier = Modifier.width(96.dp)) { AppButton(actionLabel, onAction, primary = true) }
-    }
-}
 
 private const val MAX_NAME = 16
 private const val MAX_CODE = 8

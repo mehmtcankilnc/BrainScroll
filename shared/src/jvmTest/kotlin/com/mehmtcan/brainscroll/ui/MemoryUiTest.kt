@@ -121,7 +121,7 @@ class MemoryUiTest {
         assertTrue((0 until 12).all { isDown(it) }, "every card starts face down")
         assertTrue(hasAnyText("Hafıza eşleştirme", "Memory match"))
         assertTrue(hasAnyText("Hamle 0", "Moves 0"))
-        assertTrue(hasAnyText("Hata 0/6", "Mistakes 0/6"))
+        assertTrue(hasAnyText("Hata: 0", "Mistakes: 0"))
     }
 
     @Test
@@ -144,7 +144,7 @@ class MemoryUiTest {
         val (a, b) = makeAMistake()
         mainClock.advanceTimeBy(400)
         snap("82_memory_mismatch")
-        assertTrue(hasAnyText("Hata 1/6", "Mistakes 1/6") || hasAnyText("Hata 2/6", "Mistakes 2/6") || hasAnyText("Hata 3/6", "Mistakes 3/6") || hasAnyText("Hata 4/6", "Mistakes 4/6") || hasAnyText("Hata 5/6", "Mistakes 5/6"))
+        assertTrue(hasAnyText("Hata: 1", "Mistakes: 1") || hasAnyText("Hata: 2", "Mistakes: 2") || hasAnyText("Hata: 3", "Mistakes: 3"))
         assertTrue(HapticKind.Warning in haptics.kinds, "a mistake is a warning")
         assertFalse(isDown(a) || isDown(b), "the wrong cards stay face up for a moment")
         letMismatchTurnBack()
@@ -174,25 +174,20 @@ class MemoryUiTest {
     }
 
     @Test
-    fun tooManyMistakesLoseAndShowTheWholeBoard() = runComposeUiTest {
-        val haptics = RecordingHaptics()
-        openMemory(haptics = haptics)
+    fun mistakesAreCountedWithoutALimitAndTheBoardGoesOn() = runComposeUiTest {
+        openMemory()
         val (a, b) = makeAMistake()
-        // Turn the same two wrong cards over again and again until the board is lost (at most six mistakes).
-        var guard = 0
-        while (!hasAnyText("Çok fazla hata", "Too many mistakes") && guard++ < 8) {
+        // The same two wrong cards over and over: past the old limit of six, the board is still being played.
+        repeat(8) {
             tap(a)
             tap(b)
         }
-        waitUntil(timeoutMillis = 5_000) { hasAnyText("Çok fazla hata", "Too many mistakes") }
         mainClock.advanceTimeBy(1_500)
         waitForIdle()
-        snap("84_memory_lost")
-
-        assertTrue(hasAnyText("Hata 6/6", "Mistakes 6/6"))
-        assertTrue(HapticKind.Warning in haptics.kinds)
-        assertFalse(HapticKind.Success in haptics.kinds, "losing is no success")
-        assertTrue((0 until 12).none { isDown(it) }, "a lost board shows all its cards")
+        snap("84_memory_many_mistakes")
+        assertTrue(hasAnyText("Hata: 9", "Mistakes: 9") || hasAnyText("Hata: 8", "Mistakes: 8") || hasAnyText("Hata: 10", "Mistakes: 10"), "the number goes past six")
+        assertFalse(hasAnyText("Tüm çiftler bulundu", "All pairs found"))
+        assertTrue((0 until 12).any { isDown(it) }, "the board is still face down: the game is not over")
     }
 
     @Test
@@ -207,8 +202,7 @@ class MemoryUiTest {
         waitForIdle()
 
         openProfilePage("İstatistikler", "Statistics")
-        onNode(hasScrollAction()).performScrollToNode(hasText("Hafıza eşleştirme").or(hasText("Memory match")))
-        waitForIdle()
+        expandStats("statsMemory")
         snap("85_profile_memory")
         assertTrue(hasAnyText("Hafıza eşleştirme", "Memory match"), "the memory section")
         assertTrue(hasAnyText("En az hamle", "Fewest moves"))

@@ -15,7 +15,7 @@ class MemoryGameTest {
     /** Positions: 0 and 3 are circles, 1 and 4 stars, 2 and 5 hearts. */
     private val layout = listOf(Circle, Star, Heart, Circle, Star, Heart)
 
-    private fun game(maxMistakes: Int = 3) = MemoryGame(layout, maxMistakes)
+    private fun game() = MemoryGame(layout)
 
     @Test
     fun aNewBoardIsAllFaceDown() {
@@ -118,25 +118,25 @@ class MemoryGameTest {
     }
 
     @Test
-    fun theLastAllowedMistakeLoses() {
-        val g = game(maxMistakes = 3)
-        repeat(2) { g.flip(0); g.flip(1) }
-        assertEquals(MemoryStatus.Playing, g.state.status)
-        assertEquals(2, g.state.mistakes)
-        g.flip(0)
-        g.flip(1)
-        assertEquals(3, g.state.mistakes)
-        assertEquals(MemoryStatus.Lost, g.state.status)
-        assertTrue(g.isFinished)
+    fun mistakesAreOnlyCountedAndTheGameGoesOn() {
+        val g = game()
+        repeat(8) { g.flip(0); g.flip(1) }
+        assertEquals(8, g.state.mistakes, "there is no limit")
+        assertEquals(MemoryStatus.Playing, g.state.status, "a memory game is never lost")
+        assertFalse(g.isFinished)
+        g.flip(0); g.flip(3)
+        g.flip(1); g.flip(4)
+        g.flip(2); g.flip(5)
+        assertEquals(MemoryStatus.Won, g.state.status)
     }
 
     @Test
     fun nothingWorksAfterTheGameIsOver() {
-        val g = game(maxMistakes = 1)
-        g.flip(0); g.flip(1)
+        val g = game()
+        g.flip(0); g.flip(3); g.flip(1); g.flip(4); g.flip(2); g.flip(5)
         assertTrue(g.isFinished)
         assertEquals(FlipResult.Ignored, g.flip(2))
-        assertEquals(1, g.state.moves)
+        assertEquals(3, g.state.moves)
     }
 
     @Test

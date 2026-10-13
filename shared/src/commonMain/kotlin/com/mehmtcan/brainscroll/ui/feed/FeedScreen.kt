@@ -1,13 +1,12 @@
 package com.mehmtcan.brainscroll.ui.feed
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import com.mehmtcan.brainscroll.ui.theme.Spacing
-import com.mehmtcan.brainscroll.ui.howto.HintSheet
-import com.mehmtcan.brainscroll.ui.components.AppOutlinedButton
-import brainscroll.shared.generated.resources.hint_button
 import brainscroll.shared.generated.resources.guide_none
-import brainscroll.shared.generated.resources.guide_button
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
@@ -105,7 +104,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     var howTo by remember { mutableStateOf<GameKind?>(null) }
     var streakInfo by remember { mutableStateOf(false) }
     val profile by viewModel.profile.collectAsStateWithLifecycle()
-    val bestWinStreak = maxOf(profile.stats.bestStreak, feed.answerStreak)
+    val bestFlow = maxOf(profile.bestFlow, feed.solvedCount)
     var noticeCounter by remember { mutableIntStateOf(0) }
     fun show(text: StringResource) {
         notice = Notice(text, noticeCounter++)
@@ -122,7 +121,6 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     // The step of the guide counts while the page looks as it did when it was given; any move makes it old.
     val guideState by viewModel.guide.collectAsStateWithLifecycle()
     val guide = guideState?.takeIf { it.page == current }?.step
-    var hintFor by remember { mutableStateOf<GameKind?>(null) }
     LaunchedEffect(viewModel) { viewModel.guideNothing.collect { show(Res.string.guide_none) } }
     val currentWord = current as? RoundSnapshot
 
@@ -174,10 +172,11 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
             Hud(
                 title = current.kind.displayName(),
                 badge = if (currentWord != null && feed.wordLanguages.size > 1) currentWord.language.name else null,
-                answerStreak = feed.answerStreak,
+                solvedCount = feed.solvedCount,
                 onHome = onHome,
                 onHowToPlay = { howTo = current.kind },
                 onStreak = { streakInfo = true },
+                onGuide = if (current.isFinished) null else ({ viewModel.requestGuide(page) }),
             )
             Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                 VerticalPager(
@@ -189,30 +188,36 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 ) { index ->
                     GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page })
                 }
-                // Sits under the page title so it never covers it.
-                guide?.let { GuideBanner(it, Modifier.align(Alignment.TopCenter).padding(top = Spacing.xs)) }
                 notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET)) }
             }
-            // Help for a puzzle that is not over: a general tip (free) and the guide (the puzzle becomes neutral).
-            if (!current.isFinished) {
-                HelpRow(onHint = { hintFor = current.kind }, onGuide = { viewModel.requestGuide(page) })
+            // What the guide says goes in a slot under the board that is always there, so the board does not change size
+            // (and does not redraw) when the sentence comes and goes: only the sentence fades.
+            Box(Modifier.fillMaxWidth().height(GuideSlotHeight).padding(horizontal = Spacing.lg, vertical = Spacing.xs)) {
+                // Keeps the last step while the sentence fades away.
+                val shown = remember { mutableStateOf(guide) }
+                if (guide != null) shown.value = guide
+                val alpha by animateFloatAsState(if (guide != null) 1f else 0f)
+                if (alpha > 0f) {
+                    shown.value?.let { step ->
+                        GuideBanner(
+                            step = step,
+                            onClose = viewModel::clearGuide,
+                            modifier = Modifier.graphicsLayer { this.alpha = alpha },
+                            onRestart = restartOf(viewModel, current.kind)?.let { restart -> { restart(page) } },
+                        )
+                    }
+                }
             }
         }
         CelebrateWin(current)
-        hintFor?.let { HintSheet(it, onClose = { hintFor = null }) }
         howTo?.let { HowToPlaySheet(it, onClose = { howTo = null }) }
-        if (streakInfo) StreakInfoSheet(StreakKind.Win, current = feed.answerStreak, best = bestWinStreak, onClose = { streakInfo = false })
+        if (streakInfo) StreakInfoSheet(StreakKind.Win, current = feed.solvedCount, best = bestFlow, onClose = { streakInfo = false })
     }
 }
 
-/** Two quiet buttons under the puzzle. The guide is the one that marks the puzzle, so it says what it does when used. */
-@Composable
-private fun HelpRow(onHint: () -> Unit, onGuide: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-    ) {
-        AppOutlinedButton(stringResource(Res.string.hint_button), onHint, Modifier.weight(1f).testTag("hintButton"))
-        AppOutlinedButton(stringResource(Res.string.guide_button), onGuide, Modifier.weight(1f).testTag("guideButton"))
-    }
+/** How a puzzle goes back to its start, for the games where the guide can find it has no way left. */
+private fun restartOf(actions: FeedActions, kind: GameKind): ((Int) -> Unit)? = when (kind) {
+    GameKind.Tubes -> { page -> actions.restart(page) }
+    GameKind.Target -> { page -> actions.restartNumbers(page) }
+    else -> null
 }

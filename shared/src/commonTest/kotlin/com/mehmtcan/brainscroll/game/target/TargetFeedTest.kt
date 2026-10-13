@@ -70,7 +70,7 @@ class TargetFeedTest {
         f.ensureSize(2)
         clock += 2_000
         f.solve(0)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
         val result = store.results.single()
         assertEquals(GameKind.Target, result.game)
         assertEquals(Outcome.WON, result.outcome)

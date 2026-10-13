@@ -226,3 +226,12 @@ Son güncelleme: 2026-10-05
 - **Devam:** yarım (başlanmış, bitmemiş) bulmaca varsa ana sayfada "Önceki akışa devam et" çıkar ve akışı o bulmacada açar.
 - **Alt menüden Akış:** son bakılan bulmaca bitmemişse (başlanmış ya da hiç dokunulmamış) akış aynı sayfada korunur; başka yerde yarım bulmaca varsa oradan devam edilir; son bulmaca bitmiş ve yarım bulmaca yoksa kişiselleştirmeye göre yeni akış kurulur. Zaten akıştayken sekmeye basmak bir şey yapmaz.
 - **Varsayılan:** ilk açılışta bütün oyunlar seçili; oyun ve dil seçimi her değişiklikte kaydedilir.
+
+## Akışta çözülen sayısı (2026-10-12, "doğru cevap serisi"nin yerine geçti)
+- **Tanım:** "Bu akışta çözülen" = bu akışta **rehbersiz kazanılan** bulmaca sayısı, tüm oyunlar birlikte. Kayıp sayıyı sıfırlamaz (yalnız artmaz), yarım bırakmak da etkilemez. Rehberle çözülen sayılmaz.
+- **Sıfırlanma:** yalnız bilerek başlatılan yeni akışta (düzenleme ekranından başlat, favoriden "Tekrar oyna") ve uygulamanın baştan açılışında. Alt menüden Akış'a dönünce son bulmaca bitmişse kurulan otomatik yeni akış sayıyı **korur**. Ana ekrana çıkıp dönmek sıfırlamaz. Sayı yalnız bellekte tutulur, kaydedilmez ve yedeklenmez.
+- **Rekor:** tek akışta en çok çözülen, yalnız bu cihazda ayarlarda saklanır (`best_flow`), profilde "Akış rekoru" kutusunda görünür.
+- **Gösterim:** yalnız akışın üst çubuğunda (şimşek + sayı, artınca "+1" animasyonu). Ana sayfa şeridinden ve profil serisinden kalktı. Bilgi sayfası yeni tanımı anlatır.
+- **Sıralama:** "Seri" sekmesi **günlük seriyi** yarıştırır (akıştaki sayı sıralamada hiç yoktu), olduğu gibi kalır.
+- **Sudoku ve hafıza:** hata sınırı kalktı (sudokuda 3, hafızada 6), oyunlar yalnız kazanılır. Hata sayacı bilgi amaçlı ("Hata: 2"), kazanma oranı sudoku istatistiğinden çıktı. Eski kayıp sonuçlar geçmişte kalır.
+- **Kaldırılan:** `Streaks`, `Stats.currentStreak/bestStreak`, kazanma serisi metinleri.

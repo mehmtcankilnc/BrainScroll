@@ -103,7 +103,7 @@ class AccessibilityUiTest {
     @Test
     fun streakChipsAreReadAsSentencesNotAsBareNumbers() = runComposeUiTest {
         start()
-        assertTrue(describedAs("Kazanma serisi: 0", "Win streak: 0"))
+        assertTrue(describedAs("Bu akışta çözülen: 0", "Solved in this feed: 0"))
         openTab("Günlük", "Daily")
         waitForIdle()
         waitUntil(timeoutMillis = 5_000) { hasAnyText("Başla", "Start") }

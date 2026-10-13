@@ -210,13 +210,17 @@ private fun Board(
 
         val density = LocalDensity.current
         val shake = rememberBlastShake(exploding)
+        // After a mine is opened the others go off one after the other, the closest first.
+        val chain = remember(state.mineCells, state.exploded) { if (state.exploded >= 0) mineChain(state.mineCells, state.exploded, state.cols) else emptyList() }
+        val clock = rememberChainClock(exploding, mineChainMillis(chain))
+        val goneOff = remember(chain) { chain.associate { it.cell to it.delayMillis } }
         val gridWidth = cellSize * state.cols + CellGap * (state.cols - 1)
         val gridHeight = cellSize * state.rows + CellGap * (state.rows - 1)
         Box(
             Modifier
                 .size(gridWidth, gridHeight)
                 // A shake that dies down when a mine goes off.
-                .graphicsLayer { translationX = sin(shake.value * PI.toFloat() * 9f) * (1f - shake.value) * with(density) { 10.dp.toPx() } },
+                .graphicsLayer { translationX = sin(shake.value * PI.toFloat() * 9f) * (1f - shake.value) * with(density) { 5.dp.toPx() } },
         ) {
         Column(verticalArrangement = Arrangement.spacedBy(CellGap)) {
             for (row in 0 until state.rows) {
@@ -229,7 +233,7 @@ private fun Board(
                                 column = column + 1,
                                 number = state.numbers[index],
                                 flagged = index in state.flagged,
-                                mine = index in state.mineCells,
+                                mine = index in state.mineCells && (goneOff[index] ?: 0) <= clock,
                                 exploded = index == state.exploded,
                                 playing = state.status == MinesStatus.Playing,
                                 flagMode = flagMode,
@@ -243,16 +247,12 @@ private fun Board(
                 }
             }
         }
-        if (state.exploded >= 0) {
-            val row = state.exploded / state.cols
-            val column = state.exploded % state.cols
-            MineExplosion(
-                play = exploding,
-                centerX = (cellSize + CellGap) * column + cellSize / 2,
-                centerY = (cellSize + CellGap) * row + cellSize / 2,
-                cell = cellSize,
-            )
-        }
+        MineChainBlasts(
+            chain = chain,
+            clock = clock,
+            centers = { cell -> (cellSize + CellGap) * (cell % state.cols) + cellSize / 2 to (cellSize + CellGap) * (cell / state.cols) + cellSize / 2 },
+            cell = cellSize,
+        )
         }
     }
 }

@@ -8,7 +8,6 @@ import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.Outcome
-import com.mehmtcan.brainscroll.stats.Streaks
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -180,7 +179,6 @@ class SyncEngineTest {
         assertEquals(listOf("r1", "r2", "r3"), tablet.history().map { it.id })
         assertTrue(tablet.isFavorite("r2"))
         assertEquals(0, tablet.pendingCount()) // what came from the cloud is not sent back
-        assertEquals(0, Streaks.current(tablet.history())) // the last result was a loss, so the streak restores correctly
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.ComposeUiTest
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -60,6 +62,10 @@ class AccountUiTest {
         assertTrue(hasAnyText("player@example.com"))
         assertEquals(false, hasAnyText("Google ile giriş yap", "Sign in with Google").and(!hasAnyText("yapıldı", "Signed in")))
         clickAny("Çıkış yap", "Sign out")
+        // Signing out asks first.
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("confirmYes").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(0, account.signOuts, "asking is not signing out")
+        onNodeWithTag("confirmYes").performClick()
         waitUntil(timeoutMillis = 5_000) { account.signOuts == 1 }
         assertEquals(1, account.signOuts)
     }
@@ -122,7 +128,5 @@ class AccountUiTest {
         mainClock.advanceTimeBy(3_000)
         waitUntil(timeoutMillis = 10_000) { cloud.api.resultsOf("test-user").isNotEmpty() }
         assertEquals(1, cloud.api.resultsOf("test-user").size)
-        openProfile()
-        waitUntil(timeoutMillis = 5_000) { hasAnyText("Her şey yedeklendi", "Everything is backed up") }
     }
 }

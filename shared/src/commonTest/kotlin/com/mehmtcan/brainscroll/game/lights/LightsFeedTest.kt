@@ -74,7 +74,7 @@ class LightsFeedTest {
         clock += 2_000
         f.tapLight(0, 0)
         f.solve(0, store)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
         val result = store.results.single()
         assertEquals(GameKind.Lights, result.game)
         assertEquals(Outcome.WON, result.outcome)

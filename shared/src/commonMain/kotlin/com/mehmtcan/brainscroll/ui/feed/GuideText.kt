@@ -3,6 +3,13 @@ package com.mehmtcan.brainscroll.ui.feed
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import com.mehmtcan.brainscroll.ui.components.AppTextButton
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.mehmtcan.brainscroll.ui.components.CloseButton
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
@@ -20,7 +27,6 @@ import brainscroll.shared.generated.resources.guide_mines_mine
 import brainscroll.shared.generated.resources.guide_mines_none
 import brainscroll.shared.generated.resources.guide_mines_safe
 import brainscroll.shared.generated.resources.guide_mines_start
-import brainscroll.shared.generated.resources.guide_neutral
 import brainscroll.shared.generated.resources.guide_pipes_turn
 import brainscroll.shared.generated.resources.guide_slide_tile
 import brainscroll.shared.generated.resources.guide_sudoku_erase
@@ -28,6 +34,8 @@ import brainscroll.shared.generated.resources.guide_sudoku_only_digit
 import brainscroll.shared.generated.resources.guide_sudoku_only_place
 import brainscroll.shared.generated.resources.guide_sudoku_solution
 import brainscroll.shared.generated.resources.guide_target_combine
+import brainscroll.shared.generated.resources.guide_target_stuck
+import brainscroll.shared.generated.resources.guide_restart
 import brainscroll.shared.generated.resources.guide_tubes_pour
 import brainscroll.shared.generated.resources.guide_tubes_stuck
 import brainscroll.shared.generated.resources.guide_word_letter
@@ -56,6 +64,7 @@ fun guideText(step: GuideStep): String {
         GuideReason.SlideTile -> stringResource(Res.string.guide_slide_tile)
         GuideReason.TubesPour -> stringResource(Res.string.guide_tubes_pour)
         GuideReason.TubesStuck -> stringResource(Res.string.guide_tubes_stuck)
+        GuideReason.TargetStuck -> stringResource(Res.string.guide_target_stuck)
         GuideReason.TargetCombine -> stringResource(Res.string.guide_target_combine, n[0], n[1], operationSymbol(step.text))
         GuideReason.MemoryPartner -> stringResource(Res.string.guide_memory_partner)
         GuideReason.MemoryPair -> stringResource(Res.string.guide_memory_pair)
@@ -71,25 +80,39 @@ private fun operationSymbol(saved: String): String = when (saved) {
     else -> saved
 }
 
+/** Whether the step says the puzzle cannot be finished from here, so the banner offers to start it over. */
+fun GuideStep.needsRestart(): Boolean = reason == GuideReason.TubesStuck || reason == GuideReason.TargetStuck
+
 /**
- * The step on screen: its sentence, and under it, small, that the guide leaves the win streak alone. Over the page, under
- * the bar, so it never covers the board.
+ * The step on screen: its sentence (that the guide leaves the win streak alone is said in the explanation of the streak). It sits under the
+ * board, in the room the board does not use, so it never covers what the guide points at. The x closes it. When the puzzle
+ * cannot be finished from where it is, [onRestart] puts it back to its start so the guide can begin again.
  */
 @Composable
-fun GuideBanner(step: GuideStep, modifier: Modifier = Modifier) {
+fun GuideBanner(step: GuideStep, onClose: () -> Unit, modifier: Modifier = Modifier, onRestart: (() -> Unit)? = null) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    Column(
+    Row(
         modifier = modifier
             .testTag("guideBanner")
-            .padding(horizontal = Spacing.lg)
-            .fillMaxWidth()
+            .fillMaxSize()
             .background(colors.bgRaised, Radius.card)
-            .padding(Spacing.md)
+            .padding(start = Spacing.md)
             .semantics { liveRegion = LiveRegionMode.Polite },
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        BasicText(guideText(step), style = type.body.copy(color = colors.textPrimary))
-        BasicText(stringResource(Res.string.guide_neutral), style = type.caption.copy(color = colors.textSecondary))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            BasicText(guideText(step), style = type.body.copy(color = colors.textPrimary), maxLines = 4, overflow = TextOverflow.Ellipsis)
+            if (onRestart != null && step.needsRestart()) {
+                AppTextButton(stringResource(Res.string.guide_restart), onRestart, Modifier.testTag("guideRestart"))
+            }
+        }
+        CloseButton(onClose, tag = "guideClose")
     }
 }
+
+/** The room under the board that is kept for the guide's sentence, so the board never changes size when it appears. */
+val GuideSlotHeight = 96.dp

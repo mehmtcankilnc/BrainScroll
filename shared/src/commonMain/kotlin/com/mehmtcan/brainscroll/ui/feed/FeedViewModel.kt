@@ -31,6 +31,7 @@ import com.mehmtcan.brainscroll.game.target.TargetResult
 import com.mehmtcan.brainscroll.game.tubes.PourResult
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
+import kotlin.random.Random
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.StoredRound
 import com.mehmtcan.brainscroll.game.wordle.WordList
@@ -56,7 +57,6 @@ import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.stats.Stats
-import com.mehmtcan.brainscroll.stats.Streaks
 import com.mehmtcan.brainscroll.stats.computeStats
 import com.mehmtcan.brainscroll.sync.SyncCoordinator
 import com.mehmtcan.brainscroll.time.IstanbulDay
@@ -110,6 +110,8 @@ data class ProfileState(
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
+    /** The most puzzles solved in one feed so far (kept on this device only). */
+    val bestFlow: Int = 0,
     /** A daily puzzle (either language) was finished today. */
     val dailyDoneToday: Boolean = false,
 )
@@ -142,7 +144,10 @@ class FeedViewModel(
     private val _state = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val state: StateFlow<FeedUiState> = _state
 
-    private val _profile = MutableStateFlow(ProfileState(computeStats(emptyList()), emptyList()))
+    /** The most puzzles solved in one feed so far. */
+    private var bestFlow = repository.bestFlow()
+
+    private val _profile = MutableStateFlow(ProfileState(computeStats(emptyList()), emptyList(), bestFlow = bestFlow))
     val profile: StateFlow<ProfileState> = _profile
 
     private val _enabledGames = MutableStateFlow(games.toSet())
@@ -255,7 +260,7 @@ class FeedViewModel(
     private var wordLists: Map<Language, WordList> = emptyMap()
 
     /** A feed of the games the player switched on, in the languages chosen, starting with [restored] puzzles. */
-    private fun buildFeed(restored: List<StoredRound>): EndlessFeed {
+    private fun buildFeed(restored: List<StoredRound>, startSolved: Int = 0): EndlessFeed {
         val chosen = _enabledGames.value
         return EndlessFeed(
             wordLists = wordLists,
@@ -263,7 +268,7 @@ class FeedViewModel(
             startLanguages = _wordLanguages.value,
             store = repository,
             restored = restored,
-            startStreak = Streaks.current(repository.history()),
+            startSolved = startSolved,
             now = now,
             games = games.filter { it in chosen },
         ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
@@ -284,12 +289,36 @@ class FeedViewModel(
 
     /**
      * Starts a new feed from the games and languages the player chose: whatever was left unfinished in the old one is
-     * forgotten, and the feed begins on its first page.
+     * forgotten, and the feed begins on its first page. The count of solved puzzles starts again from zero, unless this
+     * is the same flow going on ([keepSolvedCount]).
      */
-    fun startNewFeed() {
+    fun startNewFeed(keepSolvedCount: Boolean = false) {
+        val old = feed ?: return
+        repository.clearFeedProgress()
+        feed = buildFeed(emptyList(), startSolved = if (keepSolvedCount) old.solvedCount else 0)
+        page = 0
+        _guide.value = null
+        publish()
+    }
+
+    /**
+     * Plays a puzzle from the history again (a favorite): a new feed whose first page is that very puzzle, untouched and
+     * with a fresh id, so its new result is a result of its own. Whatever was left unfinished in the old feed is forgotten.
+     * Minesweeper keeps its seed, but the mines are placed after the first tap, so the board can differ.
+     */
+    fun playAgain(round: FinishedRound) {
         if (feed == null) return
         repository.clearFeedProgress()
-        feed = buildFeed(emptyList())
+        val copy = StoredRound(
+            id = Random.nextLong().toULong().toString(16),
+            language = round.language,
+            answer = round.answer,
+            guesses = emptyList(),
+            input = "",
+            position = 0,
+            game = round.game,
+        )
+        feed = buildFeed(listOf(copy))
         page = 0
         _guide.value = null
         publish()
@@ -316,7 +345,8 @@ class FeedViewModel(
         when {
             leftOn != null && !leftOn.isFinished && f.firstUnfinishedIndex() == null -> prepareFeed() // kept, on the same page
             f.firstUnfinishedIndex() != null -> continueFeed()
-            else -> startNewFeed()
+            // The last puzzle is done and nothing is half done: the player goes on playing, so the count goes on too.
+            else -> startNewFeed(keepSolvedCount = true)
         }
     }
 
@@ -630,6 +660,7 @@ class FeedViewModel(
                 today = today,
             ),
             dailyDoneToday = history.any { it.mode == Mode.DAILY && it.dayIndex == today },
+            bestFlow = bestFlow,
         )
     }
 
@@ -711,7 +742,6 @@ class FeedViewModel(
     /** The cloud may have brought in results and favorites from another device: reload what depends on them. */
     private fun afterSync() {
         favoriteIds = repository.favoriteResults().map { it.id }.toSet()
-        feed?.setAnswerStreak(Streaks.current(repository.history()))
         if (feed != null) publish()
         refreshProfile()
     }
@@ -723,7 +753,14 @@ class FeedViewModel(
     }
 
     private fun publish() {
-        _state.value = FeedUiState.Ready(feed!!.snapshot(), favoriteIds)
+        val snapshot = feed!!.snapshot()
+        // A new record is kept at once (on this device only).
+        if (snapshot.solvedCount > bestFlow) {
+            bestFlow = snapshot.solvedCount
+            repository.saveBestFlow(bestFlow)
+            _profile.value = _profile.value.copy(bestFlow = bestFlow)
+        }
+        _state.value = FeedUiState.Ready(snapshot, favoriteIds)
     }
 
     private companion object {

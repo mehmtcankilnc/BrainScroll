@@ -31,36 +31,11 @@ class StatsTest {
     private fun lost(language: Language = Language.EN) = round(Outcome.LOST, 6, language)
 
     @Test
-    fun emptyHistoryHasNoStreakAndZeroStats() {
+    fun emptyHistoryHasZeroStats() {
         val stats = computeStats(emptyList())
         assertEquals(0, stats.played)
-        assertEquals(0, stats.currentStreak)
         assertEquals(0f, stats.winRate)
         assertEquals(List(6) { 0 }, stats.guessDistribution)
-    }
-
-    @Test
-    fun currentStreakCountsTrailingWins() {
-        assertEquals(3, Streaks.current(listOf(lost(), won(), won(), won())))
-    }
-
-    @Test
-    fun aLossResetsTheCurrentStreak() {
-        assertEquals(0, Streaks.current(listOf(won(), won(), lost())))
-    }
-
-    @Test
-    fun bestStreakIsTheLongestRunEvenIfItIsOver() {
-        val history = listOf(won(), won(), won(), lost(), won(), won())
-        assertEquals(3, Streaks.best(history))
-        assertEquals(2, Streaks.current(history))
-    }
-
-    @Test
-    fun dailyResultsDoNotCountForTheAnswerStreak() {
-        val history = listOf(won(), round(Outcome.LOST, mode = Mode.DAILY), won())
-        assertEquals(2, Streaks.current(history))
-        assertEquals(2, Streaks.best(history))
     }
 
     @Test
@@ -83,7 +58,6 @@ class StatsTest {
         val tr = computeStats(history, Language.TR)
         assertEquals(2, tr.played)
         assertEquals(1, tr.won)
-        assertEquals(1, tr.currentStreak)
         assertEquals(3, computeStats(history).played)
     }
 
@@ -103,7 +77,6 @@ class StatsTest {
         assertEquals(2, stats.won)
         assertEquals(45_000L, stats.bestTimeMs)
         assertEquals(listOf(0, 0, 1, 0, 1, 0), stats.guessDistribution)
-        assertEquals(0, stats.currentStreak) // the day streak lives in DayStreaks, not here
     }
 
     @Test

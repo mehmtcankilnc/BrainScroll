@@ -130,6 +130,7 @@ class DailyUiTest {
         waitForIdle()
 
         openProfilePage("İstatistikler", "Statistics")
+        expandStats("statsDaily")
         snap("18_profile_with_daily")
 
         // The statistics are a long list: only what is on screen exists, so scroll to each thing before looking for it.

@@ -2,6 +2,10 @@ package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import kotlin.test.Test
@@ -65,11 +69,11 @@ class TelemetryUiTest {
         val cloud = TestCloud()
         start(cloud)
         openProfilePage("Ayarlar", "Settings")
-        assertTrue(hasAnyText("Paylaşım açık", "Sharing is on"))
+        onNodeWithTag("privacySwitch").assertIsOn()
         snap("60_privacy_on")
-        clickAny("Kapat", "Turn off")
+        onNodeWithTag("privacySwitch").performClick()
         waitForIdle()
-        assertTrue(hasAnyText("Paylaşım kapalı", "Sharing is off"))
+        onNodeWithTag("privacySwitch").assertIsOff()
         snap("61_privacy_off")
 
         val countBefore = cloud.telemetry.events.size
@@ -81,7 +85,7 @@ class TelemetryUiTest {
 
         // Turning it on again counts again.
         openProfilePage("Ayarlar", "Settings")
-        clickAny("Aç", "Turn on")
+        onNodeWithTag("privacySwitch").performClick()
         waitForIdle()
         openTab("Sıralama", "Ranks")
         waitUntil(timeoutMillis = 15_000) { cloud.telemetry.events.any { it.props["tab"] == "ranks" } }

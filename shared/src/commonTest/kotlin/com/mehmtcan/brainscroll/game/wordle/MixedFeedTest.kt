@@ -43,7 +43,7 @@ class MixedFeedTest {
         random = Random(1),
         store = store,
         restored = restored,
-        startStreak = streak,
+        startSolved = streak,
         now = { clock },
         newId = { "id${ids++}" },
         games = games,
@@ -57,13 +57,6 @@ class MixedFeedTest {
     private fun EndlessFeed.solveMemory(index: Int) {
         val layout = memory(index).state.layout
         layout.indices.groupBy { layout[it] }.values.forEach { flip(index, it[0]); flip(index, it[1]) }
-    }
-
-    /** Loses a memory page: the first two cards that differ are flipped over and over. */
-    private fun EndlessFeed.loseMemory(index: Int) {
-        val layout = memory(index).state.layout
-        val other = layout.indices.first { layout[it] != layout[0] }
-        repeat(6) { flip(index, 0); flip(index, other) }
     }
 
     private fun EndlessFeed.playWord(index: Int) {
@@ -106,7 +99,6 @@ class MixedFeedTest {
         val state = f.memory(1).state
         assertEquals(12, state.layout.size)
         assertTrue(state.faceUp.isEmpty())
-        assertEquals(6, state.maxMistakes)
     }
 
     @Test
@@ -127,22 +119,11 @@ class MixedFeedTest {
         f.ensureSize(2)
         f.solveMemory(1)
         assertEquals(MemoryStatus.Won, f.memory(1).state.status)
-        assertEquals(3, f.snapshot().answerStreak)
+        assertEquals(3, f.snapshot().solvedCount)
         val result = store.results.single()
         assertEquals(GameKind.Memory, result.game)
         assertEquals(Outcome.WON, result.outcome)
         assertTrue(store.progress.isEmpty(), "a finished board is not kept as progress")
-    }
-
-    @Test
-    fun losingMemoryResetsTheStreakJustLikeAWordLoss() {
-        val store = FakeStore()
-        val f = feed(store, streak = 5)
-        f.ensureSize(2)
-        f.loseMemory(1)
-        assertEquals(MemoryStatus.Lost, f.memory(1).state.status)
-        assertEquals(0, f.snapshot().answerStreak)
-        assertEquals(Outcome.LOST, store.results.single().outcome)
     }
 
     @Test
@@ -152,7 +133,7 @@ class MixedFeedTest {
         f.playWord(0)
         f.solveMemory(1)
         f.playWord(2)
-        assertEquals(3, f.snapshot().answerStreak, "word win, memory win, word win")
+        assertEquals(3, f.snapshot().solvedCount, "word win, memory win, word win")
     }
 
     @Test
@@ -163,7 +144,7 @@ class MixedFeedTest {
         f.solveMemory(1)
         f.flip(1, 0) // too late
         assertEquals(1, store.results.size)
-        assertEquals(1, f.snapshot().answerStreak)
+        assertEquals(1, f.snapshot().solvedCount)
     }
 
     @Test

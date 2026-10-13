@@ -169,18 +169,23 @@ class MinesUiTest {
         openMines(haptics = haptics)
         tap(27)
         haptics.kinds.clear()
+        // The clock is held, so the chain of blasts can be looked at while it runs.
+        mainClock.autoAdvance = false
         // Every closed cell in turn: a wrong guess comes quickly (no logic is used on purpose).
         for (cell in 0 until cells) {
             if (values()[cell] == -1) tap(cell)
             if (lost()) break
         }
-        mainClock.advanceTimeBy(1_000)
+        mainClock.advanceTimeBy(100)
         waitForIdle()
         snap("105_mines_lost")
         assertTrue(lost())
         assertTrue(values().any { it == -4 }, "the mine that was opened is marked")
         assertTrue(onAllNodesWithTag("mineExplosion").fetchSemanticsNodes().isNotEmpty(), "the blast is drawn around that mine")
-        assertTrue(values().count { it == -3 || it == -4 } == 10, "and all ten mines are shown")
+        assertTrue(values().count { it == -3 || it == -4 } < 10, "the other mines go off one after the other, not all at once")
+        mainClock.advanceTimeBy(3_000)
+        waitForIdle()
+        assertTrue(values().count { it == -3 || it == -4 } == 10, "and in the end all ten mines are shown")
         assertTrue(HapticKind.Warning in haptics.kinds)
         assertTrue(HapticKind.Success !in haptics.kinds)
     }

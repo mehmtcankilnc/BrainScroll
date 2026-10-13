@@ -16,6 +16,7 @@ import com.mehmtcan.brainscroll.social.SocialApi
 import com.mehmtcan.brainscroll.social.SocialException
 import com.mehmtcan.brainscroll.social.StreakKind
 import com.mehmtcan.brainscroll.social.StreakRow
+import com.mehmtcan.brainscroll.social.RandomUsername
 import com.mehmtcan.brainscroll.social.isValidUsername
 import com.mehmtcan.brainscroll.social.socialJson
 import com.mehmtcan.brainscroll.telemetry.NoTelemetry
@@ -86,7 +87,7 @@ data class SpeedPreview(
 /** One-off messages for the screen. [name] is the player the message is about, when there is one. */
 data class SocialEvent(val kind: Kind, val name: String? = null) {
     enum class Kind {
-        UsernameSaved, UsernameInvalid, UsernameNotAllowed, UsernameTaken,
+        UsernameSaved, UsernameAssigned, UsernameInvalid, UsernameNotAllowed, UsernameTaken,
         FriendAdded, RequestSent, NowFriends,
         CodeNotFound, PlayerNotFound, IsSelf,
         Offline, Unavailable,
@@ -338,17 +339,44 @@ class SocialViewModel(
 
     private fun refreshProfile() {
         viewModelScope.launch {
+            var reached = false
             try {
                 profile = api.profile().also { cache("profile", socialJson.encodeToString(it)) }
+                reached = true
             } catch (e: CancellationException) {
                 throw e
             } catch (e: SocialException) {
                 // Keep the cached profile, if any: the username does not change by being offline.
             }
+            // A member with no name yet gets one like "redpanda051", so the tables and friends work at once.
+            // The player can change it in the settings.
+            if (reached && profile?.username == null) assignRandomUsername()
             profileChecked = true
             publish()
             reload()
             applyPendingInvite()
+        }
+    }
+
+    /** Takes a random free name for a player who has none. A name that is taken or not allowed is replaced by another. */
+    private suspend fun assignRandomUsername() {
+        repeat(RANDOM_NAME_TRIES) {
+            try {
+                val saved = api.setUsername(RandomUsername.next())
+                profile = saved
+                cache("profile", socialJson.encodeToString(saved))
+                emit(SocialEvent.Kind.UsernameAssigned, saved.username)
+                return
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: SocialException.UsernameTaken) {
+                // Try another.
+            } catch (e: SocialException.UsernameNotAllowed) {
+                // Try another.
+            } catch (e: SocialException) {
+                // Offline or the server is away: the ranks tab still offers to choose a name by hand.
+                return
+            }
         }
     }
 
@@ -503,3 +531,6 @@ class SocialViewModel(
 }
 
 private const val PREVIEW_ROWS = 5
+
+/** How many random names are tried before giving up and leaving the choice to the player. */
+private const val RANDOM_NAME_TRIES = 6

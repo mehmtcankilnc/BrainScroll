@@ -81,7 +81,7 @@ class DailyGameUiTest {
 
         assertTrue(hasAnyText("31 hamle", "31 moves"), "moves, not guesses")
         assertTrue(hasAnyText("00:42"))
-        assertTrue(hasAnyText("Bugünün oyunu: Mayın tarlası", "Today's game: Minesweeper"), "the table says whose game it is")
+        assertTrue(hasAnyText("Bugün · Mayın tarlası", "Today · Minesweeper"), "the filter line says whose game it is")
         assertTrue(cloud.social.calls.any { it == "gameBoard:mines:Today:false" })
         assertFalse(cloud.social.calls.any { it.startsWith("dailyBoard") }, "the word table is not asked for")
     }

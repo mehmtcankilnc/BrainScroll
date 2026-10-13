@@ -27,24 +27,6 @@ class AssistedTest {
     )
 
     @Test
-    fun theWinStreakSkipsGuidedPuzzlesInBothDirections() {
-        val history = listOf(
-            round(Outcome.WON),
-            round(Outcome.WON, assisted = true),
-            round(Outcome.LOST, assisted = true),
-            round(Outcome.WON),
-        )
-        assertEquals(2, Streaks.current(history), "the two unguided wins, the guided loss does not break them")
-        assertEquals(2, Streaks.best(history))
-    }
-
-    @Test
-    fun aGuidedLossAtTheEndDoesNotResetTheStreak() {
-        val history = listOf(round(Outcome.WON), round(Outcome.WON), round(Outcome.LOST, assisted = true))
-        assertEquals(2, Streaks.current(history))
-    }
-
-    @Test
     fun theStatisticsOfAGameLeaveGuidedPuzzlesOut() {
         val history = listOf(
             round(Outcome.WON, moves = 40, ms = 90_000),

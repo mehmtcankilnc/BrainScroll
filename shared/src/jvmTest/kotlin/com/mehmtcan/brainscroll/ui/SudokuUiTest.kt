@@ -70,7 +70,7 @@ class SudokuUiTest {
         assertEquals(81, cellCount())
         assertEquals(SudokuGenerator.DEFAULT_CLUES, values().count { it in 1..9 })
         assertTrue(hasAnyText("Sudoku"))
-        assertTrue(hasAnyText("Hata 0/3", "Mistakes 0/3"))
+        assertTrue(hasAnyText("Hata: 0", "Mistakes: 0"))
         for (digit in 1..9) onNodeWithTag("sudokuKey$digit").assertExists()
     }
 
@@ -91,7 +91,7 @@ class SudokuUiTest {
         place(empty[1], wrong)
         snap("121_sudoku_mistake")
         assertEquals(100 + wrong, values()[empty[1]])
-        assertTrue(hasAnyText("Hata 1/3", "Mistakes 1/3"))
+        assertTrue(hasAnyText("Hata: 1", "Mistakes: 1"))
         assertEquals(listOf(HapticKind.Warning), haptics.kinds)
 
         // A wrong digit can be erased and the cell tried again.
@@ -109,7 +109,7 @@ class SudokuUiTest {
         val before = values()
         place(given, if (before[given] == 1) 2 else 1)
         assertEquals(before, values())
-        assertTrue(hasAnyText("Hata 0/3", "Mistakes 0/3"))
+        assertTrue(hasAnyText("Hata: 0", "Mistakes: 0"))
     }
 
     @Test
@@ -151,20 +151,20 @@ class SudokuUiTest {
     }
 
     @Test
-    fun theThirdMistakeLosesShowsTheResultAndBuzzesAWarning() = runComposeUiTest {
+    fun mistakesAreCountedWithoutALimitAndTheBoardGoesOn() = runComposeUiTest {
         val haptics = RecordingHaptics()
         openSudoku(haptics = haptics)
         val solution = solution()
         val empty = values().indices.filter { values()[it] == 0 }
         haptics.kinds.clear()
-        for (cell in empty.take(3)) place(cell, if (solution[cell] == 1) 2 else 1)
+        for (cell in empty.take(4)) place(cell, if (solution[cell] == 1) 2 else 1)
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
-        snap("123_sudoku_lost")
-        assertTrue(lost())
+        snap("123_sudoku_many_mistakes")
+        assertTrue(hasAnyText("Hata: 4", "Mistakes: 4"), "the number goes past three")
         assertTrue(HapticKind.Warning in haptics.kinds)
         assertTrue(HapticKind.Success !in haptics.kinds)
-        onAllNodesWithTag("sudokuKey1").assertCountEquals(0)
+        onAllNodesWithTag("sudokuKey1").assertCountEquals(1) // the pad is still there: the game is not over
     }
 
     @Test

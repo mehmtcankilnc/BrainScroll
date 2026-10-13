@@ -30,7 +30,7 @@ class FeedPersistenceTest {
     private fun feed(
         store: FeedStore,
         restored: List<StoredRound> = emptyList(),
-        startStreak: Int = 0,
+        startSolved: Int = 0,
         time: () -> Long = { 1_000L },
     ) = EndlessFeed(
         wordLists = lists,
@@ -38,7 +38,7 @@ class FeedPersistenceTest {
         random = Random(1),
         store = store,
         restored = restored,
-        startStreak = startStreak,
+        startSolved = startSolved,
         now = time,
         newId = { "id${idCounter++}" },
     )
@@ -185,12 +185,12 @@ class FeedPersistenceTest {
 
     @Test
     fun theStartStreakIsKeptAndContinues() {
-        val f = feed(FakeStore(), startStreak = 4)
+        val f = feed(FakeStore(), startSolved = 4)
         f.ensureSize(1)
-        assertEquals(4, f.answerStreak)
+        assertEquals(4, f.solvedCount)
         f.playToTheEnd(0)
         val won = f.snapshot().rounds[0].status == WordleStatus.Won
-        assertEquals(if (won) 5 else 0, f.answerStreak)
+        assertEquals(if (won) 5 else 0, f.solvedCount)
     }
 
     @Test

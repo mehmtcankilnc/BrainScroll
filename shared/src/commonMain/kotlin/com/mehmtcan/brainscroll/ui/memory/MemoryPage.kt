@@ -31,7 +31,6 @@ import brainscroll.shared.generated.resources.a11y_memory_mistakes
 import brainscroll.shared.generated.resources.a11y_memory_moves
 import brainscroll.shared.generated.resources.game_memory
 import brainscroll.shared.generated.resources.memory_hint
-import brainscroll.shared.generated.resources.memory_lost
 import brainscroll.shared.generated.resources.memory_mistakes
 import brainscroll.shared.generated.resources.memory_moves
 import brainscroll.shared.generated.resources.memory_result
@@ -83,7 +82,6 @@ fun MemoryPage(
     val wordleStatus = when (state.status) {
         MemoryStatus.Playing -> WordleStatus.Playing
         MemoryStatus.Won -> WordleStatus.Won
-        MemoryStatus.Lost -> WordleStatus.Lost
     }
     OutcomeHaptics(wordleStatus)
     val justFinished = rememberJustFinished(wordleStatus)
@@ -109,10 +107,9 @@ fun MemoryPage(
                 description = stringResource(Res.string.a11y_memory_moves, state.moves),
             )
             Chip(
-                text = stringResource(Res.string.memory_mistakes, state.mistakes, state.maxMistakes),
-                // Close to the limit the counter turns red, and says so with its words too.
-                textColor = if (state.mistakes >= state.maxMistakes - 2) colors.error else colors.textSecondary,
-                description = stringResource(Res.string.a11y_memory_mistakes, state.mistakes, state.maxMistakes),
+                text = stringResource(Res.string.memory_mistakes, state.mistakes),
+                textColor = if (state.mistakes > 0) colors.error else colors.textSecondary,
+                description = stringResource(Res.string.a11y_memory_mistakes, state.mistakes),
             )
         }
         Spacer(Modifier.height(Spacing.md))
@@ -162,8 +159,6 @@ private fun Board(page: MemorySnapshot, onFlip: (Int) -> Unit, modifier: Modifie
                             face = when {
                                 index in state.matched -> CardFace.Matched
                                 index in state.faceUp -> CardFace.Up
-                                // A lost game shows the cards that were left, so the player sees where they were.
-                                state.status == MemoryStatus.Lost -> CardFace.Up
                                 else -> CardFace.Down
                             },
                             size = cardSize,
@@ -181,7 +176,7 @@ private fun Board(page: MemorySnapshot, onFlip: (Int) -> Unit, modifier: Modifie
 private fun MemoryResultCard(page: MemorySnapshot, isFavorite: Boolean, onToggleFavorite: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    val won = page.state.status == MemoryStatus.Won
+    // A memory game is only ever won.
 
     Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
         Column(
@@ -190,9 +185,9 @@ private fun MemoryResultCard(page: MemorySnapshot, isFavorite: Boolean, onToggle
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             BasicText(
-                text = stringResource(if (won) Res.string.memory_won else Res.string.memory_lost),
+                text = stringResource(Res.string.memory_won),
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
+                style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
             BasicText(
                 text = stringResource(Res.string.memory_result, page.state.moves, formatDuration(page.durationMs)),

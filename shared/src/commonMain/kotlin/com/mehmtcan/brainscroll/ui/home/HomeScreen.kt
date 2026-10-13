@@ -58,13 +58,13 @@ import brainscroll.shared.generated.resources.home_fastest_empty
 import brainscroll.shared.generated.resources.home_fastest_failed
 import brainscroll.shared.generated.resources.home_fastest_sign_in
 import brainscroll.shared.generated.resources.home_fastest_title
-import brainscroll.shared.generated.resources.home_feed_add
 import brainscroll.shared.generated.resources.confirm_cancel
 import brainscroll.shared.generated.resources.home_continue_feed
 import brainscroll.shared.generated.resources.new_feed_confirm
 import brainscroll.shared.generated.resources.new_feed_message
 import brainscroll.shared.generated.resources.new_feed_title
 import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
+import brainscroll.shared.generated.resources.home_feed_edit
 import brainscroll.shared.generated.resources.home_feed_edit_description
 import brainscroll.shared.generated.resources.home_feed_more
 import brainscroll.shared.generated.resources.home_feed_title
@@ -79,7 +79,7 @@ import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.social.DailyRow
 import com.mehmtcan.brainscroll.ui.components.AppButton
-import com.mehmtcan.brainscroll.ui.components.AppOutlinedButton
+import com.mehmtcan.brainscroll.ui.components.AppTextButton
 import com.mehmtcan.brainscroll.ui.components.ForwardChevron
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.daily.DailyPhase
@@ -137,7 +137,6 @@ fun HomeScreen(
     val social by socialViewModel.ui.collectAsStateWithLifecycle()
 
     val ready = feedState as? FeedUiState.Ready
-    val answerStreak = ready?.feed?.answerStreak ?: 0
     val wordLanguage = ready?.feed?.language ?: daily.language
 
     // Opened: look again quietly (a result or a new day may have come in while another page was open).
@@ -162,26 +161,20 @@ fun HomeScreen(
 
         StreakStrip(
             dayStreak = profile.dayStreak.current,
-            answerStreak = answerStreak,
             waitingToday = !profile.dailyDoneToday,
             freezeReady = profile.dayStreak.freezesAvailable > 0,
             onDayStreak = { streakInfo = StreakKind.Daily },
-            onWinStreak = { streakInfo = StreakKind.Win },
         )
 
         DailyCard(daily.phase, daily.language, dailyGame, onOpenDaily)
 
-        // A feed that was left half done can be gone on with; it is not offered when there is none.
-        if (ready?.feed?.hasUnfinished == true) {
-            AppOutlinedButton(stringResource(Res.string.home_continue_feed), onContinueFeed, modifier = Modifier.testTag("continueFeed"))
-        }
-
         FeedCard(
             enabled = feedViewModel.availableGames.filter { it in enabled },
-            disabledCount = feedViewModel.availableGames.count { it !in enabled },
             wordLanguage = wordLanguage,
             onEdit = onOpenFeedEditor,
             onStart = startNewFeed,
+            // A feed that was left half done can be gone on with; it is not offered when there is none.
+            onContinue = onContinueFeed.takeIf { ready?.feed?.hasUnfinished == true },
         )
 
         // --- Fastest today ---
@@ -223,20 +216,19 @@ fun HomeScreen(
             freezes = profile.dayStreak.freezesAvailable,
             onClose = { streakInfo = null },
         )
-        StreakKind.Win -> StreakInfoSheet(StreakKind.Win, current = answerStreak, best = maxOf(profile.stats.bestStreak, answerStreak), onClose = { streakInfo = null })
+        StreakKind.Win -> Unit
         null -> Unit
     }
     }
 }
 
-/** Both streaks in one quiet line. A dot beside the day streak says today's puzzle is still open. */
+/** The name of the app and the day streak. A dot beside the streak says today's puzzle is still open. */
 @Composable
-private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean, freezeReady: Boolean, onDayStreak: () -> Unit, onWinStreak: () -> Unit) {
+private fun StreakStrip(dayStreak: Int, waitingToday: Boolean, freezeReady: Boolean, onDayStreak: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val waiting = stringResource(Res.string.home_waiting_today)
     val dayDescription = stringResource(Res.string.a11y_day_streak, dayStreak) + if (waitingToday) ", $waiting" else ""
-    val answerDescription = stringResource(Res.string.a11y_answer_streak, answerStreak)
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -262,20 +254,6 @@ private fun StreakStrip(dayStreak: Int, answerStreak: Int, waitingToday: Boolean
                 BasicText(dayStreak.toString(), style = type.heading.copy(color = colors.streakDay))
             }
             if (waitingToday) Box(Modifier.size(6.dp).background(colors.streakDay, CircleShape))
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier
-                .testTag("winStreak")
-                .semantics(mergeDescendants = true) { contentDescription = answerDescription }
-                .heightIn(min = 48.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onWinStreak),
-        ) {
-            BoltIcon(colors.streakAnswer)
-            Box(Modifier.popOnIncrease(answerStreak)) {
-                BasicText(answerStreak.toString(), style = type.heading.copy(color = colors.streakAnswer))
-            }
         }
         if (freezeReady) {
             BasicText(stringResource(Res.string.home_freeze_badge), style = type.caption.copy(color = colors.textSecondary))
@@ -319,15 +297,15 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
                     when (phase) {
                         DailyPhase.Intro -> {
                             BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
-                            AppOutlinedButton(stringResource(Res.string.home_daily_solve), onOpen)
+                            AppTextButton(stringResource(Res.string.home_daily_solve), onOpen)
                         }
                         DailyPhase.Playing -> {
                             BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
-                            AppOutlinedButton(stringResource(Res.string.home_daily_continue), onOpen)
+                            AppTextButton(stringResource(Res.string.home_daily_continue), onOpen)
                         }
                         DailyPhase.Finished -> {
                             BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
-                            AppOutlinedButton(stringResource(Res.string.home_daily_result), onOpen)
+                            AppTextButton(stringResource(Res.string.home_daily_result), onOpen)
                         }
                         DailyPhase.Offline, DailyPhase.Unavailable ->
                             BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSecondary))
@@ -336,10 +314,10 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
                     }
                 } else if (gameUi.phase == DailyGamePhase.Finished) {
                     BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
-                    AppOutlinedButton(stringResource(Res.string.home_daily_result), onOpen)
+                    AppTextButton(stringResource(Res.string.home_daily_result), onOpen)
                 } else {
                     BasicText(stringResource(Res.string.home_daily_description_board), style = type.body.copy(color = colors.textSecondary))
-                    AppOutlinedButton(stringResource(Res.string.home_daily_solve), onOpen)
+                    AppTextButton(stringResource(Res.string.home_daily_solve), onOpen)
                 }
             }
         }
@@ -358,10 +336,11 @@ private const val FEED_PREVIEW = 3
 @Composable
 private fun FeedCard(
     enabled: List<GameKind>,
-    disabledCount: Int,
     wordLanguage: Language,
     onEdit: () -> Unit,
     onStart: () -> Unit,
+    /** Goes on with the feed that was left half done; null when there is none. */
+    onContinue: (() -> Unit)?,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
@@ -369,7 +348,6 @@ private fun FeedCard(
     val more = enabled.size - shown.size
     val tileText = when {
         more > 0 -> stringResource(Res.string.home_feed_more, more)
-        disabledCount > 0 -> stringResource(Res.string.home_feed_add)
         else -> null
     }
     val editDescription = stringResource(Res.string.home_feed_edit_description)
@@ -393,7 +371,11 @@ private fun FeedCard(
         modifier = Modifier.fillMaxWidth().padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        BasicText(stringResource(Res.string.home_feed_title), style = type.title.copy(color = colors.textPrimary), modifier = Modifier.fillMaxWidth())
+        // The title and, at its right, the way to change what is in the feed.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            BasicText(stringResource(Res.string.home_feed_title), style = type.title.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+            AppTextButton(stringResource(Res.string.home_feed_edit), onEdit, Modifier.testTag("editFeedLink"))
+        }
         // Four equal slots: the pictures of the first games, then a tile for the rest. Empty slots keep the pictures their size.
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
             shown.forEach { game ->
@@ -411,8 +393,7 @@ private fun FeedCard(
                             .fillMaxWidth()
                             .aspectRatio(1f)
                             .clip(Radius.control)
-                            .background(colors.bgRaised)
-                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit),
+                            .background(colors.bgRaised),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -428,7 +409,12 @@ private fun FeedCard(
             }
             repeat(FEED_PREVIEW + 1 - shown.size - if (tileText != null) 1 else 0) { Spacer(Modifier.weight(1f)) }
         }
-        AppButton(stringResource(Res.string.home_start_feed), onStart, modifier = Modifier.testTag("startFeedHome"), primary = true)
+        if (onContinue != null) {
+            // The feed that was left is the main button. A new one is started from the editor, which asks first.
+            AppButton(stringResource(Res.string.home_continue_feed), onContinue, modifier = Modifier.testTag("continueFeed"), primary = true)
+        } else {
+            AppButton(stringResource(Res.string.home_start_feed), onStart, modifier = Modifier.testTag("startFeedHome"), primary = true)
+        }
     }
     }
 }

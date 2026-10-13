@@ -38,9 +38,12 @@ fun ConfirmDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The confirming button is red, for what cannot be taken back. */
+    danger: Boolean = false,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    Overlay {
     BackHandler(enabled = true, onBack = onCancel)
 
     Box(modifier = modifier.fillMaxSize().testTag("confirmDialog")) {
@@ -62,8 +65,9 @@ fun ConfirmDialog(
         ) {
             BasicText(title, style = type.title.copy(color = colors.textPrimary), modifier = Modifier.semantics { heading() })
             BasicText(message, style = type.body.copy(color = colors.textSecondary))
-            AppButton(confirmText, onConfirm, modifier = Modifier.testTag("confirmYes"), primary = true)
+            AppButton(confirmText, onConfirm, modifier = Modifier.testTag("confirmYes"), primary = !danger, danger = danger)
             AppOutlinedButton(cancelText, onCancel, modifier = Modifier.testTag("confirmNo"))
         }
+    }
     }
 }

@@ -69,12 +69,12 @@ class EndlessFeedTest {
         f.ensureSize(4)
         f.markGuided(0)
         f.win(0)
-        assertEquals(0, f.answerStreak, "a guided win does not add")
+        assertEquals(0, f.solvedCount, "a guided win does not add")
         f.win(1)
-        assertEquals(1, f.answerStreak)
+        assertEquals(1, f.solvedCount)
         f.markGuided(2)
         f.lose(2)
-        assertEquals(1, f.answerStreak, "a guided loss does not break it either")
+        assertEquals(1, f.solvedCount, "a guided loss does not break it either")
     }
 
     @Test
@@ -93,17 +93,31 @@ class EndlessFeedTest {
         f.ensureSize(2)
         f.win(0)
         f.win(1)
-        assertEquals(2, f.answerStreak)
+        assertEquals(2, f.solvedCount)
     }
 
     @Test
-    fun losingResetsTheAnswerStreak() {
+    fun losingDoesNotResetTheCountOfSolvedPuzzles() {
         val f = feed()
         f.ensureSize(3)
         f.win(0)
         f.win(1)
         f.lose(2)
-        assertEquals(0, f.answerStreak)
+        assertEquals(2, f.solvedCount)
+    }
+
+    @Test
+    fun aFeedThatGoesOnKeepsTheCountItWasGiven() {
+        val f = EndlessFeed(mapOf(Language.EN to en, Language.TR to tr), Language.EN, Random(1), startSolved = 4)
+        f.ensureSize(1)
+        assertEquals(4, f.solvedCount)
+        f.win(0)
+        assertEquals(5, f.solvedCount)
+    }
+
+    @Test
+    fun aFeedStartedFromScratchCountsFromZero() {
+        assertEquals(0, feed().solvedCount)
     }
 
     @Test
@@ -113,7 +127,7 @@ class EndlessFeedTest {
         f.win(0)
         f.submit(0)
         f.submit(0)
-        assertEquals(1, f.answerStreak)
+        assertEquals(1, f.solvedCount)
     }
 
     @Test
