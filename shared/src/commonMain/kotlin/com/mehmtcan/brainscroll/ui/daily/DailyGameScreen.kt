@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.ui.daily
 
+import com.mehmtcan.brainscroll.ui.motion.LocalWinSignal
+import com.mehmtcan.brainscroll.ui.motion.WinSignal
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -78,6 +80,8 @@ fun DailyGameScreen(viewModel: DailyGameViewModel, onBack: () -> Unit, modifier:
     // Opening the screen looks for a new day.
     LaunchedEffect(viewModel) { viewModel.refresh() }
     var howTo by remember { mutableStateOf(false) }
+    // The page says when its win is on show; the confetti waits for it.
+    val winSignal = remember { WinSignal() }
     var streakInfo by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -96,7 +100,7 @@ fun DailyGameScreen(viewModel: DailyGameViewModel, onBack: () -> Unit, modifier:
                 val shareText = (page as? LineSnapshot)?.takeIf { it.isFinished }?.let {
                     LineShare.text(name, LineSchedule.puzzleNumber(ui.day), it.stars, formatDuration(it.durationMs), ui.dayStreak.current)
                 }
-                CompositionLocalProvider(LocalDailyPage provides true, LocalLineShare provides shareText) {
+                CompositionLocalProvider(LocalDailyPage provides true, LocalLineShare provides shareText, LocalWinSignal provides winSignal) {
                     val result = ui.result
                     when {
                         page != null -> GamePage(page, 0, viewModel, ui.favoriteIds)
@@ -106,7 +110,7 @@ fun DailyGameScreen(viewModel: DailyGameViewModel, onBack: () -> Unit, modifier:
                 }
             }
         }
-        ui.page?.let { CelebrateWin(it) }
+        ui.page?.let { CelebrateWin(it, winSignal) }
         if (howTo) HowToPlaySheet(ui.game, onClose = { howTo = false })
         if (streakInfo) {
             StreakInfoSheet(

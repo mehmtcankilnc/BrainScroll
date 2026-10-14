@@ -73,6 +73,7 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.Slide -> SlideThumb(side)
             GameKind.Target -> TargetThumb(side)
             GameKind.Pipes -> PipesThumb(side)
+            GameKind.Hanoi -> HanoiThumb(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -375,6 +376,31 @@ private fun LineThumb(side: Dp) {
         val index = r * size + c
         Cell(tile, colors.correctFill.copy(alpha = 0.35f), colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.2f) {
             numbers[index]?.let { Mark(it, tile * 0.5f, colors.textPrimary) }
+        }
+    }
+}
+
+/** Three towers with a few disks: the big one at the bottom of the first, a smaller one on the second. */
+@Composable
+private fun HanoiThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val disks = listOf(listOf(2, 1, 0), listOf(), listOf(3))
+    Canvas(Modifier.size(side * 0.9f)) {
+        val tower = size.width / 3f
+        val peg = size.width * 0.03f
+        val diskHeight = size.height * 0.13f
+        for (t in 0 until 3) {
+            val center = t * tower + tower / 2f
+            drawRoundRect(colors.borderStrong.copy(alpha = 0.6f), androidx.compose.ui.geometry.Offset(center - peg / 2f, size.height * 0.18f), androidx.compose.ui.geometry.Size(peg, size.height * 0.72f), androidx.compose.ui.geometry.CornerRadius(peg / 2f))
+            disks[t].forEachIndexed { level, disk ->
+                val width = tower * (0.45f + 0.15f * disk)
+                drawRoundRect(
+                    com.mehmtcan.brainscroll.ui.memory.symbolColor(com.mehmtcan.brainscroll.game.memory.CardSymbol.entries[disk], colors),
+                    androidx.compose.ui.geometry.Offset(center - width / 2f, size.height * 0.9f - diskHeight * (level + 1) - 2f * level),
+                    androidx.compose.ui.geometry.Size(width, diskHeight),
+                    androidx.compose.ui.geometry.CornerRadius(diskHeight / 2.5f),
+                )
+            }
         }
     }
 }

@@ -98,6 +98,7 @@ import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
@@ -144,11 +145,15 @@ fun SudokuPage(
     val haptics = LocalHaptics.current
     val state = page.state
 
-    val status = when (state.status) {
-        SudokuStatus.Playing -> WordleStatus.Playing
-        SudokuStatus.Won -> WordleStatus.Won
-    }
-    OutcomeHaptics(status)
+    val status = rememberSettledStatus(
+        when (state.status) {
+            SudokuStatus.Playing -> WordleStatus.Playing
+            SudokuStatus.Won -> WordleStatus.Won
+        },
+        // The last digit swells and flashes: the result waits for it.
+        750,
+    )
+    OutcomeHaptics(status, page.id)
     val justFinished = rememberJustFinished(status)
 
     var selected by remember(page.id) { mutableStateOf<Int?>(null) }
@@ -212,7 +217,7 @@ fun SudokuPage(
 
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
-            if (page.isFinished) {
+            if (status != WordleStatus.Playing) {
                 SudokuResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 NumberPad(state = state, notesMode = notesMode, onDigit = ::digit, onErase = ::erase, onToggleNotes = { notesMode = !notesMode })

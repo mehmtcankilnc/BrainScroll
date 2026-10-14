@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.ui.feed
 
+import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.line.LineResult
 import com.mehmtcan.brainscroll.game.memory.FlipResult
@@ -38,6 +39,8 @@ interface FeedActions {
     fun restartNumbers(page: Int): Boolean
     fun turnPipe(page: Int, cell: Int): PipesResult
     fun restartPipes(page: Int): Boolean
+    fun moveDisk(page: Int, from: Int, to: Int): HanoiResult
+    fun restartHanoi(page: Int): Boolean
     fun dragLine(page: Int, cell: Int): LineResult
     fun tapLine(page: Int, cell: Int): LineResult
     fun undoLine(page: Int): Boolean

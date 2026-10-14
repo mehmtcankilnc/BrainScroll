@@ -21,6 +21,7 @@ import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
+import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.line.LineResult
@@ -43,6 +44,7 @@ import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.MemoryStats
 import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
+import com.mehmtcan.brainscroll.stats.HanoiStats
 import com.mehmtcan.brainscroll.stats.LineStats
 import com.mehmtcan.brainscroll.stats.PipesStats
 import com.mehmtcan.brainscroll.stats.SlideStats
@@ -51,6 +53,7 @@ import com.mehmtcan.brainscroll.stats.TargetStats
 import com.mehmtcan.brainscroll.stats.TubesStats
 import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
+import com.mehmtcan.brainscroll.stats.computeHanoiStats
 import com.mehmtcan.brainscroll.stats.computeLineStats
 import com.mehmtcan.brainscroll.stats.computePipesStats
 import com.mehmtcan.brainscroll.stats.computeSlideStats
@@ -112,6 +115,8 @@ data class ProfileState(
     val pipes: PipesStats = computePipesStats(emptyList()),
     /** One Line, from the daily puzzle. */
     val line: LineStats = computeLineStats(emptyList()),
+    /** Tower of Hanoi, from the endless feed. */
+    val hanoi: HanoiStats = computeHanoiStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -138,7 +143,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi),
 ) : ViewModel(), FeedActions {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -370,7 +375,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -545,6 +550,25 @@ class FeedViewModel(
         return f.restartPipes(page).also { publish() }
     }
 
+    /** Moves a disk of the Hanoi board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun moveDisk(page: Int, from: Int, to: Int): HanoiResult {
+        val f = feed ?: return HanoiResult.Ignored
+        val result = f.moveDisk(page, from, to)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == HanoiResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the Hanoi disks on [page] back as they were at the start. */
+    override fun restartHanoi(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartHanoi(page).also { publish() }
+    }
+
     // The one-line game is the daily puzzle and not part of the feed; these only keep the feed able to play it.
     override fun dragLine(page: Int, cell: Int): LineResult = feed?.dragLine(page, cell).also { publish() } ?: LineResult.Ignored
     override fun tapLine(page: Int, cell: Int): LineResult = feed?.tapLine(page, cell).also { publish() } ?: LineResult.Ignored
@@ -672,6 +696,7 @@ class FeedViewModel(
             target = computeTargetStats(history),
             pipes = computePipesStats(history),
             line = computeLineStats(history),
+            hanoi = computeHanoiStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

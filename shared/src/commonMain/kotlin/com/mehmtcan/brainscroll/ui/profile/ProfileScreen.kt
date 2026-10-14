@@ -113,8 +113,11 @@ import brainscroll.shared.generated.resources.stats_lights
 import brainscroll.shared.generated.resources.stats_slide
 import brainscroll.shared.generated.resources.stats_target
 import brainscroll.shared.generated.resources.stat_three_stars
+import brainscroll.shared.generated.resources.stats_hanoi
 import brainscroll.shared.generated.resources.stats_line
 import brainscroll.shared.generated.resources.stats_pipes
+import brainscroll.shared.generated.resources.favorite_hanoi_result
+import brainscroll.shared.generated.resources.favorite_hanoi_tag
 import brainscroll.shared.generated.resources.favorite_line_result
 import brainscroll.shared.generated.resources.favorite_line_tag
 import brainscroll.shared.generated.resources.favorite_pipes_result
@@ -464,6 +467,7 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
                 )
             }
         }
+        item { MovesGroup(stringResource(Res.string.stats_hanoi), profile.hanoi.played, profile.hanoi.bestTimeMs, profile.hanoi.fewestMoves, "statsHanoi") }
         item { MovesGroup(stringResource(Res.string.stats_pipes), profile.pipes.played, profile.pipes.bestTimeMs, profile.pipes.fewestMoves, "statsPipes") }
         // Minesweeper: played, win rate and the fastest win.
         item { WinRateGroup(stringResource(Res.string.stats_mines), profile.mines.played, profile.mines.winRate, profile.mines.bestTimeMs, "statsMines") }
@@ -603,6 +607,7 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
         GameKind.Slide -> profile.slide.bestTimeMs
         GameKind.Target -> profile.target.bestTimeMs
         GameKind.Pipes -> profile.pipes.bestTimeMs
+        GameKind.Hanoi -> profile.hanoi.bestTimeMs
         GameKind.Line -> profile.line.bestTimeMs
     }
     return best != null && time <= best
@@ -734,6 +739,7 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                 GameKind.Slide -> stringResource(Res.string.favorite_slide_tag)
                 GameKind.Target -> stringResource(Res.string.favorite_target_tag)
                 GameKind.Pipes -> stringResource(Res.string.favorite_pipes_tag)
+                GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_tag)
                 GameKind.Line -> stringResource(Res.string.favorite_line_tag)
             },
             style = type.heading.copy(color = colors.textPrimary),
@@ -751,6 +757,7 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                     round.game == GameKind.Slide -> stringResource(Res.string.favorite_slide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Target -> stringResource(Res.string.favorite_target_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Pipes -> stringResource(Res.string.favorite_pipes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.lineStars, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
                 },

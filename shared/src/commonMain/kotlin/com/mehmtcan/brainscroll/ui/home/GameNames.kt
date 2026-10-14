@@ -2,6 +2,7 @@ package com.mehmtcan.brainscroll.ui.home
 
 import androidx.compose.runtime.Composable
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.game_hanoi
 import brainscroll.shared.generated.resources.game_lights
 import brainscroll.shared.generated.resources.game_line
 import brainscroll.shared.generated.resources.game_memory
@@ -28,6 +29,7 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.Slide -> Res.string.game_slide
         GameKind.Target -> Res.string.game_target
         GameKind.Pipes -> Res.string.game_pipes
+        GameKind.Hanoi -> Res.string.game_hanoi
         GameKind.Line -> Res.string.game_line
     },
 )

@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.ui.haptics
 
+import com.mehmtcan.brainscroll.ui.motion.LocalWinSignal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
@@ -45,8 +46,9 @@ expect fun rememberPlatformHaptics(): Haptics
  * already finished when it appears (restored from the last session, or scrolled back to) stays quiet.
  */
 @Composable
-fun OutcomeHaptics(status: WordleStatus) {
+fun OutcomeHaptics(status: WordleStatus, pageId: String? = null) {
     val haptics = LocalHaptics.current
+    val signal = LocalWinSignal.current
     var wasPlaying by remember { mutableStateOf(status == WordleStatus.Playing) }
     LaunchedEffect(status) {
         when {
@@ -54,6 +56,8 @@ fun OutcomeHaptics(status: WordleStatus) {
             wasPlaying -> {
                 wasPlaying = false
                 haptics.perform(if (status == WordleStatus.Won) HapticKind.Success else HapticKind.Warning)
+                // The confetti is waiting for the page to say that its win is on show.
+                if (status == WordleStatus.Won && pageId != null) signal?.markShown(pageId)
             }
         }
     }

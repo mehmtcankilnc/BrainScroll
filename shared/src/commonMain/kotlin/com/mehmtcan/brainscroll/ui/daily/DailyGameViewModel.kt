@@ -9,6 +9,7 @@ import com.mehmtcan.brainscroll.game.FeedRound
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.daily.dailyGameId
+import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.line.LinePuzzle
 import com.mehmtcan.brainscroll.game.line.LineResult
@@ -248,6 +249,8 @@ class DailyGameViewModel(
     override fun restartNumbers(page: Int): Boolean = act(false) { it.restartNumbers(0) }
     override fun turnPipe(page: Int, cell: Int): PipesResult = act(PipesResult.Ignored) { it.turnPipe(0, cell) }
     override fun restartPipes(page: Int): Boolean = act(false) { it.restartPipes(0) }
+    override fun moveDisk(page: Int, from: Int, to: Int): HanoiResult = act(HanoiResult.Ignored) { it.moveDisk(0, from, to) }
+    override fun restartHanoi(page: Int): Boolean = act(false) { it.restartHanoi(0) }
     override fun dragLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.dragLine(0, cell) }
     override fun tapLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.tapLine(0, cell) }
     override fun undoLine(page: Int): Boolean = act(false) { it.undoLine(0) }

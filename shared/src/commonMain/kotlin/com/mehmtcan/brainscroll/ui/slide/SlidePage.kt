@@ -67,6 +67,7 @@ import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
@@ -102,8 +103,8 @@ fun SlidePage(
     val state = page.state
     val won = state.status == SlideStatus.Won
 
-    val status = if (won) WordleStatus.Won else WordleStatus.Playing
-    OutcomeHaptics(status)
+    val status = rememberSettledStatus(if (won) WordleStatus.Won else WordleStatus.Playing, 250)
+    OutcomeHaptics(status, page.id)
     val justFinished = rememberJustFinished(status)
 
     Column(
@@ -135,7 +136,7 @@ fun SlidePage(
 
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
-            if (won) {
+            if (status == WordleStatus.Won) {
                 SlideResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {

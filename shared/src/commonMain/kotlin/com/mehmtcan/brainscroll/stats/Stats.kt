@@ -209,6 +209,24 @@ fun computeLineStats(history: List<FinishedRound>): LineStats {
     )
 }
 
+/** What the statistics screen shows for the tower of Hanoi. Every result is a win (the game cannot be lost). */
+data class HanoiStats(
+    val played: Int,
+    /** The fastest game (see HanoiRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest moves in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeHanoiStats(history: List<FinishedRound>): HanoiStats {
+    val results = history.filter { it.game == GameKind.Hanoi && it.mode == Mode.ENDLESS && !it.assisted }
+    return HanoiStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
 fun computeTubesStats(history: List<FinishedRound>): TubesStats {
     val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS && !it.assisted }
     return TubesStats(

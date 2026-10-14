@@ -1,5 +1,8 @@
 package com.mehmtcan.brainscroll.ui.feed
 
+import com.mehmtcan.brainscroll.ui.motion.LocalWinSignal
+import com.mehmtcan.brainscroll.ui.motion.WinSignal
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.focusable
@@ -102,6 +105,8 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     // The game whose rules are on show ("How to play?"), if any.
     var howTo by remember { mutableStateOf<GameKind?>(null) }
     var streakInfo by remember { mutableStateOf(false) }
+    // The pages say when their win is on show; the confetti waits for it.
+    val winSignal = remember { WinSignal() }
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val bestFlow = maxOf(profile.bestFlow, feed.solvedCount)
     var noticeCounter by remember { mutableIntStateOf(0) }
@@ -185,7 +190,9 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                     beyondViewportPageCount = 1,
                     key = { it },
                 ) { index ->
-                    GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page })
+                    CompositionLocalProvider(LocalWinSignal provides winSignal) {
+                        GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page })
+                    }
                 }
                 notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET), onDismiss = { notice = null }) }
             }
@@ -208,7 +215,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 }
             }
         }
-        CelebrateWin(current)
+        CelebrateWin(current, winSignal)
         howTo?.let { HowToPlaySheet(it, onClose = { howTo = null }) }
         if (streakInfo) StreakInfoSheet(StreakKind.Win, current = feed.solvedCount, best = bestFlow, onClose = { streakInfo = false })
     }

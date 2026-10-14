@@ -3,6 +3,7 @@ package com.mehmtcan.brainscroll.ui
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.game.GameKind
@@ -30,6 +31,25 @@ class SmallScreenUiTest {
     @Test fun slide() = shot(GameKind.Slide, "slide")
     @Test fun target() = shot(GameKind.Target, "target")
     @Test fun pipes() = shot(GameKind.Pipes, "pipes")
+    @Test fun hanoi() = shot(GameKind.Hanoi, "hanoi")
+
+    /** The towers and the restart button are both on the short screen with big text, and nothing runs off its edge. */
+    @Test
+    fun hanoiFitsAShortScreenWithBigText() = runComposeUiTest {
+        start(games = listOf(GameKind.Hanoi), openFeed = false, fontScale = 1.5f, screen = 360 to 600)
+        openTab("Akış", "Feed")
+        waitForIdle()
+        mainClock.advanceTimeBy(1_500)
+        waitForIdle()
+        snap("300_small_hanoi_big_text")
+        val root = onRoot().fetchSemanticsNode().boundsInRoot
+        for (tag in listOf("hanoiTower", "hanoiRestart")) {
+            for (node in onAllNodesWithTag(tag).fetchSemanticsNodes()) {
+                val b = node.boundsInRoot
+                assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")
+            }
+        }
+    }
     @Test fun word() = shot(GameKind.Word, "word")
 
     @Test

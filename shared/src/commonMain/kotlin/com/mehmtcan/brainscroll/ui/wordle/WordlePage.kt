@@ -29,6 +29,8 @@ import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.Motion
+import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import org.jetbrains.compose.resources.stringResource
 
@@ -48,9 +50,11 @@ fun WordlePage(
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    OutcomeHaptics(round.status)
+    // The last row flips tile by tile: the result, the buzz and the confetti wait until it has turned over.
+    val status = rememberSettledStatus(round.status, (Motion.FLIP + 4 * Motion.FLIP_STAGGER).toLong())
+    OutcomeHaptics(status, round.id)
     // Only a puzzle that ends while it is shown gets the arrival animation; a finished one appears at once.
-    val justFinished = rememberJustFinished(round.status)
+    val justFinished = rememberJustFinished(status)
 
     Column(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
@@ -62,7 +66,7 @@ fun WordlePage(
 
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
-            if (round.isFinished) {
+            if (status != WordleStatus.Playing) {
                 ResultCard(round, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 WordleKeyboard(

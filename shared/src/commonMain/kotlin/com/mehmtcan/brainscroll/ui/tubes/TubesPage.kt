@@ -173,7 +173,7 @@ fun TubesPage(
     // The result, the buzz and the card wait until the last pour has been shown.
     val won = state.status == TubesStatus.Won && pouring == null
     val status = if (won) WordleStatus.Won else WordleStatus.Playing
-    OutcomeHaptics(status)
+    OutcomeHaptics(status, page.id)
     val justFinished = rememberJustFinished(status)
 
     Column(

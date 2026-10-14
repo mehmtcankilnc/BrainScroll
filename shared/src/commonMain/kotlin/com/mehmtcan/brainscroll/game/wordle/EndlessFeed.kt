@@ -4,6 +4,9 @@ import com.mehmtcan.brainscroll.game.FeedRound
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
+import com.mehmtcan.brainscroll.game.hanoi.HanoiGenerator
+import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
+import com.mehmtcan.brainscroll.game.hanoi.HanoiRound
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.lights.LightsRound
 import com.mehmtcan.brainscroll.game.line.LineGenerator
@@ -109,6 +112,7 @@ class EndlessFeed(
                 GameKind.Slide -> SlideRound.restore(rounds.size, stored, now)
                 GameKind.Target -> TargetRound.restore(rounds.size, stored, now)
                 GameKind.Pipes -> PipesRound.restore(rounds.size, stored, now)
+                GameKind.Hanoi -> HanoiRound.restore(rounds.size, stored, now)
                 GameKind.Line -> LineRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
@@ -328,6 +332,22 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- Hanoi actions (ignored on a page of another game) ---
+
+    /** Moves the top disk of tower [from] onto tower [to] on the Hanoi board of page [index]. */
+    fun moveDisk(index: Int, from: Int, to: Int): HanoiResult {
+        val round = rounds[index] as? HanoiRound ?: return HanoiResult.Ignored
+        val result = round.move(from, to)
+        if (result != HanoiResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Puts the disks of page [index] back as they were at the start. Returns false when nothing had changed. */
+    fun restartHanoi(index: Int): Boolean {
+        val round = rounds[index] as? HanoiRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
     // --- One-line actions (ignored on a page of another game) ---
 
     /** A finger moving over [cell] on the one-line board of page [index]. */
@@ -439,6 +459,7 @@ class EndlessFeed(
         GameKind.Slide -> SlideRound(index, newId(), random.nextInt(), language, now)
         GameKind.Target -> TargetGenerator.generate(random.nextInt()).let { TargetRound(index, newId(), it.numbers, it.target, language, now, it.par) }
         GameKind.Pipes -> PipesGenerator.generate(random.nextInt()).let { PipesRound(index, newId(), it.start.toList(), language, now, it.par) }
+        GameKind.Hanoi -> HanoiGenerator.generate(random.nextInt()).let { HanoiRound(index, newId(), it.start.toList(), it.goal, language, now, it.par) }
         GameKind.Line -> LineRound(index, newId(), lineBoard(random), language, now)
     }
 

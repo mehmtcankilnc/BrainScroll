@@ -13,17 +13,19 @@ import kotlinx.coroutines.delay
 private const val CONFETTI_MILLIS = 2_300L
 
 /**
- * Throws confetti once when [current] is won while it is on screen: not for a puzzle that is shown again already won
- * (restored, scrolled back to). Put it over the page; it draws nothing otherwise and never takes touches.
+ * Throws confetti once when [current] is won while it is on screen and its page has finished showing the win (see
+ * [WinSignal]): not for a puzzle that is shown again already won (restored, scrolled back to). Put it over the page; it draws nothing otherwise and never takes touches.
  */
 @Composable
-fun CelebrateWin(current: PageSnapshot) {
+fun CelebrateWin(current: PageSnapshot, signal: WinSignal? = LocalWinSignal.current) {
     val seenPlaying = remember { mutableSetOf<String>() }
     val celebrated = remember { mutableSetOf<String>() }
     var confettiFor by remember { mutableStateOf<String?>(null) }
     if (!current.isFinished) seenPlaying += current.id
-    LaunchedEffect(current.id, current.isWon) {
-        if (current.isWon && current.id in seenPlaying && celebrated.add(current.id)) {
+    // Not before the page itself says its win is on show (the last disk has landed, the last tile has turned).
+    val shown = signal?.isShown(current.id) ?: true
+    LaunchedEffect(current.id, current.isWon, shown) {
+        if (current.isWon && shown && current.id in seenPlaying && celebrated.add(current.id)) {
             confettiFor = current.id
             delay(CONFETTI_MILLIS)
             confettiFor = null

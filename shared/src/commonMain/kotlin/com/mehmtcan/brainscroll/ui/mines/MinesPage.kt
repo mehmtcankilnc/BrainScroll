@@ -125,7 +125,7 @@ fun MinesPage(
         MinesStatus.Won -> WordleStatus.Won
         MinesStatus.Lost -> WordleStatus.Lost
     }
-    OutcomeHaptics(status)
+    OutcomeHaptics(status, page.id)
     val justFinished = rememberJustFinished(status)
 
     // In flag mode a tap flags and a long press opens: the two swap places.

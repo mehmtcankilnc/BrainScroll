@@ -34,4 +34,5 @@ class GuideRingUiTest {
     @Test fun pipes() = ring(GameKind.Pipes, "pipes", "pipeTile")
     @Test fun memory() = ring(GameKind.Memory, "memory", "memoryCard")
     @Test fun mines() = ring(GameKind.Mines, "mines", "mineCell")
+    @Test fun hanoi() = ring(GameKind.Hanoi, "hanoi", "hanoiTower")
 }

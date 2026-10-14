@@ -32,6 +32,9 @@ enum class GuideReason {
     /** Turn the pipe this many times. */
     PipesTurn,
 
+    /** Move the top disk of the first tower onto the second: it is the first step of the shortest way. */
+    HanoiMove,
+
     /** Tap the light: it is part of the shortest way to put all of them out. */
     LightsTap,
 

@@ -1,5 +1,8 @@
 package com.mehmtcan.brainscroll.game.guide
 
+import com.mehmtcan.brainscroll.game.hanoi.HanoiSolver
+import com.mehmtcan.brainscroll.game.hanoi.HanoiState
+import com.mehmtcan.brainscroll.game.hanoi.HanoiStatus
 import com.mehmtcan.brainscroll.game.lights.LightsState
 import com.mehmtcan.brainscroll.game.lights.LightsStatus
 import com.mehmtcan.brainscroll.game.memory.MemoryState
@@ -175,5 +178,14 @@ object WordGuide {
         if (status != WordleStatus.Playing) return null
         val place = answer.indices.firstOrNull { at -> rows.none { it.getOrNull(at) == LetterResult.Correct } } ?: return null
         return GuideStep(GuideReason.WordLetter, numbers = listOf(place + 1), text = answer[place].toString())
+    }
+}
+
+/** The guide of the tower of Hanoi: the first move of the shortest way from the position as it is now. */
+object HanoiGuide {
+    fun step(state: HanoiState): GuideStep? {
+        if (state.status != HanoiStatus.Playing) return null
+        val move = HanoiSolver.shortest(state.pegs.toIntArray(), state.goal).firstOrNull() ?: return null
+        return GuideStep(GuideReason.HanoiMove, listOf(move.from, move.to), listOf(move.from, move.to))
     }
 }

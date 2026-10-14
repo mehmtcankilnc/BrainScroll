@@ -48,7 +48,8 @@ class HomeUiTest {
         snap("22_home_all_games")
 
         assertEquals(3, onAllNodesWithTag("feedThumbnail").fetchSemanticsNodes().size)
-        assertTrue(hasAnyText("+6 oyun", "+6 games"))
+        val rest = feedGames.size - 3
+        assertTrue(hasAnyText("+$rest oyun", "+$rest games"))
     }
 
     @Test
@@ -60,7 +61,7 @@ class HomeUiTest {
         snap("23_feed_editor")
 
         assertTrue(hasAnyText("Akışını oluştur", "Build your feed"))
-        assertTrue(hasAnyText("9 oyun seçili", "9 games selected"))
+        assertTrue(hasAnyText("${feedGames.size} oyun seçili", "${feedGames.size} games selected"))
         assertEquals(feedGames.size, cards())
         onAllNodesWithTag("gameCard").onLast().performScrollTo()
         waitForIdle()

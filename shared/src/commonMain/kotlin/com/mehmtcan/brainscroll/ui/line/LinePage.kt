@@ -92,6 +92,7 @@ import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
@@ -150,8 +151,8 @@ fun LinePage(
     val won = state.status == LineStatus.Won
     val cells = page.puzzle.cells
 
-    val status = if (won) WordleStatus.Won else WordleStatus.Playing
-    OutcomeHaptics(status)
+    val status = rememberSettledStatus(if (won) WordleStatus.Won else WordleStatus.Playing, 0)
+    OutcomeHaptics(status, page.id)
     val justFinished = rememberJustFinished(status)
 
     var notice by remember { mutableStateOf<LineNotice?>(null) }
@@ -219,7 +220,7 @@ fun LinePage(
 
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
-            if (won) {
+            if (status == WordleStatus.Won) {
                 LineResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {

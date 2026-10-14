@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.mehmtcan.brainscroll.game.guide.GuideStep
 import com.mehmtcan.brainscroll.game.PageSnapshot
+import com.mehmtcan.brainscroll.game.hanoi.HanoiSnapshot
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
 import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
@@ -14,6 +15,7 @@ import com.mehmtcan.brainscroll.game.sudoku.SudokuSnapshot
 import com.mehmtcan.brainscroll.game.target.TargetSnapshot
 import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
+import com.mehmtcan.brainscroll.ui.hanoi.HanoiPage
 import com.mehmtcan.brainscroll.ui.lights.LightsPage
 import com.mehmtcan.brainscroll.ui.line.LinePage
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
@@ -99,6 +101,13 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 page = item,
                 onTurn = { cell -> actions.turnPipe(index, cell) },
                 onRestart = { actions.restartPipes(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is HanoiSnapshot -> HanoiPage(
+                page = item,
+                onMove = { from, to -> actions.moveDisk(index, from, to) },
+                onRestart = { actions.restartHanoi(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )

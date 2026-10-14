@@ -76,13 +76,12 @@ fun Modifier.popOnIncrease(value: Int): Modifier {
 @Composable
 fun Modifier.popOnAppear(appeared: Boolean): Modifier {
     val reduce = LocalReduceMotion.current
-    val scale = remember { Animatable(1f) }
     var was by remember { mutableStateOf(appeared) }
+    val pop = appeared && !was && !reduce
+    // A new animation that already starts at the small size, so the first frame is not drawn at the end of the pop.
+    val scale = remember(pop) { Animatable(if (pop) 0.8f else 1f) }
     LaunchedEffect(appeared) {
-        if (appeared && !was && !reduce) {
-            scale.snapTo(0.8f)
-            scale.animateTo(1f, tween(Motion.POP, easing = Motion.Overshoot))
-        }
+        if (pop) scale.animateTo(1f, tween(Motion.POP, easing = Motion.Overshoot))
         was = appeared
     }
     return graphicsLayer {

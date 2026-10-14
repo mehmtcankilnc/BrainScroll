@@ -46,6 +46,7 @@ import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
+import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -79,11 +80,15 @@ fun MemoryPage(
     val state = page.state
 
     // The same buzz and arrival rules as the word puzzle: only a board that ends while it is shown celebrates.
-    val wordleStatus = when (state.status) {
-        MemoryStatus.Playing -> WordleStatus.Playing
-        MemoryStatus.Won -> WordleStatus.Won
-    }
-    OutcomeHaptics(wordleStatus)
+    val wordleStatus = rememberSettledStatus(
+        when (state.status) {
+            MemoryStatus.Playing -> WordleStatus.Playing
+            MemoryStatus.Won -> WordleStatus.Won
+        },
+        // The last pair flips over and pops: the result waits for it.
+        450,
+    )
+    OutcomeHaptics(wordleStatus, page.id)
     val justFinished = rememberJustFinished(wordleStatus)
 
     // Two wrong cards are looked at for a moment and then turn back by themselves.
@@ -125,7 +130,7 @@ fun MemoryPage(
 
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
-            if (page.isFinished) {
+            if (wordleStatus != WordleStatus.Playing) {
                 MemoryResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
             } else {
                 BasicText(
