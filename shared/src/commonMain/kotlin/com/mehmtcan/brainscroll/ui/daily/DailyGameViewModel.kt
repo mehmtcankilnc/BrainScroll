@@ -10,6 +10,12 @@ import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.daily.dailyGameId
 import com.mehmtcan.brainscroll.game.lights.LightsResult
+import com.mehmtcan.brainscroll.game.line.LinePuzzle
+import com.mehmtcan.brainscroll.game.line.LineResult
+import com.mehmtcan.brainscroll.game.line.LineRound
+import com.mehmtcan.brainscroll.game.line.LineScoring
+import com.mehmtcan.brainscroll.game.line.LineSchedule
+import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.moveCount
@@ -30,9 +36,11 @@ import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.feed.FeedActions
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /** Where the daily puzzle of a game other than the word puzzle stands. */
@@ -82,6 +90,9 @@ class DailyGameViewModel(
 
     private var feed: EndlessFeed? = null
     private var feedId: String? = null
+
+    /** The finished one-line board of today, drawn again for a puzzle that was solved before the app was opened this time. */
+    private var solved: LineSnapshot? = null
     private val handled = mutableSetOf<String>()
     private val sending = mutableSetOf<String>()
 
@@ -100,14 +111,54 @@ class DailyGameViewModel(
         val id = dailyGameId(day, game)
         if (game != GameKind.Word && id != feedId) {
             feedId = id
-            val done = repository.history().any { it.id == id }
-            feed = if (done) null else buildFeed(day, game, id)
+            solved = null
+            feed = null
+            val result = repository.history().firstOrNull { it.id == id }
+            when {
+                result != null -> if (game == GameKind.Line) showSolvedLine(day, id, result)
+                // A new one-line board takes a moment to make (the biggest ones a good part of a second on a phone): off the
+                // screen's thread. A board that was started is read from storage and needs no making.
+                game == GameKind.Line && repository.unfinishedDailyRound(id) == null -> makeLine(day, id)
+                else -> feed = buildFeed(day, game, id)
+            }
         }
         publish()
         sendPending()
     }
 
-    private fun buildFeed(day: Long, game: GameKind, id: String): EndlessFeed {
+    private fun makeLine(day: Long, id: String) {
+        viewModelScope.launch {
+            val puzzle = withContext(Dispatchers.Default) { LineSchedule.puzzleFor(day) }
+            if (feedId == id && feed == null) {
+                feed = buildFeed(day, GameKind.Line, id, puzzle)
+                publish()
+            }
+        }
+    }
+
+    private fun showSolvedLine(day: Long, id: String, result: FinishedRound) {
+        viewModelScope.launch {
+            val page = withContext(Dispatchers.Default) {
+                val puzzle = LineSchedule.puzzleFor(day)
+                val round = LineRound(0, id, puzzle, result.language)
+                for (cell in puzzle.solution) round.drag(cell)
+                val snapshot = round.snapshot()
+                snapshot.copy(
+                    durationMs = result.durationMs ?: 0L,
+                    state = snapshot.state.copy(
+                        undos = LineScoring.undosOf(result.guesses.firstOrNull()?.toIntOrNull() ?: 1),
+                        hintsUsed = LineScoring.hintsOf(result.guesses.firstOrNull()?.toIntOrNull() ?: 1),
+                    ),
+                )
+            }
+            if (feedId == id) {
+                solved = page
+                publish()
+            }
+        }
+    }
+
+    private fun buildFeed(day: Long, game: GameKind, id: String, line: LinePuzzle? = null): EndlessFeed {
         val stored = repository.unfinishedDailyRound(id)
         val store = object : FeedStore {
             override fun saveProgress(round: StoredRound) = repository.saveProgress(round)
@@ -126,6 +177,7 @@ class DailyGameViewModel(
             now = now,
             newId = { id },
             games = listOf(game),
+            lineBoard = { line ?: LineSchedule.puzzleFor(day) },
         ).also { it.ensureSize(1) }
     }
 
@@ -196,6 +248,11 @@ class DailyGameViewModel(
     override fun restartNumbers(page: Int): Boolean = act(false) { it.restartNumbers(0) }
     override fun turnPipe(page: Int, cell: Int): PipesResult = act(PipesResult.Ignored) { it.turnPipe(0, cell) }
     override fun restartPipes(page: Int): Boolean = act(false) { it.restartPipes(0) }
+    override fun dragLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.dragLine(0, cell) }
+    override fun tapLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.tapLine(0, cell) }
+    override fun undoLine(page: Int): Boolean = act(false) { it.undoLine(0) }
+    override fun restartLine(page: Int): Boolean = act(false) { it.restartLine(0) }
+    override fun hintLine(page: Int): List<Int>? = act(null) { it.hintLine(0) }
     override fun placeDigit(page: Int, cell: Int, digit: Int): SudokuResult = act(SudokuResult.Ignored) { it.placeDigit(0, cell, digit) }
     override fun toggleNote(page: Int, cell: Int, digit: Int): SudokuResult = act(SudokuResult.Ignored) { it.toggleNote(0, cell, digit) }
     override fun eraseCell(page: Int, cell: Int): SudokuResult = act(SudokuResult.Ignored) { it.eraseCell(0, cell) }
@@ -217,7 +274,7 @@ class DailyGameViewModel(
         val id = dailyGameId(today, game)
         val history = repository.history()
         val result = history.firstOrNull { it.id == id }
-        val page = feed?.snapshot()?.pages?.firstOrNull()
+        val page = feed?.snapshot()?.pages?.firstOrNull() ?: solved?.takeIf { result != null }
         return DailyGameUi(
             day = today,
             game = game,

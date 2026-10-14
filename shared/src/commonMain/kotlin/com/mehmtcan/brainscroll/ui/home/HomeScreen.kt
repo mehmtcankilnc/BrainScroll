@@ -85,12 +85,14 @@ import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.daily.DailyPhase
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.daily.DailyGamePhase
+import com.mehmtcan.brainscroll.ui.line.LineDoneInfo
 import com.mehmtcan.brainscroll.ui.daily.DailyGameUi
 import com.mehmtcan.brainscroll.ui.daily.DailyGameViewModel
 import com.mehmtcan.brainscroll.ui.daily.FlameIcon
 import brainscroll.shared.generated.resources.home_daily_description_board
 import brainscroll.shared.generated.resources.home_fastest_game
 import brainscroll.shared.generated.resources.ranks_moves
+import brainscroll.shared.generated.resources.ranks_stars
 import com.mehmtcan.brainscroll.ui.feed.BoltIcon
 import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
 import com.mehmtcan.brainscroll.ui.streak.StreakKind
@@ -313,7 +315,12 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
                             BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
                     }
                 } else if (gameUi.phase == DailyGamePhase.Finished) {
-                    BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                    val result = gameUi.result
+                    if (game == GameKind.Line && result != null) {
+                        LineDoneInfo(result)
+                    } else {
+                        BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                    }
                     AppTextButton(stringResource(Res.string.home_daily_result), onOpen)
                 } else {
                     BasicText(stringResource(Res.string.home_daily_description_board), style = type.body.copy(color = colors.textSecondary))
@@ -441,7 +448,11 @@ private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boole
                         maxLines = 1,
                     )
                     BasicText(
-                        text = if (game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses),
+                        text = when (game) {
+                            GameKind.Word -> stringResource(Res.string.ranks_guesses, row.guesses)
+                            GameKind.Line -> stringResource(Res.string.ranks_stars, row.guesses)
+                            else -> stringResource(Res.string.ranks_moves, row.guesses)
+                        },
                         style = type.label.copy(color = colors.textSecondary),
                     )
                     BasicText(formatDuration(row.durationMs), style = type.label.copy(color = colors.textPrimary))

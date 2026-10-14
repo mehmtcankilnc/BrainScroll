@@ -112,7 +112,11 @@ import brainscroll.shared.generated.resources.stats_sudoku
 import brainscroll.shared.generated.resources.stats_lights
 import brainscroll.shared.generated.resources.stats_slide
 import brainscroll.shared.generated.resources.stats_target
+import brainscroll.shared.generated.resources.stat_three_stars
+import brainscroll.shared.generated.resources.stats_line
 import brainscroll.shared.generated.resources.stats_pipes
+import brainscroll.shared.generated.resources.favorite_line_result
+import brainscroll.shared.generated.resources.favorite_line_tag
 import brainscroll.shared.generated.resources.favorite_pipes_result
 import brainscroll.shared.generated.resources.favorite_pipes_tag
 import brainscroll.shared.generated.resources.favorite_target_result
@@ -134,6 +138,7 @@ import brainscroll.shared.generated.resources.stats_title
 import brainscroll.shared.generated.resources.tab_ranks
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.line.lineStars
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -447,6 +452,18 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
         item { MovesGroup(stringResource(Res.string.stats_lights), profile.lights.played, profile.lights.bestTimeMs, profile.lights.fewestMoves, "statsLights") }
         item { MovesGroup(stringResource(Res.string.stats_slide), profile.slide.played, profile.slide.bestTimeMs, profile.slide.fewestMoves, "statsSlide") }
         item { MovesGroup(stringResource(Res.string.stats_target), profile.target.played, profile.target.bestTimeMs, profile.target.fewestMoves, "statsTarget") }
+        // One Line is only the daily puzzle: played, the fastest board and the boards that earned three stars.
+        item {
+            StatGroup(stringResource(Res.string.stats_line), profile.line.played, "statsLine") {
+                TileGrid(
+                    listOf(
+                        profile.line.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.line.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                        profile.line.threeStars.toString() to stringResource(Res.string.stat_three_stars),
+                    ),
+                )
+            }
+        }
         item { MovesGroup(stringResource(Res.string.stats_pipes), profile.pipes.played, profile.pipes.bestTimeMs, profile.pipes.fewestMoves, "statsPipes") }
         // Minesweeper: played, win rate and the fastest win.
         item { WinRateGroup(stringResource(Res.string.stats_mines), profile.mines.played, profile.mines.winRate, profile.mines.bestTimeMs, "statsMines") }
@@ -586,6 +603,7 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
         GameKind.Slide -> profile.slide.bestTimeMs
         GameKind.Target -> profile.target.bestTimeMs
         GameKind.Pipes -> profile.pipes.bestTimeMs
+        GameKind.Line -> profile.line.bestTimeMs
     }
     return best != null && time <= best
 }
@@ -716,6 +734,7 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                 GameKind.Slide -> stringResource(Res.string.favorite_slide_tag)
                 GameKind.Target -> stringResource(Res.string.favorite_target_tag)
                 GameKind.Pipes -> stringResource(Res.string.favorite_pipes_tag)
+                GameKind.Line -> stringResource(Res.string.favorite_line_tag)
             },
             style = type.heading.copy(color = colors.textPrimary),
             modifier = Modifier.weight(1f),
@@ -732,6 +751,7 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                     round.game == GameKind.Slide -> stringResource(Res.string.favorite_slide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Target -> stringResource(Res.string.favorite_target_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Pipes -> stringResource(Res.string.favorite_pipes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.lineStars, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
                 },
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),

@@ -19,7 +19,6 @@ import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.AppShell
-import com.mehmtcan.brainscroll.game.daily.DailyRotation
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.daily.DailyGameViewModel
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
@@ -43,8 +42,8 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
     reduceMotion: Boolean? = null,
     highContrast: Boolean? = null,
     /** The games in the feed, in order. Tests can ask for just one. */
-    /** Which game is the daily puzzle on a day (by day number). Tests fix it; the app rotates through the games. */
-    dailyGame: (Long) -> GameKind = DailyRotation::gameFor,
+    /** Which game is the daily puzzle on a day (by day number). The app always plays One Line; tests fix another game. */
+    dailyGame: (Long) -> GameKind = { GameKind.Line },
     games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes),
 ) {
     // Tests pass their own haptics to see when the phone would buzz.

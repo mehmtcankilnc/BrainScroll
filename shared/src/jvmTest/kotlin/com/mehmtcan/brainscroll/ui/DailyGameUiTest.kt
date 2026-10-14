@@ -8,9 +8,13 @@ import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.line.LineSchedule
+import com.mehmtcan.brainscroll.time.IstanbulDay
+import kotlin.time.Clock
 import com.mehmtcan.brainscroll.social.DailyRow
 import com.mehmtcan.brainscroll.social.FakeSocialApi
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -18,7 +22,7 @@ import kotlin.test.assertTrue
  * The daily puzzle on a day when the game is not the word puzzle, through the real screens: the card on the home tab,
  * the page of the game with its own bar, and the speed table of that game in the ranks.
  */
-@OptIn(ExperimentalTestApi::class)
+@OptIn(ExperimentalTestApi::class, kotlin.time.ExperimentalTime::class)
 class DailyGameUiTest {
 
     private val minesDay: (Long) -> GameKind = { GameKind.Mines }
@@ -84,5 +88,47 @@ class DailyGameUiTest {
         assertTrue(hasAnyText("Bugün · Mayın tarlası", "Today · Minesweeper"), "the filter line says whose game it is")
         assertTrue(cloud.social.calls.any { it == "gameBoard:mines:Today:false" })
         assertFalse(cloud.social.calls.any { it.startsWith("dailyBoard") }, "the word table is not asked for")
+    }
+
+    /** Today's board, worked out as the app does, so the test knows where the squares are. */
+    private fun todaysLine() = LineSchedule.puzzleFor(IstanbulDay.dayIndex(Clock.System.now().toEpochMilliseconds()))
+
+    private val lineDay: (Long) -> GameKind = { GameKind.Line }
+
+    @Test
+    fun theHomeCardOffersOneLineAndTheBoardIsMadeAndPlayedOnItsPage() = runComposeUiTest {
+        start(openFeed = false, dailyGame = lineDay)
+        snap("210_daily_card_line")
+        assertTrue(hasAnyText("Tek Çizgi", "One Line"), "the card shows today's game")
+        onNodeWithTag("dailyCard").performClick()
+        val puzzle = todaysLine()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("lineCell").fetchSemanticsNodes().size == puzzle.cells }
+        snap("211_daily_line_start")
+        assertTrue(onAllNodesWithTag("dailyGameTitle").fetchSemanticsNodes().isNotEmpty())
+
+        for (cell in puzzle.solution) onAllNodesWithTag("lineCell")[cell].performClick()
+        waitForIdle()
+        snap("212_daily_line_solved")
+        assertTrue(hasAnyText("Çözüldü!", "Solved!"))
+        assertTrue(onAllNodesWithTag("lineShare").fetchSemanticsNodes().isNotEmpty(), "the solved board offers to share the result")
+    }
+
+    @Test
+    fun afterSolvingTheCardShowsTheStarsAndTheCountdownAndTheBoardOpensSolved() = runComposeUiTest {
+        start(openFeed = false, dailyGame = lineDay)
+        onNodeWithTag("dailyCard").performClick()
+        val puzzle = todaysLine()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("lineCell").fetchSemanticsNodes().size == puzzle.cells }
+        for (cell in puzzle.solution) onAllNodesWithTag("lineCell")[cell].performClick()
+        waitForIdle()
+        goHome()
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("lineDone", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        snap("213_daily_card_line_done")
+        assertTrue(hasAnyText("Sıradaki bulmaca", "Next puzzle in"), "the time to the next puzzle is on the card")
+
+        onNodeWithTag("dailyCard").performClick()
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("lineBoard").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(0, onAllNodesWithTag("lineCell").fetchSemanticsNodes().size, "a solved board is not played again")
+        assertTrue(hasAnyText("Çözüldü!", "Solved!"))
     }
 }

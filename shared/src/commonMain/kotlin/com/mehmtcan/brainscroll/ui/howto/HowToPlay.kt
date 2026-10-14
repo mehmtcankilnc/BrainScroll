@@ -42,7 +42,12 @@ import brainscroll.shared.generated.resources.howto_title_target
 import brainscroll.shared.generated.resources.howto_pipes_1
 import brainscroll.shared.generated.resources.howto_pipes_2
 import brainscroll.shared.generated.resources.howto_pipes_3
+import brainscroll.shared.generated.resources.howto_line_1
+import brainscroll.shared.generated.resources.howto_line_2
+import brainscroll.shared.generated.resources.howto_line_3
+import brainscroll.shared.generated.resources.howto_line_4
 import brainscroll.shared.generated.resources.howto_pipes_4
+import brainscroll.shared.generated.resources.howto_title_line
 import brainscroll.shared.generated.resources.howto_title_pipes
 import brainscroll.shared.generated.resources.howto_slide_1
 import brainscroll.shared.generated.resources.howto_slide_2
@@ -151,6 +156,10 @@ private fun contentOf(kind: GameKind) = when (kind) {
     GameKind.Lights -> HowToContent(
         Res.string.howto_title_lights,
         listOf(Res.string.howto_lights_1, Res.string.howto_lights_2, Res.string.howto_lights_3, Res.string.howto_lights_4),
+    )
+    GameKind.Line -> HowToContent(
+        Res.string.howto_title_line,
+        listOf(Res.string.howto_line_1, Res.string.howto_line_2, Res.string.howto_line_3, Res.string.howto_line_4),
     )
     GameKind.Sudoku -> HowToContent(
         Res.string.howto_title_sudoku,

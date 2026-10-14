@@ -73,6 +73,7 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.Slide -> SlideThumb(side)
             GameKind.Target -> TargetThumb(side)
             GameKind.Pipes -> PipesThumb(side)
+            GameKind.Line -> LineThumb(side)
         }
     }
 }
@@ -357,6 +358,23 @@ private fun PipesThumb(side: Dp) {
         val index = r * size + c
         Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.2f) {
             Canvas(Modifier.size(tile)) { drawPipes(tiles[index], matched[index], colors.correctFill, colors.borderStrong, colors.textSecondary) }
+        }
+    }
+}
+
+/** A small board of the one-line game: a snake of filled squares from number 1 to number 3. */
+@Composable
+private fun LineThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val size = 3
+    val gap = side * 0.04f
+    val tile = (side * 0.8f - gap * (size - 1)) / size
+    // The line runs 0 1 2 / 5 4 3 / 6 7 8, so every square is filled; numbers sit on the start, the turn and the end.
+    val numbers = mapOf(0 to "1", 5 to "2", 8 to "3")
+    Grid(rows = size, cols = size, gap = gap) { r, c ->
+        val index = r * size + c
+        Cell(tile, colors.correctFill.copy(alpha = 0.35f), colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.2f) {
+            numbers[index]?.let { Mark(it, tile * 0.5f, colors.textPrimary) }
         }
     }
 }

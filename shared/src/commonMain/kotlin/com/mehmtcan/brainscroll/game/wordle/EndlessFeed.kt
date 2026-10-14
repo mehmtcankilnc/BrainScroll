@@ -6,6 +6,10 @@ import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.lights.LightsRound
+import com.mehmtcan.brainscroll.game.line.LineGenerator
+import com.mehmtcan.brainscroll.game.line.LinePuzzle
+import com.mehmtcan.brainscroll.game.line.LineResult
+import com.mehmtcan.brainscroll.game.line.LineRound
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.pipes.PipesGenerator
 import com.mehmtcan.brainscroll.game.pipes.PipesResult
@@ -71,6 +75,8 @@ class EndlessFeed(
     games: List<GameKind> = listOf(GameKind.Word),
     /** The languages of the word puzzles; each new word puzzle is in one of them, chosen at random. */
     startLanguages: List<Language> = listOf(startLanguage),
+    /** Makes the board of a new one-line page. The daily puzzle gives the board of its day; the default is a random 5x5 one. */
+    private val lineBoard: (Random) -> LinePuzzle = { LineGenerator.generate(it.nextLong(), size = 5, checkpoints = 4) },
 ) {
     /** Every game this feed can show, in order. [games] is the part of it the player switched on. */
     private val allGames: List<GameKind> = games
@@ -103,6 +109,7 @@ class EndlessFeed(
                 GameKind.Slide -> SlideRound.restore(rounds.size, stored, now)
                 GameKind.Target -> TargetRound.restore(rounds.size, stored, now)
                 GameKind.Pipes -> PipesRound.restore(rounds.size, stored, now)
+                GameKind.Line -> LineRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
         }
@@ -321,6 +328,42 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- One-line actions (ignored on a page of another game) ---
+
+    /** A finger moving over [cell] on the one-line board of page [index]. */
+    fun dragLine(index: Int, cell: Int): LineResult {
+        val round = rounds[index] as? LineRound ?: return LineResult.Ignored
+        val result = round.drag(cell)
+        if (result != LineResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** A tap on [cell] on the one-line board of page [index]. */
+    fun tapLine(index: Int, cell: Int): LineResult {
+        val round = rounds[index] as? LineRound ?: return LineResult.Ignored
+        val result = round.tap(cell)
+        if (result != LineResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Takes the last cell off the line of page [index]. Returns false when there was nothing to take off. */
+    fun undoLine(index: Int): Boolean {
+        val round = rounds[index] as? LineRound ?: return false
+        return round.undo().also { if (it) persist(round) }
+    }
+
+    /** Clears the line of page [index]. Returns false when it had not begun. */
+    fun restartLine(index: Int): Boolean {
+        val round = rounds[index] as? LineRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    /** The next cells of the line of page [index], or null when there is no hint to give (it costs a star when it is given). */
+    fun hintLine(index: Int): List<Int>? {
+        val round = rounds[index] as? LineRound ?: return null
+        return round.showHint().also { if (it != null) persist(round) }
+    }
+
     // --- Sudoku actions (ignored on a page of another game) ---
 
     /** Puts [digit] in [cell] of the sudoku board of page [index]. A wrong digit is a mistake; the third one loses. */
@@ -396,6 +439,7 @@ class EndlessFeed(
         GameKind.Slide -> SlideRound(index, newId(), random.nextInt(), language, now)
         GameKind.Target -> TargetGenerator.generate(random.nextInt()).let { TargetRound(index, newId(), it.numbers, it.target, language, now, it.par) }
         GameKind.Pipes -> PipesGenerator.generate(random.nextInt()).let { PipesRound(index, newId(), it.start.toList(), language, now, it.par) }
+        GameKind.Line -> LineRound(index, newId(), lineBoard(random), language, now)
     }
 
     /** Keeps the store in step with a round: untouched rounds are not worth saving, started ones are. */

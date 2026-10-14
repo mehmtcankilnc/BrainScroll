@@ -99,6 +99,7 @@ import brainscroll.shared.generated.resources.ranks_stale
 import brainscroll.shared.generated.resources.ranks_streak_caption
 import brainscroll.shared.generated.resources.ranks_streaks
 import brainscroll.shared.generated.resources.ranks_moves
+import brainscroll.shared.generated.resources.ranks_stars
 import brainscroll.shared.generated.resources.ranks_today_game
 import brainscroll.shared.generated.resources.filter_game
 import brainscroll.shared.generated.resources.ranks_you
@@ -317,7 +318,7 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
             rank = row.rank,
             name = row.username,
             isMe = row.isMe,
-            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
+            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else if (ui.game == GameKind.Line) stringResource(Res.string.ranks_stars, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
         )
     }
 }

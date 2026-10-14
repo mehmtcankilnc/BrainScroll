@@ -86,5 +86,24 @@ check('all time keeps them', (await board(alice, 'mines', 'ALL_TIME')).rows.leng
 check('friends only: alone, only me', (await board(alice, 'mines', 'ALL_TIME', true)).rows.length === 1)
 check('the word puzzle is not a table of this kind', (await codeOf(alice, `select public.get_daily_game_leaderboard('word','TODAY',false)`)) === '22023')
 
+// ---- One Line (migration 20261014090000_line_daily.sql) ----
+// The number sent as moves is a score code: 1 + undos + 100 * hints. The table is ordered by stars, then time, and a row's
+// moves is its stars.
+await owner(`delete from public.game_result`)
+check('line: the stars of a score code', JSON.stringify((await owner(`select public.line_stars(c) as s from unnest(array[1,2,4,5,101,102,105,201,999]) as c`)).map(r => r.s)) === JSON.stringify([3, 2, 2, 1, 2, 1, 0, 2, 0]))
+check('line: a result is accepted', (await submit(alice, 'line', 'WON', 1, 30000)) === null)
+check('line: stored like the others, the code as its guess', (await owner(`select guesses, game, mode from public.game_result where user_id = '${alice}'`))[0].guesses === '1')
+check('line: a result with a hint is accepted', (await submit(bob, 'line', 'WON', 101, 20000)) === null)
+check('line: a faster three-star result', (await submit(carol, 'line', 'WON', 1, 25000)) === null)
+let lt = await board(alice, 'line', 'TODAY')
+check('line: more stars first, then the shorter time', lt.rows.map(r => r.username).join() === 'carol,alice,bobby', lt.rows.map(r => r.username).join())
+check('line: a row carries its stars as moves', lt.rows.map(r => r.moves).join() === '3,3,2', lt.rows.map(r => r.moves).join())
+check('line: and the ranks follow', lt.rows.map(r => r.rank).join() === '1,2,3' && lt.me.rank === 2 && lt.me.moves === 3)
+check('line: all time shows the best of every player', (await board(alice, 'line', 'ALL_TIME')).rows.length === 3)
+check('line: friends only: alone, only me', (await board(alice, 'line', 'TODAY', true)).rows.length === 1)
+check('line: a result with no score code is refused', (await submit(alice, 'line', 'WON', 0, 30000)) === '22023')
+check('line: a time that is too quick is refused', (await submit(alice, 'line', 'WON', 1, 800)) === '22023')
+check('line: the table of another game is not mixed in', (await board(alice, 'mines', 'TODAY')).rows.length === 0)
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

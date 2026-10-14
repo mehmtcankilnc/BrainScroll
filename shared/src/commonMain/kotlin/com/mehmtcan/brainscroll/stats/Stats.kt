@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.stats
 
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.line.LineScoring
+import com.mehmtcan.brainscroll.game.line.lineStars
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -186,6 +188,24 @@ fun computePipesStats(history: List<FinishedRound>): PipesStats {
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
         fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the one-line game: only the daily puzzle, and every result is a win. */
+data class LineStats(
+    val played: Int,
+    /** The fastest game (see LineRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** How many boards were solved with three stars. */
+    val threeStars: Int,
+)
+
+fun computeLineStats(history: List<FinishedRound>): LineStats {
+    val results = history.filter { it.game == GameKind.Line && it.mode == Mode.DAILY }
+    return LineStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        threeStars = results.count { it.lineStars == LineScoring.MAX_STARS },
     )
 }
 

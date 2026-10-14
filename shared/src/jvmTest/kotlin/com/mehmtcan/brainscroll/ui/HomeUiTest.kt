@@ -39,9 +39,12 @@ class HomeUiTest {
         assertEquals(2, onAllNodesWithTag("feedThumbnail").fetchSemanticsNodes().size)
     }
 
+    /** Every game of the feed: the one-line game is the daily puzzle only and has no card there. */
+    private val feedGames = GameKind.entries - GameKind.Line
+
     @Test
     fun withManyGamesTheFeedCardShowsThreeAndCountsTheRest() = runComposeUiTest {
-        start(games = GameKind.entries, openFeed = false)
+        start(games = feedGames, openFeed = false)
         snap("22_home_all_games")
 
         assertEquals(3, onAllNodesWithTag("feedThumbnail").fetchSemanticsNodes().size)
@@ -50,7 +53,7 @@ class HomeUiTest {
 
     @Test
     fun editOpensTheFeedEditorWithEveryGameAsACard() = runComposeUiTest {
-        start(games = GameKind.entries, openFeed = false)
+        start(games = feedGames, openFeed = false)
 
         clickAny("Akışın", "Your feed")
         waitForIdle()
@@ -58,7 +61,7 @@ class HomeUiTest {
 
         assertTrue(hasAnyText("Akışını oluştur", "Build your feed"))
         assertTrue(hasAnyText("9 oyun seçili", "9 games selected"))
-        assertEquals(GameKind.entries.size, cards())
+        assertEquals(feedGames.size, cards())
         onAllNodesWithTag("gameCard").onLast().performScrollTo()
         waitForIdle()
         snap("24_feed_editor_end")

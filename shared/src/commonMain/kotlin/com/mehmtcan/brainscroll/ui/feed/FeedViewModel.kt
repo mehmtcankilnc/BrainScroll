@@ -23,6 +23,7 @@ import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.moveCount
+import com.mehmtcan.brainscroll.game.line.LineResult
 import com.mehmtcan.brainscroll.game.pipes.PipesResult
 import com.mehmtcan.brainscroll.game.slide.SlideResult
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
@@ -42,6 +43,7 @@ import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.MemoryStats
 import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
+import com.mehmtcan.brainscroll.stats.LineStats
 import com.mehmtcan.brainscroll.stats.PipesStats
 import com.mehmtcan.brainscroll.stats.SlideStats
 import com.mehmtcan.brainscroll.stats.SudokuStats
@@ -49,6 +51,7 @@ import com.mehmtcan.brainscroll.stats.TargetStats
 import com.mehmtcan.brainscroll.stats.TubesStats
 import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
+import com.mehmtcan.brainscroll.stats.computeLineStats
 import com.mehmtcan.brainscroll.stats.computePipesStats
 import com.mehmtcan.brainscroll.stats.computeSlideStats
 import com.mehmtcan.brainscroll.stats.computeSudokuStats
@@ -107,6 +110,8 @@ data class ProfileState(
     val target: TargetStats = computeTargetStats(emptyList()),
     /** Pipes, from the endless feed. */
     val pipes: PipesStats = computePipesStats(emptyList()),
+    /** One Line, from the daily puzzle. */
+    val line: LineStats = computeLineStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -365,7 +370,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -540,6 +545,13 @@ class FeedViewModel(
         return f.restartPipes(page).also { publish() }
     }
 
+    // The one-line game is the daily puzzle and not part of the feed; these only keep the feed able to play it.
+    override fun dragLine(page: Int, cell: Int): LineResult = feed?.dragLine(page, cell).also { publish() } ?: LineResult.Ignored
+    override fun tapLine(page: Int, cell: Int): LineResult = feed?.tapLine(page, cell).also { publish() } ?: LineResult.Ignored
+    override fun undoLine(page: Int): Boolean = feed?.undoLine(page).also { publish() } ?: false
+    override fun restartLine(page: Int): Boolean = feed?.restartLine(page).also { publish() } ?: false
+    override fun hintLine(page: Int): List<Int>? = feed?.hintLine(page).also { publish() }
+
     /** Puts a digit in a cell of the sudoku board on [page]. Returns what happened, so the screen can buzz accordingly. */
     override fun placeDigit(page: Int, cell: Int, digit: Int): SudokuResult {
         val f = feed ?: return SudokuResult.Ignored
@@ -659,6 +671,7 @@ class FeedViewModel(
             slide = computeSlideStats(history),
             target = computeTargetStats(history),
             pipes = computePipesStats(history),
+            line = computeLineStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

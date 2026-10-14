@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.mehmtcan.brainscroll.game.guide.GuideStep
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
+import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
 import com.mehmtcan.brainscroll.game.mines.MinesSnapshot
 import com.mehmtcan.brainscroll.game.pipes.PipesSnapshot
@@ -14,6 +15,7 @@ import com.mehmtcan.brainscroll.game.target.TargetSnapshot
 import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.lights.LightsPage
+import com.mehmtcan.brainscroll.ui.line.LinePage
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
 import com.mehmtcan.brainscroll.ui.mines.MinesPage
 import com.mehmtcan.brainscroll.ui.pipes.PipesPage
@@ -97,6 +99,16 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 page = item,
                 onTurn = { cell -> actions.turnPipe(index, cell) },
                 onRestart = { actions.restartPipes(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is LineSnapshot -> LinePage(
+                page = item,
+                onDrag = { cell -> actions.dragLine(index, cell) },
+                onTap = { cell -> actions.tapLine(index, cell) },
+                onUndo = { actions.undoLine(index) },
+                onRestart = { actions.restartLine(index) },
+                onHint = { actions.hintLine(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )
