@@ -490,4 +490,13 @@
     <string name="ranks_stars">%1$d stars</string>
     <string name="line_share">Share result</string>
     <string name="line_share_copied">Copied. Paste it in a chat</string>
+    <string name="line_stars_info_title">How stars work</string>
+    <string name="line_stars_info_intro">Every board starts with 3 stars. You lose them as you undo.</string>
+    <string name="line_stars_rule_0">No undo</string>
+    <string name="line_stars_rule_1">1 to 3 undos</string>
+    <string name="line_stars_rule_2">4 or more undos</string>
+    <string name="line_stars_info_hint">A hint takes one more star off, however many hints you use.</string>
+    <string name="line_stars_info_counts">The undo button, clearing the line and tapping an earlier square count as undos. Dragging back over the line is free.</string>
+    <string name="line_stars_info_rank">Stars decide your place on the daily table, then the time.</string>
+    <string name="a11y_line_stars_info">How stars are earned</string>
 </resources>

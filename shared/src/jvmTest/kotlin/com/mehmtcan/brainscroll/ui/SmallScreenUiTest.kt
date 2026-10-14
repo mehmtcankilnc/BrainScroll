@@ -42,7 +42,9 @@ class SmallScreenUiTest {
         snap("301_small_howto")
         val sheet = onAllNodesWithTag("howToSheet")[0].fetchSemanticsNode().boundsInRoot
         // The "Got it" button is on screen, whatever the text size.
-        val button = onAllNodesWithText("Anladım")[0].fetchSemanticsNode().boundsInRoot
+        // The texts follow the language of the machine (Turkish here, English on the CI runner).
+        val gotIt = listOf("Anladım", "Got it").first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
+        val button = onAllNodesWithText(gotIt)[0].fetchSemanticsNode().boundsInRoot
         assertTrue(button.bottom <= sheet.bottom + 1f && button.top >= 0f, "the button of the sheet is in view")
     }
 }

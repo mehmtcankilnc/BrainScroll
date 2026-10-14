@@ -109,7 +109,9 @@ class AccountUiTest {
         openProfile()
         cloud.account.events.tryEmit(AccountEvent.SignInFailed("apple error 1000"))
         waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("noticeClose").fetchSemanticsNodes().isNotEmpty() }
-        onNodeWithText("Giriş yapılamadı", substring = true, ignoreCase = true).performTouchInput { swipeRight() }
+        // The texts follow the language of the machine (Turkish here, English on the CI runner).
+        val failed = listOf("Giriş yapılamadı", "Couldn't sign in").first { onAllNodesWithText(it, substring = true, ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithText(failed, substring = true, ignoreCase = true).performTouchInput { swipeRight() }
         waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("noticeClose").fetchSemanticsNodes().isEmpty() }
     }
 

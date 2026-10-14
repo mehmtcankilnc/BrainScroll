@@ -490,4 +490,13 @@
     <string name="ranks_stars">%1$d yıldız</string>
     <string name="line_share">Sonucu paylaş</string>
     <string name="line_share_copied">Kopyalandı. Bir sohbete yapıştır</string>
+    <string name="line_stars_info_title">Yıldızlar nasıl kazanılır</string>
+    <string name="line_stars_info_intro">Her tahta 3 yıldızla başlar. Geri aldıkça yıldız kaybedersin.</string>
+    <string name="line_stars_rule_0">Hiç geri almadan</string>
+    <string name="line_stars_rule_1">1-3 geri alma</string>
+    <string name="line_stars_rule_2">4 veya daha fazla geri alma</string>
+    <string name="line_stars_info_hint">İpucu bir yıldız daha götürür, kaç ipucu kullandığın fark etmez.</string>
+    <string name="line_stars_info_counts">Geri al düğmesi, çizgiyi silmek ve çizginin eski bir karesine dokunmak geri alma sayılır. Çizgi üzerinden geri sürüklemek ücretsiz.</string>
+    <string name="line_stars_info_rank">Günlük tabloda önce yıldızlar, sonra süre belirler.</string>
+    <string name="a11y_line_stars_info">Yıldızlar nasıl kazanılır</string>
 </resources>

@@ -155,6 +155,7 @@ fun LinePage(
     val justFinished = rememberJustFinished(status)
 
     var notice by remember { mutableStateOf<LineNotice?>(null) }
+    var starsInfo by remember { mutableStateOf(false) }
 
     /** Buzzes for what a touch did and keeps the line of text under the board in step. */
     fun react(result: LineResult) {
@@ -174,8 +175,10 @@ fun LinePage(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(Spacing.sm))
-        Spacer(Modifier.height(Spacing.sm))
+        Spacer(Modifier.height(Spacing.xs))
+        // The stars the board is worth right now, and the way to find out how they are earned.
+        LineStarsBar(stars = page.stars, onInfo = { starsInfo = true })
+        Spacer(Modifier.height(Spacing.xs))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Chip(text = stringResource(Res.string.line_squares, state.path.size, cells), textColor = colors.textSecondary)
             Chip(text = stringResource(Res.string.line_undos, state.undos), textColor = colors.textSecondary)
@@ -257,6 +260,7 @@ fun LinePage(
         }
         Spacer(Modifier.height(Spacing.md))
     }
+    if (starsInfo) LineStarsInfoSheet(onClose = { starsInfo = false })
 }
 
 /** The board and the finger on it. [side] is its width and height; the touch work is done in pixels of this node. */
@@ -439,7 +443,7 @@ private fun LineResultCard(page: LineSnapshot, isFavorite: Boolean, onToggleFavo
 }
 
 /** A five-pointed star filling the drawing area, solid or only an outline. */
-private fun DrawScope.drawStar(color: Color, filled: Boolean) {
+internal fun DrawScope.drawStar(color: Color, filled: Boolean) {
     val s = size.minDimension
     val center = Offset(s / 2, s / 2 + s * 0.04f)
     val outer = s * 0.48f
