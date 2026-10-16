@@ -23,16 +23,14 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.game.line.LineRound
-import com.mehmtcan.brainscroll.game.line.LineSchedule
+import com.mehmtcan.brainscroll.game.line.LineFixtures
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.line.LineFilled
-import com.mehmtcan.brainscroll.ui.line.LineStarProgress
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.line.LinePage
 import com.mehmtcan.brainscroll.ui.line.LineReached
-import com.mehmtcan.brainscroll.ui.line.LocalLineShare
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,8 +41,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class LineUiTest {
 
-    /** A Wednesday: a 5x5 board. */
-    private val puzzle = LineSchedule.puzzleFor(20740)
+    private val puzzle = LineFixtures.board
     private val line = puzzle.solution
     private val n = puzzle.size
     private var clock = 1_000L
@@ -58,7 +55,6 @@ class LineUiTest {
 
     private fun ComposeUiTest.show(
         haptics: RecordingHaptics = RecordingHaptics(),
-        share: String? = null,
         clipboard: ClipboardManager? = null,
         reduceMotion: Boolean = false,
         prepare: (LineRound) -> Unit = {},
@@ -68,7 +64,6 @@ class LineUiTest {
             CompositionLocalProvider(
                 LocalHaptics provides haptics,
                 LocalReduceMotion provides reduceMotion,
-                LocalLineShare provides share,
                 LocalClipboardManager provides (clipboard ?: LocalClipboardManager.current),
             ) {
                 BrainScrollTheme {
@@ -117,9 +112,6 @@ class LineUiTest {
         waitForIdle()
     }
 
-    private fun ComposeUiTest.starProgress(): List<Float> =
-        onNodeWithTag("lineStarsLive").fetchSemanticsNode().config[LineStarProgress]
-
     private fun ComposeUiTest.solved() = hasAnyText("Çözüldü!", "Solved!")
 
     @Test
@@ -128,8 +120,8 @@ class LineUiTest {
         snap("170_line_start")
         assertEquals(n * n, onAllNodesWithTag("lineCell").fetchSemanticsNodes().size)
         assertEquals(0, filled())
-        assertTrue(hasAnyText("0 / 25 kare", "0 / 25 squares"))
-        assertTrue(hasAnyText("Geri alma 0", "Undos 0"))
+        assertTrue(hasAnyText("Hamle 0", "Moves 0"))
+        assertTrue(hasAnyText("Hata: 0", "Mistakes: 0"))
     }
 
     @Test
@@ -149,7 +141,7 @@ class LineUiTest {
         assertEquals(3, filled())
         assertTrue(haptics.kinds.all { it == HapticKind.Light }, "only the squares that went on buzz: ${haptics.kinds}")
         assertEquals(3, haptics.kinds.size)
-        assertTrue(hasAnyText("3 / 25 kare", "3 / 25 squares"))
+        assertTrue(hasAnyText("Hamle 3", "Moves 3"))
     }
 
     @Test
@@ -162,7 +154,6 @@ class LineUiTest {
         assertTrue(round.isFinished)
         assertTrue(solved())
         assertEquals(0, onAllNodesWithTag("lineCell").fetchSemanticsNodes().size, "a solved board takes no more touches")
-        assertTrue(hasAnyText("3 yıldızdan 3", "3 of 3 stars") || onAllNodesWithTag("lineStars").fetchSemanticsNodes().isNotEmpty())
         assertTrue(HapticKind.Light in haptics.kinds)
     }
 
@@ -188,7 +179,7 @@ class LineUiTest {
         tapCell(line[2])
         assertEquals(3, filled())
         assertEquals(1, round.snapshot().state.undos)
-        assertTrue(hasAnyText("Geri alma 1", "Undos 1"))
+        assertTrue(hasAnyText("Hata: 1", "Mistakes: 1"))
     }
 
     @Test
@@ -245,7 +236,7 @@ class LineUiTest {
         waitForIdle()
         assertEquals(0, filled())
         assertEquals(2, round.snapshot().state.undos)
-        assertTrue(hasAnyText("Geri alma 2", "Undos 2"))
+        assertTrue(hasAnyText("Hata: 2", "Mistakes: 2"))
     }
 
     @Test
@@ -256,7 +247,6 @@ class LineUiTest {
         waitForIdle()
         assertEquals(1, round.snapshot().state.hintsUsed)
         assertEquals(line.drop(2).take(3), round.snapshot().hint)
-        assertTrue(hasAnyText("İpucu 1", "Hints 1"))
         tapCell(line[2])
         assertTrue(round.snapshot().hint.isEmpty())
     }
@@ -297,97 +287,22 @@ class LineUiTest {
     }
 
     @Test
-    fun theResultOffersToCopyTheShareLineAndSaysSo() = runComposeUiTest {
-        val clipboard = FakeClipboard()
-        show(share = "One Line #4 3 stars 00:48", clipboard = clipboard)
-        drag(line.toList())
-        snap("172_line_share")
-        assertTrue(onAllNodesWithTag("lineShare").fetchSemanticsNodes().isNotEmpty(), "a solved board with a share line has the button")
-        assertEquals(null, clipboard.copied)
-        onNodeWithTag("lineShare").performClick()
-        waitForIdle()
-        assertEquals("One Line #4 3 stars 00:48", clipboard.copied)
-        assertTrue(hasAnyText("Kopyalandı", "Copied"))
-    }
-
-    @Test
-    fun withoutAShareLineThereIsNoShareButton() = runComposeUiTest {
+    fun theBoardCountsMistakesAndMovesAndShowsNoStars() = runComposeUiTest {
         show()
-        drag(line.toList())
-        assertEquals(0, onAllNodesWithTag("lineShare").fetchSemanticsNodes().size)
-    }
-
-    @Test
-    fun theBoardStartsWithThreeFullStarsAndAnInfoButton() = runComposeUiTest {
-        show()
-        snap("174_line_stars_full")
-        assertEquals(listOf(1f, 1f, 1f), starProgress())
-        assertTrue(hasAnyText("3 yıldızdan 3", "3 of 3 stars") || onAllNodesWithTag("lineStarsLive").fetchSemanticsNodes().isNotEmpty())
-        assertTrue(onAllNodesWithTag("lineStarsInfo").fetchSemanticsNodes().isNotEmpty())
-    }
-
-    @Test
-    fun anUndoTakesAStarOffAndAHintTakesAnotherOne() = runComposeUiTest {
-        show()
-        drag(line.take(3))
-        assertEquals(listOf(1f, 1f, 1f), starProgress(), "drawing and going back for free cost nothing")
+        assertTrue(hasAnyText("Hamle 0", "Moves 0"))
+        assertTrue(hasAnyText("Hata: 0", "Mistakes: 0"))
+        assertEquals(0, onAllNodesWithTag("starsLive").fetchSemanticsNodes().size, "stars are only for the daily puzzle")
+        assertEquals(0, onAllNodesWithTag("starsInfo").fetchSemanticsNodes().size)
+        drag(line.take(4))
+        assertTrue(hasAnyText("Hamle 4", "Moves 4"))
         onNodeWithTag("lineUndo").performClick()
         waitForIdle()
-        assertEquals(listOf(1f, 1f, 0f), starProgress())
-        onNodeWithTag("lineHint").performClick()
-        waitForIdle()
-        snap("175_line_stars_two_lost")
-        assertEquals(listOf(1f, 0f, 0f), starProgress())
-    }
-
-    @Test
-    fun aLostStarFallsAwayOverSomeTimeAndIsOnlyAnOutlineAfterwards() = runComposeUiTest {
-        show()
-        drag(line.take(3))
-        mainClock.autoAdvance = false
-        onNodeWithTag("lineUndo").performClick()
-        mainClock.advanceTimeBy(200)
-        val midway = starProgress()[2]
-        assertTrue(midway > 0f && midway < 1f, "the third star is on its way out: $midway")
-        assertEquals(1f, starProgress()[0])
-        mainClock.advanceTimeBy(1_000)
-        assertEquals(0f, starProgress()[2])
-    }
-
-    @Test
-    fun withReducedMotionAStarIsGoneAtOnce() = runComposeUiTest {
-        show(reduceMotion = true)
-        drag(line.take(3))
-        mainClock.autoAdvance = false
-        onNodeWithTag("lineUndo").performClick()
-        mainClock.advanceTimeBy(48)
-        assertEquals(0f, starProgress()[2], "gone within a few frames, not eased over 600 ms")
-    }
-
-    @Test
-    fun aBoardThatIsRestoredWithLostStarsStartsThereWithoutAnAnimation() = runComposeUiTest {
-        mainClock.autoAdvance = false
-        show(prepare = { round ->
-            round.drag(line[0]); round.drag(line[1]); round.undo()
-        })
-        mainClock.advanceTimeBy(16)
-        assertEquals(listOf(1f, 1f, 0f), starProgress())
-    }
-
-    @Test
-    fun theInfoButtonExplainsHowStarsAreEarnedAndCloses() = runComposeUiTest {
-        show()
-        onNodeWithTag("lineStarsInfo").performClick()
-        waitForIdle()
-        mainClock.advanceTimeBy(1_000)
-        snap("176_line_stars_info")
-        assertTrue(hasAnyText("Her tahta 3 yıldızla başlar", "Every board starts with 3 stars"))
-        assertTrue(hasAnyText("İpucu bir yıldız daha götürür", "A hint takes one more star off"))
-        onNodeWithTag("lineStarsSheetDone").performClick()
-        waitForIdle()
-        mainClock.advanceTimeBy(1_000)
-        waitForIdle()
-        assertTrue(!hasAnyText("Her tahta 3 yıldızla başlar", "Every board starts with 3 stars"))
+        assertTrue(hasAnyText("Hata: 1", "Mistakes: 1"))
+        assertTrue(hasAnyText("Hamle 4", "Moves 4"), "taking a square back does not take a move away")
+        drag(line.take(line.size), lift = true)
+        assertTrue(solved())
+        assertEquals(0, onAllNodesWithTag("stars").fetchSemanticsNodes().size, "the result has no stars either")
+        assertEquals(0, onAllNodesWithTag("lineShare").fetchSemanticsNodes().size, "and no share button")
     }
 
     @Test

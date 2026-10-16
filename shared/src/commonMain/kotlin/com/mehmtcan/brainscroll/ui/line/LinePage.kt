@@ -64,22 +64,17 @@ import brainscroll.shared.generated.resources.a11y_line_cell_number
 import brainscroll.shared.generated.resources.a11y_line_cell_number_done
 import brainscroll.shared.generated.resources.a11y_line_hint
 import brainscroll.shared.generated.resources.a11y_line_restart
-import brainscroll.shared.generated.resources.a11y_line_stars
 import brainscroll.shared.generated.resources.a11y_line_undo
 import brainscroll.shared.generated.resources.line_end_too_early
 import brainscroll.shared.generated.resources.line_hint_text
-import brainscroll.shared.generated.resources.line_hints
+import brainscroll.shared.generated.resources.line_moves
 import brainscroll.shared.generated.resources.line_no_hint
 import brainscroll.shared.generated.resources.line_result
-import brainscroll.shared.generated.resources.line_share
-import brainscroll.shared.generated.resources.line_share_copied
-import brainscroll.shared.generated.resources.line_squares
 import brainscroll.shared.generated.resources.line_undos
 import brainscroll.shared.generated.resources.line_won
 import brainscroll.shared.generated.resources.line_wrong_order
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.line.LineResult
-import com.mehmtcan.brainscroll.game.line.LineScoring
 import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.line.LineStatus
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
@@ -114,12 +109,6 @@ internal val LineFilled = SemanticsPropertyKey<Int>("LineFilled")
 internal val LineReached = SemanticsPropertyKey<Int>("LineReached")
 private var SemanticsPropertyReceiver.lineFilled by LineFilled
 private var SemanticsPropertyReceiver.lineReached by LineReached
-
-/**
-     * The line to copy for sharing the result (see [com.mehmtcan.brainscroll.game.line.LineShare]); null where there is no
-     * sharing (a board that is not the daily one). The daily screen provides it once the board is solved.
-     */
-val LocalLineShare = compositionLocalOf<String?> { null }
 
 /** What the line of text under the board says instead of the rules, after something that did not work. */
 private enum class LineNotice { WrongOrder, EndTooEarly, NoHint }
@@ -156,7 +145,6 @@ fun LinePage(
     val justFinished = rememberJustFinished(status)
 
     var notice by remember { mutableStateOf<LineNotice?>(null) }
-    var starsInfo by remember { mutableStateOf(false) }
 
     /** Buzzes for what a touch did and keeps the line of text under the board in step. */
     fun react(result: LineResult) {
@@ -177,13 +165,10 @@ fun LinePage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.xs))
-        // The stars the board is worth right now, and the way to find out how they are earned.
-        LineStarsBar(stars = page.stars, onInfo = { starsInfo = true })
-        Spacer(Modifier.height(Spacing.xs))
+        // The mistakes (squares taken back) and the moves, as in the other games; the board does not give stars.
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Chip(text = stringResource(Res.string.line_squares, state.path.size, cells), textColor = colors.textSecondary)
-            Chip(text = stringResource(Res.string.line_undos, state.undos), textColor = colors.textSecondary)
-            if (state.hintsUsed > 0) Chip(text = stringResource(Res.string.line_hints, state.hintsUsed), textColor = colors.textSecondary)
+            Chip(text = stringResource(Res.string.line_undos, state.undos), textColor = if (state.undos > 0) colors.error else colors.textSecondary)
+            Chip(text = stringResource(Res.string.line_moves, state.moves), textColor = colors.textSecondary)
         }
         Spacer(Modifier.height(Spacing.md))
 
@@ -261,7 +246,6 @@ fun LinePage(
         }
         Spacer(Modifier.height(Spacing.md))
     }
-    if (starsInfo) LineStarsInfoSheet(onClose = { starsInfo = false })
 }
 
 /** The board and the finger on it. [side] is its width and height; the touch work is done in pixels of this node. */
@@ -387,21 +371,6 @@ private fun CellButton(page: LineSnapshot, index: Int, row: Int, column: Int, si
     )
 }
 
-/** The three stars of the result, [earned] of them filled. */
-@Composable
-internal fun LineStars(earned: Int, modifier: Modifier = Modifier, size: Dp = 32.dp) {
-    val colors = BrainScrollTheme.colors
-    val description = stringResource(Res.string.a11y_line_stars, earned)
-    Row(
-        modifier = modifier.testTag("lineStars").semantics(mergeDescendants = true) { contentDescription = description },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-    ) {
-        repeat(LineScoring.MAX_STARS) { i ->
-            Canvas(Modifier.size(size)) { drawStar(if (i < earned) colors.streakDay else colors.borderStrong, filled = i < earned) }
-        }
-    }
-}
-
 @Composable
 private fun LineResultCard(page: LineSnapshot, isFavorite: Boolean, onToggleFavorite: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
@@ -418,47 +387,17 @@ private fun LineResultCard(page: LineSnapshot, isFavorite: Boolean, onToggleFavo
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
-            LineStars(page.stars)
             BasicText(
                 text = stringResource(Res.string.line_result, formatDuration(page.durationMs)),
                 style = type.body.copy(color = colors.textPrimary),
             )
-            val share = LocalLineShare.current
-            if (share != null) {
-                val clipboard = LocalClipboardManager.current
-                var copied by remember { mutableStateOf(false) }
-                AppTextButton(
-                    text = stringResource(if (copied) Res.string.line_share_copied else Res.string.line_share),
-                    onClick = { clipboard.setText(AnnotatedString(share)); copied = true },
-                    modifier = Modifier.testTag("lineShare"),
-                )
-            } else {
-                BasicText(
-                    text = swipeHintText(),
-                    style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
-                )
-            }
+            BasicText(
+                text = swipeHintText(),
+                style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+            )
         }
         HeartButton(filled = isFavorite, onClick = onToggleFavorite, modifier = Modifier.align(Alignment.TopEnd))
     }
-}
-
-/** A five-pointed star filling the drawing area, solid or only an outline. */
-internal fun DrawScope.drawStar(color: Color, filled: Boolean) {
-    val s = size.minDimension
-    val center = Offset(s / 2, s / 2 + s * 0.04f)
-    val outer = s * 0.48f
-    val inner = outer * 0.42f
-    val star = Path()
-    for (i in 0 until 10) {
-        val radius = if (i % 2 == 0) outer else inner
-        val angle = -PI / 2 + i * PI / 5
-        val x = center.x + radius * cos(angle).toFloat()
-        val y = center.y + radius * sin(angle).toFloat()
-        if (i == 0) star.moveTo(x, y) else star.lineTo(x, y)
-    }
-    star.close()
-    if (filled) drawPath(star, color) else drawPath(star, color, style = Stroke(s * 0.06f, join = StrokeJoin.Round))
 }
 
 /** A light bulb: a round glass over a small base. */

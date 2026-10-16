@@ -1,7 +1,6 @@
 package com.mehmtcan.brainscroll.stats
 
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.line.LineScoring
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.game.wordle.Mode
@@ -19,10 +18,10 @@ class LineStatsTest {
         guesses = listOf("A", "B"), outcome = outcome, finishedAt = clock++,
     )
 
-    private fun line(undos: Int, hints: Int, durationMs: Long, mode: Mode = Mode.DAILY) = FinishedRound(
+    private fun line(moves: Int, durationMs: Long, assisted: Boolean = false, mode: Mode = Mode.ENDLESS) = FinishedRound(
         id = "l$clock", mode = mode, language = Language.EN, answer = "5x5",
-        guesses = listOf(LineScoring.encode(undos, hints).toString()), outcome = Outcome.WON, finishedAt = clock++,
-        durationMs = durationMs, game = GameKind.Line, puzzleDay = clock,
+        guesses = listOf(moves.toString()), outcome = Outcome.WON, assisted = assisted, finishedAt = clock++,
+        durationMs = durationMs, game = GameKind.Line,
     )
 
     @Test
@@ -30,24 +29,24 @@ class LineStatsTest {
         val stats = computeLineStats(listOf(word(Outcome.WON)))
         assertEquals(0, stats.played)
         assertNull(stats.bestTimeMs)
-        assertEquals(0, stats.threeStars)
+        assertNull(stats.fewestMoves)
     }
 
     @Test
-    fun theStatsCountTheDailyResultsKeepTheFastestAndCountThreeStarBoards() {
-        val stats = computeLineStats(listOf(word(Outcome.WON), line(0, 0, 90_000), line(2, 0, 40_000), line(0, 1, 70_000), line(0, 0, 80_000)))
-        assertEquals(4, stats.played)
+    fun theStatsCountTheFeedResultsAndKeepTheFastestAndTheFewestMoves() {
+        val stats = computeLineStats(listOf(word(Outcome.WON), line(31, 90_000), line(27, 40_000), line(25, 70_000)))
+        assertEquals(3, stats.played)
         assertEquals(40_000L, stats.bestTimeMs)
-        assertEquals(2, stats.threeStars, "a hint takes a star off, so that board is not a three-star one")
+        assertEquals(25, stats.fewestMoves)
     }
 
     @Test
-    fun aHintedBoardStillCountsAsPlayed() {
-        assertEquals(1, computeLineStats(listOf(line(0, 3, 50_000))).played)
+    fun aBoardThatNeededAHintIsLeftOut() {
+        assertEquals(0, computeLineStats(listOf(line(25, 50_000, assisted = true))).played)
     }
 
     @Test
-    fun aLineResultThatIsNotADailyOneIsLeftOut() {
-        assertEquals(0, computeLineStats(listOf(line(0, 0, 10_000, Mode.ENDLESS))).played)
+    fun aDailyResultIsLeftOut() {
+        assertEquals(0, computeLineStats(listOf(line(25, 10_000, mode = Mode.DAILY))).played)
     }
 }

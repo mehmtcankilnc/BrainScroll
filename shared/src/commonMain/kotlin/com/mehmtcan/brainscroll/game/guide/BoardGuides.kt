@@ -3,6 +3,19 @@ package com.mehmtcan.brainscroll.game.guide
 import com.mehmtcan.brainscroll.game.hanoi.HanoiSolver
 import com.mehmtcan.brainscroll.game.hanoi.HanoiState
 import com.mehmtcan.brainscroll.game.hanoi.HanoiStatus
+import com.mehmtcan.brainscroll.game.blockout.BlockOutPuzzle
+import com.mehmtcan.brainscroll.game.blockout.BlockOutSolver
+import com.mehmtcan.brainscroll.game.blockout.BlockOutState
+import com.mehmtcan.brainscroll.game.blockout.BlockOutStatus
+import com.mehmtcan.brainscroll.game.crossword.CrosswordState
+import com.mehmtcan.brainscroll.game.crossword.CrosswordStatus
+import com.mehmtcan.brainscroll.game.queens.QueensSolver
+import com.mehmtcan.brainscroll.game.tents.TentsMark
+import com.mehmtcan.brainscroll.game.tents.TentsSolver
+import com.mehmtcan.brainscroll.game.tents.TentsState
+import com.mehmtcan.brainscroll.game.tents.TentsStatus
+import com.mehmtcan.brainscroll.game.queens.QueensState
+import com.mehmtcan.brainscroll.game.queens.QueensStatus
 import com.mehmtcan.brainscroll.game.lights.LightsState
 import com.mehmtcan.brainscroll.game.lights.LightsStatus
 import com.mehmtcan.brainscroll.game.memory.MemoryState
@@ -13,6 +26,7 @@ import com.mehmtcan.brainscroll.game.mines.MinesStatus
 import com.mehmtcan.brainscroll.game.pipes.PipesGenerator
 import com.mehmtcan.brainscroll.game.pipes.PipesState
 import com.mehmtcan.brainscroll.game.pipes.PipesStatus
+import com.mehmtcan.brainscroll.game.sudoku.SudokuLayout
 import com.mehmtcan.brainscroll.game.sudoku.SudokuState
 import com.mehmtcan.brainscroll.game.sudoku.SudokuStatus
 import com.mehmtcan.brainscroll.game.wordle.LetterResult
@@ -36,7 +50,10 @@ object MinesGuide {
     }
 }
 
-/** The guide of sudoku: a wrong digit first, then a cell with one candidate, then a digit with one place. */
+/**
+ * The guide of sudoku (the classic board and the jigsaw one): a wrong digit first, then a cell with one candidate, then a digit
+ * with one place. On the jigsaw board the third unit is a region instead of a box, and the sentences say so.
+ */
 object SudokuGuide {
     private const val SIZE = 9
     private const val CELLS = 81
@@ -45,39 +62,27 @@ object SudokuGuide {
         if (state.status != SudokuStatus.Playing) return null
         state.wrong.minOrNull()?.let { return GuideStep(GuideReason.SudokuErase, listOf(it)) }
 
+        val layout = SudokuLayout.of(state.regions)
+        val jigsaw = !layout.isStandard
         val values = state.values
         val candidates = IntArray(CELLS) { cell ->
-            if (values[cell] != 0) 0 else (1..SIZE).fold(0) { mask, digit -> if (allows(values, cell, digit)) mask or (1 shl (digit - 1)) else mask }
+            if (values[cell] != 0) 0 else (1..SIZE).fold(0) { mask, digit -> if (layout.peers[cell].none { values[it] == digit }) mask or (1 shl (digit - 1)) else mask }
         }
         // A cell that can only hold one digit.
         for (cell in 0 until CELLS) {
             if (values[cell] == 0 && candidates[cell].countOneBits() == 1) {
-                return GuideStep(GuideReason.SudokuOnlyDigit, listOf(cell), listOf(candidates[cell].countTrailingZeroBits() + 1))
+                return GuideStep(if (jigsaw) GuideReason.JigsawOnlyDigit else GuideReason.SudokuOnlyDigit, listOf(cell), listOf(candidates[cell].countTrailingZeroBits() + 1))
             }
         }
-        // A digit that has one place left in a row, a column or a box.
-        for (unit in units) for (digit in 1..SIZE) {
+        // A digit that has one place left in a row, a column or a box (a region).
+        for (unit in layout.units) for (digit in 1..SIZE) {
             if (unit.any { values[it] == digit }) continue
             val places = unit.filter { values[it] == 0 && candidates[it] and (1 shl (digit - 1)) != 0 }
-            if (places.size == 1) return GuideStep(GuideReason.SudokuOnlyPlace, places, listOf(digit))
+            if (places.size == 1) return GuideStep(if (jigsaw) GuideReason.JigsawOnlyPlace else GuideReason.SudokuOnlyPlace, places, listOf(digit))
         }
         // Not needed for the boards of the game (singles are enough), but never leave the player without a step.
         val cell = (0 until CELLS).firstOrNull { values[it] == 0 } ?: return null
         return GuideStep(GuideReason.SudokuSolution, listOf(cell), listOf(solution[cell]))
-    }
-
-    private fun allows(values: List<Int>, cell: Int, digit: Int): Boolean = peers[cell].none { values[it] == digit }
-
-    private val units: List<List<Int>> = buildList {
-        for (i in 0 until SIZE) {
-            add((0 until SIZE).map { i * SIZE + it })
-            add((0 until SIZE).map { it * SIZE + i })
-            add((0 until SIZE).map { k -> (i / 3 * 3 + k / 3) * SIZE + (i % 3 * 3 + k % 3) })
-        }
-    }
-
-    private val peers: List<Set<Int>> = List(CELLS) { cell ->
-        units.filter { cell in it }.flatten().filter { it != cell }.toSet()
     }
 }
 
@@ -187,5 +192,71 @@ object HanoiGuide {
         if (state.status != HanoiStatus.Playing) return null
         val move = HanoiSolver.shortest(state.pegs.toIntArray(), state.goal).firstOrNull() ?: return null
         return GuideStep(GuideReason.HanoiMove, listOf(move.from, move.to), listOf(move.from, move.to))
+    }
+}
+
+/**
+ * The guide of the queens puzzle: of the full placements that hold the locked queens, the one that has most of the queens
+ * the player already put down. It says to put one of the missing queens of that placement, or, if every queen of it is there
+ * already, to take away one that is not part of it.
+ */
+object QueensGuide {
+    fun step(state: QueensState): GuideStep? {
+        if (state.status != QueensStatus.Playing) return null
+        val locked = state.locked.indices.filter { state.locked[it] }.toSet()
+        val placed = state.queens.indices.filter { state.queens[it] }.toSet()
+        val best = QueensSolver.solutions(state.size, locked).maxByOrNull { solution -> solution.count { it in placed } } ?: return null
+        best.firstOrNull { it !in placed }?.let { return GuideStep(GuideReason.QueensPlace, listOf(it), listOf(it / state.size + 1, it % state.size + 1)) }
+        val extra = placed.filter { it !in best }.minOrNull() ?: return null
+        return GuideStep(GuideReason.QueensRemove, listOf(extra), listOf(extra / state.size + 1, extra % state.size + 1))
+    }
+}
+
+/**
+ * The guide of the tents puzzle (the board has one solution). A tent the player put that is not part of it is to be taken away
+ * first. Otherwise it points at a missing tent, one that plain reasoning gives from the tents already there if there is one.
+ */
+object TentsGuide {
+    fun step(state: TentsState): GuideStep? {
+        if (state.status != TentsStatus.Playing) return null
+        val trees = state.trees.indices.filter { state.trees[it] }.toSet()
+        val solution = TentsSolver.solutions(state.size, trees, state.rowTargets, state.columnTargets, limit = 1).firstOrNull() ?: return null
+        val placed = state.marks.indices.filter { state.marks[it] == TentsMark.TENT }.toSet()
+        placed.filter { it !in solution }.minOrNull()?.let { return step(GuideReason.TentsRemove, it, state.size) }
+        val missing = solution - placed
+        val derived = TentsSolver.deduce(state.size, trees, state.rowTargets, state.columnTargets, placed)
+        val cell = derived.firstOrNull { it in missing } ?: missing.minOrNull() ?: return null
+        return step(GuideReason.TentsPlace, cell, state.size)
+    }
+
+    private fun step(reason: GuideReason, cell: Int, size: Int) = GuideStep(reason, listOf(cell), listOf(cell / size + 1, cell % size + 1))
+}
+
+/**
+ * The guide of block out: the first move of the shortest way from the board as it is now. It points at the piece (its number in
+ * the board) and says in which direction it slides (0 up, 1 down, 2 left, 3 right) and how many cells.
+ */
+object BlockOutGuide {
+    fun step(state: BlockOutState, puzzle: BlockOutPuzzle): GuideStep? {
+        if (state.status != BlockOutStatus.Playing) return null
+        val pos = IntArray(state.pieces.size) { state.pieces[it].pos }
+        val move = BlockOutSolver.shortest(state.size, puzzle.shapes, pos)?.firstOrNull() ?: return null
+        val piece = state.pieces[move.piece]
+        val steps = kotlin.math.abs(move.to - piece.pos)
+        val direction = when {
+            piece.horizontal -> if (move.to < piece.pos) 2 else 3
+            else -> if (move.to < piece.pos) 0 else 1
+        }
+        return GuideStep(GuideReason.BlockOutSlide, listOf(move.piece), listOf(direction, steps))
+    }
+}
+
+/** The guide of the crossword: a wrong letter first, then the letter of the first square that is still empty. */
+object CrosswordGuide {
+    fun step(state: CrosswordState, solution: List<Char>): GuideStep? {
+        if (state.status != CrosswordStatus.Playing) return null
+        state.wrong.minOrNull()?.let { return GuideStep(GuideReason.CrosswordErase, listOf(it), listOf(it / state.size + 1, it % state.size + 1)) }
+        val cell = state.letters.indices.firstOrNull { !state.isClue[it] && state.letters[it] == ' ' } ?: return null
+        return GuideStep(GuideReason.CrosswordLetter, listOf(cell), listOf(cell / state.size + 1, cell % state.size + 1), solution[cell].toString())
     }
 }

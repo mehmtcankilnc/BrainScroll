@@ -17,7 +17,7 @@ class LineRoundTest {
 
     private var clock = 1_000L
 
-    private val puzzle = LineSchedule.puzzleFor(20740)
+    private val puzzle = LineFixtures.board
 
     private fun round() = LineRound(0, "l1", puzzle, Language.EN) { clock }
 
@@ -82,7 +82,7 @@ class LineRoundTest {
         val stored = r.toStored()
         assertEquals(GameKind.Line, stored.game)
         assertEquals(puzzle.encode(), stored.answer)
-        assertEquals(false, stored.assisted)
+        assertEquals(true, stored.assisted, "a hint was used")
         assertTrue(stored.guesses.containsAll(listOf("u", "r", "h", "t${line[1]}")))
 
         val back = assertNotNull(LineRound.restore(2, stored) { clock })
@@ -122,7 +122,7 @@ class LineRoundTest {
     }
 
     @Test
-    fun aSolvedRoundIsAWinWhoseGuessesAreTheUndosAndTheHints() {
+    fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
         val r = round()
         clock = 5_000
         r.solve()
@@ -131,9 +131,8 @@ class LineRoundTest {
         assertEquals(Outcome.WON, finished.outcome)
         assertEquals(Mode.ENDLESS, finished.mode, "the daily screen saves it as a daily result")
         assertEquals(GameKind.Line, finished.game)
-        assertEquals(listOf("1"), finished.guesses)
-        assertEquals(1, finished.moveCount, "the score code, never 0: the server wants a move")
-        assertEquals(3, finished.lineStars)
+        assertEquals(listOf(puzzle.cells.toString()), finished.guesses)
+        assertEquals(puzzle.cells, finished.moveCount)
         assertEquals("${puzzle.size}x${puzzle.size}", finished.answer)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
         assertEquals((puzzle.cells - 1) * 1_000L, finished.durationMs)
@@ -141,25 +140,23 @@ class LineRoundTest {
     }
 
     @Test
-    fun aHintCostsAStarButDoesNotMakeTheRoundNeutral() {
+    fun aHintMakesTheRoundAssistedSoItLeavesTheStatistics() {
         val r = round()
         r.drag(puzzle.solution[0])
         val hint = assertNotNull(r.showHint())
         assertContentEquals(puzzle.solution.drop(1).take(3), hint)
         assertContentEquals(hint, r.snapshot().hint)
-        assertFalse(r.assisted)
+        assertTrue(r.assisted)
         r.drag(puzzle.solution[1])
         assertTrue(r.snapshot().hint.isEmpty(), "the hint goes away with the next change")
         for (cell in puzzle.solution.drop(2)) r.drag(cell)
         val finished = r.toFinished(1)
-        assertEquals(listOf("101"), finished.guesses)
-        assertEquals(2, finished.lineStars)
-        assertFalse(finished.assisted)
-        assertEquals(2, (r.snapshot() as LineSnapshot).stars)
+        assertEquals(listOf(puzzle.cells.toString()), finished.guesses)
+        assertTrue(finished.assisted)
     }
 
     @Test
-    fun undosAreCountedInTheResultAndTakeStarsOff() {
+    fun theMovesOfTheResultCountEverySquareThatWasPutOn() {
         val r = round()
         val line = puzzle.solution
         r.drag(line[0]); r.drag(line[1]); r.drag(line[2])
@@ -168,8 +165,8 @@ class LineRoundTest {
         for (cell in line.drop(1)) r.drag(cell)
         assertTrue(r.isFinished)
         val finished = r.toFinished(1)
-        assertEquals("3", finished.guesses[0])
-        assertEquals(3, finished.moveCount)
-        assertEquals(2, finished.lineStars)
+        assertEquals("27", finished.guesses[0], "3 squares, then the 24 that are left")
+        assertEquals(27, finished.moveCount)
+        assertEquals(2, r.snapshot().state.undos)
     }
 }

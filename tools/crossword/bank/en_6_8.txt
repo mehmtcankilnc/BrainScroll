@@ -1,0 +1,503 @@
+ACCENT|Way of pronouncing
+ACCEPT|Receive willingly
+ACROSS|From one side to the other
+ACTION|Movie genre
+ACTIVE|Energetic
+ACTUAL|Real
+ADVICE|Counsel
+AFFAIR|Matter
+AFRAID|Scared
+AGENDA|Meeting list
+ALMOND|Oval nut
+ALWAYS|Every time
+AMOUNT|Quantity
+ANCHOR|Ship holder
+ANIMAL|Zoo resident
+ANNUAL|Yearly
+ANSWER|Reply
+ANYONE|Any person
+ARCHER|Bow user
+ARTIST|Painter
+ATTACK|Assault
+AUTUMN|Fall season
+BAKERY|Bread shop
+BALLET|Dance on tiptoe
+BANANA|Yellow fruit
+BANNER|Flag
+BARBER|Haircut giver
+BARREL|Wooden cask
+BASKET|Woven carrier
+BATTLE|Fight
+BEAUTY|Loveliness
+BEHIND|At the back
+BELIEF|Faith
+BESIDE|Next to
+BETTER|Superior
+BEYOND|Past
+BISHOP|Church official
+BITTER|Not sweet
+BLANKET|Bed covering
+BORDER|Frontier
+BOTTLE|Water holder
+BOTTOM|Lowest part
+BRANCH|Tree limb
+BREATH|Air taken in
+BRIDGE|River crossing
+BRIGHT|Shining
+BROKEN|Smashed
+BUBBLE|Soap ball
+BUCKET|Pail
+BUDGET|Spending plan
+BUTTER|Bread spread
+BUTTON|Shirt fastener
+CAMERA|Photo taker
+CANDLE|Wax light
+CANVAS|Painter's cloth
+CARPET|Floor covering
+CARROT|Orange vegetable
+CASTLE|Fortress
+CATTLE|Farm cows
+CAUGHT|Grabbed
+CEILING|Room top
+CENTER|Middle
+CHANCE|Opportunity
+CHANGE|Coins back
+CHEESE|Mouse snack
+CHERRY|Red pitted fruit
+CHOICE|Option
+CHOOSE|Select
+CHURCH|House of worship
+CINEMA|Movie theater
+CIRCLE|Round shape
+CLEVER|Smart
+CLIENT|Customer
+CLOSET|Wardrobe
+COFFEE|Morning brew
+COLUMN|Pillar
+COMMON|Ordinary
+COOKIE|Biscuit
+COPPER|Reddish metal
+CORNER|Where walls meet
+COTTON|Soft plant fiber
+COUSIN|Aunt's child
+CRADLE|Baby bed
+CREDIT|Praise
+CRYSTAL|Clear gem
+CUSTOM|Tradition
+DAMAGE|Harm
+DANGER|Peril
+DEBATE|Formal argument
+DECADE|Ten years
+DEFEAT|Beat
+DEFEND|Protect
+DEGREE|Diploma
+DESERT|Sandy wasteland
+DESIGN|Plan
+DESIRE|Wish
+DETAIL|Small fact
+DINNER|Evening meal
+DIRECT|Straight
+DOCTOR|Medical professional
+DOLLAR|Buck
+DONKEY|Braying animal
+DOUBLE|Twice as much
+DRAGON|Fire-breathing beast
+DRAWER|Desk compartment
+DRIVER|Car operator
+EASILY|With no trouble
+EFFORT|Hard try
+ENERGY|Power
+ENGINE|Car motor
+ENOUGH|Sufficient
+ESCAPE|Get away
+EXCUSE|Reason given
+EXPERT|Specialist
+FABRIC|Cloth
+FAMILY|Parents and kids
+FAMOUS|Well known
+FARMER|Crop grower
+FASTEN|Attach
+FATHER|Dad
+FIGURE|Number
+FINGER|Hand digit
+FLOWER|Rose, for one
+FOLDER|File holder
+FOREST|Woods
+FORGET|Fail to remember
+FORMAL|Dressy
+FOSSIL|Ancient remains
+FOUNTAIN|Spouting water feature
+FREEZE|Turn to ice
+FRIDAY|Weekend eve
+FRIEND|Pal
+FROZEN|Iced over
+FUTURE|Time to come
+GALAXY|Star system
+GARAGE|Car shelter
+GARDEN|Plot of flowers
+GARLIC|Pungent bulb
+GATHER|Collect
+GENTLE|Soft
+GINGER|Spicy root
+GLANCE|Quick look
+GOLDEN|Made of a yellow metal
+GROUND|Earth
+GROWTH|Increase
+GUITAR|Strummed instrument
+HAMMER|Nail driver
+HANDLE|Grip
+HAPPEN|Occur
+HARBOR|Port
+HEALTH|Wellness
+HEIGHT|How tall
+HELMET|Head protector
+HIDDEN|Concealed
+HOLIDAY|Day off
+HONEST|Truthful
+HUNGRY|Wanting food
+HUNTER|Game chaser
+ISLAND|Land in the sea
+JACKET|Short coat
+JUNGLE|Dense tropical forest
+KETTLE|Tea boiler
+KINDLY|With care
+KITCHEN|Cooking room
+KNIGHT|Armored rider
+LADDER|Climbing tool
+LAWYER|Court advocate
+LEADER|One in front
+LEAGUE|Sports association
+LEGEND|Famous tale
+LESSON|Class period
+LETTER|Alphabet character
+LIKELY|Probable
+LIQUID|Not solid
+LISTEN|Pay attention to sounds
+LITTLE|Small
+LIVING|Alive
+LOCKER|Gym storage
+LOVELY|Beautiful
+MAKING|Creating
+MANAGE|Handle
+MARBLE|Smooth stone
+MARKET|Place to buy
+MASTER|Expert
+MATTER|Issue
+MEADOW|Grassy field
+MEMBER|Part of a group
+MEMORY|Recall
+MERELY|Only
+METHOD|Procedure
+MIDDLE|Center
+MINUTE|Sixty seconds
+MIRROR|Reflective glass
+MOMENT|Instant
+MONKEY|Banana lover
+MOTHER|Mom
+MOTION|Movement
+MUSEUM|Art gallery
+MUSCLE|Flexed tissue
+NATION|Country
+NATURE|The outdoors
+NEARLY|Almost
+NEEDLE|Sewing tool
+NEPHEW|Sibling's son
+NOBODY|No one
+NORMAL|Usual
+NOTICE|See
+NUMBER|Digit
+OBJECT|Thing
+OFFICE|Workplace
+ORANGE|Citrus fruit
+ORIGIN|Beginning
+OXYGEN|We breathe it
+PACKET|Small bundle
+PALACE|Royal home
+PARADE|Street march
+PARENT|Mom or dad
+PARROT|Talking bird
+PASTRY|Baked dough treat
+PATROL|Guard round
+PEBBLE|Small stone
+PEOPLE|Humans
+PEPPER|Spicy seasoning
+PERIOD|Full stop
+PERSON|Individual
+PICNIC|Meal outdoors
+PICKLE|Cucumber in brine
+PILLOW|Head cushion
+PLANET|Mars or Venus
+PLASTIC|Synthetic material
+PLENTY|Lots
+POCKET|Pants pouch
+POETRY|Verse
+POLICE|Law enforcers
+POLITE|Well mannered
+POTATO|Spud
+POWDER|Fine dust
+PRETTY|Attractive
+PRINCE|King's son
+PRISON|Jail
+PUBLIC|Open to all
+PUDDLE|Rain pool
+PUPPET|String toy
+PURPLE|Grape color
+PUZZLE|Brain teaser
+RABBIT|Hopping pet
+RACKET|Tennis gear
+RAISIN|Dried grape
+RANDOM|Chosen by chance
+RATHER|Somewhat
+READER|Book fan
+REALLY|Truly
+REASON|Cause
+RECENT|Not long ago
+RECORD|Vinyl disc
+REGION|Area
+REMAIN|Stay
+REMOTE|Far away
+REPAIR|Fix
+REPORT|News story
+RESCUE|Save
+RESULT|Outcome
+RETURN|Come back
+REWARD|Prize
+RHYTHM|Beat
+RIBBON|Gift tie
+RICHES|Wealth
+ROCKET|Space vehicle
+SADDLE|Horse seat
+SAFETY|Being secure
+SAILOR|Ship hand
+SALARY|Pay
+SAMPLE|Taste test
+SAUSAGE|Link of meat
+SCHOOL|Learning place
+SCREEN|TV display
+SEARCH|Look for
+SEASON|Spring or fall
+SECOND|After first
+SECRET|Hidden thing
+SECURE|Safe
+SEEKER|Searcher
+SELECT|Pick
+SENIOR|Older
+SERIES|Sequence
+SERVER|Restaurant waiter
+SETTLE|Calm down
+SHADOW|Dark shape
+SHIELD|Protective plate
+SHOULDER|Arm joint
+SIGNAL|Alert
+SILENT|Quiet
+SILVER|Shiny metal
+SIMPLE|Easy
+SINGER|Vocalist
+SISTER|Female sibling
+SKETCH|Quick drawing
+SLEEVE|Arm part of a shirt
+SMOOTH|Even
+SNEEZE|Allergy reaction
+SOCCER|Game with goals
+SPIDER|Web builder
+SPIRIT|Soul
+SPRING|Season after winter
+SQUARE|Four-sided shape
+STABLE|Horse home
+STATUE|Sculpture
+STICKY|Gooey
+STREAM|Brook
+STREET|City road
+STRESS|Pressure
+STRICT|Severe
+STRIPE|Zebra feature
+STRONG|Powerful
+STUDIO|Artist's workroom
+SUDDEN|Unexpected
+SUMMER|Hot season
+SUNSET|Evening glow
+SUPPLY|Provide
+SURELY|Certainly
+SWITCH|Light control
+SYMBOL|Sign
+TABLET|Pill
+TALENT|Gift
+TEAPOT|Brewing vessel
+TEMPLE|House of worship
+TENNIS|Racket sport
+THIRST|Need for water
+THREAD|Sewing string
+THRONE|King's seat
+TICKET|Entry pass
+TIMBER|Wood
+TOMATO|Red salad fruit
+TONGUE|Taste organ
+TOWARD|In the direction of
+TRAVEL|Journey
+TREATY|Peace agreement
+TUNNEL|Underground passage
+TURKEY|Thanksgiving bird
+TWELVE|Dozen
+TWENTY|Two tens
+UNLESS|Except if
+UPDATE|Make current
+VALLEY|Between mountains
+VELVET|Soft fabric
+VESSEL|Ship
+VICTIM|Harmed person
+VIOLIN|Fiddle
+VOLUME|Loudness
+WAITER|Restaurant server
+WALLET|Cash holder
+WARMTH|Gentle heat
+WEALTH|Riches
+WEAPON|Armament
+WEEKLY|Every seven days
+WINDOW|Glass opening
+WINTER|Cold season
+WISDOM|Deep knowledge
+WITHIN|Inside
+WIZARD|Spell caster
+WONDER|Marvel
+WOODEN|Made of timber
+WORKER|Employee
+WRITER|Author
+YELLOW|Lemon color
+ACTIVITY|Planned event
+AIRPLANE|Flying machine
+ALPHABET|A to Z
+ANCIENT|Very old
+ANYBODY|Any person
+APPETITE|Desire for food
+BASEBALL|Diamond game
+BASEMENT|Underground floor
+BIRTHDAY|Yearly celebration
+BLOSSOM|Flower bloom
+BOUNDARY|Limit line
+BUILDING|Tall structure
+BUSINESS|Company
+CAPTAIN|Ship's leader
+CAULDRON|Witch's pot
+CEREMONY|Formal event
+CHAMPION|Winner
+CHAPTER|Book section
+CHILDREN|Kids
+CHIMNEY|Smoke stack
+CLASSIC|Timeless
+CLIMATE|Weather pattern
+COMPASS|North finder
+COMPUTER|Laptop
+CONCERT|Live music event
+CONTEST|Competition
+COUNTRY|Nation
+COURAGE|Bravery
+CREATURE|Living being
+CRICKET|Chirping insect
+CUPBOARD|Dish storage
+CURIOUS|Eager to know
+DAUGHTER|Female child
+DECEMBER|Last month
+DELICATE|Fragile
+DINOSAUR|Prehistoric giant
+DISCOVER|Find
+DISTANCE|How far
+DOLPHIN|Clever sea mammal
+DOMESTIC|Of the home
+DROUGHT|Dry spell
+ELEPHANT|Trunked giant
+ENTRANCE|Way in
+EVENING|Dusk time
+EXAMPLE|Instance
+EXCITING|Thrilling
+EXERCISE|Workout
+FAMILIAR|Well known
+FEATHER|Bird's covering
+FESTIVAL|Celebration
+FIREWORK|Sky explosion
+FOOTBALL|Gridiron game
+FOREHEAD|Brow
+FORTUNE|Luck
+FRACTION|Part of a whole
+FREEDOM|Liberty
+FRIENDLY|Kind
+GENEROUS|Giving
+GIRAFFE|Long-necked animal
+GLORIOUS|Splendid
+GRATEFUL|Thankful
+HANDSOME|Good-looking
+HOSPITAL|Medical center
+HUSBAND|Married man
+IMAGINE|Picture in the mind
+INSTANT|Immediate
+INSTRUCT|Teach
+ISLANDER|Lives on a small land
+JEWELRY|Rings and necklaces
+JOURNEY|Long trip
+KEYBOARD|Typing device
+LANDMARK|Famous sight
+LANGUAGE|Speech system
+MACHINE|Mechanical device
+MAGAZINE|Glossy periodical
+MAMMAL|Warm-blooded animal
+MIDNIGHT|Twelve at night
+MOUNTAIN|High peak
+NECKLACE|Jewelry for the throat
+NEIGHBOR|Person next door
+NOTEBOOK|School pad
+NOVEMBER|Eleventh month
+OCTOBER|Tenth month
+OPPOSITE|Reverse
+OUTDOORS|Outside
+PAINTING|Canvas art
+PANCAKE|Flat breakfast item
+PASSPORT|Travel document
+PENGUIN|Flightless polar bird
+PERFUME|Fragrance
+PHYSICAL|Of the body
+PLATFORM|Raised stage
+PLEASANT|Nice
+POPULAR|Well liked
+PRESENT|Gift
+PRINCESS|King's daughter
+PROBLEM|Puzzle to solve
+PROGRAM|TV show
+PROMISE|Vow
+PROTECT|Guard
+QUESTION|Query
+RAINBOW|Arc after a storm
+REGULAR|Usual
+RESPECT|Esteem
+SANDWICH|Lunch between bread
+SATURDAY|Day before Sunday
+SCISSORS|Paper cutters
+SHOPPING|Buying things
+SKELETON|Bones
+SOMEBODY|Some person
+SPECIAL|Unusual
+SPLENDID|Magnificent
+STADIUM|Sports arena
+STRANGER|Unknown person
+STUDENT|Learner
+SUBJECT|Topic
+SUNSHINE|Bright daylight
+SURPRISE|Unexpected event
+SWEATER|Knit pullover
+TEACHER|Classroom instructor
+THOUSAND|Ten hundred
+THURSDAY|Day after Wednesday
+TOGETHER|With each other
+TOMORROW|The next day
+TRACTOR|Farm vehicle
+TRAFFIC|Cars on the road
+TREASURE|Pirate's prize
+TROPICAL|Of the hot zone
+UMBRELLA|Rain shield
+UNIVERSE|All of space
+VACATION|Time off
+VOLCANO|Erupting mountain
+WEEKEND|Saturday and Sunday
+WHISTLE|Referee's tool
+WHISPER|Soft speech
+WILDLIFE|Animals in nature
+YOGHURT|Cultured milk
+YOURSELF|You alone

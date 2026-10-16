@@ -85,7 +85,7 @@ import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.daily.DailyPhase
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.daily.DailyGamePhase
-import com.mehmtcan.brainscroll.ui.line.LineDoneInfo
+import com.mehmtcan.brainscroll.ui.crossword.CrosswordDoneInfo
 import com.mehmtcan.brainscroll.ui.daily.DailyGameUi
 import com.mehmtcan.brainscroll.ui.daily.DailyGameViewModel
 import com.mehmtcan.brainscroll.ui.daily.FlameIcon
@@ -316,8 +316,8 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
                     }
                 } else if (gameUi.phase == DailyGamePhase.Finished) {
                     val result = gameUi.result
-                    if (game == GameKind.Line && result != null) {
-                        LineDoneInfo(result)
+                    if (game == GameKind.Crossword && result != null) {
+                        CrosswordDoneInfo(result)
                     } else {
                         BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
                     }
@@ -450,7 +450,7 @@ private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boole
                     BasicText(
                         text = when (game) {
                             GameKind.Word -> stringResource(Res.string.ranks_guesses, row.guesses)
-                            GameKind.Line -> stringResource(Res.string.ranks_stars, row.guesses)
+                            GameKind.Crossword -> stringResource(Res.string.ranks_stars, row.guesses)
                             else -> stringResource(Res.string.ranks_moves, row.guesses)
                         },
                         style = type.label.copy(color = colors.textSecondary),

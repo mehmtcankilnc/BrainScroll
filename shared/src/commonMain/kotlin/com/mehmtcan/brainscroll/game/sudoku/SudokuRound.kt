@@ -18,14 +18,14 @@ data class SudokuSnapshot(
     val state: SudokuState,
     /** Time spent so far, as the round counts it (see [SudokuRound]). */
     val durationMs: Long,
+    override val kind: GameKind = GameKind.Sudoku,
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status != SudokuStatus.Playing
     override val isWon: Boolean get() = state.status == SudokuStatus.Won
-    override val kind: GameKind get() = GameKind.Sudoku
 }
 
 /**
- * One sudoku board in the feed: a [SudokuGame] plus the time and the list of actions, which is all that is needed to
+ * One sudoku board in the feed (the classic one or the jigsaw one, see [SudokuVariant]): a [SudokuGame] plus the time and the list of actions, which is all that is needed to
  * save it and to rebuild it exactly as the player left it (the board itself comes from [seed] and [clues]).
  *
  * The time works as in the other games: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS]
@@ -40,15 +40,16 @@ class SudokuRound(
     private val language: Language,
     private val now: () -> Long = { 0L },
     private val clues: Int = SudokuGenerator.DEFAULT_CLUES,
+    private val variant: SudokuVariant = SudokuVariant.Classic,
 ) : FeedRound {
-    private val game = SudokuGame(seed, clues)
+    private val game = SudokuGame(seed, clues, variant)
 
     /** What the player did, in order: "p12:5" places a 5 in cell 12, "n12:5" toggles the note 5, "e12" erases. */
     private val actions = mutableListOf<String>()
     private var elapsedMs = 0L
     private var lastActionAt: Long? = null
 
-    override val kind: GameKind get() = GameKind.Sudoku
+    override val kind: GameKind get() = variant.kind
 
     override var assisted = false
         private set
@@ -82,7 +83,7 @@ class SudokuRound(
         lastActionAt = time
     }
 
-    override fun snapshot() = SudokuSnapshot(id, index, game.state, elapsedMs)
+    override fun snapshot() = SudokuSnapshot(id, index, game.state, elapsedMs, variant.kind)
 
     /** "9x9x36:seed": the size, the number of givens and the seed. */
     private fun encodedBoard() = "9x9x$clues:$seed"
@@ -95,7 +96,7 @@ class SudokuRound(
         input = elapsedMs.toString(),
         position = index,
         assisted = assisted,
-        game = GameKind.Sudoku,
+        game = variant.kind,
     )
 
     /**
@@ -112,7 +113,7 @@ class SudokuRound(
         assisted = assisted,
         finishedAt = finishedAt,
         durationMs = elapsedMs,
-        game = GameKind.Sudoku,
+        game = variant.kind,
     )
 
     companion object {
@@ -124,13 +125,14 @@ class SudokuRound(
          * caller then simply starts a new one.
          */
         fun restore(index: Int, stored: StoredRound, now: () -> Long): SudokuRound? {
+            val variant = SudokuVariant.of(stored.game) ?: return null
             val parts = stored.answer.split(':')
             if (parts.size != 2) return null
             val size = parts[0].split('x').map { it.toIntOrNull() ?: return null }
             if (size.size != 3 || size[0] != 9 || size[1] != 9) return null
             val seed = parts[1].toIntOrNull() ?: return null
             val round = try {
-                SudokuRound(index, stored.id, seed, stored.language, now, size[2])
+                SudokuRound(index, stored.id, seed, stored.language, now, size[2], variant)
             } catch (e: IllegalArgumentException) {
                 return null
             }

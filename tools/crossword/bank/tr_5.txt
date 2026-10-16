@@ -1,0 +1,281 @@
+ACELE|Acil, ivedi
+ACEMİ|Yeni başlayan
+AFYON|Kaymağıyla ünlü şehrimiz
+AHLAK|Törel değerler
+AHŞAP|Odundan yapılmış şey
+AKREP|Kuyruğunda iğne taşıyan hayvan
+AKTÖR|Erkek oyuncu
+AKŞAM|Günün son bölümü
+ALARM|Uyarı sesi
+ALBAY|Subay rütbesi
+ALBÜM|Fotoğraflık
+ALKOL|İçkinin içindeki madde
+ALTIN|Değerli sarı maden
+AMBAR|Tahıl deposu
+AMPUL|Odayı aydınlatan eşya
+ANLAM|Mana, meal
+ANTİK|Çok eski
+APTAL|Akılsız
+ARABA|Dört tekerlekli kara taşıtı
+ARENA|Gösteri alanı
+ARMUT|Sulu bir meyve
+AROMA|Hoş koku veya tat
+ARŞİV|Belgelerin saklandığı yer
+ASKER|Er
+ASLAN|Hayvanların kralı
+ATLAS|Harita kitabı
+ATLET|Spor yapan kişi
+AVİZE|Tavan lambası
+AYDIN|Okumuş kimse
+AYGIT|Cihaz
+AYLIK|Ay başı alınan ücret
+AYRAN|Yoğurttan yapılan içecek
+AÇLIK|Karnın boş olması
+AŞAĞI|Yukarı karşıtı
+AŞURE|Bir tatlı
+BADEM|Kabuklu bir kuruyemiş
+BAGAJ|Arabanın yük alan bölümü
+BAHAR|Kışı izleyen mevsim
+BAHÇE|Çiçek ve ağaç yetişen yer
+BAKAN|Hükümet üyesi
+BAKIM|Özen
+BAKIR|Kırmızımsı maden
+BAKIŞ|Bakma işi
+BALON|Havayla şişirilir
+BALTA|Odun yaran eşya
+BALIK|Suda yüzen hayvan
+BAMBU|Tropik kamış
+BAMYA|Tüylü bir sebze
+BANYO|Yıkanılan yer
+BARAJ|Suyu tutan yapı
+BARIŞ|Savaş karşıtı
+BAYAN|Hanım
+BAYAT|Taze karşıtı
+BAĞIŞ|Karşılıksız verme
+BAŞAK|Buğday sapının ucu
+BAŞKA|Farklı
+BEBEK|Yenidoğan
+BEDEL|Karşılık olarak verilen
+BEDEN|Vücut
+BELGE|Resmî kâğıt
+BELKİ|Bir ihtimal sözü
+BENEK|Küçük leke
+BETON|Çimentodan yapılan karışım
+BEYAZ|Kar rengi, ak
+BEYİN|Düşünce organı
+BEŞİK|Bebeğin uyuduğu yer
+BİBER|Tatlı veya acı bir sebze
+BİLEK|Elin kola bağlandığı yer
+BİLET|Sinemaya girişte alınır
+BİLGİ|Öğrenilen şey
+BİLİM|Bilgi alanı
+BİRAZ|Az miktar
+BİTİŞ|Sona erme
+BİTKİ|Nebat
+BİÇİM|Şekil
+BOMBA|Patlayıcı
+BOYUT|Uzunluk, genişlik ve yükseklik
+BOZUK|Çalışmayan
+BOĞAZ|İki denizi birleştirir
+BRAVO|Takdir sözü
+BRONZ|Tunç
+BUGÜN|İçinde bulunulan gün
+BUHAR|Kaynayan suyun gazı
+BUKET|Çiçek demeti
+BULUT|Yağmur taşır
+BURUN|Koklama organı
+BÖLGE|Yöre
+BÖLÜM|Parça
+BÜTÇE|Gelir gider hesabı
+BÜTÜN|Tam
+BÜYÜK|Küçük karşıtı
+BIYIK|Üst dudak kılları
+BIÇAK|Keskin bir eşya
+CADDE|Geniş sokak
+CAHİL|Bilgisiz
+CANLI|Yaşayan
+CEBİR|Bir matematik dalı
+CEKET|Bir üst giysisi
+CEPHE|Savaş hattı
+CESET|Cansız beden
+CESUR|Korkusuz
+CEVAP|Yanıt
+CEVİZ|Kabuğu sert bir yemiş
+CİHAZ|Alet
+CİMRİ|Cömert karşıtı
+CÜMLE|Tümce
+DAHİL|İçinde olan
+DAİRE|Apartmandaki ev
+DALGA|Denizin kabarması
+DAMAR|Kan taşır
+DAMLA|Katre
+DAVUL|Tokmakla çalınır
+DAYAK|Patak, kötek
+DEKAN|Fakülte başkanı
+DEMET|Bağlı çiçek grubu
+DEMİR|Simgesi Fe olan element
+DENEY|Laboratuvarda yapılır
+DENGE|Ağırlık eşitliği
+DENİZ|Derya
+DERGİ|Süreli yayın
+DERİN|Sığ karşıtı
+DETAY|Ayrıntı
+DEVAM|Sürdürme
+DEVİR|Çağ
+DEVRE|Dönem
+DİKEY|Yatay karşıtı
+DİLEK|Temenni, arzu
+DİLİM|Parça
+DİREK|Dik duran uzun çubuk
+DİYET|Beslenme düzeni
+DİĞER|Öteki
+DİŞÇİ|Diş doktoru
+DOKUZ|Bir sayı
+DOLAR|Amerika para birimi
+DOMUZ|Çamurda yatan çiftlik hayvanı
+DORUK|Zirve
+DOSYA|Evrak klasörü
+DOĞAL|Yapay karşıtı
+DOĞRU|Yalan karşıtı
+DOĞUM|Dünyaya geliş
+DRAMA|Acıklı oyun
+DURAK|Otobüs bekleme yeri
+DUVAR|Oda sınırları
+DUYGU|His
+DÖNEM|Devre
+DÖVİZ|Yabancı para, kur
+DÖVME|Deriye işlenen resim
+DÖŞEK|Yatak
+DÜMEN|Gemi direksiyonu
+DÜNYA|Üzerinde yaşadığımız gezegen
+DÜZEN|Tertip
+DÜZEY|Seviye
+DÜĞME|Gömlek ilikler
+DÜĞÜM|İpte bağlanan yer
+DÜĞÜN|Evlenme töreni
+DÜŞÜK|Yüksek karşıtı, alçak
+EFEKT|Etki
+EJDER|Ateş püskürten efsane yaratık
+EKLEM|Kemiklerin birleşme yeri
+EKMEK|Fırından çıkan besin
+EKRAN|Televizyonun görüntü yüzü
+EKSEN|Dünyanın dönme çizgisi
+EKSİK|Tam olmayan
+ELMAS|Çok sert değerli taş
+EMLAK|Ev, arsa gibi mülk
+ENGEL|Önü kesen şey, mani
+ENKAZ|Yıkıntı
+ENLEM|Dünyada yatay çizgi
+ERDEM|Ahlaki üstünlük
+ERGEN|Gençlik çağındaki kişi
+ERKEK|Dişi olmayan
+ERKEN|Geç karşıtı
+ERZAK|Yiyecek stoku
+ESANS|Koku özü
+ESMER|Koyu tenli
+ESNAF|Dükkân sahibi
+ESNEK|Elastik
+ESPRİ|Nükte
+ETKİN|Çalışkan, faal
+ETNİK|Bir soya ait
+ETRAF|Çevre
+EVCİL|Evde beslenen hayvan
+EVLAT|Çocuk
+EVRAK|Belgeler
+EVREN|Kâinat
+EVRİM|Gelişme
+EYLEM|Fiil
+EYLÜL|Bir ay
+EYVAH|Bir üzüntü sözü
+EZBER|Hafızadan söyleme
+EŞARP|Başa bağlanan örtü
+EŞSİZ|Benzeri olmayan, tek
+FAKİR|Yoksul
+FALCI|Fal bakan
+FAYDA|Yarar
+FENER|El lambası
+FERAH|Geniş, rahat
+FİDAN|Genç ağaç
+FİKİR|Düşünce
+FİLİZ|Tohumdan çıkan yeni sürgün
+FİNAL|Son
+FİNİŞ|Yarışta bitiş çizgisi
+FİRMA|Şirket
+FİYAT|Etiketteki rakam
+FİZİK|Madde ve enerji bilimi
+FOLYO|İnce metal sargı
+FORUM|Açık tartışma
+FOSİL|Taşlaşmış canlı kalıntısı
+FIKRA|Kısa komik anlatı
+FIRIN|Ekmeğin pişirildiği yer
+GARAJ|Arabaların saklandığı yer
+GARİP|Tuhaf
+GAYET|Oldukça
+GAZOZ|Köpüklü bir içecek
+GELİN|Düğünün kadın kahramanı
+GELİR|Kazanç
+GENEL|Herkesi ilgilendiren
+GENİŞ|Dar karşıtı
+GEREK|Lüzum
+GEREÇ|Malzeme
+GEÇİT|Dağlar arası yol
+GİDİŞ|Geliş karşıtı
+GİRİŞ|Başlangıç
+GİTAR|Telli bir çalgı
+GİYSİ|Elbise
+GİZEM|Sır
+GİZLİ|Açık olmayan, saklı
+GORİL|Dev maymun
+GURUR|Övünme duygusu
+GÖBEK|Karnın ortası
+GÖLGE|Güneşin vurmadığı yer
+GÖNÜL|Kalp
+GÖREV|Vazife
+GÖRÜŞ|Fikir
+GÖVDE|Ağacın ana kısmı
+GÖĞÜS|Kalbin bulunduğu yer
+GÜLÜŞ|Gülme işi
+GÜMÜŞ|Parlak beyaz maden
+GÜNAH|Dinen kötü sayılan
+GÜNEY|Kuzey karşıtı
+GÜNEŞ|Gündüzün yıldızı
+GÜZEL|Çirkin karşıtı
+GÜÇLÜ|Kuvvetli
+HACİM|Uzayda kaplanan boşluk
+HAFİF|Ağır karşıtı
+HAFTA|Yedi gün
+HAKEM|Maçı yöneten kişi
+HAKİM|Davaya bakan kişi
+HALAT|Kalın ip
+HAMAM|Yıkanılan buharlı yer
+HAMSİ|Karadeniz balığı
+HAMUR|Yoğrulan karışım
+HAPİS|Cezaevi
+HARAP|Yıkık
+HASAT|Ürünün toplanması
+HASTA|Sağlıklı olmayan
+HAVLU|Yıkanınca kurulanılır
+HAVUZ|Yüzülen yer
+HAVUÇ|Turuncu kök sebze
+HAYAL|Gerçek olmayan düş
+HAYAT|Yaşam
+HAYIR|Evet karşıtı
+HAZIR|Amade
+HEDEF|Amaç, maksat
+HEKİM|Doktor
+HELAL|Dince serbest
+HELVA|Tatlı lokma
+HEMEN|Çabucak
+HEPSİ|Tamamı
+HEYET|Kurul
+HİLAL|Yeni ay
+HİSSE|Pay
+HOROZ|İbikli bir hayvan
+HUKUK|Yasalar bilimi
+HUZUR|Rahatlık
+HÜCRE|Canlıların temel birimi
+HÜCUM|Saldırı
+HÜKÜM|Yargı kararı
+HÜZÜN|Keder
+HIRKA|Önü açık örgü
+HIZLI|Çabuk giden

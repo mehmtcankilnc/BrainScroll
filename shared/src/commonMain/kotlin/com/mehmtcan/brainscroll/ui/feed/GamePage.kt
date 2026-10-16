@@ -5,6 +5,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.mehmtcan.brainscroll.game.guide.GuideStep
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.hanoi.HanoiSnapshot
+import com.mehmtcan.brainscroll.game.queens.QueensSnapshot
+import com.mehmtcan.brainscroll.game.crossword.CrosswordSnapshot
+import com.mehmtcan.brainscroll.game.blockout.BlockOutSnapshot
+import com.mehmtcan.brainscroll.game.tents.TentsSnapshot
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
 import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
@@ -16,6 +20,10 @@ import com.mehmtcan.brainscroll.game.target.TargetSnapshot
 import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.hanoi.HanoiPage
+import com.mehmtcan.brainscroll.ui.queens.QueensPage
+import com.mehmtcan.brainscroll.ui.crossword.CrosswordPage
+import com.mehmtcan.brainscroll.ui.blockout.BlockOutPage
+import com.mehmtcan.brainscroll.ui.tents.TentsPage
 import com.mehmtcan.brainscroll.ui.lights.LightsPage
 import com.mehmtcan.brainscroll.ui.line.LinePage
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
@@ -108,6 +116,34 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 page = item,
                 onMove = { from, to -> actions.moveDisk(index, from, to) },
                 onRestart = { actions.restartHanoi(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is QueensSnapshot -> QueensPage(
+                page = item,
+                onTap = { cell -> actions.toggleQueen(index, cell) },
+                onRestart = { actions.restartQueens(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is TentsSnapshot -> TentsPage(
+                page = item,
+                onTap = { cell -> actions.tapTent(index, cell) },
+                onRestart = { actions.restartTents(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is BlockOutSnapshot -> BlockOutPage(
+                page = item,
+                onSlide = { piece, to -> actions.slideBlock(index, piece, to) },
+                onRestart = { actions.restartBlockOut(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is CrosswordSnapshot -> CrosswordPage(
+                page = item,
+                onPlace = { cell, letter -> actions.placeLetter(index, cell, letter) },
+                onErase = { cell -> actions.eraseLetter(index, cell) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )

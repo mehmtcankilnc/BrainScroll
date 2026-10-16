@@ -3,11 +3,16 @@ package com.mehmtcan.brainscroll.ui.home
 import androidx.compose.runtime.Composable
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.game_hanoi
+import brainscroll.shared.generated.resources.game_jigsaw
+import brainscroll.shared.generated.resources.game_blockout
+import brainscroll.shared.generated.resources.game_crossword
 import brainscroll.shared.generated.resources.game_lights
 import brainscroll.shared.generated.resources.game_line
 import brainscroll.shared.generated.resources.game_memory
 import brainscroll.shared.generated.resources.game_mines
 import brainscroll.shared.generated.resources.game_pipes
+import brainscroll.shared.generated.resources.game_queens
+import brainscroll.shared.generated.resources.game_tents
 import brainscroll.shared.generated.resources.game_slide
 import brainscroll.shared.generated.resources.game_sudoku
 import brainscroll.shared.generated.resources.game_target
@@ -30,6 +35,11 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.Target -> Res.string.game_target
         GameKind.Pipes -> Res.string.game_pipes
         GameKind.Hanoi -> Res.string.game_hanoi
+        GameKind.Queens -> Res.string.game_queens
+        GameKind.Tents -> Res.string.game_tents
+        GameKind.Jigsaw -> Res.string.game_jigsaw
+        GameKind.BlockOut -> Res.string.game_blockout
+        GameKind.Crossword -> Res.string.game_crossword
         GameKind.Line -> Res.string.game_line
     },
 )

@@ -62,14 +62,14 @@ class LineSolverTest {
 
     @Test
     fun aSolveFindsALineThatFollowsTheRules() {
-        val puzzle = LineSchedule.puzzleFor(20740)
+        val puzzle = LineFixtures.board
         val line = assertNotNull(LineSolver.solve(puzzle.size, puzzle.checkpoints))
         assertContentEquals(puzzle.solution, line, "the board has one line, so it is that one")
     }
 
     @Test
     fun aSolveContinuesAPrefixAndRefusesOneThatBreaksARuleOrLeadsNowhere() {
-        val puzzle = LineSchedule.puzzleFor(20740)
+        val puzzle = LineFixtures.board
         val solution = puzzle.solution
         val half = solution.copyOf(solution.size / 2)
         assertContentEquals(solution, LineSolver.solve(puzzle.size, puzzle.checkpoints, half))

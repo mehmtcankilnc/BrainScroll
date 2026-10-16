@@ -35,40 +35,15 @@ data class LineState(
     val path: List<Int>,
     /** How many numbers the line has passed. */
     val reached: Int,
+    /** Squares put on the line so far, counting the ones that were taken off and put again. */
+    val moves: Int,
+    /** Squares taken back by the undo button, a restart or a tap on an earlier square: what the page calls mistakes. */
     val undos: Int,
     val hintsUsed: Int,
     val status: LineStatus,
     val canUndo: Boolean,
     val canRestart: Boolean,
 )
-
-/** Stars of a solved board (docs/tek-cizgi-plan.md). */
-object LineScoring {
-    const val MAX_STARS = 3
-
-    /** 3 stars without an undo, 2 with up to three, 1 with more; a hint takes one star off, never below 0. */
-    fun stars(undos: Int, hintsUsed: Int): Int {
-        val base = when {
-            undos == 0 -> 3
-            undos <= 3 -> 2
-            else -> 1
-        }
-        return if (hintsUsed > 0) base - 1 else base
-    }
-
-    /**
-     * The one number a result keeps as its guess and the server gets as its moves: 1 + undos (up to 99) + 100 * hints (up
-     * to 9). It is never 0 (the server wants at least one move), and the server works the stars out of it the same way
-     * (`line_stars` in supabase/migrations/20261014090000_line_daily.sql).
-     */
-    fun encode(undos: Int, hintsUsed: Int): Int = 1 + undos.coerceIn(0, 99) + 100 * hintsUsed.coerceIn(0, 9)
-
-    fun undosOf(code: Int): Int = (code - 1).coerceAtLeast(0) % 100
-
-    fun hintsOf(code: Int): Int = (code - 1).coerceAtLeast(0) / 100
-
-    fun starsOf(code: Int): Int = stars(undosOf(code), hintsOf(code))
-}
 
 /**
  * The rules of the one-line game, free of UI and time.
@@ -81,6 +56,7 @@ object LineScoring {
 class LineGame(val puzzle: LinePuzzle) {
     private val path = ArrayList<Int>()
     private var reached = 0
+    private var moves = 0
     private var undos = 0
     private var hintsUsed = 0
     private val size = puzzle.size
@@ -92,6 +68,7 @@ class LineGame(val puzzle: LinePuzzle) {
             size = size,
             path = path.toList(),
             reached = reached,
+            moves = moves,
             undos = undos,
             hintsUsed = hintsUsed,
             status = if (isFinished) LineStatus.Won else LineStatus.Playing,
@@ -111,6 +88,7 @@ class LineGame(val puzzle: LinePuzzle) {
             if (cell != puzzle.checkpoints[0]) return LineResult.Ignored
             path += cell
             reached = 1
+            moves++
             return LineResult.Started
         }
         val head = path.last()
@@ -134,6 +112,7 @@ class LineGame(val puzzle: LinePuzzle) {
             reached++
         }
         path += cell
+        moves++
         return if (isFinished) LineResult.Solved else LineResult.Extended
     }
 

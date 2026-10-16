@@ -140,7 +140,7 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                 }
             }
 
-            if (GameKind.Word in enabled) {
+            if (GameKind.Word in enabled || GameKind.Crossword in enabled) {
                 Column(Modifier.fillMaxWidth().padding(top = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     BasicText(stringResource(Res.string.editor_language), style = type.body.copy(color = colors.textPrimary))
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {

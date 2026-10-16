@@ -1,6 +1,9 @@
 package com.mehmtcan.brainscroll.ui.home
 
 import androidx.compose.foundation.Canvas
+import com.mehmtcan.brainscroll.ui.queens.drawCrown
+import com.mehmtcan.brainscroll.ui.tents.drawTent
+import com.mehmtcan.brainscroll.ui.tents.drawTree
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +34,9 @@ import com.mehmtcan.brainscroll.game.mines.MinesGame
 import com.mehmtcan.brainscroll.game.mines.MinesState
 import com.mehmtcan.brainscroll.game.pipes.PipesGenerator
 import com.mehmtcan.brainscroll.game.slide.SlideGame
+import com.mehmtcan.brainscroll.game.sudoku.JigsawGenerator
+import com.mehmtcan.brainscroll.ui.blockout.drawTargetMark
+import com.mehmtcan.brainscroll.ui.sudoku.drawRegionBorders
 import com.mehmtcan.brainscroll.game.sudoku.SudokuGenerator
 import com.mehmtcan.brainscroll.game.target.TargetGenerator
 import com.mehmtcan.brainscroll.game.tubes.TubesGame
@@ -74,6 +81,11 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.Target -> TargetThumb(side)
             GameKind.Pipes -> PipesThumb(side)
             GameKind.Hanoi -> HanoiThumb(side)
+            GameKind.Queens -> QueensThumb(side)
+            GameKind.Tents -> TentsThumb(side)
+            GameKind.Jigsaw -> JigsawThumb(side)
+            GameKind.BlockOut -> BlockOutThumb(side)
+            GameKind.Crossword -> CrosswordThumb(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -401,6 +413,181 @@ private fun HanoiThumb(side: Dp) {
                     androidx.compose.ui.geometry.CornerRadius(diskHeight / 2.5f),
                 )
             }
+        }
+    }
+}
+
+/** A small 4x4 board like the game's: rounded cells in two tones, the crowns of a finished board, one of them white (locked). */
+@Composable
+private fun QueensThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val size = 4
+    val queens = mapOf(0 * size + 1 to false, 1 * size + 3 to true, 2 * size + 0 to false, 3 * size + 2 to false)
+    val gap = side * 0.03f
+    val tile = (side * 0.9f - gap * (size - 1)) / size
+    Grid(rows = size, cols = size, gap = gap) { r, c ->
+        val fill = if ((r + c) % 2 == 1) colors.borderStrong.copy(alpha = 0.22f) else colors.bgSurface
+        Cell(tile, fill, colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.2f) {
+            val locked = queens[r * size + c]
+            if (locked != null) {
+                Canvas(Modifier.size(tile * 0.7f)) { drawCrown(if (locked) colors.textPrimary else colors.pendingFill) }
+            }
+        }
+    }
+}
+
+/** A small 4x4 board: trees and the tents next to them, on cells like the game's. */
+@Composable
+private fun TentsThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val size = 4
+    // true is a tent, false a tree
+    val pieces = mapOf(0 * size + 0 to false, 0 * size + 1 to true, 1 * size + 3 to false, 2 * size + 3 to true, 2 * size + 0 to true, 3 * size + 0 to false)
+    val gap = side * 0.03f
+    val tile = (side * 0.9f - gap * (size - 1)) / size
+    Grid(rows = size, cols = size, gap = gap) { r, c ->
+        Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.2f) {
+            val tent = pieces[r * size + c]
+            if (tent != null) {
+                Canvas(Modifier.size(tile * 0.72f)) { if (tent) drawTent(colors.pendingFill, colors.bgSurface) else drawTree(colors.correctFill, colors.borderStrong) }
+            }
+        }
+    }
+}
+
+// --- Jigsaw sudoku: the regions of a real board, drawn like the board of the game (dark cells, thick rounded lines) ---
+
+private val JigsawSample by lazy { JigsawGenerator.generate(56) }
+
+/**
+ * The numbers shown on the jigsaw picture: in a few regions the given cell nearest the middle of the region, and in two more the
+ * right number of an empty cell, as if the player had entered it. Each pair is a cell and whether it is entered.
+ */
+private val JigsawShown by lazy {
+    val puzzle = JigsawSample
+    val regionOf = puzzle.layout.regionOf
+    fun middleOf(region: Int, wanted: (Int) -> Boolean): Int? {
+        val cells = (0 until 81).filter { regionOf[it] == region }
+        val row = cells.sumOf { it / 9 } / 9f
+        val column = cells.sumOf { it % 9 } / 9f
+        return cells.filter(wanted).minByOrNull { (it / 9 - row) * (it / 9 - row) + (it % 9 - column) * (it % 9 - column) }
+    }
+    val given = (0 until 6).mapNotNull { region -> middleOf(region) { puzzle.givens[it] != 0 }?.let { it to false } }
+    val entered = (6 until 8).mapNotNull { region -> middleOf(region) { puzzle.givens[it] == 0 }?.let { it to true } }
+    given + entered
+}
+
+@Composable
+private fun JigsawThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val puzzle = JigsawSample
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    Canvas(Modifier.size(side * 0.88f)) {
+        val n = 9
+        val frame = size.width * 0.035f
+        val gap = size.width * 0.018f
+        val cell = (size.width - 2 * frame - (n - 1) * gap) / n
+        val step = cell + gap
+        val inner = androidx.compose.ui.geometry.Offset(frame, frame)
+        val corner = androidx.compose.ui.geometry.CornerRadius(cell * 0.22f)
+        drawRoundRect(colors.borderStrong.copy(alpha = 0.3f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(frame * 1.8f))
+        for (r in 0 until n) for (c in 0 until n) {
+            drawRoundRect(colors.bgSurface, androidx.compose.ui.geometry.Offset(inner.x + c * step, inner.y + r * step), androidx.compose.ui.geometry.Size(cell, cell), corner)
+        }
+        // A few numbers: the givens in white, the entered ones in blue like in the game.
+        for ((index, entered) in JigsawShown) {
+            val digit = if (entered) puzzle.solution[index] else puzzle.givens[index]
+            val text = measurer.measure(
+                digit.toString(),
+                androidx.compose.ui.text.TextStyle(fontSize = (cell * 1.05f).toSp(), fontWeight = if (entered) FontWeight.Medium else FontWeight.Bold),
+            )
+            val center = androidx.compose.ui.geometry.Offset(inner.x + (index % n) * step + cell / 2, inner.y + (index / n) * step + cell / 2)
+            drawText(
+                text,
+                color = if (entered) colors.streakAnswer else colors.textPrimary,
+                topLeft = androidx.compose.ui.geometry.Offset(center.x - text.size.width / 2f, center.y - text.size.height / 2f),
+            )
+        }
+        drawRegionBorders(
+            regionOf = puzzle.layout.regionOf,
+            size = n,
+            step = step,
+            origin = androidx.compose.ui.geometry.Offset(inner.x - gap / 2, inner.y - gap / 2),
+            thickness = frame * 0.6f,
+            radius = cell * 0.55f,
+            color = com.mehmtcan.brainscroll.ui.sudoku.boardLine(colors),
+        )
+        drawRoundRect(
+            com.mehmtcan.brainscroll.ui.sudoku.boardLine(colors),
+            topLeft = androidx.compose.ui.geometry.Offset(frame * 0.3f, frame * 0.3f),
+            size = androidx.compose.ui.geometry.Size(size.width - frame * 0.6f, size.height - frame * 0.6f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(frame * 1.6f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = frame * 0.6f),
+        )
+    }
+}
+
+// --- Block out: a small board with a few pieces, the orange target in the middle row and the exit beside it ---
+
+@Composable
+private fun BlockOutThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    // The pieces of a real-looking board: letters are pieces, X is the target, . is empty.
+    val rows = listOf("ABB.C", "A.DDC", ".XXE.", "FF.E.", "..GG.")
+    val palette = com.mehmtcan.brainscroll.ui.blockout.piecePalette(colors)
+    Canvas(Modifier.size(side * 0.88f)) {
+        val n = 5
+        val gap = size.width * 0.03f
+        val cell = (size.width - gap * (n - 1)) / n
+        val step = cell + gap
+        for (r in 0 until n) for (c in 0 until n) {
+            drawRoundRect(colors.bgSurface, androidx.compose.ui.geometry.Offset(c * step, r * step), androidx.compose.ui.geometry.Size(cell, cell), androidx.compose.ui.geometry.CornerRadius(cell * 0.2f))
+        }
+        for (letter in rows.joinToString("").filter { it != '.' }.toSet()) {
+            val cells = (0 until n * n).filter { rows[it / n][it % n] == letter }
+            val first = cells.first()
+            val last = cells.last()
+            val left = (first % n) * step
+            val top = (first / n) * step
+            val width = (last % n - first % n) * step + cell
+            val height = (last / n - first / n) * step + cell
+            val color = if (letter == 'X') colors.streakDay else palette[(letter - 'A') % palette.size]
+            drawRoundRect(color, androidx.compose.ui.geometry.Offset(left + gap * 0.3f, top + gap * 0.3f), androidx.compose.ui.geometry.Size(width - gap * 0.6f, height - gap * 0.6f), androidx.compose.ui.geometry.CornerRadius(cell * 0.25f))
+            if (letter == 'X') {
+                // The arrows of the target.
+                val side = cell * 0.5f
+                drawTargetMark(colors.bgPage, androidx.compose.ui.geometry.Offset(left + width / 2 - side / 2, top + height / 2 - side / 2), side)
+            }
+        }
+        // The exit: a notch in the frame on the right of the middle row.
+        drawRoundRect(colors.streakDay, androidx.compose.ui.geometry.Offset(size.width - gap * 0.5f, 2 * step + cell * 0.25f), androidx.compose.ui.geometry.Size(gap * 0.5f, cell * 0.5f))
+    }
+}
+
+// --- Crossword: a small arrow crossword, clue squares with an arrow and the letters of two answers ---
+
+@Composable
+private fun CrosswordThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    // # is a clue square, '>' a clue with an arrow to the right, 'v' a clue with an arrow down; other characters are letters.
+    val rows = listOf(">KAR", "vA.A", "SU.Y", "O.EV").map { it }
+    val size = 4
+    val gap = side * 0.03f
+    val tile = (side * 0.88f - gap * (size - 1)) / size
+    Grid(rows = size, cols = size, gap = gap) { r, c ->
+        when (val ch = rows[r][c]) {
+            '>', 'v' -> Cell(tile, colors.bgRaised, colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.15f) {
+                Canvas(Modifier.size(tile * 0.5f)) {
+                    val w = this.size.width
+                    val arrow = androidx.compose.ui.graphics.Path().apply {
+                        if (ch == '>') { moveTo(w * 0.2f, w * 0.1f); lineTo(w * 0.9f, w * 0.5f); lineTo(w * 0.2f, w * 0.9f) } else { moveTo(w * 0.1f, w * 0.2f); lineTo(w * 0.5f, w * 0.9f); lineTo(w * 0.9f, w * 0.2f) }
+                        close()
+                    }
+                    drawPath(arrow, colors.streakDay)
+                }
+            }
+            '.' -> Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.15f)
+            else -> Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.15f) { Mark(ch.toString(), tile * 0.6f, colors.textPrimary) }
         }
     }
 }

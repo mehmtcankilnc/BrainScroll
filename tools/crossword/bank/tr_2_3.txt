@@ -1,0 +1,148 @@
+AK|Beyaz
+AZ|Çok karşıtı
+AŞ|Yemek
+EK|Eklenen şey
+İL|Vilayet
+İŞ|Çalışma
+OY|Seçimde verilir
+ÖD|Safra
+ÖN|Arka karşıtı
+ŞU|İşaret zamiri
+ÜÇ|Bir sayı
+AH|Sızlanma sözü
+EY|Seslenme sözü
+NE|Bir soru sözü
+AD|İsim
+AF|Bağışlama
+AÇ|Tok karşıtı
+AN|Çok kısa zaman
+AS|İskambilde bir kart
+DO|Bir nota
+RE|Bir nota
+Mİ|Bir nota
+FA|Bir nota
+LA|Bir nota
+Sİ|Bir nota
+BU|İşaret zamiri
+ABA|Kalın dokuma kumaş
+ACI|Tatlı karşıtı
+ADİ|Değersiz, bayağı
+AĞA|Köyün ileri geleni
+AĞI|Zehir
+ALP|Yiğit
+ANA|Anne
+ANI|Hatıra
+ARA|Aralık
+ASA|Baston
+BAĞ|Üzüm yetişen yer
+BAŞ|Vücudun en üst kısmı
+BEL|Gövdenin ortası
+BEN|Vücuttaki küçük leke
+BİN|Yüzün on katı
+BOL|Bereketli
+BOY|Uzunluk
+BOŞ|Dolu karşıtı
+CEP|Pantolonda bulunur
+CİN|Masallarda geçen ruh
+ÇİT|Bahçeyi çevirir
+DAM|Evin çatısı
+DAR|Geniş karşıtı
+DİK|Yatay olmayan
+DİL|Konuşma organı
+DON|Soğukta oluşan buz
+DÜŞ|Uykuda görülür
+EBE|Doğum yaptıran kadın
+EŞ|Karı ya da koca
+FEN|Bilim dalı
+FİL|Hortumlu bir hayvan
+FOK|Bir kutup hayvanı
+GÜN|Yirmi dört saat
+GÜZ|Sonbahar
+HAM|Pişmemiş
+HAP|Yutulan ilaç
+HAZ|Zevk
+HİÇ|Sıfır
+HIZ|Süratlilik
+HOŞ|Güzel, tatlı
+HÜR|Özgür
+İRİ|Büyük yapılı
+KAT|Binanın bir bölümü
+KAZ|Bir su kuşu
+KEL|Saçsız
+KEP|Başa takılan
+KIR|Şehir dışı
+KIZ|Erkek çocuğun karşıtı
+KOÇ|Erkek koyun
+KOZ|Kelebeğin yuvası
+KÖR|Göremeyen
+KUL|Tanrı karşısında insan
+KUR|Döviz fiyatı
+MAT|Parlak olmayan
+MİL|Deniz ölçüsü
+MUZ|Bir meyve
+NAZ|Cilve
+OVA|Dağlar arasındaki düzlük
+OYA|İğne ya da tığla yapılan süs
+ÖLÜ|Yaşamayan, cansız
+PAK|Temiz
+PAT|Satrançta berabere
+PEK|Çok, fazlasıyla
+PUL|Mektuba yapışır
+PUT|Tapılan heykel
+SAĞ|Sol karşıtı
+SAL|Bir deniz taşıtı
+SAN|Ün, ad
+SEN|İkinci tekil kişi
+SET|Tenisin bir bölümü
+ŞAH|Satrançta bir taş
+ŞEF|Mutfağın başı
+TAN|Şafak
+TAY|Atın yavrusu
+TEN|Derinin rengi
+TEZ|Çabuk
+TİP|Karakter, çeşit
+TOK|Aç karşıtı
+TON|Bin kilogram
+TÜP|Gaz saklanan kap
+ÜST|Alt karşıtı
+VAN|Gölüyle ünlü şehrimiz
+YAK|Tüylü Himalaya sığırı
+YAR|Sevgili
+YAY|Ok fırlatır
+YEL|Rüzgâr, bad
+YEM|Hayvan yiyeceği
+YOK|Var karşıtı
+ZAM|Fiyat artışı
+ARK|Su kanalı
+ASİ|İsyancı
+CAZ|Bir müzik türü
+DİN|İnanç sistemi
+DUL|Eşi ölmüş
+FAL|Kahveden bakılır
+GAR|Tren istasyonu
+HİS|Duygu
+İKİ|Bir sayı
+KAN|Damarda akar
+KAS|Güç veren doku
+KİR|Pislik
+LAF|Söz
+LİG|Takımların yarıştığı düzen
+LOR|Tuzsuz bir peynir
+NAL|Atın ayağına çakılır
+RET|Kabul etmeme
+SAF|Karışık olmayan
+SON|Bitiş
+TAS|Çukur kap
+TEK|Çift olmayan
+TÜY|Kuşun örtüsü
+YAS|Ölüm acısı
+ÇAĞ|Devir
+KÜF|Ekmekte oluşan mantar
+KÖK|Ağacın toprakta kalan kısmı
+KİN|Öç
+ÇÖL|Sahra
+HAÇ|Hristiyanların simgesi
+ŞAN|Ün
+ARŞ|Gökyüzünün en yüksek katı
+BAR|İçki servis edilen yer
+BİT|Saçta bulunan haşere

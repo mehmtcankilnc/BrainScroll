@@ -1,0 +1,166 @@
+AT|Bir binek hayvanı
+EV|Hane
+ET|Kasaptan alınan şey
+OT|Bir bitki
+ON|Bir sayı
+İZ|Geride kalan işaret
+ER|Rütbesiz asker
+EN|Genişlik
+AY|Dünya'nın uydusu
+SU|Hayat kaynağı
+OK|Yayın fırlattığı
+İP|Dikişte kullanılır
+ADA|Denizle çevrili kara
+ARI|Bal yapan hayvan
+ATA|Dede
+AYI|Kış uykusuna yatan hayvan
+BAL|Arının yaptığı besin
+BEY|Efendi anlamında
+BİR|Bir sayı
+BUZ|Donmuş su
+ÇAY|Kırmızı renkli bir içecek
+ÇİM|Yeşil bitki örtüsü
+DAĞ|Zirvesi olan yükselti
+DAL|Ağacın kolu
+DİŞ|Ağızda bulunur
+DİZ|Bacakta bulunan bir eklem
+DUT|Bir meyve
+FAR|Arabanın ön lambası
+GÖZ|Görme organı
+GÖL|Çevresi kara olan su
+GÜL|Dikenli bir çiçek
+HAL|Durum
+HAN|Kervansaray
+HAK|Adalet
+KAR|Bir yağış türü
+KAŞ|Gözün üstündeki tüyler
+KUŞ|Kanatlı hayvanların genel adı
+KÖY|Küçük yerleşim yeri
+KUM|Plajda bulunur
+KİM|Bir soru sözü
+KOL|Omuzdan bileğe kadar
+KAP|Yemek konan
+MAL|Mülk
+MOR|Bir renk
+NAR|Bir meyve
+NEM|Havadaki su buharı
+PAY|Hisse
+RAF|Kitap dizilen yer
+RAY|Tren yolu
+SAZ|Telli çalgı
+SES|Kulakla duyulan
+SİS|Görüşü azaltan bulut
+SOL|Sağ karşıtı
+SÜT|İneğin verdiği besin
+ŞAL|Omuza atılan örtü
+TAŞ|Sert kaya parçası
+TEL|İnce metal ip
+TÜL|Perde kumaşı
+YAĞ|Zeytinden çıkarılır
+YAZ|Bir mevsim
+YOL|Gidilen güzergâh
+ÇAM|İğne yapraklı ağaç
+ÇOK|Az karşıtı
+DEV|Çok iri
+GAZ|Maddenin bir hali
+GEÇ|Erken karşıtı
+GİZ|Sır
+HAT|Çizgi
+IRK|Soy
+KİL|Çamur gibi toprak
+MUM|Işık veren bir eşya
+ODA|Evin bir bölümü
+PAS|Demirin çürümesi
+RUH|Tin
+SAÇ|Başın kılları
+SEL|Taşan dere
+TAT|Lezzet
+TIP|Hekimlik bilimi
+ULU|Büyük
+VAR|Yok'un tersi
+YER|Üzerinde durulan
+YIL|On iki ay
+ZAR|Tavlada atılır
+ZOR|Kolay karşıtı
+ALAN|Geniş açık yer
+ANNE|Çocuğu olan kadın
+ARPA|Tahıl çeşidi
+AYAK|Yürümeyi sağlayan organ
+BABA|Erkek ebeveyn
+BACA|Dumanı çıkaran
+BANT|Yapışkan şerit
+CAMİ|İbadet yeri
+DERE|Küçük akarsu
+DOST|Arkadaş, yaren
+DÖRT|Bir sayı
+ELMA|Bir meyve
+ERİK|Bir meyve
+EVET|Olumlu cevap
+FİLM|Sinemada izlenir
+HAVA|Solunan şey
+İLAÇ|Hastaya verilir
+İNEK|Süt veren bir hayvan
+İPEK|Kozadan elde edilen kumaş
+KARA|Siyah
+KASA|Para saklamaya yarayan eşya
+KEDİ|Miyavlayan hayvan
+KUYU|Su çıkarılan çukur
+KÜL|Yanma sonucu oluşan toz
+MAVİ|Gökyüzünün rengi
+NANE|Ferahlatan ot
+OKUL|Öğrencinin gittiği yer
+ORTA|Tam merkez
+OYUN|Çocukların eğlencesi
+ROTA|Gemi yolu
+SAAT|Zamanı gösteren eşya
+SARI|Bir renk
+SOBA|Isıtmaya yarayan bir eşya
+TAHT|Kralın oturduğu yer
+TAVA|Yassı pişirme kabı
+TEPE|Küçük yükselti
+TREN|Raylarda giden bir taşıt
+UÇAK|Havada giden taşıt
+UZAK|Yakın karşıtı
+ÜZÜM|Bağda yetişir
+YAMA|Delik kapatır
+YARI|Bütünün ikide biri
+ALTI|Bir sayı
+ARAÇ|Taşıt
+AVCI|Av yapan
+BİNA|Yapı
+BORU|Su taşıyan
+CİLT|Deri
+ÇAKI|Katlanır küçük bıçak
+ÇATI|Evin üstü
+DANS|Müzikle yapılan hareket
+DOLU|Boş karşıtı
+EKİM|Bir ay
+ELÇİ|Devlet temsilcisi
+EŞEK|Anıran hayvan
+EVLİ|Evlenmiş kimse
+FARE|Peynir seven kemirgen
+GAGA|Kuşun ağzı
+GECE|Gündüz karşıtı
+GEMİ|Bir deniz taşıtı
+HALK|Toplum
+HARF|Alfabenin parçası
+İŞÇİ|Fabrikada çalışan
+KALE|Eski savunma yapısı
+KESE|Küçük para torbası
+KURT|Uluyan bir yırtıcı hayvan
+LİRA|Para birimimiz
+MERT|Cesur
+ODUN|Sobada yakılan şey
+OMUZ|Kolun gövdeye bağlandığı yer
+ÖĞLE|Gün ortası
+ÖYKÜ|Hikâye
+PARA|Alışverişte verilir
+SIRA|Beklerken girilen dizi
+ŞAKA|Eğlence için söylenen
+UYKU|Gözleri kapatıp dinlenme
+ÜLKE|Devlet toprağı
+VADİ|Dağlar arasındaki çukur
+VİDA|Dişli çivi
+YAKA|Gömleğin boyun kısmı
+YAPI|Bina
+YAYA|Yürüyen kişi

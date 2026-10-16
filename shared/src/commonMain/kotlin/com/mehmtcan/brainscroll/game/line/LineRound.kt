@@ -23,14 +23,7 @@ data class LineSnapshot(
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status == LineStatus.Won
     override val kind: GameKind get() = GameKind.Line
-
-    /** The stars this board is worth now (final once it is won). */
-    val stars: Int get() = LineScoring.stars(state.undos, state.hintsUsed)
 }
-
-/** The stars of a finished one-line result: its only guess is the score code (see [LineScoring.encode]). */
-val FinishedRound.lineStars: Int
-    get() = LineScoring.starsOf(guesses.firstOrNull()?.toIntOrNull() ?: 1)
 
 /**
  * One one-line board: a [LineGame] plus the time and the list of actions, which is all that is needed to save it and
@@ -39,8 +32,9 @@ val FinishedRound.lineStars: Int
  * The time works as in the other games: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS].
  * The clock starts with the first action. The game cannot be lost, so a result is always a win.
  *
- * A hint does not make the round neutral: it counts for the streak and the statistics, and costs a star instead (see
- * [LineScoring]). So [assisted] stays false and there is no guide step.
+ * The hint button is the game's own help, and a round in which it was used counts as helped ([assisted]) like a round of
+ * another game that the guide helped with: it is left out of the statistics. There is no guide step. The page keeps two
+ * counts: the mistakes (the undos) and the moves; the result keeps the moves.
  *
  * [language] only fills the language of the saved result (the table needs one); this game has no language.
  */
@@ -61,7 +55,7 @@ class LineRound(
 
     override val kind: GameKind get() = GameKind.Line
 
-    override val assisted: Boolean get() = false
+    override val assisted: Boolean get() = game.state.hintsUsed > 0
 
     override fun markAssisted() = Unit
 
@@ -109,14 +103,13 @@ class LineRound(
         guesses = actions.toList(),
         input = elapsedMs.toString(),
         position = index,
-        assisted = false,
+        assisted = assisted,
         game = GameKind.Line,
     )
 
     /**
      * The history row. Its `answer` is only the size (the table keeps at most 32 characters there) and its only guess the
-     * score code, which holds the undos and the hints and is what the stars are worked out from. A finished board is never
-     * replayed.
+     * number of moves. A finished board is never replayed.
      */
     override fun toFinished(finishedAt: Long): FinishedRound {
         val state = game.state
@@ -125,9 +118,9 @@ class LineRound(
             mode = Mode.ENDLESS,
             language = language,
             answer = "${puzzle.size}x${puzzle.size}",
-            guesses = listOf(LineScoring.encode(state.undos, state.hintsUsed).toString()),
+            guesses = listOf(maxOf(1, state.moves).toString()),
             outcome = Outcome.WON,
-            assisted = false,
+            assisted = assisted,
             finishedAt = finishedAt,
             durationMs = elapsedMs,
             game = GameKind.Line,

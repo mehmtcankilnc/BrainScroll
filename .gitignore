@@ -47,3 +47,5 @@ secrets.properties
 # Supabase yerel
 supabase/.temp/
 supabase/.branches/
+
+pending_changes_*.txt

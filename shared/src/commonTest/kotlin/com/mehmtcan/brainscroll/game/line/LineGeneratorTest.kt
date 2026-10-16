@@ -97,34 +97,17 @@ class LineGeneratorTest {
     }
 
     @Test
-    fun theWeekGrowsFromFiveBySevenAndMondayIsDayThree() {
-        assertEquals("2026-10-14", IstanbulDay.format(20740))
-        assertEquals(2, LineSchedule.weekday(20740), "2026-10-14 is a Wednesday")
-        assertEquals(3, LineSchedule.weekday(0), "1970-01-01 was a Thursday")
-        assertEquals(6, LineSchedule.weekday(-4), "1969-12-28 was a Sunday")
-        assertEquals(0, LineSchedule.weekday(20738), "20738 is a Monday")
-        assertEquals(listOf(5, 5, 5, 6, 6, 7, 7), (20738L..20744L).map { LineSchedule.specFor(it).size })
-        assertEquals(listOf(4, 4, 4, 5, 5, 6, 6), (20738L..20744L).map { LineSchedule.specFor(it).checkpoints })
-    }
-
-    @Test
-    fun everyDailyBoardOfTheFirstYearHasOneLine() {
-        val start = 20_740L
+    fun boardsOfEverySizeHaveOneLineAndAreTheSameForTheSameSeed() {
+        val sizes = listOf(5 to 4, 6 to 5, 7 to 6)
         val started = TimeSource.Monotonic.markNow()
-        for (day in start until start + 365) {
-            val puzzle = LineSchedule.puzzleFor(day)
-            val spec = LineSchedule.specFor(day)
-            assertEquals(spec.size, puzzle.size, "day $day")
-            assertTrue(puzzle.checkpoints.size in 3..puzzle.size * 2, "day $day has ${puzzle.checkpoints.size} numbers")
-            assertEquals(1, LineSolver.count(puzzle.size, puzzle.checkpoints, 2), "day $day")
-            assertWholeLine(puzzle.solution, puzzle.size, "day $day")
+        for ((size, checkpoints) in sizes) for (seed in 1L..40L) {
+            val puzzle = LineGenerator.generate(seed, size, checkpoints)
+            assertEquals(size, puzzle.size, "size $size seed $seed")
+            assertEquals(1, LineSolver.count(puzzle.size, puzzle.checkpoints, 2), "size $size seed $seed")
+            assertWholeLine(puzzle.solution, puzzle.size, "size $size seed $seed")
+            assertContentEquals(puzzle.solution, LineGenerator.generate(seed, size, checkpoints).solution)
         }
-        println("365 daily boards made and checked in ${started.elapsedNow()}")
-    }
-
-    @Test
-    fun theDailyBoardIsTheSameEveryTimeItIsAsked() {
-        assertContentEquals(LineSchedule.puzzleFor(20741).solution, LineSchedule.puzzleFor(20741).solution)
-        assertTrue(!LineSchedule.puzzleFor(20741).solution.contentEquals(LineSchedule.puzzleFor(20742).solution))
+        println("120 boards made and checked in ${started.elapsedNow()}")
+        assertTrue(!LineGenerator.generate(1, 5, 4).solution.contentEquals(LineGenerator.generate(2, 5, 4).solution))
     }
 }

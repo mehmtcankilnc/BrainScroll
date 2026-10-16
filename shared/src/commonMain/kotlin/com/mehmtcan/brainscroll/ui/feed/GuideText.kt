@@ -23,7 +23,19 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.guide_hanoi_move
+import brainscroll.shared.generated.resources.guide_jigsaw_only_digit
+import brainscroll.shared.generated.resources.guide_jigsaw_only_place
+import brainscroll.shared.generated.resources.guide_blockout_down
+import brainscroll.shared.generated.resources.guide_blockout_left
+import brainscroll.shared.generated.resources.guide_blockout_right
+import brainscroll.shared.generated.resources.guide_blockout_up
+import brainscroll.shared.generated.resources.guide_crossword_erase
+import brainscroll.shared.generated.resources.guide_crossword_letter
 import brainscroll.shared.generated.resources.guide_lights_tap
+import brainscroll.shared.generated.resources.guide_queens_place
+import brainscroll.shared.generated.resources.guide_queens_remove
+import brainscroll.shared.generated.resources.guide_tents_place
+import brainscroll.shared.generated.resources.guide_tents_remove
 import brainscroll.shared.generated.resources.guide_memory_pair
 import brainscroll.shared.generated.resources.guide_memory_partner
 import brainscroll.shared.generated.resources.guide_mines_mine
@@ -64,6 +76,23 @@ fun guideText(step: GuideStep): String {
         GuideReason.SudokuSolution -> stringResource(Res.string.guide_sudoku_solution, n[0])
         GuideReason.PipesTurn -> stringResource(Res.string.guide_pipes_turn, n[0])
         GuideReason.HanoiMove -> stringResource(Res.string.guide_hanoi_move, towerName(n[0]), towerName(n[1]))
+        GuideReason.QueensPlace -> stringResource(Res.string.guide_queens_place, n[0], n[1])
+        GuideReason.QueensRemove -> stringResource(Res.string.guide_queens_remove, n[0], n[1])
+        GuideReason.TentsPlace -> stringResource(Res.string.guide_tents_place, n[0], n[1])
+        GuideReason.TentsRemove -> stringResource(Res.string.guide_tents_remove, n[0], n[1])
+        GuideReason.JigsawOnlyDigit -> stringResource(Res.string.guide_jigsaw_only_digit, n[0])
+        GuideReason.JigsawOnlyPlace -> stringResource(Res.string.guide_jigsaw_only_place, n[0])
+        GuideReason.BlockOutSlide -> stringResource(
+            when (n[0]) {
+                0 -> Res.string.guide_blockout_up
+                1 -> Res.string.guide_blockout_down
+                2 -> Res.string.guide_blockout_left
+                else -> Res.string.guide_blockout_right
+            },
+            n[1],
+        )
+        GuideReason.CrosswordErase -> stringResource(Res.string.guide_crossword_erase, n[0], n[1])
+        GuideReason.CrosswordLetter -> stringResource(Res.string.guide_crossword_letter, step.text, n[0], n[1])
         GuideReason.LightsTap -> stringResource(Res.string.guide_lights_tap)
         GuideReason.SlideTile -> stringResource(Res.string.guide_slide_tile)
         GuideReason.TubesPour -> stringResource(Res.string.guide_tubes_pour)

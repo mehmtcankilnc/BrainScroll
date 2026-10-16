@@ -1,6 +1,13 @@
 package com.mehmtcan.brainscroll.ui
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -8,7 +15,11 @@ import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.line.LineSchedule
+import com.mehmtcan.brainscroll.game.crossword.CrosswordLayout
+import com.mehmtcan.brainscroll.game.crossword.CrosswordPuzzle
+import com.mehmtcan.brainscroll.game.crossword.CrosswordSchedule
+import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.ui.crossword.CrosswordClueTexts
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import kotlin.time.Clock
 import com.mehmtcan.brainscroll.social.DailyRow
@@ -90,45 +101,69 @@ class DailyGameUiTest {
         assertFalse(cloud.social.calls.any { it.startsWith("dailyBoard") }, "the word table is not asked for")
     }
 
-    /** Today's board, worked out as the app does, so the test knows where the squares are. */
-    private fun todaysLine() = LineSchedule.puzzleFor(IstanbulDay.dayIndex(Clock.System.now().toEpochMilliseconds()))
+    private val crosswordDay: (Long) -> GameKind = { GameKind.Crossword }
 
-    private val lineDay: (Long) -> GameKind = { GameKind.Line }
+    private fun ComposeUiTest.squareCount() = onAllNodesWithTag("crosswordSquare").fetchSemanticsNodes().size
+
+    /** Today's crossword, found the way a player would: the clues on the screen say which language's board it is. */
+    private fun ComposeUiTest.todaysCrossword(): CrosswordPuzzle {
+        val day = IstanbulDay.dayIndex(Clock.System.now().toEpochMilliseconds())
+        val shown = onAllNodesWithTag("crosswordSquare").fetchSemanticsNodes().flatMap { it.config.getOrNull(CrosswordClueTexts).orEmpty() }.map { it.drop(2) }.toSet()
+        return Language.entries.map { CrosswordSchedule.puzzleFor(day, it) }.first { board -> board.clues.all { it in shown } }
+    }
+
+    private fun ComposeUiTest.pressKey(letter: Char) {
+        val screen = onRoot().fetchSemanticsNode().boundsInRoot
+        val nodes = onAllNodes(hasText(letter.toString()) and hasClickAction()).fetchSemanticsNodes()
+        val at = nodes.indices.filter { nodes[it].boundsInRoot.let { b -> b.top >= 0f && b.bottom <= screen.bottom && b.width > 0f } }.maxBy { nodes[it].boundsInRoot.top }
+        onAllNodes(hasText(letter.toString()) and hasClickAction())[at].performClick()
+        waitForIdle()
+    }
+
+    private fun ComposeUiTest.solveCrossword(board: CrosswordPuzzle) {
+        for (cell in board.squares.indices) {
+            if (board.isClue[cell]) continue
+            onAllNodesWithTag("crosswordSquare")[cell].performSemanticsAction(SemanticsActions.OnClick)
+            mainClock.advanceTimeBy(1_000)
+            waitForIdle()
+            pressKey(board.squares[cell])
+        }
+        mainClock.advanceTimeBy(2_500)
+        waitForIdle()
+    }
 
     @Test
-    fun theHomeCardOffersOneLineAndTheBoardIsMadeAndPlayedOnItsPage() = runComposeUiTest {
-        start(openFeed = false, dailyGame = lineDay)
-        snap("210_daily_card_line")
-        assertTrue(hasAnyText("Tek Çizgi", "One Line"), "the card shows today's game")
+    fun theHomeCardOffersTheCrosswordAndItsBoardIsPlayedOnItsPageWithStars() = runComposeUiTest {
+        start(openFeed = false, dailyGame = crosswordDay)
+        snap("210_daily_card_crossword")
+        assertTrue(hasAnyText("Çapraz Bulmaca", "Crossword"), "the card shows today's game")
         onNodeWithTag("dailyCard").performClick()
-        val puzzle = todaysLine()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("lineCell").fetchSemanticsNodes().size == puzzle.cells }
-        snap("211_daily_line_start")
+        waitUntil(timeoutMillis = 10_000) { squareCount() >= CrosswordLayout.CELLS }
+        snap("211_daily_crossword_start")
         assertTrue(onAllNodesWithTag("dailyGameTitle").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(onAllNodesWithTag("starsLive").fetchSemanticsNodes().isNotEmpty(), "the daily board shows its stars")
 
-        for (cell in puzzle.solution) onAllNodesWithTag("lineCell")[cell].performClick()
-        waitForIdle()
-        snap("212_daily_line_solved")
-        assertTrue(hasAnyText("Çözüldü!", "Solved!"))
-        assertTrue(onAllNodesWithTag("lineShare").fetchSemanticsNodes().isNotEmpty(), "the solved board offers to share the result")
+        solveCrossword(todaysCrossword())
+        snap("212_daily_crossword_solved")
+        assertTrue(hasAnyText("Bulmaca çözüldü!", "Crossword solved!"))
+        assertTrue(onAllNodesWithTag("crosswordShare").fetchSemanticsNodes().isNotEmpty(), "the solved board offers to share the result")
+        assertTrue(onAllNodesWithTag("stars").fetchSemanticsNodes().isNotEmpty(), "and shows the stars it earned")
     }
 
     @Test
     fun afterSolvingTheCardShowsTheStarsAndTheCountdownAndTheBoardOpensSolved() = runComposeUiTest {
-        start(openFeed = false, dailyGame = lineDay)
+        start(openFeed = false, dailyGame = crosswordDay)
         onNodeWithTag("dailyCard").performClick()
-        val puzzle = todaysLine()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithTag("lineCell").fetchSemanticsNodes().size == puzzle.cells }
-        for (cell in puzzle.solution) onAllNodesWithTag("lineCell")[cell].performClick()
-        waitForIdle()
+        waitUntil(timeoutMillis = 10_000) { squareCount() >= CrosswordLayout.CELLS }
+        solveCrossword(todaysCrossword())
         goHome()
-        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("lineDone", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
-        snap("213_daily_card_line_done")
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("crosswordDone", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        snap("213_daily_card_crossword_done")
         assertTrue(hasAnyText("Sıradaki bulmaca", "Next puzzle in"), "the time to the next puzzle is on the card")
 
         onNodeWithTag("dailyCard").performClick()
-        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("lineBoard").fetchSemanticsNodes().isNotEmpty() }
-        assertEquals(0, onAllNodesWithTag("lineCell").fetchSemanticsNodes().size, "a solved board is not played again")
-        assertTrue(hasAnyText("Çözüldü!", "Solved!"))
+        waitUntil(timeoutMillis = 5_000) { squareCount() >= CrosswordLayout.CELLS }
+        assertTrue(hasAnyText("Bulmaca çözüldü!", "Crossword solved!"))
+        assertTrue(onAllNodesWithTag("keyBackspace").fetchSemanticsNodes().isEmpty(), "a solved board is not played again")
     }
 }

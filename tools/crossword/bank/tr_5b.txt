@@ -1,0 +1,238 @@
+İBRET|Ders alınacak olay
+İBRİK|Çay ya da su kabı
+İDARE|Yönetim
+İDDİA|Savunulan görüş
+İDEAL|Hayal edilen en iyi, ülkü
+İFADE|Anlatım
+İFLAS|Batma
+İHALE|Açık artırmayla verilen iş
+İKİLİ|İki parçalı
+İKLİM|Bir yerin hava durumu
+İKRAM|Konuğa sunulan şey
+İKSİR|Sihirli içecek
+İLHAM|Esin
+İLKEL|Ham, gelişmemiş
+İLMEK|Örgünün tek halkası
+İMSAK|Oruca başlama vakti
+İNANÇ|Güven, iman
+İNCİR|Tatlı kuru meyve
+İNSAF|Merhamet
+İNSAN|Akıllı canlı
+İPTAL|Geçersiz kılma
+İRADE|Kararlılık
+İRONİ|İnce alay
+İSRAF|Boşa harcama
+İSTEK|Dilek
+İSYAN|Başkaldırı
+İTAAT|Söz dinleme
+İYİCE|Tam olarak
+İÇERİ|Dışarı karşıtı
+İŞGAL|Zorla ele geçirme
+İŞLEM|Matematikte yapılan hesap
+İŞLEV|Görev
+İŞSİZ|Çalışmayan
+İŞTAH|Yeme isteği
+JOKER|Her yerde kullanılan kart
+KABAK|Tatlı ve yemek yapılan sebze
+KABİN|Küçük bölme
+KABLO|Elektrik telleri demeti
+KABUL|Onaylama
+KABUS|Kötü rüya
+KADEH|İçki bardağı
+KADER|Alın yazısı
+KADRO|Ekip, takım
+KAFES|Kuşun kapalı yuvası
+KAHVE|Telveli içecek
+KAKAO|Çikolata hammaddesi
+KALEM|Yazı aracı
+KALIN|İnce karşıtı
+KALIP|Dökümde şekil verir
+KANAL|Yapay su yolu
+KANAT|Kuşun uçma organı
+KANCA|Asmaya yarayan çengel
+KANUN|Yasa
+KANIT|Delil
+KARAR|Verilen hüküm
+KARGA|Kara kanatlı bir kuş
+KARGO|Taşınan paket
+KARNE|Okul notları belgesi
+KARIN|Midenin bulunduğu yer
+KASAP|Et satan kişi
+KASET|Ses kayıt bandı
+KASIM|Bir ay
+KASIT|Bilerek yapma
+KATİL|Cinayet işleyen
+KATKI|Yardım
+KAVAK|Uzun boylu bir ağaç
+KAVUN|Güzel kokulu bir meyve
+KAYAK|Bir kış sporu
+KAYGI|Endişe
+KAYIK|Küçük tekne
+KAYIP|Yitik, zayi
+KAZAK|Örgü bir üst giysisi
+KAZAN|Büyük yemek kabı
+KAZIK|Yere çakılan sivri direk
+KAÇAK|Yasa dışı
+KAÇIŞ|Firar etme işi
+KAĞIT|Yazının yazıldığı şey
+KAŞAR|Yağlı bir peynir
+KEDER|Hüzün
+KEFAL|Bir deniz balığı
+KEFEN|Cenazenin beyaz örtüsü
+KEFİL|Güvence veren
+KEKİK|Aromalı bir ot
+KEMAN|Yaylı bir çalgı
+KEMER|Pantolonu tutan şey
+KEMİK|İskeleti oluşturur
+KEPEK|Saçta oluşan beyaz pul
+KESİK|Bıçak yarası
+KESİM|Bölüm
+KESİN|Kuşkusuz
+KEYİF|Zevk
+KEŞİF|Bulma
+KEŞKE|Pişmanlık sözü
+KİBAR|Nazik
+KİBİR|Kendini beğenmişlik
+KİLER|Yiyecek odası
+KİLİM|Dokunmuş yer örtüsü
+KİLİT|Anahtarla açılır
+KİMSE|Birisi
+KİMYA|Maddeleri inceleyen bilim
+KİRAZ|Bir meyve
+KİRLİ|Temiz karşıtı
+KİRPİ|Dikenli bir hayvan
+KİTAP|Sayfalardan oluşur
+KİTLE|Topluluk
+KLİMA|İklimlendirme cihazı
+KLİŞE|Basmakalıp söz
+KOBRA|Zehirli bir yılan
+KOLAY|Zor karşıtı
+KOLEJ|Özel okul
+KOLYE|Bir süs eşyası
+KOMİK|Güldüren kişi
+KOMUT|Buyruk, emir
+KOMŞU|Yan evde oturan
+KONAK|Büyük köşk
+KONUK|Misafir
+KONUM|Bulunulan yer, mekan
+KONUT|Ev, hane
+KOPYA|Aslının benzeri
+KORKU|Ürperten duygu
+KOYUN|Yün veren hayvan
+KOŞUL|Şart
+KREDİ|Bankadan alınan borç
+KUBBE|Yarım küre çatı
+KUDUZ|Köpek hastalığı
+KUKLA|İple oynatılan oyuncak
+KULAK|Duyma organı
+KULÜP|Dernek
+KUMAR|Şansa dayalı oyun
+KUMAŞ|Elbise dikilen malzeme
+KURAL|Uyulacak ilke, kaide
+KURAM|Teori
+KURUM|Resmî teşkilat
+KURYE|Paket taşıyan kişi
+KUSUR|Eksiklik
+KUTUP|Dünyanın uç noktası
+KUZEN|Amca çocuğu
+KUZEY|Güney karşıtı
+KUŞAK|Yaş grubu, nesil
+KUŞKU|Şüphe
+KÖFTE|Bir et yemeği
+KÖKEN|Kaynak, memba
+KÖMÜR|Yanan siyah taş
+KÖPEK|Havlayan hayvan
+KÖPRÜ|Nehrin iki yakasını bağlar
+KÜFÜR|Hakaret, argo
+KÜLAH|Dondurma konan şey
+KÜLÇE|Maden parçası
+KÜMES|Tavukların yuvası
+KÜNYE|Kimlik bilgileri
+KÜREK|Toprak kazmaya yarayan alet
+KÜRSÜ|Konuşmacının yeri
+KÜTÜK|Kesilmiş ağaç gövdesi
+KÜVET|Banyoda yıkanılan kap
+KÜÇÜK|Büyük karşıtı
+KILIÇ|Uzun kesici bir silah
+KIRIK|Parçalanmış
+KISIM|Bölüm
+KIYAS|Karşılaştırma
+KIYMA|Çekilmiş et
+KIZIL|Kırmızı
+KIŞLA|Askerlerin eğitim yeri
+LAMBA|Aydınlatma aracı
+LANET|Beddua
+LARVA|Böceğin kurtçuğu
+LAZER|Güçlü ışık
+LAZIM|Gerekli
+LEGAL|Yasal
+LEVHA|Yazılı tabela
+LEZİZ|Çok lezzetli
+LİDER|Önder
+LİKÖR|Tatlı içki
+LİMAN|Gemilerin yanaştığı yer
+LİMİT|Sınır
+LİMON|Ekşi sarı bir meyve
+LİSTE|Sıralı kayıt
+LİTRE|Sıvı ölçüsü
+LOKUM|Şekerli tatlı
+LÜFER|Bir balık
+LÜGAT|Sözlük
+MADDE|Yer kaplayan şey
+MADEN|Yer altında çıkarılır
+MAFYA|Suç örgütü
+MAKAM|Mevki
+MAKAS|Kâğıt keser
+MAKET|Küçültülmüş örnek
+MAKUL|Mantıklı
+MAMUT|Tüylü soyu tükenmiş fil
+MANAV|Sebze meyve satan kişi
+MANGO|Tropik bir meyve
+MANTI|Bir hamur yemeği
+MARTI|Denizde uçan bir kuş
+MARUL|Yeşil salata yaprağı
+MASAJ|Kas gevşetme
+MASAL|Bir varmış bir yokmuş
+MASKE|Yüzü örter
+MASUM|Suçsuz
+MATEM|Yas
+MAYIN|Patlayıcı tuzak
+MAYIS|Bir ay
+MAZOT|Dizel yakıt
+MEDYA|Haber kuruluşları
+MEKAN|Yer, konum
+MELEK|Göksel varlık
+MEMUR|Devlet görevlisi
+MERAK|Öğrenme isteği
+MERMİ|Silahın ateşlediği şey
+MESAJ|İleti
+METAL|Maden
+METİN|Yazı parçası
+METRE|Uzunluk birimi
+METRO|Yer altı treni
+MEVKİ|Konum
+MEYVE|Ağaçta yetişen yiyecek
+MEZAR|Ölünün yatağı
+MEZUN|Okulu bitiren
+MİDYE|Kabuklu deniz canlısı
+MİLLİ|Ulusal
+MİMAR|Bina tasarlayan kişi
+MİMİK|Yüz hareketi
+MİNİK|Çok küçük
+MİRAS|Atadan kalan
+MOBİL|Taşınabilir
+MODEL|Örnek
+MODEM|İnternet cihazı
+MODÜL|Birim, ünite
+MOLOZ|Yıkıntı parçaları
+MORAL|Ruh hali
+MOTEL|Yol kenarı oteli
+MOTİF|Süs deseni
+MOTOR|Aracı yürüten makine
+MUCİT|İcat yapan kişi
+MUMYA|Antik Mısır'da korunmuş ceset
+MUTLU|Sevinçli
+MÜDÜR|Kurum başkanı
+MÜJDE|İyi haber
+MÜZİK|Seslerle yapılan sanat
+MISIR|Koçanlı tahıl

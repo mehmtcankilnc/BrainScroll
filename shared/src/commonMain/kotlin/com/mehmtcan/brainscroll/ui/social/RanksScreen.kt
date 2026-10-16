@@ -318,7 +318,7 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
             rank = row.rank,
             name = row.username,
             isMe = row.isMe,
-            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else if (ui.game == GameKind.Line) stringResource(Res.string.ranks_stars, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
+            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else if (ui.game == GameKind.Crossword) stringResource(Res.string.ranks_stars, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
         )
     }
 }

@@ -105,5 +105,22 @@ check('line: a result with no score code is refused', (await submit(alice, 'line
 check('line: a time that is too quick is refused', (await submit(alice, 'line', 'WON', 1, 800)) === '22023')
 check('line: the table of another game is not mixed in', (await board(alice, 'mines', 'TODAY')).rows.length === 0)
 
+// ---- Daily crossword (migration 20261016090000_crossword_daily.sql) ----
+// The number sent as moves is a score code: 1 + the mistakes. The table is ordered by stars, then time, and a row's moves is its stars.
+await owner(`delete from public.game_result`)
+check('crossword: the stars of a score code', JSON.stringify((await owner(`select public.crossword_stars(c) as s from unnest(array[1,2,4,5,11,12,13,999]) as c`)).map(r => r.s)) === JSON.stringify([3, 3, 3, 2, 2, 1, 1, 1]))
+check('crossword: a result is accepted', (await submit(alice, 'crossword', 'WON', 1, 600000)) === null)
+check('crossword: stored like the others, the code as its guess', (await owner(`select guesses, game, mode from public.game_result where user_id = '${alice}'`))[0].guesses === '1')
+check('crossword: a result with many mistakes is accepted', (await submit(bob, 'crossword', 'WON', 13, 500000)) === null)
+check('crossword: a faster three-star result', (await submit(carol, 'crossword', 'WON', 3, 550000)) === null)
+let ct = await board(alice, 'crossword', 'TODAY')
+check('crossword: more stars first, then the shorter time', ct.rows.map(r => r.username).join() === 'carol,alice,bobby', ct.rows.map(r => r.username).join())
+check('crossword: a row carries its stars as moves', ct.rows.map(r => r.moves).join() === '3,3,1', ct.rows.map(r => r.moves).join())
+check('crossword: and the ranks follow', ct.rows.map(r => r.rank).join() === '1,2,3' && ct.me.rank === 2 && ct.me.moves === 3)
+check('crossword: all time shows the best of every player', (await board(alice, 'crossword', 'ALL_TIME')).rows.length === 3)
+check('crossword: a result with no score code is refused', (await submit(alice, 'crossword', 'WON', 0, 600000)) === '22023')
+check('crossword: a time that is too quick is refused', (await submit(alice, 'crossword', 'WON', 1, 800)) === '22023')
+check('crossword: the table of another game is not mixed in', (await board(alice, 'line', 'TODAY')).rows.length === 0)
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

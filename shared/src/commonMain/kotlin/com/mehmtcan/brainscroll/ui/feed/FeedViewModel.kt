@@ -22,6 +22,11 @@ import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
+import com.mehmtcan.brainscroll.game.queens.QueensResult
+import com.mehmtcan.brainscroll.game.crossword.CrosswordResult
+import com.mehmtcan.brainscroll.game.crossword.CrosswordStatus
+import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
+import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.line.LineResult
@@ -45,6 +50,10 @@ import com.mehmtcan.brainscroll.stats.MemoryStats
 import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
 import com.mehmtcan.brainscroll.stats.HanoiStats
+import com.mehmtcan.brainscroll.stats.QueensStats
+import com.mehmtcan.brainscroll.stats.CrosswordStats
+import com.mehmtcan.brainscroll.stats.BlockOutStats
+import com.mehmtcan.brainscroll.stats.TentsStats
 import com.mehmtcan.brainscroll.stats.LineStats
 import com.mehmtcan.brainscroll.stats.PipesStats
 import com.mehmtcan.brainscroll.stats.SlideStats
@@ -54,10 +63,15 @@ import com.mehmtcan.brainscroll.stats.TubesStats
 import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
 import com.mehmtcan.brainscroll.stats.computeHanoiStats
+import com.mehmtcan.brainscroll.stats.computeQueensStats
+import com.mehmtcan.brainscroll.stats.computeCrosswordStats
+import com.mehmtcan.brainscroll.stats.computeBlockOutStats
+import com.mehmtcan.brainscroll.stats.computeTentsStats
 import com.mehmtcan.brainscroll.stats.computeLineStats
 import com.mehmtcan.brainscroll.stats.computePipesStats
 import com.mehmtcan.brainscroll.stats.computeSlideStats
 import com.mehmtcan.brainscroll.stats.computeSudokuStats
+import com.mehmtcan.brainscroll.stats.computeJigsawStats
 import com.mehmtcan.brainscroll.stats.computeTargetStats
 import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
@@ -105,6 +119,8 @@ data class ProfileState(
     val mines: MinesStats = computeMinesStats(emptyList()),
     /** Sudoku, from the endless feed. */
     val sudoku: SudokuStats = computeSudokuStats(emptyList()),
+    /** Jigsaw sudoku, from the endless feed. */
+    val jigsaw: SudokuStats = computeJigsawStats(emptyList()),
     /** Lights Out, from the endless feed. */
     val lights: LightsStats = computeLightsStats(emptyList()),
     /** Sliding puzzle, from the endless feed. */
@@ -117,6 +133,14 @@ data class ProfileState(
     val line: LineStats = computeLineStats(emptyList()),
     /** Tower of Hanoi, from the endless feed. */
     val hanoi: HanoiStats = computeHanoiStats(emptyList()),
+    /** Queens, from the endless feed. */
+    val queens: QueensStats = computeQueensStats(emptyList()),
+    /** Crossword, from the endless feed. */
+    val crossword: CrosswordStats = computeCrosswordStats(emptyList()),
+    /** Block out, from the endless feed. */
+    val blockOut: BlockOutStats = computeBlockOutStats(emptyList()),
+    /** Tents, from the endless feed. */
+    val tents: TentsStats = computeTentsStats(emptyList()),
     /** The same, for each language alone. */
     val dailyByLanguage: Map<Language, Stats> = emptyMap(),
     val dayStreak: DayStreak = DayStreak(current = 0, best = 0, freezesAvailable = 0),
@@ -143,7 +167,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Line),
 ) : ViewModel(), FeedActions {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -375,7 +399,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Crossword, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -569,6 +593,82 @@ class FeedViewModel(
         return f.restartHanoi(page).also { publish() }
     }
 
+    /** Taps a cell of the queens board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun toggleQueen(page: Int, cell: Int): QueensResult {
+        val f = feed ?: return QueensResult.Ignored
+        val result = f.toggleQueen(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == QueensResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Takes away the queens the player put on [page]. */
+    override fun restartQueens(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartQueens(page).also { publish() }
+    }
+
+    /** Taps a cell of the tents board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun tapTent(page: Int, cell: Int): TentsResult {
+        val f = feed ?: return TentsResult.Ignored
+        val result = f.tapTent(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == TentsResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Clears the marks of the tents board on [page]. */
+    override fun restartTents(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartTents(page).also { publish() }
+    }
+
+    /** Slides a piece of the block out board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun slideBlock(page: Int, piece: Int, to: Int): BlockOutResult {
+        val f = feed ?: return BlockOutResult.Ignored
+        val result = f.slideBlock(page, piece, to)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == BlockOutResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the pieces of the block out board on [page] back as they were at the start. */
+    override fun restartBlockOut(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartBlockOut(page).also { publish() }
+    }
+
+    /** Puts a letter in a square of the crossword on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun placeLetter(page: Int, cell: Int, letter: Char): CrosswordResult {
+        val f = feed ?: return CrosswordResult.Ignored
+        val result = f.placeLetter(page, cell, letter)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == CrosswordResult.Correct && (f.snapshot().pages.getOrNull(page) as? com.mehmtcan.brainscroll.game.crossword.CrosswordSnapshot)?.state?.status == CrosswordStatus.Won) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Takes back a wrong letter of the crossword on [page]. */
+    override fun eraseLetter(page: Int, cell: Int): CrosswordResult {
+        val f = feed ?: return CrosswordResult.Ignored
+        return f.eraseLetter(page, cell).also { publish() }
+    }
+
     // The one-line game is the daily puzzle and not part of the feed; these only keep the feed able to play it.
     override fun dragLine(page: Int, cell: Int): LineResult = feed?.dragLine(page, cell).also { publish() } ?: LineResult.Ignored
     override fun tapLine(page: Int, cell: Int): LineResult = feed?.tapLine(page, cell).also { publish() } ?: LineResult.Ignored
@@ -691,12 +791,17 @@ class FeedViewModel(
             tubes = computeTubesStats(history),
             mines = computeMinesStats(history),
             sudoku = computeSudokuStats(history),
+            jigsaw = computeJigsawStats(history),
             lights = computeLightsStats(history),
             slide = computeSlideStats(history),
             target = computeTargetStats(history),
             pipes = computePipesStats(history),
             line = computeLineStats(history),
             hanoi = computeHanoiStats(history),
+            queens = computeQueensStats(history),
+            crossword = computeCrosswordStats(history),
+            blockOut = computeBlockOutStats(history),
+            tents = computeTentsStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

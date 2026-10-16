@@ -1,0 +1,196 @@
+ABLA|Büyük kız kardeş
+ACİL|Acele, ivedi
+ADAM|Erkek kişi
+ADIM|Yürürken atılır
+AFET|Büyük felaket
+AĞIL|Koyunların barınağı
+AHIR|İneklerin barınağı
+AKIL|Zekâ
+ALAY|Bir askerî topluluk
+ALIN|Kaşların üstü
+AMAÇ|Maksat, erek, gaye
+AMCA|Babanın erkek kardeşi
+ANIT|Abide
+ANKA|Efsane kuş
+ARSA|Boş yapı yeri
+AVAZ|Yüksek ses
+AVUÇ|Elin içi
+AYAZ|Soğuk kuru hava
+AYET|Kur'an cümlesi
+AZAP|Ağır acı
+BACI|Kız kardeş
+BALO|Süslü dans gecesi
+BATI|Doğu karşıtı
+BAZI|Birkaç
+BİRA|Arpadan yapılan içecek
+BOĞA|Güreşte kızdırılan hayvan
+BOKS|Kurallı dövüş
+BORÇ|Geri verilecek para
+BUĞU|Su buharı
+BURS|Öğrenciye verilen para
+BÜRO|Ofis
+CANİ|Suçlu kimse
+CENK|Savaş
+CEZA|Suçun karşılığı
+CİLA|Parlatma maddesi
+ÇABA|Gayret, efor
+ÇARE|Çözüm yolu
+ÇETE|Suçlular grubu
+ÇİFT|İki parça
+ÇİLE|Dert, eziyet
+ÇİVİ|Çekiçle çakılır
+DEFA|Kere, kez
+DELİ|Aklı dengesiz birey
+DERİ|Hayvan postu
+DERS|Okulda işlenir
+DEVE|Hörgüçlü bir hayvan
+DİNÇ|Zinde
+DİŞİ|Erkek olmayan
+DOĞA|Tabiat
+DOKU|Hücre topluluğu
+DURU|Berrak
+DUYU|Algı yeteneği
+EDEP|Terbiye
+EKİN|Bir tarla ürünü
+ELEK|Un süzen eşya
+EMEK|Alın teri
+EMİR|Buyruk
+ESER|Yapıt
+ESİR|Tutsak
+ETEK|Bir kadın giysisi
+EYER|At sırtına konur
+EZAN|Camide okunur
+FENA|Kötü
+FİDE|Genç bitki
+FUAR|Ticaret sergisi
+GAZİ|Savaştan sağ dönen
+GENÇ|Yaşlı karşıtı
+HANE|Ev
+HARP|Savaş
+HİLE|Oyunda aldatma
+HOCA|Camide öğretmen
+IRAK|Ortadoğu'da bir ülke
+İLGİ|Merak
+İLİK|Kemiğin içi
+İLKE|Prensip
+İMAM|Camide namaz kıldıran kişi
+İNAT|Direnç
+İNCE|Kalın karşıtı
+İNCİ|İstiridye mücevheri
+İSİM|Ad
+KABA|Nazik olmayan
+KAFA|Baş
+KAMU|Halk, toplum
+KASK|Başa takılan koruyucu
+KATI|Maddenin bir hali
+KAYA|Büyük taş kütle
+KOCA|Yaşça büyük
+KOLA|Gazlı bir içecek
+KONU|Mevzu
+KORU|Küçük orman
+KOŞU|Bir atletizm dalı
+KOYU|Açık olmayan
+KÖŞE|İki duvarın birleştiği yer
+KÖTÜ|İyi karşıtı
+LEKE|Kir izi
+MODA|Giyim akımı
+MOLA|Dinlenme arası
+NİNE|Büyükanne
+ODAK|Merkez nokta
+OLAY|Vaka
+OLTA|Bir balıkçı eşyası
+ONUR|Haysiyet
+ORAN|Nispet
+ORDU|Askerî güç
+OTEL|Konaklanan yer
+ÖDÜL|Kazananın aldığı şey
+ÖFKE|Kızgınlık
+ÖĞÜT|Nasihat
+ÖKÜZ|Çift süren hayvan
+ÖLÇÜ|Uzunluk birimi
+ÖMÜR|Yaşam süresi
+ÖNCE|Sonra karşıtı
+ÖNEM|Değer
+ÖZEL|Genel karşıtı
+ÖZET|Kısaltılmış anlatım
+PİDE|Ramazan ekmeği
+PİRE|Zıplayan bir haşere
+PLAN|Tasarı
+PLAJ|Kumsal
+POST|Hayvan derisi
+PRİZ|Fişin takıldığı yer
+PUAN|Skor
+PUSU|Saklanıp bekleme
+SADE|Süssüz
+SERT|Yumuşak karşıtı
+SİRK|Palyaçoların yeri
+SORU|Sual
+SPOR|Bedeni geliştiren faaliyet
+SÜRE|Zaman aralığı
+ŞİİR|Dizelerden oluşan yazı türü
+ŞİŞE|Cam kap
+TAZE|Bayat karşıtı
+UCUZ|Pahalı karşıtı
+UFAK|Küçük
+ULAK|Haberci
+ULUS|Millet
+UMUT|Beklenti, ümit
+USTA|Çırağın hocası
+UYUM|Ahenk
+UZAY|Yıldızların bulunduğu yer
+ÜRÜN|Mahsul
+VEFA|Sadakat
+YENİ|Eski karşıtı
+YURT|Memleket
+YUVA|Kuşun evi
+ZEKİ|Akıllı
+ALET|Araç gereç
+ARZU|İstek
+AYIK|Sarhoş olmayan
+AYNA|Yansıtan bir eşya
+BEBE|Küçük çocuk
+CADI|Kötü büyücü
+DANA|İnek yavrusu
+DEHA|Üstün zekâ
+DEPO|Eşya saklanan yer
+DİZİ|Sıra, seri
+DOĞU|Batı karşıtı
+ESAS|Temel
+ESKİ|Yeni karşıtı
+FARK|Ayrım
+FELÇ|Kas kaybı, inme
+GAYE|Amaç, maksat, erek
+GERİ|Arka
+GIDA|Yiyecek
+GRUP|Topluluk
+HOBİ|Boş zaman uğraşı
+ILIK|Ne sıcak ne soğuk
+IRMAK|Nehir
+İKİZ|Aynı anda doğan
+İZCİ|Kamp yapan kişi
+KEÇİ|Sakallı bir hayvan
+KİLO|Bir ağırlık birimi
+KOLİ|Kargo paketi
+KUPA|Şampiyona verilen ödül
+KURU|Islak karşıtı
+KUTU|Karton kap
+KÜME|Matematikte topluluk
+MAYA|Hamuru kabartır
+MEŞE|Palamutlu ağaç
+NEŞE|Sevinç
+NOTA|Müzik işareti
+OCAK|Yılın ilk ayı
+ÖLÜM|Yaşamın sonu
+PEÇE|Yüzü örten
+PERİ|Masal kahramanı
+RAKI|Anasondan yapılan bir içki
+RİZE|Bir şehrimiz
+SERA|Bitki yetiştirilen yer
+SERİ|Dizi
+SIRT|Gövdenin arkası
+ŞANS|Talih
+ŞART|Koşul
+TARZ|Biçim, stil
+VEBA|Salgın bir hastalık
+VERİ|Data
+YASA|Kanun

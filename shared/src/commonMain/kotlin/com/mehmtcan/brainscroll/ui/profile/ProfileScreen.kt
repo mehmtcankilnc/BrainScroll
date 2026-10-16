@@ -114,6 +114,21 @@ import brainscroll.shared.generated.resources.stats_slide
 import brainscroll.shared.generated.resources.stats_target
 import brainscroll.shared.generated.resources.stat_three_stars
 import brainscroll.shared.generated.resources.stats_hanoi
+import brainscroll.shared.generated.resources.stats_queens
+import brainscroll.shared.generated.resources.stats_tents
+import brainscroll.shared.generated.resources.stats_crossword
+import brainscroll.shared.generated.resources.favorite_crossword_result
+import brainscroll.shared.generated.resources.favorite_crossword_tag
+import brainscroll.shared.generated.resources.stats_blockout
+import brainscroll.shared.generated.resources.favorite_blockout_result
+import brainscroll.shared.generated.resources.favorite_blockout_tag
+import brainscroll.shared.generated.resources.stats_jigsaw
+import brainscroll.shared.generated.resources.favorite_jigsaw_result
+import brainscroll.shared.generated.resources.favorite_jigsaw_tag
+import brainscroll.shared.generated.resources.favorite_tents_result
+import brainscroll.shared.generated.resources.favorite_tents_tag
+import brainscroll.shared.generated.resources.favorite_queens_result
+import brainscroll.shared.generated.resources.favorite_queens_tag
 import brainscroll.shared.generated.resources.stats_line
 import brainscroll.shared.generated.resources.stats_pipes
 import brainscroll.shared.generated.resources.favorite_hanoi_result
@@ -141,7 +156,7 @@ import brainscroll.shared.generated.resources.stats_title
 import brainscroll.shared.generated.resources.tab_ranks
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.line.lineStars
+import com.mehmtcan.brainscroll.game.crossword.crosswordStars
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -455,19 +470,41 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
         item { MovesGroup(stringResource(Res.string.stats_lights), profile.lights.played, profile.lights.bestTimeMs, profile.lights.fewestMoves, "statsLights") }
         item { MovesGroup(stringResource(Res.string.stats_slide), profile.slide.played, profile.slide.bestTimeMs, profile.slide.fewestMoves, "statsSlide") }
         item { MovesGroup(stringResource(Res.string.stats_target), profile.target.played, profile.target.bestTimeMs, profile.target.fewestMoves, "statsTarget") }
-        // One Line is only the daily puzzle: played, the fastest board and the boards that earned three stars.
+        item { MovesGroup(stringResource(Res.string.stats_line), profile.line.played, profile.line.bestTimeMs, profile.line.fewestMoves, "statsLine") }
+        item { MovesGroup(stringResource(Res.string.stats_hanoi), profile.hanoi.played, profile.hanoi.bestTimeMs, profile.hanoi.fewestMoves, "statsHanoi") }
         item {
-            StatGroup(stringResource(Res.string.stats_line), profile.line.played, "statsLine") {
+            StatGroup(stringResource(Res.string.stats_crossword), profile.crossword.played, "statsCrossword") {
                 TileGrid(
                     listOf(
-                        profile.line.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.line.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                        profile.line.threeStars.toString() to stringResource(Res.string.stat_three_stars),
+                        profile.crossword.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.crossword.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                        profile.crossword.threeStars.toString() to stringResource(Res.string.stat_three_stars),
                     ),
                 )
             }
         }
-        item { MovesGroup(stringResource(Res.string.stats_hanoi), profile.hanoi.played, profile.hanoi.bestTimeMs, profile.hanoi.fewestMoves, "statsHanoi") }
+        item {
+            StatGroup(stringResource(Res.string.stats_jigsaw), profile.jigsaw.played, "statsJigsaw") {
+                TileGrid(
+                    listOf(
+                        profile.jigsaw.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.jigsaw.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_tents), profile.tents.played, "statsTents") {
+                TileGrid(
+                    listOf(
+                        profile.tents.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.tents.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    ),
+                )
+            }
+        }
+        item { MovesGroup(stringResource(Res.string.stats_blockout), profile.blockOut.played, profile.blockOut.bestTimeMs, profile.blockOut.fewestMoves, "statsBlockOut") }
+        item { MovesGroup(stringResource(Res.string.stats_queens), profile.queens.played, profile.queens.bestTimeMs, profile.queens.fewestMoves, "statsQueens") }
         item { MovesGroup(stringResource(Res.string.stats_pipes), profile.pipes.played, profile.pipes.bestTimeMs, profile.pipes.fewestMoves, "statsPipes") }
         // Minesweeper: played, win rate and the fastest win.
         item { WinRateGroup(stringResource(Res.string.stats_mines), profile.mines.played, profile.mines.winRate, profile.mines.bestTimeMs, "statsMines") }
@@ -608,6 +645,11 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
         GameKind.Target -> profile.target.bestTimeMs
         GameKind.Pipes -> profile.pipes.bestTimeMs
         GameKind.Hanoi -> profile.hanoi.bestTimeMs
+        GameKind.Queens -> profile.queens.bestTimeMs
+        GameKind.Tents -> profile.tents.bestTimeMs
+        GameKind.Jigsaw -> profile.jigsaw.bestTimeMs
+        GameKind.BlockOut -> profile.blockOut.bestTimeMs
+        GameKind.Crossword -> profile.crossword.bestTimeMs
         GameKind.Line -> profile.line.bestTimeMs
     }
     return best != null && time <= best
@@ -740,6 +782,11 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                 GameKind.Target -> stringResource(Res.string.favorite_target_tag)
                 GameKind.Pipes -> stringResource(Res.string.favorite_pipes_tag)
                 GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_tag)
+                GameKind.Queens -> stringResource(Res.string.favorite_queens_tag)
+                GameKind.Tents -> stringResource(Res.string.favorite_tents_tag)
+                GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_tag)
+                GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_tag)
+                GameKind.Crossword -> stringResource(Res.string.favorite_crossword_tag)
                 GameKind.Line -> stringResource(Res.string.favorite_line_tag)
             },
             style = type.heading.copy(color = colors.textPrimary),
@@ -758,7 +805,12 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                     round.game == GameKind.Target -> stringResource(Res.string.favorite_target_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Pipes -> stringResource(Res.string.favorite_pipes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.lineStars, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Queens -> stringResource(Res.string.favorite_queens_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Tents -> stringResource(Res.string.favorite_tents_result, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_result, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Crossword -> stringResource(Res.string.favorite_crossword_result, round.crosswordStars, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
                 },
                 style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),

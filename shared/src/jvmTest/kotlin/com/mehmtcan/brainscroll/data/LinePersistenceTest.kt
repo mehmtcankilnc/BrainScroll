@@ -5,7 +5,7 @@ import com.mehmtcan.brainscroll.cloud.toFinishedRoundOrNull
 import com.mehmtcan.brainscroll.cloud.toRow
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.line.LineSchedule
+import com.mehmtcan.brainscroll.game.line.LineFixtures
 import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -33,8 +33,8 @@ class LinePersistenceTest {
         return GameRepository(BrainScrollDatabase(driver))
     }
 
-    /** A Sunday: the biggest board of the week, so the saved text is as long as it gets. */
-    private val sunday = LineSchedule.puzzleFor(20744)
+    /** The bigger fixture board (6x6), so the saved text is long. */
+    private val sunday = LineFixtures.bigger
 
     private fun feed(repository: GameRepository, restored: Boolean = false) = EndlessFeed(
         wordLists = lists,

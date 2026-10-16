@@ -80,9 +80,11 @@ fun WordleKeyboard(
     onBackspace: () -> Unit,
     onEnter: () -> Unit,
     modifier: Modifier = Modifier,
+    /** What a screen reader says for the key at the end of the third row; null for the Enter of the word puzzle. */
+    enterDescriptionText: String? = null,
 ) {
     val rows = remember(language) { keyboardRows(language) }
-    val enterDescription = stringResource(Res.string.a11y_key_enter)
+    val enterDescription = enterDescriptionText ?: stringResource(Res.string.a11y_key_enter)
     val backspaceDescription = stringResource(Res.string.a11y_key_backspace)
     // Every key gets the same width and height. Delete (red) ends the second row, a little wider than a letter. Enter (the
     // green of the main button) ends the third row and is as wide as it takes to make that row as long as the second, so

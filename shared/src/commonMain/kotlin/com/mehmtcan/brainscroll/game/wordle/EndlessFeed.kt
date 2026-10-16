@@ -7,6 +7,19 @@ import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.hanoi.HanoiGenerator
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.hanoi.HanoiRound
+import com.mehmtcan.brainscroll.game.queens.QueensGenerator
+import com.mehmtcan.brainscroll.game.queens.QueensResult
+import com.mehmtcan.brainscroll.game.queens.QueensRound
+import com.mehmtcan.brainscroll.game.crossword.CrosswordGenerator
+import com.mehmtcan.brainscroll.game.crossword.CrosswordPuzzle
+import com.mehmtcan.brainscroll.game.crossword.CrosswordResult
+import com.mehmtcan.brainscroll.game.crossword.CrosswordRound
+import com.mehmtcan.brainscroll.game.blockout.BlockOutGenerator
+import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
+import com.mehmtcan.brainscroll.game.blockout.BlockOutRound
+import com.mehmtcan.brainscroll.game.tents.TentsGenerator
+import com.mehmtcan.brainscroll.game.tents.TentsResult
+import com.mehmtcan.brainscroll.game.tents.TentsRound
 import com.mehmtcan.brainscroll.game.lights.LightsResult
 import com.mehmtcan.brainscroll.game.lights.LightsRound
 import com.mehmtcan.brainscroll.game.line.LineGenerator
@@ -30,6 +43,7 @@ import com.mehmtcan.brainscroll.game.target.TargetGenerator
 import com.mehmtcan.brainscroll.game.target.TargetResult
 import com.mehmtcan.brainscroll.game.target.TargetRound
 import com.mehmtcan.brainscroll.game.sudoku.SudokuRound
+import com.mehmtcan.brainscroll.game.sudoku.SudokuVariant
 import com.mehmtcan.brainscroll.game.tubes.TubesRound
 import kotlin.random.Random
 
@@ -80,6 +94,8 @@ class EndlessFeed(
     startLanguages: List<Language> = listOf(startLanguage),
     /** Makes the board of a new one-line page. The daily puzzle gives the board of its day; the default is a random 5x5 one. */
     private val lineBoard: (Random) -> LinePuzzle = { LineGenerator.generate(it.nextLong(), size = 5, checkpoints = 4) },
+    /** Makes the board of a new crossword page, in the language it was given. The daily puzzle gives the board of its day; the default picks one at random. */
+    private val crosswordBoard: (Random, Language) -> CrosswordPuzzle = { random, language -> CrosswordGenerator.generate(random.nextInt(), language) },
 ) {
     /** Every game this feed can show, in order. [games] is the part of it the player switched on. */
     private val allGames: List<GameKind> = games
@@ -107,12 +123,16 @@ class EndlessFeed(
                 GameKind.Memory -> MemoryRound.restore(rounds.size, stored, now)
                 GameKind.Tubes -> TubesRound.restore(rounds.size, stored, now)
                 GameKind.Mines -> MinesRound.restore(rounds.size, stored, now)
-                GameKind.Sudoku -> SudokuRound.restore(rounds.size, stored, now)
+                GameKind.Sudoku, GameKind.Jigsaw -> SudokuRound.restore(rounds.size, stored, now)
                 GameKind.Lights -> LightsRound.restore(rounds.size, stored, now)
                 GameKind.Slide -> SlideRound.restore(rounds.size, stored, now)
                 GameKind.Target -> TargetRound.restore(rounds.size, stored, now)
                 GameKind.Pipes -> PipesRound.restore(rounds.size, stored, now)
                 GameKind.Hanoi -> HanoiRound.restore(rounds.size, stored, now)
+                GameKind.Queens -> QueensRound.restore(rounds.size, stored, now)
+                GameKind.Tents -> TentsRound.restore(rounds.size, stored, now)
+                GameKind.BlockOut -> BlockOutRound.restore(rounds.size, stored, now)
+                GameKind.Crossword -> CrosswordRound.restore(rounds.size, stored, now)
                 GameKind.Line -> LineRound.restore(rounds.size, stored, now)
             }
             if (round != null) rounds += round
@@ -171,6 +191,7 @@ class EndlessFeed(
         for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
             val round = rounds[i]
             if (round is WordleRound && round.isUntouched && !round.assisted && round.language !in next) rounds[i] = newRound(i, GameKind.Word)
+            if (round is CrosswordRound && round.isUntouched && !round.assisted && round.language !in next) rounds[i] = newRound(i, GameKind.Crossword)
         }
     }
 
@@ -348,6 +369,72 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- Queens actions (ignored on a page of another game) ---
+
+    /** Taps [cell] on the queens board of page [index]: puts a queen there or takes the player's queen away. */
+    fun toggleQueen(index: Int, cell: Int): QueensResult {
+        val round = rounds[index] as? QueensRound ?: return QueensResult.Ignored
+        val result = round.toggle(cell)
+        if (result != QueensResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Takes away the queens the player put on page [index]. Returns false when there were none. */
+    fun restartQueens(index: Int): Boolean {
+        val round = rounds[index] as? QueensRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Tents actions (ignored on a page of another game) ---
+
+    /** Taps [cell] on the tents board of page [index]: empty, tent, grass, empty. */
+    fun tapTent(index: Int, cell: Int): TentsResult {
+        val round = rounds[index] as? TentsRound ?: return TentsResult.Ignored
+        val result = round.tap(cell)
+        if (result != TentsResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Clears the marks on page [index]. Returns false when there were none. */
+    fun restartTents(index: Int): Boolean {
+        val round = rounds[index] as? TentsRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Block out actions (ignored on a page of another game) ---
+
+    /** Slides [piece] of the block out board of page [index] to the place [to]. */
+    fun slideBlock(index: Int, piece: Int, to: Int): BlockOutResult {
+        val round = rounds[index] as? BlockOutRound ?: return BlockOutResult.Ignored
+        val result = round.move(piece, to)
+        if (result != BlockOutResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Puts the pieces of page [index] back as they were at the start. Returns false when nothing had moved. */
+    fun restartBlockOut(index: Int): Boolean {
+        val round = rounds[index] as? BlockOutRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Crossword actions (ignored on a page of another game) ---
+
+    /** Puts [letter] in square [cell] of the crossword on page [index]. */
+    fun placeLetter(index: Int, cell: Int, letter: Char): CrosswordResult {
+        val round = rounds[index] as? CrosswordRound ?: return CrosswordResult.Ignored
+        val result = round.place(cell, letter)
+        if (result != CrosswordResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Takes back a wrong letter of the crossword on page [index]. */
+    fun eraseLetter(index: Int, cell: Int): CrosswordResult {
+        val round = rounds[index] as? CrosswordRound ?: return CrosswordResult.Ignored
+        val result = round.erase(cell)
+        if (result != CrosswordResult.Ignored) persist(round)
+        return result
+    }
+
     // --- One-line actions (ignored on a page of another game) ---
 
     /** A finger moving over [cell] on the one-line board of page [index]. */
@@ -455,11 +542,16 @@ class EndlessFeed(
         GameKind.Tubes -> TubesRound(index, newId(), TubesGame.newLayout(random), language, now)
         GameKind.Mines -> MinesRound(index, newId(), random.nextInt(), language, now)
         GameKind.Sudoku -> SudokuRound(index, newId(), random.nextInt(), language, now)
+        GameKind.Jigsaw -> SudokuRound(index, newId(), random.nextInt(), language, now, SudokuVariant.Jigsaw.defaultClues, SudokuVariant.Jigsaw)
         GameKind.Lights -> LightsRound(index, newId(), random.nextInt(), language, now)
         GameKind.Slide -> SlideRound(index, newId(), random.nextInt(), language, now)
         GameKind.Target -> TargetGenerator.generate(random.nextInt()).let { TargetRound(index, newId(), it.numbers, it.target, language, now, it.par) }
         GameKind.Pipes -> PipesGenerator.generate(random.nextInt()).let { PipesRound(index, newId(), it.start.toList(), language, now, it.par) }
         GameKind.Hanoi -> HanoiGenerator.generate(random.nextInt()).let { HanoiRound(index, newId(), it.start.toList(), it.goal, language, now, it.par) }
+        GameKind.Queens -> QueensGenerator.generate(random.nextInt()).let { QueensRound(index, newId(), it.size, it.locked, language, now) }
+        GameKind.Tents -> TentsRound(index, newId(), TentsGenerator.generate(random.nextInt()), language, now)
+        GameKind.BlockOut -> BlockOutGenerator.generate(random.nextInt()).let { BlockOutRound(index, newId(), it.puzzle, language, now, it.par) }
+        GameKind.Crossword -> crosswordBoard(random, wordLanguages.random(random)).let { CrosswordRound(index, newId(), it, now) }
         GameKind.Line -> LineRound(index, newId(), lineBoard(random), language, now)
     }
 

@@ -1,6 +1,24 @@
 package com.mehmtcan.brainscroll.game.sudoku
 
+import com.mehmtcan.brainscroll.game.GameKind
+
 enum class SudokuStatus { Playing, Won }
+
+/** The two boards that play by the sudoku rules: the classic one with 3 by 3 boxes, and the jigsaw one with regions of other shapes. */
+enum class SudokuVariant(val kind: GameKind, val defaultClues: Int) {
+    Classic(GameKind.Sudoku, SudokuGenerator.DEFAULT_CLUES),
+    Jigsaw(GameKind.Jigsaw, JigsawGenerator.DEFAULT_CLUES),
+    ;
+
+    fun generate(seed: Int, clues: Int): SudokuPuzzle = when (this) {
+        Classic -> SudokuGenerator.generate(seed, clues)
+        Jigsaw -> JigsawGenerator.generate(seed, clues)
+    }
+
+    companion object {
+        fun of(kind: GameKind): SudokuVariant? = entries.firstOrNull { it.kind == kind }
+    }
+}
 
 /** What a move did. */
 enum class SudokuResult {
@@ -32,6 +50,8 @@ data class SudokuState(
     /** Wrong digits put so far. There is no limit: they only count, and the puzzle goes on. */
     val mistakes: Int,
     val status: SudokuStatus,
+    /** Per cell: its region (0..8). In the classic sudoku these are the 3 by 3 boxes. */
+    val regions: List<Int>,
 ) {
     fun isGiven(cell: Int) = givens[cell] != 0
 }
@@ -45,8 +65,10 @@ data class SudokuState(
 class SudokuGame(
     val seed: Int,
     val clues: Int = SudokuGenerator.DEFAULT_CLUES,
+    val variant: SudokuVariant = SudokuVariant.Classic,
 ) {
-    private val puzzle = SudokuGenerator.generate(seed, clues)
+    private val puzzle = variant.generate(seed, clues)
+    private val layout = puzzle.layout
     private val values = puzzle.givens.copyOf()
     private val notes = IntArray(SudokuGenerator.CELLS)
     private var moves = 0
@@ -71,6 +93,7 @@ class SudokuGame(
             moves = moves,
             mistakes = mistakes,
             status = status,
+            regions = layout.regionOf.toList(),
         )
 
     private fun wrongCells(): Set<Int> =
@@ -92,7 +115,7 @@ class SudokuGame(
         }
         // The digit is settled: it cannot be a candidate anywhere around it any more.
         val bit = 1 shl (digit - 1)
-        for (peer in SudokuGenerator.peers(cell)) notes[peer] = notes[peer] and bit.inv()
+        for (peer in layout.peers[cell]) notes[peer] = notes[peer] and bit.inv()
         if ((0 until SudokuGenerator.CELLS).all { values[it] == puzzle.solution[it] }) status = SudokuStatus.Won
         return SudokuResult.Correct
     }

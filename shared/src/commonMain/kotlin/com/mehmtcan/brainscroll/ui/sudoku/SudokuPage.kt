@@ -84,6 +84,7 @@ import brainscroll.shared.generated.resources.sudoku_result_won
 import brainscroll.shared.generated.resources.sudoku_won
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.sudoku.SudokuGenerator
+import com.mehmtcan.brainscroll.game.sudoku.SudokuLayout
 import com.mehmtcan.brainscroll.game.sudoku.SudokuResult
 import com.mehmtcan.brainscroll.game.sudoku.SudokuSnapshot
 import com.mehmtcan.brainscroll.game.sudoku.SudokuState
@@ -113,11 +114,21 @@ private val CellGap = 2.dp
 /** The cells are nearly square, like the squares of a printed sudoku. */
 private val CellShape = RoundedCornerShape(3.dp)
 
-/** Inside the border of the whole board. */
-private val FramePadding = 2.dp
+/** The thick line round the whole board, and between the regions of the jigsaw board: the same line, so the two boards look alike. */
+private val OuterBorder = 2.5.dp
 
-/** The extra thickness of the line between two boxes, on top of the two cell gaps: the lines between boxes are thicker than between cells. */
-private val BoxExtra = 3.dp
+/** Inside the border of the whole board. */
+private val FramePadding = 3.dp
+
+/**
+ * The color of the thick line round the board and between the jigsaw regions: the text color a little dimmed (as a solid color,
+ * so where lines cross nothing gets brighter), so it is the strongest line of the board without being the loudest thing in the app.
+ */
+internal fun boardLine(colors: com.mehmtcan.brainscroll.ui.theme.BrainScrollColors): Color = lerp(colors.bgPage, colors.textPrimary, 0.78f)
+
+/** How round the lines between the jigsaw regions turn at a corner. */
+private val RegionCorner = 5.dp
+
 private val MaxCell = 44.dp
 private val KeyHeight = 56.dp
 private val KeyGap = 4.dp
@@ -128,6 +139,10 @@ private val KeyGap = 4.dp
  */
 internal val SudokuCellValue = SemanticsPropertyKey<Int>("SudokuCellValue")
 private var SemanticsPropertyReceiver.cellValue by SudokuCellValue
+
+/** The region of every cell of a jigsaw board (0..8), for tests. */
+internal val SudokuRegions = SemanticsPropertyKey<List<Int>>("SudokuRegions")
+private var SemanticsPropertyReceiver.regionsValue by SudokuRegions
 
 /** One full-screen page of the feed: the title, the mistake counter, the board, and the number pad or the result. */
 @Composable
@@ -163,12 +178,13 @@ fun SudokuPage(
     // (restored, scrolled back to) starts from what it already has, so it stays quiet.
     var wave by remember(page.id) { mutableStateOf(Wave(0, emptyMap())) }
     val seen = remember(page.id) { Seen() }
+    val layout = remember(state.regions) { SudokuLayout.of(state.regions) }
     LaunchedEffect(state.values, state.wrong) {
-        val done = completedUnits(state)
+        val done = completedUnits(state, layout)
         val before = seen.done
         if (before != null && done.size > before.size) {
             val origin = state.values.indices.firstOrNull { state.values[it] != 0 && state.values[it] != seen.values[it] } ?: 0
-            wave = Wave(wave.id + 1, waveDelays(done - before, origin))
+            wave = Wave(wave.id + 1, waveDelays(done - before, origin, layout))
         }
         seen.done = done
         seen.values = state.values
@@ -209,6 +225,7 @@ fun SudokuPage(
 
         Board(
             state = state,
+            layout = layout,
             selected = selected,
             wave = wave,
             onSelect = { selected = it },
@@ -233,32 +250,54 @@ fun SudokuPage(
  * squares set into them, so the boxes can be told apart at a glance.
  */
 @Composable
-private fun Board(state: SudokuState, selected: Int?, wave: Wave, onSelect: (Int) -> Unit, modifier: Modifier) {
+private fun Board(state: SudokuState, layout: SudokuLayout, selected: Int?, wave: Wave, onSelect: (Int) -> Unit, modifier: Modifier) {
     val colors = BrainScrollTheme.colors
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val size = SudokuGenerator.SIZE
-        val gaps = CellGap * 6 + (CellGap * 2 + BoxExtra) * 2 + FramePadding * 2 + 4.dp
+        val frames = FramePadding * 2 + OuterBorder * 2
+        val gaps = CellGap * 8 + frames
         val cellSize: Dp = minOf(MaxCell, (maxWidth - gaps) / size, (maxHeight - gaps) / size)
 
         val selectedValue = selected?.let { state.values[it] } ?: 0
-        val selectedPeers = selected?.let { SudokuGenerator.peers(it).toSet() } ?: emptySet()
+        val selectedPeers = selected?.let { layout.peers[it].toSet() } ?: emptySet()
 
-        // One square for the whole board: the lines between the cells are the (thin) gaps that let this background show,
-        // and the lines between the nine boxes are the same but thicker. The whole square has a border of its own.
-        val lines = lerp(colors.bgPage, colors.borderStrong, 0.5f)
-        val frame = RoundedCornerShape(6.dp)
-        Column(
-            modifier = Modifier
-                .background(lines, frame)
-                .border(2.dp, colors.borderStrong, frame)
-                .padding(FramePadding),
-            verticalArrangement = Arrangement.spacedBy(CellGap),
-        ) {
+        BoardGrid(state, layout, selected, selectedValue, selectedPeers, wave, cellSize, onSelect)
+    }
+}
+
+/**
+ * The board of both sudokus: equal gaps between the cells and a thick line along every border between two regions (the 3 by 3
+ * boxes of the classic board, the shapes of the jigsaw board), and the same line round the whole board. There is no color on the
+ * regions: the colors of the theme already mean something (right, picked, entered).
+ */
+@Composable
+private fun BoardGrid(
+    state: SudokuState,
+    layout: SudokuLayout,
+    selected: Int?,
+    selectedValue: Int,
+    selectedPeers: Set<Int>,
+    wave: Wave,
+    cellSize: Dp,
+    onSelect: (Int) -> Unit,
+) {
+    val colors = BrainScrollTheme.colors
+    val size = SudokuGenerator.SIZE
+    val lines = lerp(colors.bgPage, colors.borderStrong, 0.5f)
+    val frame = RoundedCornerShape(6.dp)
+    val border = boardLine(colors)
+    Box(
+        modifier = Modifier
+            .testTag("sudokuBoard")
+            .semantics { regionsValue = state.regions }
+            .background(lines, frame)
+            .border(OuterBorder, boardLine(colors), frame)
+            .padding(FramePadding),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(CellGap)) {
             for (row in 0 until size) {
-                if (row == 3 || row == 6) Spacer(Modifier.height(BoxExtra))
                 Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                     for (column in 0 until size) {
-                        if (column == 3 || column == 6) Spacer(Modifier.width(BoxExtra))
                         val index = row * size + column
                         GuideMark(isGuided(index), CellShape) {
                             Cell(
@@ -280,6 +319,19 @@ private fun Board(state: SudokuState, selected: Int?, wave: Wave, onSelect: (Int
                     }
                 }
             }
+        }
+        // The thick lines through the gaps between cells of different regions, drawn on top of the cells. They take no touches.
+        Canvas(Modifier.matchParentSize().testTag("sudokuBorders")) {
+            val gap = CellGap.toPx()
+            drawRegionBorders(
+                regionOf = layout.regionOf,
+                size = size,
+                step = (cellSize + CellGap).toPx(),
+                origin = Offset(-gap / 2, -gap / 2),
+                thickness = OuterBorder.toPx(),
+                radius = RegionCorner.toPx(),
+                color = border,
+            )
         }
     }
 }
@@ -399,9 +451,9 @@ private class Seen {
 private const val BOARD = 27
 
 /** The rows, columns and boxes whose nine cells all hold a right digit, and [BOARD] if every cell does. */
-private fun completedUnits(state: SudokuState): Set<Int> {
+private fun completedUnits(state: SudokuState, layout: SudokuLayout): Set<Int> {
     val done = mutableSetOf<Int>()
-    SudokuGenerator.UNITS.forEachIndexed { unit, cells ->
+    layout.units.forEachIndexed { unit, cells ->
         if (cells.all { state.values[it] != 0 && it !in state.wrong }) done += unit
     }
     if (state.values.indices.all { state.values[it] != 0 && it !in state.wrong }) done += BOARD
@@ -409,8 +461,8 @@ private fun completedUnits(state: SudokuState): Set<Int> {
 }
 
 /** Each cell of the [units] and how long to wait before it swells: further from the [origin] cell, later. */
-private fun waveDelays(units: Set<Int>, origin: Int): Map<Int, Int> {
-    val cells = units.flatMap { if (it == BOARD) (0 until SudokuGenerator.CELLS).toList() else SudokuGenerator.UNITS[it].toList() }.toSet()
+private fun waveDelays(units: Set<Int>, origin: Int, layout: SudokuLayout): Map<Int, Int> {
+    val cells = units.flatMap { if (it == BOARD) (0 until SudokuGenerator.CELLS).toList() else layout.units[it].toList() }.toSet()
     val size = SudokuGenerator.SIZE
     return cells.associateWith { abs(it / size - origin / size) + abs(it % size - origin % size) }.mapValues { it.value * 45 }
 }

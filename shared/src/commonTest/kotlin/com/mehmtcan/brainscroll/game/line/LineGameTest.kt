@@ -125,7 +125,7 @@ class LineGameTest {
 
     @Test
     fun aHintGivesTheNextCellsOfTheSolutionAndCountsOnlyWhenItGivesSome() {
-        val puzzle = LineSchedule.puzzleFor(20740)
+        val puzzle = LineFixtures.board
         val game = LineGame(puzzle)
         assertContentEquals(puzzle.solution.take(3), game.hint())
         assertEquals(1, game.state.hintsUsed)
@@ -138,7 +138,7 @@ class LineGameTest {
 
     @Test
     fun aHintOnALineThatLeadsNowhereGivesNothingAndIsNotCounted() {
-        val puzzle = LineSchedule.puzzleFor(20740)
+        val puzzle = LineFixtures.board
         val game = LineGame(puzzle)
         game.drag(puzzle.solution[0])
         // Walk to any free neighbor that is not the solution's next cell until the line has no way on.
@@ -152,29 +152,19 @@ class LineGameTest {
     }
 
     @Test
-    fun theScoreCodeKeepsTheUndosAndTheHintsAndIsNeverZero() {
-        assertEquals(1, LineScoring.encode(0, 0))
-        assertEquals(2, LineScoring.encode(1, 0))
-        assertEquals(101, LineScoring.encode(0, 1))
-        assertEquals(1000, LineScoring.encode(500, 500), "kept within what the server expects")
-        for (undos in 0..120) for (hints in 0..12) {
-            val code = LineScoring.encode(undos, hints)
-            assertTrue(code in 1..1000)
-            assertEquals(undos.coerceAtMost(99), LineScoring.undosOf(code))
-            assertEquals(hints.coerceAtMost(9), LineScoring.hintsOf(code))
-            assertEquals(LineScoring.stars(undos, hints), LineScoring.starsOf(code), "undos $undos hints $hints")
-        }
-    }
-
-    @Test
-    fun starsFollowTheUndosAndAHintTakesOneOff() {
-        assertEquals(3, LineScoring.stars(undos = 0, hintsUsed = 0))
-        assertEquals(2, LineScoring.stars(undos = 1, hintsUsed = 0))
-        assertEquals(2, LineScoring.stars(undos = 3, hintsUsed = 0))
-        assertEquals(1, LineScoring.stars(undos = 4, hintsUsed = 0))
-        assertEquals(2, LineScoring.stars(undos = 0, hintsUsed = 1))
-        assertEquals(2, LineScoring.stars(undos = 0, hintsUsed = 5), "the number of hints does not matter")
-        assertEquals(1, LineScoring.stars(undos = 2, hintsUsed = 1))
-        assertEquals(0, LineScoring.stars(undos = 9, hintsUsed = 1))
+    fun theMovesCountEverySquarePutOnTheLineAndTheUndosCountWhatWasTakenBackOnPurpose() {
+        val puzzle = LineFixtures.board
+        val game = LineGame(puzzle)
+        val line = puzzle.solution
+        game.drag(line[0]); game.drag(line[1]); game.drag(line[2])
+        assertEquals(3, game.state.moves)
+        assertEquals(LineResult.Retracted, game.drag(line[1]), "going back over the line is free")
+        assertEquals(3, game.state.moves)
+        assertEquals(0, game.state.undos)
+        assertTrue(game.undo())
+        assertEquals(1, game.state.undos)
+        assertEquals(3, game.state.moves, "taking squares off does not take moves off")
+        game.drag(line[1])
+        assertEquals(4, game.state.moves, "a square put on again is a move again")
     }
 }

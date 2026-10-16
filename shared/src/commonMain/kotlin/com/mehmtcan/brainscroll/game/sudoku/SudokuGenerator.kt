@@ -3,7 +3,7 @@ package com.mehmtcan.brainscroll.game.sudoku
 import kotlin.random.Random
 
 /** A puzzle: the cells that are given (0 = empty) and the one solution. Cells are numbered row by row from 0. */
-class SudokuPuzzle(val givens: IntArray, val solution: IntArray)
+class SudokuPuzzle(val givens: IntArray, val solution: IntArray, val layout: SudokuLayout = SudokuLayout.STANDARD)
 
 /**
  * Makes boards that logic alone can finish, the same promise as minesweeper (docs/decisions.md): every board is
@@ -57,7 +57,7 @@ object SudokuGenerator {
      * The solved grid if naked singles (a cell with one candidate) and hidden singles (a digit with one place in a row,
      * column or box) are enough to finish [grid], else null. [grid] is not changed.
      */
-    fun solveBySingles(grid: IntArray): IntArray? {
+    fun solveBySingles(grid: IntArray, layout: SudokuLayout = SudokuLayout.STANDARD): IntArray? {
         val g = grid.copyOf()
         val rowMask = IntArray(SIZE)
         val colMask = IntArray(SIZE)
@@ -66,17 +66,17 @@ object SudokuGenerator {
             val bit = 1 shl (g[cell] - 1)
             rowMask[cell / SIZE] = rowMask[cell / SIZE] or bit
             colMask[cell % SIZE] = colMask[cell % SIZE] or bit
-            boxMask[boxOf(cell)] = boxMask[boxOf(cell)] or bit
+            boxMask[layout.regionOf[cell]] = boxMask[layout.regionOf[cell]] or bit
         }
         var empty = g.count { it == 0 }
 
-        fun candidates(cell: Int) = ALL and (rowMask[cell / SIZE] or colMask[cell % SIZE] or boxMask[boxOf(cell)]).inv()
+        fun candidates(cell: Int) = ALL and (rowMask[cell / SIZE] or colMask[cell % SIZE] or boxMask[layout.regionOf[cell]]).inv()
 
         fun place(cell: Int, bit: Int) {
             g[cell] = 32 - bit.countLeadingZeroBits()
             rowMask[cell / SIZE] = rowMask[cell / SIZE] or bit
             colMask[cell % SIZE] = colMask[cell % SIZE] or bit
-            boxMask[boxOf(cell)] = boxMask[boxOf(cell)] or bit
+            boxMask[layout.regionOf[cell]] = boxMask[layout.regionOf[cell]] or bit
             empty--
         }
 
@@ -89,7 +89,7 @@ object SudokuGenerator {
                 if (cand == 0) return null
                 if (cand and (cand - 1) == 0) { place(cell, cand); progress = true }
             }
-            for (unit in UNITS) {
+            for (unit in layout.units) {
                 for (digit in 0 until SIZE) {
                     val bit = 1 shl digit
                     var where = -1
@@ -102,20 +102,11 @@ object SudokuGenerator {
         return if (empty == 0) g else null
     }
 
-    fun boxOf(cell: Int): Int = (cell / SIZE / 3) * 3 + (cell % SIZE) / 3
+    fun boxOf(cell: Int): Int = SudokuLayout.STANDARD.regionOf[cell]
 
-    /** The 27 rows, columns and boxes, each as its 9 cells. */
-    val UNITS: List<IntArray> =
-        List(SIZE) { r -> IntArray(SIZE) { r * SIZE + it } } +
-            List(SIZE) { c -> IntArray(SIZE) { it * SIZE + c } } +
-            List(SIZE) { b -> IntArray(SIZE) { ((b / 3) * 3 + it / 3) * SIZE + (b % 3) * 3 + it % 3 } }
+    /** The 27 rows, columns and boxes of the classic board, each as its 9 cells. */
+    val UNITS: List<IntArray> = SudokuLayout.STANDARD.units
 
-    /** The cells that share a row, column or box with [cell], not [cell] itself. */
-    fun peers(cell: Int): List<Int> = PEERS[cell]
-
-    private val PEERS: List<List<Int>> = List(CELLS) { cell ->
-        (0 until CELLS).filter { other ->
-            other != cell && (other / SIZE == cell / SIZE || other % SIZE == cell % SIZE || boxOf(other) == boxOf(cell))
-        }
-    }
+    /** The cells that share a row, column or box with [cell] on the classic board, not [cell] itself. */
+    fun peers(cell: Int): List<Int> = SudokuLayout.STANDARD.peers[cell].toList()
 }

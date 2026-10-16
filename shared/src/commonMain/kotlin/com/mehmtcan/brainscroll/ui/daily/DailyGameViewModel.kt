@@ -10,13 +10,17 @@ import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.daily.dailyGameId
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
+import com.mehmtcan.brainscroll.game.queens.QueensResult
+import com.mehmtcan.brainscroll.game.crossword.CrosswordPuzzle
+import com.mehmtcan.brainscroll.game.crossword.CrosswordResult
+import com.mehmtcan.brainscroll.game.crossword.CrosswordRound
+import com.mehmtcan.brainscroll.game.crossword.CrosswordSchedule
+import com.mehmtcan.brainscroll.game.crossword.CrosswordScoring
+import com.mehmtcan.brainscroll.game.crossword.CrosswordSnapshot
+import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
+import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
-import com.mehmtcan.brainscroll.game.line.LinePuzzle
 import com.mehmtcan.brainscroll.game.line.LineResult
-import com.mehmtcan.brainscroll.game.line.LineRound
-import com.mehmtcan.brainscroll.game.line.LineScoring
-import com.mehmtcan.brainscroll.game.line.LineSchedule
-import com.mehmtcan.brainscroll.game.line.LineSnapshot
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.moveCount
@@ -37,11 +41,9 @@ import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.feed.FeedActions
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /** Where the daily puzzle of a game other than the word puzzle stands. */
@@ -92,8 +94,8 @@ class DailyGameViewModel(
     private var feed: EndlessFeed? = null
     private var feedId: String? = null
 
-    /** The finished one-line board of today, drawn again for a puzzle that was solved before the app was opened this time. */
-    private var solved: LineSnapshot? = null
+    /** The finished crossword of today, drawn again for a puzzle that was solved before the app was opened this time. */
+    private var solved: CrosswordSnapshot? = null
     private val handled = mutableSetOf<String>()
     private val sending = mutableSetOf<String>()
 
@@ -115,57 +117,42 @@ class DailyGameViewModel(
             solved = null
             feed = null
             val result = repository.history().firstOrNull { it.id == id }
-            when {
-                result != null -> if (game == GameKind.Line) showSolvedLine(day, id, result)
-                // A new one-line board takes a moment to make (the biggest ones a good part of a second on a phone): off the
-                // screen's thread. A board that was started is read from storage and needs no making.
-                game == GameKind.Line && repository.unfinishedDailyRound(id) == null -> makeLine(day, id)
-                else -> feed = buildFeed(day, game, id)
+            if (result != null) {
+                if (game == GameKind.Crossword) showSolvedCrossword(id, result)
+            } else {
+                feed = buildFeed(day, game, id)
             }
         }
         publish()
         sendPending()
     }
 
-    private fun makeLine(day: Long, id: String) {
-        viewModelScope.launch {
-            val puzzle = withContext(Dispatchers.Default) { LineSchedule.puzzleFor(day) }
-            if (feedId == id && feed == null) {
-                feed = buildFeed(day, GameKind.Line, id, puzzle)
-                publish()
-            }
-        }
+    /** Draws today's crossword again, filled in, from the board that is named in the result. */
+    private fun showSolvedCrossword(id: String, result: FinishedRound) {
+        val puzzle = CrosswordPuzzle.decode(result.language, result.answer) ?: return
+        val round = CrosswordRound(0, id, puzzle)
+        val state = round.snapshot().state
+        for (cell in state.isClue.indices) if (!state.isClue[cell]) round.place(cell, puzzle.squares[cell])
+        val snapshot = round.snapshot()
+        solved = snapshot.copy(
+            durationMs = result.durationMs ?: 0L,
+            state = snapshot.state.copy(mistakes = CrosswordScoring.mistakesOf(result.guesses.firstOrNull()?.toIntOrNull() ?: 1)),
+        )
     }
 
-    private fun showSolvedLine(day: Long, id: String, result: FinishedRound) {
-        viewModelScope.launch {
-            val page = withContext(Dispatchers.Default) {
-                val puzzle = LineSchedule.puzzleFor(day)
-                val round = LineRound(0, id, puzzle, result.language)
-                for (cell in puzzle.solution) round.drag(cell)
-                val snapshot = round.snapshot()
-                snapshot.copy(
-                    durationMs = result.durationMs ?: 0L,
-                    state = snapshot.state.copy(
-                        undos = LineScoring.undosOf(result.guesses.firstOrNull()?.toIntOrNull() ?: 1),
-                        hintsUsed = LineScoring.hintsOf(result.guesses.firstOrNull()?.toIntOrNull() ?: 1),
-                    ),
-                )
-            }
-            if (feedId == id) {
-                solved = page
-                publish()
-            }
-        }
-    }
-
-    private fun buildFeed(day: Long, game: GameKind, id: String, line: LinePuzzle? = null): EndlessFeed {
+    private fun buildFeed(day: Long, game: GameKind, id: String): EndlessFeed {
         val stored = repository.unfinishedDailyRound(id)
         val store = object : FeedStore {
             override fun saveProgress(round: StoredRound) = repository.saveProgress(round)
             override fun deleteProgress(id: String) = repository.deleteProgress(id)
             override fun finish(result: FinishedRound) {
-                repository.finish(result.copy(mode = Mode.DAILY, puzzleDay = day))
+                // A daily crossword keeps the score code (1 + the mistakes) as its only guess: that is what the server and the stars use.
+                val guesses = if (game == GameKind.Crossword) {
+                    listOf(CrosswordScoring.encode(result.guesses.getOrNull(1)?.toIntOrNull() ?: 0).toString())
+                } else {
+                    result.guesses
+                }
+                repository.finish(result.copy(mode = Mode.DAILY, puzzleDay = day, guesses = guesses))
             }
         }
         return EndlessFeed(
@@ -178,7 +165,7 @@ class DailyGameViewModel(
             now = now,
             newId = { id },
             games = listOf(game),
-            lineBoard = { line ?: LineSchedule.puzzleFor(day) },
+            crosswordBoard = { _, boardLanguage -> CrosswordSchedule.puzzleFor(day, boardLanguage) },
         ).also { it.ensureSize(1) }
     }
 
@@ -251,6 +238,14 @@ class DailyGameViewModel(
     override fun restartPipes(page: Int): Boolean = act(false) { it.restartPipes(0) }
     override fun moveDisk(page: Int, from: Int, to: Int): HanoiResult = act(HanoiResult.Ignored) { it.moveDisk(0, from, to) }
     override fun restartHanoi(page: Int): Boolean = act(false) { it.restartHanoi(0) }
+    override fun toggleQueen(page: Int, cell: Int): QueensResult = act(QueensResult.Ignored) { it.toggleQueen(0, cell) }
+    override fun restartQueens(page: Int): Boolean = act(false) { it.restartQueens(0) }
+    override fun tapTent(page: Int, cell: Int): TentsResult = act(TentsResult.Ignored) { it.tapTent(0, cell) }
+    override fun restartTents(page: Int): Boolean = act(false) { it.restartTents(0) }
+    override fun slideBlock(page: Int, piece: Int, to: Int): BlockOutResult = act(BlockOutResult.Ignored) { it.slideBlock(0, piece, to) }
+    override fun restartBlockOut(page: Int): Boolean = act(false) { it.restartBlockOut(0) }
+    override fun placeLetter(page: Int, cell: Int, letter: Char): CrosswordResult = act(CrosswordResult.Ignored) { it.placeLetter(0, cell, letter) }
+    override fun eraseLetter(page: Int, cell: Int): CrosswordResult = act(CrosswordResult.Ignored) { it.eraseLetter(0, cell) }
     override fun dragLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.dragLine(0, cell) }
     override fun tapLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.tapLine(0, cell) }
     override fun undoLine(page: Int): Boolean = act(false) { it.undoLine(0) }

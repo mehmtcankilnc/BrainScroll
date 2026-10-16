@@ -1,8 +1,8 @@
 package com.mehmtcan.brainscroll.stats
 
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.line.LineScoring
-import com.mehmtcan.brainscroll.game.line.lineStars
+import com.mehmtcan.brainscroll.game.crossword.CrosswordScoring
+import com.mehmtcan.brainscroll.game.crossword.crosswordStars
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -107,8 +107,13 @@ data class SudokuStats(
     val winRate: Float get() = if (played == 0) 0f else won.toFloat() / played
 }
 
-fun computeSudokuStats(history: List<FinishedRound>): SudokuStats {
-    val results = history.filter { it.game == GameKind.Sudoku && it.mode == Mode.ENDLESS && !it.assisted }
+fun computeSudokuStats(history: List<FinishedRound>): SudokuStats = computeSudokuStats(history, GameKind.Sudoku)
+
+/** The same numbers for the jigsaw sudoku, which plays by the same rules and is counted the same way. */
+fun computeJigsawStats(history: List<FinishedRound>): SudokuStats = computeSudokuStats(history, GameKind.Jigsaw)
+
+private fun computeSudokuStats(history: List<FinishedRound>, game: GameKind): SudokuStats {
+    val results = history.filter { it.game == game && it.mode == Mode.ENDLESS && !it.assisted }
     val wins = results.filter { it.outcome == Outcome.WON }
     return SudokuStats(played = results.size, won = wins.size, bestTimeMs = wins.mapNotNull { it.durationMs }.minOrNull())
 }
@@ -191,21 +196,21 @@ fun computePipesStats(history: List<FinishedRound>): PipesStats {
     )
 }
 
-/** What the statistics screen shows for the one-line game: only the daily puzzle, and every result is a win. */
+/** What the statistics screen shows for the one-line game. Every result is a win (the game cannot be lost). */
 data class LineStats(
     val played: Int,
     /** The fastest game (see LineRound for how the time is counted). Null until one was finished. */
     val bestTimeMs: Long?,
-    /** How many boards were solved with three stars. */
-    val threeStars: Int,
+    /** The fewest moves in a game. Null until one was finished. */
+    val fewestMoves: Int?,
 )
 
 fun computeLineStats(history: List<FinishedRound>): LineStats {
-    val results = history.filter { it.game == GameKind.Line && it.mode == Mode.DAILY }
+    val results = history.filter { it.game == GameKind.Line && it.mode == Mode.ENDLESS && !it.assisted }
     return LineStats(
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
-        threeStars = results.count { it.lineStars == LineScoring.MAX_STARS },
+        fewestMoves = results.minOfOrNull { it.moveCount },
     )
 }
 
@@ -224,6 +229,75 @@ fun computeHanoiStats(history: List<FinishedRound>): HanoiStats {
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
         fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the queens puzzle. Every result is a win (the game cannot be lost). */
+data class QueensStats(
+    val played: Int,
+    /** The fastest game (see QueensRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest moves in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeQueensStats(history: List<FinishedRound>): QueensStats {
+    val results = history.filter { it.game == GameKind.Queens && it.mode == Mode.ENDLESS && !it.assisted }
+    return QueensStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the tents puzzle: the games and the fastest one (the game counts time only). */
+data class TentsStats(
+    val played: Int,
+    /** The fastest game (see TentsRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeTentsStats(history: List<FinishedRound>): TentsStats {
+    val results = history.filter { it.game == GameKind.Tents && it.mode == Mode.ENDLESS && !it.assisted }
+    return TentsStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+    )
+}
+
+/** What the statistics screen shows for block out. Every result is a win (the game cannot be lost). */
+data class BlockOutStats(
+    val played: Int,
+    /** The fastest game (see BlockOutRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest moves in a game. Null until one was finished. */
+    val fewestMoves: Int?,
+)
+
+fun computeBlockOutStats(history: List<FinishedRound>): BlockOutStats {
+    val results = history.filter { it.game == GameKind.BlockOut && it.mode == Mode.ENDLESS && !it.assisted }
+    return BlockOutStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the crossword: only the daily puzzle, and every result is a win (the game cannot be lost). */
+data class CrosswordStats(
+    val played: Int,
+    /** The fastest game (see CrosswordRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** How many boards were solved with three stars. */
+    val threeStars: Int,
+)
+
+fun computeCrosswordStats(history: List<FinishedRound>): CrosswordStats {
+    val results = history.filter { it.game == GameKind.Crossword && it.mode == Mode.DAILY }
+    return CrosswordStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        threeStars = results.count { it.crosswordStars == CrosswordScoring.MAX_STARS },
     )
 }
 

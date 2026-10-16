@@ -1,5 +1,8 @@
 # Tek Çizgi: günün bulmacası planı
 
+> **GÜNCELLEME (2026-10-16): Bu plan artık geçerli değil.** Tek Çizgi günlük bulmaca olmaktan çıktı ve **feed oyunu** oldu; günlük bulmaca artık **Çapraz Bulmaca**. Tek Çizgi'nin yıldız mantığı, günlük takvim (`LineSchedule`), paylaşım metni ve sunucu skor kodu kaldırıldı: feed'de diğer oyunlar gibi yalnızca **hata** (geri alınan kareler) ve **hamle** (çizgiye konan kare sayısı) tutulur, sonuçta tek tahmin hamle sayısıdır, ipucu kullanılan tahta istatistikten dışlanır. Günlük bulmacanın yıldız/süre/sıralama mantığı için `docs/yeni-oyunlar-plan.md` bölüm 6'ya bakın (`CrosswordScoring`, `CrosswordSchedule`, `supabase/migrations/20261016090000_crossword_daily.sql`). Aşağıdaki metin tarihsel kayıt olarak duruyor; Tek Çizgi'nin kuralları, çözücüsü ve üreticisi geçerli.
+
+
 Durum: Aşama 1-5 tamam, sunucu ve cihaz testleri yapıldı.
 
 **Yayına çıkmadan önce:** `LineSchedule.LAUNCH_DAY_INDEX` (`LineSchedule.kt`) yayın gününün gün numarasına ayarlanmalı (şu an yer tutucu: 20740). Paylaşılan "Tek Çizgi #N" numarası buradan sayılıyor.

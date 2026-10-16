@@ -1,0 +1,179 @@
+GO|Move along
+NO|Opposite of yes
+UP|Opposite of down
+ON|Opposite of off
+WE|You and I
+ME|Myself
+OX|Plow animal
+PI|About 3.14
+HI|Friendly greeting
+ANT|Tiny colony insect
+APE|Tailless primate
+ARM|Between shoulder and hand
+BAG|Carries groceries
+BAT|Flying mammal
+BED|Where you sleep
+BEE|Honey maker
+BOX|Cardboard container
+BUS|Public transport vehicle
+CAP|Baseball headwear
+CAR|Four-wheeled vehicle
+CAT|Purring pet
+COW|Gives milk
+CUP|Tea holder
+DAY|Twenty-four hours
+DOG|Barking pet
+DOT|Tiny round mark
+EAR|Hearing organ
+EGG|Laid by a hen
+EYE|Seeing organ
+FAN|Cools a room
+FOX|Sly red animal
+FUN|Enjoyment
+GEM|Precious stone
+HAT|Worn on the head
+HEN|Egg-laying bird
+HOT|Not cold
+ICE|Frozen water
+INK|Pen filler
+JAM|Spread on toast
+JAR|Glass container
+KEY|Opens a lock
+KID|Young goat
+LAP|One round of a track
+LEG|Limb for walking
+LID|Pot cover
+LIP|Part of the mouth
+MAP|Shows the way
+MOM|Mother
+MUD|Wet soil
+NET|Fisher's tool
+NUT|Squirrel's snack
+OAK|Mighty tree
+OWL|Night bird
+PAN|Frying vessel
+PEN|Writing tool
+PIE|Dessert with crust
+PIG|Oinking animal
+RAT|Rodent
+RED|Color of a rose
+RUG|Floor covering
+SAD|Unhappy
+SEA|Salty water
+SKY|Where clouds are
+SUN|Our daytime star
+TEA|British drink
+TIN|Metal can
+TOE|Foot digit
+TOP|Opposite of bottom
+TOY|Child's plaything
+TUB|Bath container
+VAN|Delivery vehicle
+WAX|Candle material
+WEB|Spider's creation
+WIG|Fake hair
+ZOO|Place with animals
+AIR|We breathe it
+BUD|Flower in the making
+CAB|Taxi
+COT|Small bed
+DEN|Lion's home
+DIG|Use a shovel
+FIG|Mediterranean fruit
+GAS|Fuel for stoves
+HIP|Where the leg joins the body
+HUT|Small shack
+LOG|Piece of firewood
+MIX|Stir together
+OIL|Olive product
+OUR|Belonging to us
+PEA|Green sphere in a pod
+PET|Home animal
+RIB|Part of the chest
+ROW|Line of seats
+SAW|Cuts wood
+SIX|Half a dozen
+SOY|Bean for tofu
+TAX|Government charge
+TEN|Number after nine
+TIP|Waiter's extra
+TWO|Number after one
+USE|Put to work
+WAR|Armed conflict
+YES|Opposite of no
+ZIP|Closes a jacket
+ARCH|Curved structure
+BAKE|Cook in an oven
+BALL|Round toy
+BARN|Farm building
+BEAR|Large furry mammal
+BELL|Ringing metal cup
+BIRD|Flying animal
+BOAT|Floats on water
+BOOK|You read it
+BOWL|Soup dish
+CAKE|Birthday dessert
+CAMP|Tent site
+CARD|Playing item
+CITY|Large town
+CLAY|Potter's material
+COAT|Winter garment
+COIN|Small money
+CORN|Maize
+DARK|Without light
+DESK|Where you study
+DOOR|Entry to a room
+DUCK|Quacking bird
+DUST|Fine dirt
+FARM|Where crops grow
+FISH|Swims in water
+FLAG|Banner on a pole
+FOOD|What we eat
+FROG|Hopping amphibian
+GAME|Play activity
+GATE|Garden entrance
+GIFT|Present
+GOAT|Horned farm animal
+GOLD|Yellow metal
+HAND|Has five fingers
+HAWK|Bird of prey
+HEAD|Where the brain is
+HILL|Small mountain
+HOME|Where you live
+JUMP|Leap
+KING|Male ruler
+KITE|Flown on a windy day
+LAKE|Inland water body
+LAMP|Gives light
+LEAF|Part of a tree
+LION|King of beasts
+MILK|White drink
+MOON|Night light in the sky
+NAIL|Hammered into wood
+NEST|Bird's home
+NOSE|Used for smelling
+PARK|Green space in town
+PEAR|Fruit with a narrow top
+RAIN|Falls from clouds
+RING|Worn on a finger
+ROAD|Cars drive on it
+ROCK|Hard stone
+ROOF|Top of a house
+ROSE|Thorny flower
+SAND|Beach covering
+SEED|Planted to grow
+SHIP|Large boat
+SHOE|Footwear
+SNOW|White winter flakes
+SOAP|Used in the bath
+SOUP|Served in a bowl
+STAR|Twinkles at night
+TAIL|Dog's wagger
+TEAM|Group of players
+TREE|Has branches and leaves
+WAVE|Ocean ripple
+WIND|Moving air
+WOLF|Howling predator
+WOOD|Material from trees
+YARN|Knitting thread
+ZERO|Nothing

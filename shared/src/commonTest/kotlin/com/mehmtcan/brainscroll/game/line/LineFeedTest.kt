@@ -39,7 +39,7 @@ class LineFeedTest {
     )
     private var clock = 1_000L
     private var ids = 0
-    private val daily = LineSchedule.puzzleFor(20740)
+    private val daily = LineFixtures.board
 
     private fun feed(
         store: FeedStore = FakeStore(),
@@ -83,7 +83,7 @@ class LineFeedTest {
         val result = store.results.single()
         assertEquals(GameKind.Line, result.game)
         assertEquals(Outcome.WON, result.outcome)
-        assertEquals(listOf("1"), result.guesses)
+        assertEquals(listOf(daily.cells.toString()), result.guesses, "the number of moves")
         assertFalse(store.progress.containsKey(result.id))
         f.dragLine(0, daily.solution[1])
         f.undoLine(0)

@@ -41,9 +41,9 @@ import brainscroll.shared.generated.resources.ranks_loading
 import com.mehmtcan.brainscroll.daily.formatCountdown
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.line.LineSchedule
-import com.mehmtcan.brainscroll.game.line.LineShare
-import com.mehmtcan.brainscroll.game.line.LineSnapshot
+import com.mehmtcan.brainscroll.game.crossword.CrosswordSchedule
+import com.mehmtcan.brainscroll.game.crossword.CrosswordShare
+import com.mehmtcan.brainscroll.game.crossword.CrosswordSnapshot
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Outcome
@@ -53,8 +53,8 @@ import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.feed.GamePage
 import com.mehmtcan.brainscroll.ui.feed.LocalDailyPage
 import com.mehmtcan.brainscroll.ui.home.displayName
-import com.mehmtcan.brainscroll.ui.line.LineDoneInfo
-import com.mehmtcan.brainscroll.ui.line.LocalLineShare
+import com.mehmtcan.brainscroll.ui.crossword.CrosswordDoneInfo
+import com.mehmtcan.brainscroll.ui.crossword.LocalCrosswordShare
 import com.mehmtcan.brainscroll.ui.howto.HowToIconButton
 import com.mehmtcan.brainscroll.ui.howto.HowToPlaySheet
 import com.mehmtcan.brainscroll.ui.motion.CelebrateWin
@@ -97,10 +97,10 @@ fun DailyGameScreen(viewModel: DailyGameViewModel, onBack: () -> Unit, modifier:
                 val page = ui.page
                 // What a player can paste into a chat once today's board is solved.
                 val name = ui.game.displayName()
-                val shareText = (page as? LineSnapshot)?.takeIf { it.isFinished }?.let {
-                    LineShare.text(name, LineSchedule.puzzleNumber(ui.day), it.stars, formatDuration(it.durationMs), ui.dayStreak.current)
+                val shareText = (page as? CrosswordSnapshot)?.takeIf { it.isFinished }?.let {
+                    CrosswordShare.text(name, CrosswordSchedule.puzzleNumber(ui.day), it.stars, formatDuration(it.durationMs), ui.dayStreak.current)
                 }
-                CompositionLocalProvider(LocalDailyPage provides true, LocalLineShare provides shareText, LocalWinSignal provides winSignal) {
+                CompositionLocalProvider(LocalDailyPage provides true, LocalCrosswordShare provides shareText, LocalWinSignal provides winSignal) {
                     val result = ui.result
                     when {
                         page != null -> GamePage(page, 0, viewModel, ui.favoriteIds)
@@ -155,7 +155,7 @@ private fun DailyGameBar(title: String, streak: Int, onBack: () -> Unit, onHowTo
     }
 }
 
-/** The board is being made (a one-line board takes a moment): a quiet word, no spinner. */
+/** The board is being made: a quiet word, no spinner. */
 @Composable
 private fun Loading() {
     val colors = BrainScrollTheme.colors
@@ -193,8 +193,8 @@ private fun FinishedSummary(result: FinishedRound) {
                 stringResource(if (won) Res.string.daily_game_won else Res.string.daily_game_lost),
                 style = type.heading.copy(color = if (won) colors.correctFill else colors.textSecondary),
             )
-            if (result.game == GameKind.Line) {
-                LineDoneInfo(result)
+            if (result.game == GameKind.Crossword) {
+                CrosswordDoneInfo(result)
             } else {
                 BasicText(
                     stringResource(Res.string.daily_game_result, result.moveCount, formatDuration(result.durationMs ?: 0L)),

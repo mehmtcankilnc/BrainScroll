@@ -52,6 +52,32 @@ import brainscroll.shared.generated.resources.howto_line_3
 import brainscroll.shared.generated.resources.howto_line_4
 import brainscroll.shared.generated.resources.howto_pipes_4
 import brainscroll.shared.generated.resources.howto_title_hanoi
+import brainscroll.shared.generated.resources.howto_title_queens
+import brainscroll.shared.generated.resources.howto_title_tents
+import brainscroll.shared.generated.resources.howto_title_crossword
+import brainscroll.shared.generated.resources.howto_crossword_1
+import brainscroll.shared.generated.resources.howto_crossword_2
+import brainscroll.shared.generated.resources.howto_crossword_3
+import brainscroll.shared.generated.resources.howto_crossword_4
+import brainscroll.shared.generated.resources.howto_title_blockout
+import brainscroll.shared.generated.resources.howto_blockout_1
+import brainscroll.shared.generated.resources.howto_blockout_2
+import brainscroll.shared.generated.resources.howto_blockout_3
+import brainscroll.shared.generated.resources.howto_blockout_4
+import brainscroll.shared.generated.resources.howto_title_jigsaw
+import brainscroll.shared.generated.resources.howto_jigsaw_1
+import brainscroll.shared.generated.resources.howto_jigsaw_2
+import brainscroll.shared.generated.resources.howto_jigsaw_3
+import brainscroll.shared.generated.resources.howto_jigsaw_4
+import brainscroll.shared.generated.resources.howto_jigsaw_5
+import brainscroll.shared.generated.resources.howto_tents_1
+import brainscroll.shared.generated.resources.howto_tents_2
+import brainscroll.shared.generated.resources.howto_tents_3
+import brainscroll.shared.generated.resources.howto_tents_4
+import brainscroll.shared.generated.resources.howto_queens_1
+import brainscroll.shared.generated.resources.howto_queens_2
+import brainscroll.shared.generated.resources.howto_queens_3
+import brainscroll.shared.generated.resources.howto_queens_4
 import brainscroll.shared.generated.resources.howto_title_line
 import brainscroll.shared.generated.resources.howto_title_pipes
 import brainscroll.shared.generated.resources.howto_slide_1
@@ -165,6 +191,26 @@ private fun contentOf(kind: GameKind) = when (kind) {
     GameKind.Hanoi -> HowToContent(
         Res.string.howto_title_hanoi,
         listOf(Res.string.howto_hanoi_1, Res.string.howto_hanoi_2, Res.string.howto_hanoi_3, Res.string.howto_hanoi_4),
+    )
+    GameKind.Queens -> HowToContent(
+        Res.string.howto_title_queens,
+        listOf(Res.string.howto_queens_1, Res.string.howto_queens_2, Res.string.howto_queens_3, Res.string.howto_queens_4),
+    )
+    GameKind.Tents -> HowToContent(
+        Res.string.howto_title_tents,
+        listOf(Res.string.howto_tents_1, Res.string.howto_tents_2, Res.string.howto_tents_3, Res.string.howto_tents_4),
+    )
+    GameKind.Jigsaw -> HowToContent(
+        Res.string.howto_title_jigsaw,
+        listOf(Res.string.howto_jigsaw_1, Res.string.howto_jigsaw_2, Res.string.howto_jigsaw_3, Res.string.howto_jigsaw_4, Res.string.howto_jigsaw_5),
+    )
+    GameKind.BlockOut -> HowToContent(
+        Res.string.howto_title_blockout,
+        listOf(Res.string.howto_blockout_1, Res.string.howto_blockout_2, Res.string.howto_blockout_3, Res.string.howto_blockout_4),
+    )
+    GameKind.Crossword -> HowToContent(
+        Res.string.howto_title_crossword,
+        listOf(Res.string.howto_crossword_1, Res.string.howto_crossword_2, Res.string.howto_crossword_3, Res.string.howto_crossword_4),
     )
     GameKind.Line -> HowToContent(
         Res.string.howto_title_line,

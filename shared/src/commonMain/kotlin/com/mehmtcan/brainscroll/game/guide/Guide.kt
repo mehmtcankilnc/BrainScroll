@@ -26,6 +26,12 @@ enum class GuideReason {
     /** The digit can only go in this cell of its row, column or box. */
     SudokuOnlyPlace,
 
+    /** The cell can only hold one digit: its row, column and region already have all the others (the jigsaw board). */
+    JigsawOnlyDigit,
+
+    /** The digit can only go in this cell of its row, column or region (the jigsaw board). */
+    JigsawOnlyPlace,
+
     /** The digit that belongs in the cell. */
     SudokuSolution,
 
@@ -34,6 +40,27 @@ enum class GuideReason {
 
     /** Move the top disk of the first tower onto the second: it is the first step of the shortest way. */
     HanoiMove,
+
+    /** Put a queen on this cell: it is part of a way to finish the board. */
+    QueensPlace,
+
+    /** Take away the queen on this cell: it is not part of any way to finish the board. */
+    QueensRemove,
+
+    /** Put a tent on this cell: the trees and the numbers leave no other place for it. */
+    TentsPlace,
+
+    /** Take away the tent on this cell: it cannot be part of a finished board. */
+    TentsRemove,
+
+    /** Slide the piece this many cells in this direction: it is the first move of the shortest way. */
+    BlockOutSlide,
+
+    /** A letter in the square is wrong: take it back first. */
+    CrosswordErase,
+
+    /** The letter that belongs in the square. */
+    CrosswordLetter,
 
     /** Tap the light: it is part of the shortest way to put all of them out. */
     LightsTap,
