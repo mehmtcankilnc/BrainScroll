@@ -1,4 +1,4 @@
-package com.mehmtcan.brainscroll.ui.crossword
+package com.mehmtcan.brainscroll.ui.line
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,7 +18,7 @@ import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.daily_next
 import com.mehmtcan.brainscroll.daily.formatCountdown
 import com.mehmtcan.brainscroll.daily.formatDuration
-import com.mehmtcan.brainscroll.game.crossword.crosswordStars
+import com.mehmtcan.brainscroll.game.line.lineStars
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.components.Stars
@@ -29,10 +29,10 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-/** What is known of today's solved crossword: the stars, the time, and how long until the next one. */
+/** What is known of today's solved board: the stars, the time, and how long until the next one. */
 @OptIn(ExperimentalTime::class)
 @Composable
-fun CrosswordDoneInfo(result: FinishedRound, modifier: Modifier = Modifier) {
+fun LineDoneInfo(result: FinishedRound, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     var nowMs by remember { mutableLongStateOf(Clock.System.now().toEpochMilliseconds()) }
@@ -42,9 +42,9 @@ fun CrosswordDoneInfo(result: FinishedRound, modifier: Modifier = Modifier) {
             delay(1000)
         }
     }
-    Column(modifier = modifier.testTag("crosswordDone"), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    Column(modifier = modifier.testTag("lineDone"), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Stars(result.crosswordStars, size = 24.dp)
+            Stars(result.lineStars, size = 24.dp)
             BasicText(formatDuration(result.durationMs ?: 0L), style = type.body.copy(color = colors.textPrimary))
         }
         BasicText(

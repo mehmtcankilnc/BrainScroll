@@ -122,7 +122,7 @@ class LineRoundTest {
     }
 
     @Test
-    fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
+    fun aSolvedRoundIsAWinWhoseGuessesAreTheMovesTheUndosAndTheHints() {
         val r = round()
         clock = 5_000
         r.solve()
@@ -131,7 +131,7 @@ class LineRoundTest {
         assertEquals(Outcome.WON, finished.outcome)
         assertEquals(Mode.ENDLESS, finished.mode, "the daily screen saves it as a daily result")
         assertEquals(GameKind.Line, finished.game)
-        assertEquals(listOf(puzzle.cells.toString()), finished.guesses)
+        assertEquals(listOf(puzzle.cells.toString(), "0", "0"), finished.guesses)
         assertEquals(puzzle.cells, finished.moveCount)
         assertEquals("${puzzle.size}x${puzzle.size}", finished.answer)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
@@ -151,7 +151,7 @@ class LineRoundTest {
         assertTrue(r.snapshot().hint.isEmpty(), "the hint goes away with the next change")
         for (cell in puzzle.solution.drop(2)) r.drag(cell)
         val finished = r.toFinished(1)
-        assertEquals(listOf(puzzle.cells.toString()), finished.guesses)
+        assertEquals(listOf(puzzle.cells.toString(), "0", "1"), finished.guesses)
         assertTrue(finished.assisted)
     }
 

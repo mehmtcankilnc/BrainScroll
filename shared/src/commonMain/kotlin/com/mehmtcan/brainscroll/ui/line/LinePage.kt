@@ -67,7 +67,11 @@ import brainscroll.shared.generated.resources.a11y_line_restart
 import brainscroll.shared.generated.resources.a11y_line_undo
 import brainscroll.shared.generated.resources.line_end_too_early
 import brainscroll.shared.generated.resources.line_hint_text
+import brainscroll.shared.generated.resources.line_hints
 import brainscroll.shared.generated.resources.line_moves
+import brainscroll.shared.generated.resources.line_share
+import brainscroll.shared.generated.resources.line_share_copied
+import brainscroll.shared.generated.resources.line_squares
 import brainscroll.shared.generated.resources.line_no_hint
 import brainscroll.shared.generated.resources.line_result
 import brainscroll.shared.generated.resources.line_undos
@@ -82,6 +86,10 @@ import com.mehmtcan.brainscroll.ui.components.AppTextButton
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.components.RoundIconButton
+import com.mehmtcan.brainscroll.ui.components.Stars
+import com.mehmtcan.brainscroll.ui.components.StarsBar
+import com.mehmtcan.brainscroll.ui.components.StarsInfoSheet
+import com.mehmtcan.brainscroll.ui.feed.LocalDailyPage
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
@@ -109,6 +117,12 @@ internal val LineFilled = SemanticsPropertyKey<Int>("LineFilled")
 internal val LineReached = SemanticsPropertyKey<Int>("LineReached")
 private var SemanticsPropertyReceiver.lineFilled by LineFilled
 private var SemanticsPropertyReceiver.lineReached by LineReached
+
+/**
+ * The line to copy for sharing the result (see [com.mehmtcan.brainscroll.game.line.LineShare]); null where there is no
+ * sharing (a board that is not the daily one). The daily screen provides it once the board is solved.
+ */
+val LocalLineShare = compositionLocalOf<String?> { null }
 
 /** What the line of text under the board says instead of the rules, after something that did not work. */
 private enum class LineNotice { WrongOrder, EndTooEarly, NoHint }
@@ -145,6 +159,9 @@ fun LinePage(
     val justFinished = rememberJustFinished(status)
 
     var notice by remember { mutableStateOf<LineNotice?>(null) }
+    // Only the daily board gives stars; a board of the feed shows the mistakes and the moves.
+    val daily = LocalDailyPage.current
+    var starsInfo by remember { mutableStateOf(false) }
 
     /** Buzzes for what a touch did and keeps the line of text under the board in step. */
     fun react(result: LineResult) {
@@ -165,10 +182,21 @@ fun LinePage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Spacing.xs))
-        // The mistakes (squares taken back) and the moves, as in the other games; the board does not give stars.
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Chip(text = stringResource(Res.string.line_undos, state.undos), textColor = if (state.undos > 0) colors.error else colors.textSecondary)
-            Chip(text = stringResource(Res.string.line_moves, state.moves), textColor = colors.textSecondary)
+        if (daily) {
+            // The stars the board is worth right now, and the way to find out how they are earned.
+            StarsBar(stars = page.stars, onInfo = { starsInfo = true })
+            Spacer(Modifier.height(Spacing.xs))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Chip(text = stringResource(Res.string.line_squares, state.path.size, cells), textColor = colors.textSecondary)
+                Chip(text = stringResource(Res.string.line_undos, state.undos), textColor = colors.textSecondary)
+                if (state.hintsUsed > 0) Chip(text = stringResource(Res.string.line_hints, state.hintsUsed), textColor = colors.textSecondary)
+            }
+        } else {
+            // The mistakes (squares taken back) and the moves, as in the other games.
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Chip(text = stringResource(Res.string.line_undos, state.undos), textColor = if (state.undos > 0) colors.error else colors.textSecondary)
+                Chip(text = stringResource(Res.string.line_moves, state.moves), textColor = colors.textSecondary)
+            }
         }
         Spacer(Modifier.height(Spacing.md))
 
@@ -246,6 +274,7 @@ fun LinePage(
         }
         Spacer(Modifier.height(Spacing.md))
     }
+    if (starsInfo) StarsInfoSheet(onClose = { starsInfo = false })
 }
 
 /** The board and the finger on it. [side] is its width and height; the touch work is done in pixels of this node. */
@@ -387,14 +416,26 @@ private fun LineResultCard(page: LineSnapshot, isFavorite: Boolean, onToggleFavo
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
+            if (LocalDailyPage.current) Stars(page.stars)
             BasicText(
                 text = stringResource(Res.string.line_result, formatDuration(page.durationMs)),
                 style = type.body.copy(color = colors.textPrimary),
             )
-            BasicText(
-                text = swipeHintText(),
-                style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
-            )
+            val share = LocalLineShare.current
+            if (share != null) {
+                val clipboard = LocalClipboardManager.current
+                var copied by remember { mutableStateOf(false) }
+                AppTextButton(
+                    text = stringResource(if (copied) Res.string.line_share_copied else Res.string.line_share),
+                    onClick = { clipboard.setText(AnnotatedString(share)); copied = true },
+                    modifier = Modifier.testTag("lineShare"),
+                )
+            } else {
+                BasicText(
+                    text = swipeHintText(),
+                    style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+                )
+            }
         }
         HeartButton(filled = isFavorite, onClick = onToggleFavorite, modifier = Modifier.align(Alignment.TopEnd))
     }

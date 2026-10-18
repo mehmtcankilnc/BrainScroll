@@ -54,11 +54,6 @@ import brainscroll.shared.generated.resources.howto_pipes_4
 import brainscroll.shared.generated.resources.howto_title_hanoi
 import brainscroll.shared.generated.resources.howto_title_queens
 import brainscroll.shared.generated.resources.howto_title_tents
-import brainscroll.shared.generated.resources.howto_title_crossword
-import brainscroll.shared.generated.resources.howto_crossword_1
-import brainscroll.shared.generated.resources.howto_crossword_2
-import brainscroll.shared.generated.resources.howto_crossword_3
-import brainscroll.shared.generated.resources.howto_crossword_4
 import brainscroll.shared.generated.resources.howto_title_blockout
 import brainscroll.shared.generated.resources.howto_blockout_1
 import brainscroll.shared.generated.resources.howto_blockout_2
@@ -207,10 +202,6 @@ private fun contentOf(kind: GameKind) = when (kind) {
     GameKind.BlockOut -> HowToContent(
         Res.string.howto_title_blockout,
         listOf(Res.string.howto_blockout_1, Res.string.howto_blockout_2, Res.string.howto_blockout_3, Res.string.howto_blockout_4),
-    )
-    GameKind.Crossword -> HowToContent(
-        Res.string.howto_title_crossword,
-        listOf(Res.string.howto_crossword_1, Res.string.howto_crossword_2, Res.string.howto_crossword_3, Res.string.howto_crossword_4),
     )
     GameKind.Line -> HowToContent(
         Res.string.howto_title_line,

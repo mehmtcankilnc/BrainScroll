@@ -7,8 +7,6 @@ import com.mehmtcan.brainscroll.game.blockout.BlockOutPuzzle
 import com.mehmtcan.brainscroll.game.blockout.BlockOutSolver
 import com.mehmtcan.brainscroll.game.blockout.BlockOutState
 import com.mehmtcan.brainscroll.game.blockout.BlockOutStatus
-import com.mehmtcan.brainscroll.game.crossword.CrosswordState
-import com.mehmtcan.brainscroll.game.crossword.CrosswordStatus
 import com.mehmtcan.brainscroll.game.queens.QueensSolver
 import com.mehmtcan.brainscroll.game.tents.TentsMark
 import com.mehmtcan.brainscroll.game.tents.TentsSolver
@@ -251,12 +249,3 @@ object BlockOutGuide {
     }
 }
 
-/** The guide of the crossword: a wrong letter first, then the letter of the first square that is still empty. */
-object CrosswordGuide {
-    fun step(state: CrosswordState, solution: List<Char>): GuideStep? {
-        if (state.status != CrosswordStatus.Playing) return null
-        state.wrong.minOrNull()?.let { return GuideStep(GuideReason.CrosswordErase, listOf(it), listOf(it / state.size + 1, it % state.size + 1)) }
-        val cell = state.letters.indices.firstOrNull { !state.isClue[it] && state.letters[it] == ' ' } ?: return null
-        return GuideStep(GuideReason.CrosswordLetter, listOf(cell), listOf(cell / state.size + 1, cell % state.size + 1), solution[cell].toString())
-    }
-}

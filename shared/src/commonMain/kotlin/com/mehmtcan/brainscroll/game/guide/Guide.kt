@@ -56,12 +56,6 @@ enum class GuideReason {
     /** Slide the piece this many cells in this direction: it is the first move of the shortest way. */
     BlockOutSlide,
 
-    /** A letter in the square is wrong: take it back first. */
-    CrosswordErase,
-
-    /** The letter that belongs in the square. */
-    CrosswordLetter,
-
     /** Tap the light: it is part of the shortest way to put all of them out. */
     LightsTap,
 

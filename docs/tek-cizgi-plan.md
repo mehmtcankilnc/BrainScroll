@@ -1,6 +1,6 @@
 # Tek Çizgi: günün bulmacası planı
 
-> **GÜNCELLEME (2026-10-16): Bu plan artık geçerli değil.** Tek Çizgi günlük bulmaca olmaktan çıktı ve **feed oyunu** oldu; günlük bulmaca artık **Çapraz Bulmaca**. Tek Çizgi'nin yıldız mantığı, günlük takvim (`LineSchedule`), paylaşım metni ve sunucu skor kodu kaldırıldı: feed'de diğer oyunlar gibi yalnızca **hata** (geri alınan kareler) ve **hamle** (çizgiye konan kare sayısı) tutulur, sonuçta tek tahmin hamle sayısıdır, ipucu kullanılan tahta istatistikten dışlanır. Günlük bulmacanın yıldız/süre/sıralama mantığı için `docs/yeni-oyunlar-plan.md` bölüm 6'ya bakın (`CrosswordScoring`, `CrosswordSchedule`, `supabase/migrations/20261016090000_crossword_daily.sql`). Aşağıdaki metin tarihsel kayıt olarak duruyor; Tek Çizgi'nin kuralları, çözücüsü ve üreticisi geçerli.
+> **GÜNCELLEME (2026-10-17): Plan yeniden geçerli.** Tek Çizgi yine tek günlük bulmaca, feed'den de çıkarıldı (Çapraz Bulmaca uygulamadan kaldırıldı, yedeği `C:\Projects\crossword-archive`). Yıldız mantığı (`LineScoring`), günlük takvim (`LineSchedule`), paylaşım metni (`LineShare`) ve sunucu skor kodu geri getirildi. Bir değişiklik var: `LineRound.toFinished` sonucu artık `[hamle, geri alma, ipucu]` tutar, günlük ekran bunu skor koduna çevirir. Aşağıda 2026-10-16 tarihli eski uyarı yerine bu not geçerlidir.
 
 
 Durum: Aşama 1-5 tamam, sunucu ve cihaz testleri yapıldı.

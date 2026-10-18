@@ -85,7 +85,6 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.Tents -> TentsThumb(side)
             GameKind.Jigsaw -> JigsawThumb(side)
             GameKind.BlockOut -> BlockOutThumb(side)
-            GameKind.Crossword -> CrosswordThumb(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -564,30 +563,3 @@ private fun BlockOutThumb(side: Dp) {
     }
 }
 
-// --- Crossword: a small arrow crossword, clue squares with an arrow and the letters of two answers ---
-
-@Composable
-private fun CrosswordThumb(side: Dp) {
-    val colors = BrainScrollTheme.colors
-    // # is a clue square, '>' a clue with an arrow to the right, 'v' a clue with an arrow down; other characters are letters.
-    val rows = listOf(">KAR", "vA.A", "SU.Y", "O.EV").map { it }
-    val size = 4
-    val gap = side * 0.03f
-    val tile = (side * 0.88f - gap * (size - 1)) / size
-    Grid(rows = size, cols = size, gap = gap) { r, c ->
-        when (val ch = rows[r][c]) {
-            '>', 'v' -> Cell(tile, colors.bgRaised, colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.15f) {
-                Canvas(Modifier.size(tile * 0.5f)) {
-                    val w = this.size.width
-                    val arrow = androidx.compose.ui.graphics.Path().apply {
-                        if (ch == '>') { moveTo(w * 0.2f, w * 0.1f); lineTo(w * 0.9f, w * 0.5f); lineTo(w * 0.2f, w * 0.9f) } else { moveTo(w * 0.1f, w * 0.2f); lineTo(w * 0.5f, w * 0.9f); lineTo(w * 0.9f, w * 0.2f) }
-                        close()
-                    }
-                    drawPath(arrow, colors.streakDay)
-                }
-            }
-            '.' -> Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.15f)
-            else -> Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.3f), 0.5.dp, tile * 0.15f) { Mark(ch.toString(), tile * 0.6f, colors.textPrimary) }
-        }
-    }
-}

@@ -29,7 +29,6 @@ class GuideRingUiTest {
     @Test fun tubes() = ring(GameKind.Tubes, "tubes", "tube")
     @Test fun sudoku() = ring(GameKind.Sudoku, "sudoku", "sudokuCell")
     @Test fun blockout() = ring(GameKind.BlockOut, "blockout", "blockoutPiece")
-    @Test fun crossword() = ring(GameKind.Crossword, "crossword", "crosswordSquare")
     @Test fun lights() = ring(GameKind.Lights, "lights", "lightCell")
     @Test fun slide() = ring(GameKind.Slide, "slide", "slideTile")
     @Test fun target() = ring(GameKind.Target, "target", "targetNumber")

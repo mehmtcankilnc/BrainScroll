@@ -5,7 +5,6 @@ import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.game_hanoi
 import brainscroll.shared.generated.resources.game_jigsaw
 import brainscroll.shared.generated.resources.game_blockout
-import brainscroll.shared.generated.resources.game_crossword
 import brainscroll.shared.generated.resources.game_lights
 import brainscroll.shared.generated.resources.game_line
 import brainscroll.shared.generated.resources.game_memory
@@ -39,7 +38,6 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.Tents -> Res.string.game_tents
         GameKind.Jigsaw -> Res.string.game_jigsaw
         GameKind.BlockOut -> Res.string.game_blockout
-        GameKind.Crossword -> Res.string.game_crossword
         GameKind.Line -> Res.string.game_line
     },
 )

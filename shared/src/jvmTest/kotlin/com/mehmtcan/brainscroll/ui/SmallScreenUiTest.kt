@@ -36,7 +36,6 @@ class SmallScreenUiTest {
     @Test fun tents() = shot(GameKind.Tents, "tents")
     @Test fun jigsaw() = shot(GameKind.Jigsaw, "jigsaw")
     @Test fun blockout() = shot(GameKind.BlockOut, "blockout")
-    @Test fun crossword() = shot(GameKind.Crossword, "crossword")
 
     /** The towers and the restart button are both on the short screen with big text, and nothing runs off its edge. */
     @Test
@@ -85,24 +84,6 @@ class SmallScreenUiTest {
         snap("303_small_blockout_big_text")
         val root = onRoot().fetchSemanticsNode().boundsInRoot
         for (tag in listOf("blockoutPiece", "blockoutCell", "blockoutRestart")) {
-            for (node in onAllNodesWithTag(tag).fetchSemanticsNodes()) {
-                val b = node.boundsInRoot
-                assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")
-            }
-        }
-    }
-
-    /** The crossword board, its clue and the keyboard are both on the short screen with big text, and nothing runs off its edge. */
-    @Test
-    fun crosswordFitsAShortScreenWithBigText() = runComposeUiTest {
-        start(games = listOf(GameKind.Crossword), openFeed = false, fontScale = 1.5f, screen = 360 to 600)
-        openTab("Akış", "Feed")
-        waitForIdle()
-        mainClock.advanceTimeBy(1_500)
-        waitForIdle()
-        snap("304_small_crossword_big_text")
-        val root = onRoot().fetchSemanticsNode().boundsInRoot
-        for (tag in listOf("crosswordSquare", "crosswordBanner")) {
             for (node in onAllNodesWithTag(tag).fetchSemanticsNodes()) {
                 val b = node.boundsInRoot
                 assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")

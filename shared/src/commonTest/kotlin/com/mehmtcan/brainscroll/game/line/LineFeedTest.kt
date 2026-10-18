@@ -83,7 +83,7 @@ class LineFeedTest {
         val result = store.results.single()
         assertEquals(GameKind.Line, result.game)
         assertEquals(Outcome.WON, result.outcome)
-        assertEquals(listOf(daily.cells.toString()), result.guesses, "the number of moves")
+        assertEquals(listOf(daily.cells.toString(), "0", "0"), result.guesses, "the moves, the undos and the hints")
         assertFalse(store.progress.containsKey(result.id))
         f.dragLine(0, daily.solution[1])
         f.undoLine(0)

@@ -40,18 +40,21 @@ import brainscroll.shared.generated.resources.a11y_stars
 import brainscroll.shared.generated.resources.a11y_stars_info
 import brainscroll.shared.generated.resources.howto_done
 import brainscroll.shared.generated.resources.stars_info_counts
+import brainscroll.shared.generated.resources.stars_info_hint
 import brainscroll.shared.generated.resources.stars_info_intro
 import brainscroll.shared.generated.resources.stars_info_rank
 import brainscroll.shared.generated.resources.stars_info_title
 import brainscroll.shared.generated.resources.stars_rule_0
 import brainscroll.shared.generated.resources.stars_rule_1
 import brainscroll.shared.generated.resources.stars_rule_2
-import com.mehmtcan.brainscroll.game.crossword.CrosswordScoring
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
+
+/** The stars a daily board can earn. */
+internal const val MAX_STARS = 3
 
 /** How long a lost star takes to fall away. */
 internal const val STAR_LOSS_MILLIS = 600
@@ -70,7 +73,7 @@ internal fun StarsBar(stars: Int, onInfo: () -> Unit, modifier: Modifier = Modif
     val colors = BrainScrollTheme.colors
     val reduce = LocalReduceMotion.current
     // A new board starts at its value (no animation); only a change while the board is on screen animates.
-    val progress = List(CrosswordScoring.MAX_STARS) { index ->
+    val progress = List(MAX_STARS) { index ->
         animateFloatAsState(
             targetValue = if (index < stars) 1f else 0f,
             animationSpec = if (reduce) snap() else tween(STAR_LOSS_MILLIS, easing = Motion.Standard),
@@ -134,15 +137,16 @@ internal fun StarsInfoSheet(onClose: () -> Unit, modifier: Modifier = Modifier) 
         )
         BasicText(stringResource(Res.string.stars_info_intro), style = type.body.copy(color = colors.textPrimary))
         listOf(
-            CrosswordScoring.MAX_STARS to Res.string.stars_rule_0,
-            CrosswordScoring.MAX_STARS - 1 to Res.string.stars_rule_1,
-            CrosswordScoring.MAX_STARS - 2 to Res.string.stars_rule_2,
+            MAX_STARS to Res.string.stars_rule_0,
+            MAX_STARS - 1 to Res.string.stars_rule_1,
+            MAX_STARS - 2 to Res.string.stars_rule_2,
         ).forEach { (earned, rule) ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Stars(earned, size = 22.dp)
                 BasicText(stringResource(rule), style = type.body.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
             }
         }
+        BasicText(stringResource(Res.string.stars_info_hint), style = type.body.copy(color = colors.textPrimary))
         BasicText(stringResource(Res.string.stars_info_counts), style = type.body.copy(color = colors.textSecondary))
         BasicText(stringResource(Res.string.stars_info_rank), style = type.body.copy(color = colors.textSecondary))
         AppButton(text = stringResource(Res.string.howto_done), onClick = close, primary = true, modifier = Modifier.testTag("starsSheetDone"))
@@ -158,7 +162,7 @@ internal fun Stars(earned: Int, modifier: Modifier = Modifier, size: Dp = 32.dp)
         modifier = modifier.testTag("stars").semantics(mergeDescendants = true) { contentDescription = description },
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        repeat(CrosswordScoring.MAX_STARS) { i ->
+        repeat(MAX_STARS) { i ->
             Canvas(Modifier.size(size)) { drawStar(if (i < earned) colors.streakDay else colors.borderStrong, filled = i < earned) }
         }
     }

@@ -1,8 +1,6 @@
 package com.mehmtcan.brainscroll.stats
 
 import com.mehmtcan.brainscroll.game.GameKind
-import com.mehmtcan.brainscroll.game.crossword.CrosswordScoring
-import com.mehmtcan.brainscroll.game.crossword.crosswordStars
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -280,24 +278,6 @@ fun computeBlockOutStats(history: List<FinishedRound>): BlockOutStats {
         played = results.size,
         bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
         fewestMoves = results.minOfOrNull { it.moveCount },
-    )
-}
-
-/** What the statistics screen shows for the crossword: only the daily puzzle, and every result is a win (the game cannot be lost). */
-data class CrosswordStats(
-    val played: Int,
-    /** The fastest game (see CrosswordRound for how the time is counted). Null until one was finished. */
-    val bestTimeMs: Long?,
-    /** How many boards were solved with three stars. */
-    val threeStars: Int,
-)
-
-fun computeCrosswordStats(history: List<FinishedRound>): CrosswordStats {
-    val results = history.filter { it.game == GameKind.Crossword && it.mode == Mode.DAILY }
-    return CrosswordStats(
-        played = results.size,
-        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
-        threeStars = results.count { it.crosswordStars == CrosswordScoring.MAX_STARS },
     )
 }
 

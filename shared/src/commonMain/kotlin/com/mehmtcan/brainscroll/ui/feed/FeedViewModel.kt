@@ -23,8 +23,6 @@ import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.queens.QueensResult
-import com.mehmtcan.brainscroll.game.crossword.CrosswordResult
-import com.mehmtcan.brainscroll.game.crossword.CrosswordStatus
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
@@ -51,7 +49,6 @@ import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
 import com.mehmtcan.brainscroll.stats.HanoiStats
 import com.mehmtcan.brainscroll.stats.QueensStats
-import com.mehmtcan.brainscroll.stats.CrosswordStats
 import com.mehmtcan.brainscroll.stats.BlockOutStats
 import com.mehmtcan.brainscroll.stats.TentsStats
 import com.mehmtcan.brainscroll.stats.LineStats
@@ -64,7 +61,6 @@ import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
 import com.mehmtcan.brainscroll.stats.computeHanoiStats
 import com.mehmtcan.brainscroll.stats.computeQueensStats
-import com.mehmtcan.brainscroll.stats.computeCrosswordStats
 import com.mehmtcan.brainscroll.stats.computeBlockOutStats
 import com.mehmtcan.brainscroll.stats.computeTentsStats
 import com.mehmtcan.brainscroll.stats.computeLineStats
@@ -135,8 +131,6 @@ data class ProfileState(
     val hanoi: HanoiStats = computeHanoiStats(emptyList()),
     /** Queens, from the endless feed. */
     val queens: QueensStats = computeQueensStats(emptyList()),
-    /** Crossword, from the endless feed. */
-    val crossword: CrosswordStats = computeCrosswordStats(emptyList()),
     /** Block out, from the endless feed. */
     val blockOut: BlockOutStats = computeBlockOutStats(emptyList()),
     /** Tents, from the endless feed. */
@@ -167,7 +161,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Line),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut),
 ) : ViewModel(), FeedActions {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -316,7 +310,8 @@ class FeedViewModel(
     /** Builds the feed from what the device remembers: unfinished puzzles, the streak, the favorites. */
     private suspend fun loadFeed() {
         wordLists = Language.entries.associateWith { loadWordList(it) }
-        val restored = repository.unfinishedRounds()
+        // A page of a game that is no longer in the feed (One Line is the daily puzzle only) is left behind.
+        val restored = repository.unfinishedRounds().filter { it.game in games }
         val chosen = repository.savedGames()?.filter { it in games }?.takeIf { it.isNotEmpty() } ?: games
         _enabledGames.value = chosen.toSet()
         feed = buildFeed(restored)
@@ -399,7 +394,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Crossword, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             telemetry.event(mode, props + ("game" to result.game.id))
         }
@@ -650,26 +645,6 @@ class FeedViewModel(
         return f.restartBlockOut(page).also { publish() }
     }
 
-    /** Puts a letter in a square of the crossword on [page]. Returns what happened, so the screen can buzz accordingly. */
-    override fun placeLetter(page: Int, cell: Int, letter: Char): CrosswordResult {
-        val f = feed ?: return CrosswordResult.Ignored
-        val result = f.placeLetter(page, cell, letter)
-        publish()
-        // A board that just ended is a new result: the statistics and the cloud backup follow.
-        if (result == CrosswordResult.Correct && (f.snapshot().pages.getOrNull(page) as? com.mehmtcan.brainscroll.game.crossword.CrosswordSnapshot)?.state?.status == CrosswordStatus.Won) {
-            refreshProfile()
-            requestSyncIfNeeded()
-        }
-        return result
-    }
-
-    /** Takes back a wrong letter of the crossword on [page]. */
-    override fun eraseLetter(page: Int, cell: Int): CrosswordResult {
-        val f = feed ?: return CrosswordResult.Ignored
-        return f.eraseLetter(page, cell).also { publish() }
-    }
-
-    // The one-line game is the daily puzzle and not part of the feed; these only keep the feed able to play it.
     override fun dragLine(page: Int, cell: Int): LineResult = feed?.dragLine(page, cell).also { publish() } ?: LineResult.Ignored
     override fun tapLine(page: Int, cell: Int): LineResult = feed?.tapLine(page, cell).also { publish() } ?: LineResult.Ignored
     override fun undoLine(page: Int): Boolean = feed?.undoLine(page).also { publish() } ?: false
@@ -799,7 +774,6 @@ class FeedViewModel(
             line = computeLineStats(history),
             hanoi = computeHanoiStats(history),
             queens = computeQueensStats(history),
-            crossword = computeCrosswordStats(history),
             blockOut = computeBlockOutStats(history),
             tents = computeTentsStats(history),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },

@@ -29,8 +29,6 @@ import brainscroll.shared.generated.resources.guide_blockout_down
 import brainscroll.shared.generated.resources.guide_blockout_left
 import brainscroll.shared.generated.resources.guide_blockout_right
 import brainscroll.shared.generated.resources.guide_blockout_up
-import brainscroll.shared.generated.resources.guide_crossword_erase
-import brainscroll.shared.generated.resources.guide_crossword_letter
 import brainscroll.shared.generated.resources.guide_lights_tap
 import brainscroll.shared.generated.resources.guide_queens_place
 import brainscroll.shared.generated.resources.guide_queens_remove
@@ -91,8 +89,6 @@ fun guideText(step: GuideStep): String {
             },
             n[1],
         )
-        GuideReason.CrosswordErase -> stringResource(Res.string.guide_crossword_erase, n[0], n[1])
-        GuideReason.CrosswordLetter -> stringResource(Res.string.guide_crossword_letter, step.text, n[0], n[1])
         GuideReason.LightsTap -> stringResource(Res.string.guide_lights_tap)
         GuideReason.SlideTile -> stringResource(Res.string.guide_slide_tile)
         GuideReason.TubesPour -> stringResource(Res.string.guide_tubes_pour)

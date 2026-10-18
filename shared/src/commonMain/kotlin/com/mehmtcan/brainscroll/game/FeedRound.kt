@@ -20,9 +20,8 @@ enum class GameKind(val id: String) {
     Tents("tents"),
     Jigsaw("jigsaw"),
     BlockOut("blockout"),
-    Crossword("crossword"),
 
-    /** The daily puzzle "Tek Çizgi". Not in the endless feed, see docs/tek-cizgi-plan.md. */
+    /** "Tek Çizgi": the daily puzzle, and a page of the feed (see docs/tek-cizgi-plan.md). */
     Line("line"),
     ;
 
@@ -34,13 +33,13 @@ enum class GameKind(val id: String) {
 
 /**
  * How many moves a finished result took, whatever the game: a memory move is two flipped cards (the flips are the
- * guesses), a tubes, minesweeper, sudoku, lights, slide, target or pipes result keeps its number of moves as its only guess (a line result keeps its undos first, then its hints). Word puzzles count guesses.
+ * guesses), a tubes, minesweeper, sudoku, lights, slide, target or pipes result keeps its number of moves as its only guess (a one-line result also keeps its undos and hints after the moves). Word puzzles count guesses.
  */
 val FinishedRound.moveCount: Int
     get() = when (game) {
         GameKind.Word -> guesses.size
         GameKind.Memory -> guesses.size / 2
-        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Crossword, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
+        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
     }
 
 /**

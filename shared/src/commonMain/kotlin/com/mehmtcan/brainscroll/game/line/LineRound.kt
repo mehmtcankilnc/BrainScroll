@@ -23,7 +23,14 @@ data class LineSnapshot(
 ) : PageSnapshot {
     override val isFinished: Boolean get() = state.status == LineStatus.Won
     override val kind: GameKind get() = GameKind.Line
+
+    /** The stars this board is worth now (final once it is won). Only the daily board shows them. */
+    val stars: Int get() = LineScoring.stars(state.undos, state.hintsUsed)
 }
+
+/** The stars of a finished daily one-line result: its only guess is the score code (see [LineScoring.encode]). */
+val FinishedRound.lineStars: Int
+    get() = LineScoring.starsOf(guesses.firstOrNull()?.toIntOrNull() ?: 1)
 
 /**
  * One one-line board: a [LineGame] plus the time and the list of actions, which is all that is needed to save it and
@@ -108,8 +115,9 @@ class LineRound(
     )
 
     /**
-     * The history row. Its `answer` is only the size (the table keeps at most 32 characters there) and its only guess the
-     * number of moves. A finished board is never replayed.
+     * The history row. Its `answer` is only the size (the table keeps at most 32 characters there); its guesses are the
+     * number of moves, then the undos and the hints (the daily puzzle works its score code out of those two). A finished
+     * board is never replayed.
      */
     override fun toFinished(finishedAt: Long): FinishedRound {
         val state = game.state
@@ -118,7 +126,7 @@ class LineRound(
             mode = Mode.ENDLESS,
             language = language,
             answer = "${puzzle.size}x${puzzle.size}",
-            guesses = listOf(maxOf(1, state.moves).toString()),
+            guesses = listOf(maxOf(1, state.moves).toString(), state.undos.toString(), state.hintsUsed.toString()),
             outcome = Outcome.WON,
             assisted = assisted,
             finishedAt = finishedAt,

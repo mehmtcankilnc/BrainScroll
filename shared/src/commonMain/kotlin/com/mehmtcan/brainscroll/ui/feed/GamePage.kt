@@ -6,7 +6,6 @@ import com.mehmtcan.brainscroll.game.guide.GuideStep
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.hanoi.HanoiSnapshot
 import com.mehmtcan.brainscroll.game.queens.QueensSnapshot
-import com.mehmtcan.brainscroll.game.crossword.CrosswordSnapshot
 import com.mehmtcan.brainscroll.game.blockout.BlockOutSnapshot
 import com.mehmtcan.brainscroll.game.tents.TentsSnapshot
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
@@ -21,7 +20,6 @@ import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.hanoi.HanoiPage
 import com.mehmtcan.brainscroll.ui.queens.QueensPage
-import com.mehmtcan.brainscroll.ui.crossword.CrosswordPage
 import com.mehmtcan.brainscroll.ui.blockout.BlockOutPage
 import com.mehmtcan.brainscroll.ui.tents.TentsPage
 import com.mehmtcan.brainscroll.ui.lights.LightsPage
@@ -137,13 +135,6 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 page = item,
                 onSlide = { piece, to -> actions.slideBlock(index, piece, to) },
                 onRestart = { actions.restartBlockOut(index) },
-                isFavorite = item.id in favoriteIds,
-                onToggleFavorite = { actions.toggleFavorite(item.id) },
-            )
-            is CrosswordSnapshot -> CrosswordPage(
-                page = item,
-                onPlace = { cell, letter -> actions.placeLetter(index, cell, letter) },
-                onErase = { cell -> actions.eraseLetter(index, cell) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )

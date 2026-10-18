@@ -45,6 +45,34 @@ data class LineState(
     val canRestart: Boolean,
 )
 
+/** Stars of a solved board (docs/tek-cizgi-plan.md). Only the daily board gives stars. */
+object LineScoring {
+    const val MAX_STARS = 3
+
+    /** 3 stars without an undo, 2 with up to three, 1 with more; a hint takes one star off, never below 0. */
+    fun stars(undos: Int, hintsUsed: Int): Int {
+        val base = when {
+            undos == 0 -> 3
+            undos <= 3 -> 2
+            else -> 1
+        }
+        return if (hintsUsed > 0) base - 1 else base
+    }
+
+    /**
+     * The one number a daily result keeps as its guess and the server gets as its moves: 1 + undos (up to 99) + 100 * hints (up
+     * to 9). It is never 0 (the server wants at least one move), and the server works the stars out of it the same way
+     * (`line_stars` in supabase/migrations/20261014090000_line_daily.sql).
+     */
+    fun encode(undos: Int, hintsUsed: Int): Int = 1 + undos.coerceIn(0, 99) + 100 * hintsUsed.coerceIn(0, 9)
+
+    fun undosOf(code: Int): Int = (code - 1).coerceAtLeast(0) % 100
+
+    fun hintsOf(code: Int): Int = (code - 1).coerceAtLeast(0) / 100
+
+    fun starsOf(code: Int): Int = stars(undosOf(code), hintsOf(code))
+}
+
 /**
  * The rules of the one-line game, free of UI and time.
  *

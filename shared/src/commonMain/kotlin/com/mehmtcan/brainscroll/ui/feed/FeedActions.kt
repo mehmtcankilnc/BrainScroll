@@ -2,7 +2,6 @@ package com.mehmtcan.brainscroll.ui.feed
 
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.queens.QueensResult
-import com.mehmtcan.brainscroll.game.crossword.CrosswordResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
@@ -51,8 +50,6 @@ interface FeedActions {
     fun restartTents(page: Int): Boolean
     fun slideBlock(page: Int, piece: Int, to: Int): BlockOutResult
     fun restartBlockOut(page: Int): Boolean
-    fun placeLetter(page: Int, cell: Int, letter: Char): CrosswordResult
-    fun eraseLetter(page: Int, cell: Int): CrosswordResult
     fun dragLine(page: Int, cell: Int): LineResult
     fun tapLine(page: Int, cell: Int): LineResult
     fun undoLine(page: Int): Boolean
