@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BrainScroll reel</title>
+<style>
+  @font-face { font-family: 'Nunito'; font-weight: 400; src: url('../../shared/src/commonMain/composeResources/font/nunito_regular.ttf'); }
+  @font-face { font-family: 'Nunito'; font-weight: 500; src: url('../../shared/src/commonMain/composeResources/font/nunito_medium.ttf'); }
+  @font-face { font-family: 'Nunito'; font-weight: 700; src: url('../../shared/src/commonMain/composeResources/font/nunito_bold.ttf'); }
+  /* Tokens from docs/design.md, section 2. 1 dp = 3 px at 1080 wide. */
+  :root {
+    --bg-page: #121212; --bg-surface: #1F1F1F; --bg-raised: #2A2A2A;
+    --text-primary: #F5F5F5; --text-secondary: #8C8C8C;
+    --correct: #7ED957; --correct-on: #10240A; --pending: #FFC93C; --error: #FF5A5A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; background: var(--bg-page); overflow: hidden; font-family: 'Nunito', sans-serif; color: var(--text-primary); }
+  .abs { position: absolute; }
+  .center { left: 0; width: 1080px; text-align: center; }
+  #wordmark { top: 262px; font-weight: 700; font-size: 64px; letter-spacing: -1px; }
+  #wordmark b { color: var(--correct); font-weight: 700; }
+  /* Measured on a screenshot of the app (921 px wide): number tile 190x190, radius 41, border 4-5 px #565656, fill #1F1F1F, no shadow.
+     Target box 283x259, radius ~46, fill #1F1F1F, no border; label "Hedef" ~15% from the top, number centred at 58%. */
+  #targetBox { left: 350px; top: 380px; width: 380px; height: 348px; background: var(--bg-surface); border-radius: 62px; }
+  #targetLabel { position: absolute; left: 0; width: 100%; top: 34px; height: 40px; line-height: 40px; text-align: center; font-weight: 500; font-size: 40px; color: var(--text-secondary); }
+  #target { position: absolute; left: 0; width: 100%; top: 111px; height: 181px; line-height: 181px; text-align: center; font-weight: 700; font-size: 181px; color: var(--pending); }
+  .tile { position: absolute; background: var(--bg-surface); border-radius: 48px; border: 5px solid #565656; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-primary); will-change: transform; }
+  #hint { top: 1112px; font-weight: 500; font-size: 38px; color: var(--text-secondary); }
+  #ring { left: 390px; top: 1210px; width: 300px; height: 300px; }
+  #ringNum { left: 390px; top: 1210px; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 160px; }
+  #solLabel { top: 1126px; font-weight: 500; font-size: 40px; color: var(--text-secondary); letter-spacing: 2px; }
+  .line { left: 0; width: 1080px; text-align: center; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: pre; }
+  .line .res { color: var(--text-primary); font-weight: 700; }
+  .line.final .res { color: var(--correct); }
+  #end { left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+  #mascot { left: 350px; top: 560px; width: 380px; height: 380px; }
+  #endWord { top: 990px; font-weight: 700; font-size: 128px; letter-spacing: -2px; }
+  #endWord b { color: var(--correct); font-weight: 700; }
+  #endTag { top: 1150px; font-weight: 500; font-size: 54px; color: var(--text-secondary); }
+  #endPill { left: 400px; top: 1270px; width: 280px; height: 84px; border-radius: 999px; background: var(--bg-surface); color: var(--correct); font-weight: 700; font-size: 38px; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div id="puzzle">
+  <div id="wordmark" class="abs center">brain<b>scroll</b></div>
+  <div id="targetBox" class="abs">
+    <div id="targetLabel">Target</div>
+    <div id="target"></div>
+  </div>
+  <div id="tiles"></div>
+  <div id="hint" class="abs center">Use each number once &nbsp;·&nbsp; + − × ÷</div>
+  <svg id="ring" class="abs" viewBox="0 0 300 300">
+    <circle cx="150" cy="150" r="128" fill="none" stroke="#2A2A2A" stroke-width="18"/>
+    <circle id="ringArc" cx="150" cy="150" r="128" fill="none" stroke="#FFC93C" stroke-width="18" stroke-linecap="round" transform="rotate(-90 150 150)" stroke-dasharray="804.2477" stroke-dashoffset="0"/>
+  </svg>
+  <div id="ringNum" class="abs"></div>
+  <div id="solLabel" class="abs center" style="opacity:0"></div>
+  <div id="lines"></div>
+</div>
+<div id="end" class="abs">
+  <div id="mascot" class="abs"></div>
+  <div id="endWord" class="abs center">brain<b>scroll</b></div>
+  <div id="endTag" class="abs center">Quick brain games.</div>
+  <div id="endPill" class="abs">Coming soon</div>
+</div>
+
+<script>
+// ---- easing: the app's tokens (design.md section 6) -------------------------------------------------------------
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = (s) => ((ax * s + bx) * s + cx) * s, Y = (s) => ((ay * s + by) * s + cy) * s;
+  return (x) => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let lo = 0, hi = 1, s = x;
+    for (let i = 0; i < 28; i++) { const v = X(s); if (Math.abs(v - x) < 1e-6) break; if (v < x) lo = s; else hi = s; s = (lo + hi) / 2; }
+    return Y(s);
+  };
+}
+const standard = bezier(0.2, 0, 0, 1);      // motion.base / slow
+const overshoot = bezier(0.34, 1.56, 0.64, 1); // motion.pop
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+
+let TL = null, tokenEls = {}, lineEls = [], states = [], operands = [];
+
+// ---- layout of the number tiles --------------------------------------------------------------------------------
+function layoutFor(m) {
+  const n = TL.puzzle.numbers.length;
+  const pos = [];
+  if (n <= 4) {
+    const w = 222, h = 222, gap = 30, total = m * w + (m - 1) * gap, x0 = (1080 - total) / 2;
+    for (let i = 0; i < m; i++) pos.push({ x: x0 + i * (w + gap), y: 790, w, h, fs: 104, r: 48 });
+  } else {
+    const w = 250, h = 165, gap = 26, vgap = 20;
+    const rows = m > 3 ? [Math.min(3, m), m - 3] : [m];
+    const ys = rows.length === 2 ? [790, 790 + h + vgap] : [790 + (h + vgap) / 2];
+    rows.forEach((cnt, r) => {
+      const total = cnt * w + (cnt - 1) * gap, x0 = (1080 - total) / 2;
+      for (let i = 0; i < cnt; i++) pos.push({ x: x0 + i * (w + gap), y: ys[r], w, h, fs: 88, r: 42 });
+    });
+  }
+  return pos;
+}
+
+window.initReel = function (timeline, mascotSvg) {
+  TL = timeline;
+  document.getElementById('mascot').innerHTML = mascotSvg;
+  document.getElementById('mascot').firstElementChild.setAttribute('width', '380');
+  document.getElementById('mascot').firstElementChild.setAttribute('height', '380');
+  document.getElementById('target').textContent = TL.puzzle.target;
+  const n = TL.puzzle.numbers.length, steps = TL.puzzle.steps;
+  // token states: ids 0..n-1 are the numbers, each result takes the next id (as in TargetGame.kt)
+  let tokens = TL.puzzle.numbers.map((value, id) => ({ id, value }));
+  states = [tokens];
+  operands = [];
+  steps.forEach((s, k) => {
+    const first = tokens.find((t) => t.value === s.a);
+    const second = tokens.find((t) => t.value === s.b && t.id !== first.id);
+    if (!first || !second) throw new Error('step ' + k + ' does not fit the table');
+    operands.push([first.id, second.id]);
+    tokens = tokens.filter((t) => t.id !== first.id && t.id !== second.id).concat([{ id: n + k, value: s.result }]);
+    states.push(tokens);
+  });
+  const tiles = document.getElementById('tiles');
+  for (let id = 0; id < n + steps.length; id++) {
+    const v = id < n ? TL.puzzle.numbers[id] : steps[id - n].result;
+    const el = document.createElement('div');
+    el.className = 'tile'; el.textContent = v; el.style.opacity = 0;
+    tiles.appendChild(el); tokenEls[id] = el;
+  }
+  const linesEl = document.getElementById('lines');
+  const lineH = n <= 4 ? 84 : 66, fs = n <= 4 ? 58 : 50, top0 = n <= 4 ? 1200 : 1196;
+  const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+  steps.forEach((s, k) => {
+    const el = document.createElement('div');
+    el.className = 'line abs' + (k === steps.length - 1 ? ' final' : '');
+    el.style.top = (top0 + k * lineH) + 'px'; el.style.fontSize = fs + 'px';
+    el.innerHTML = `<span class="expr">${s.a} ${sym[s.op]} ${s.b} =</span> <span class="res">${s.result}</span>`;
+    el.style.opacity = 0;
+    linesEl.appendChild(el); lineEls.push(el);
+  });
+  if (n > 4) {
+    document.getElementById('hint').style.top = '1166px';
+    for (const id of ['ring', 'ringNum']) document.getElementById(id).style.top = '1240px';
+  }
+  document.getElementById('solLabel').textContent = `Solution · ${steps.length} steps`;
+  render(0);
+};
+
+function setTile(id, p) {
+  const el = tokenEls[id];
+  if (!p) { el.style.opacity = 0; return; }
+  el.style.opacity = p.opacity;
+  el.style.width = p.w + 'px'; el.style.height = p.h + 'px'; el.style.fontSize = p.fs + 'px';
+  el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+  el.style.transform = `scale(${p.scale})`;
+  el.style.borderRadius = p.r + 'px';
+  const sel = p.sel || 0;                                  // 0..1: how selected (yellow, thicker border)
+  el.style.borderWidth = (5 + 3 * sel) + 'px';
+  const mix = (a, b, t) => Math.round(a + (b - a) * t);
+  el.style.borderColor = p.green ? '#7ED957' : `rgb(${mix(0x56, 0xFF, sel)},${mix(0x56, 0xC9, sel)},${mix(0x56, 0x3C, sel)})`;
+  el.style.background = p.green ? '#7ED957' : '';
+  el.style.color = p.green ? '#10240A' : '';
+}
+
+window.render = function (t) {
+  const T = TL.t, steps = TL.puzzle.steps, n = TL.puzzle.numbers.length;
+  const lastStart = T.steps[steps.length - 1].start;
+  // ---- tiles ----
+  let k = -1;
+  T.steps.forEach((s, i) => { if (t >= s.start) k = i; });
+  for (const id in tokenEls) setTile(+id, null);
+  if (k === -1) {
+    const lay = layoutFor(states[0].length);
+    states[0].forEach((tok, i) => {
+      const e = standard(clamp01((t - i * 0.07) / 0.45)), o = overshoot(clamp01((t - i * 0.07) / 0.5));
+      setTile(tok.id, { ...lay[i], scale: 0.8 + 0.2 * o, opacity: e });
+    });
+  } else {
+    const local = t - T.steps[k].start;
+    const before = states[k], after = states[k + 1];
+    const layB = layoutFor(before.length), layA = layoutFor(after.length);
+    const [o1, o2] = operands[k];
+    const iA = before.findIndex((x) => x.id === o1), iB = before.findIndex((x) => x.id === o2);
+    const mx = (layB[iA].x + layB[iB].x) / 2, my = (layB[iA].y + layB[iB].y) / 2;
+    before.forEach((tok, i) => {
+      if (tok.id === o1 || tok.id === o2) {
+        const m = standard(clamp01((local - 0.45) / 0.4));
+        const sel = standard(clamp01(local / 0.25));
+        setTile(tok.id, { ...layB[i], x: lerp(layB[i].x, mx, m), y: lerp(layB[i].y, my, m), scale: 1 - 0.4 * m, opacity: 1 - clamp01((local - 0.55) / 0.3),
+          sel: sel });
+      } else {
+        const j = after.findIndex((x) => x.id === tok.id);
+        const mv = standard(clamp01((local - 0.5) / 0.5));
+        setTile(tok.id, { ...layA[j], x: lerp(layB[i].x, layA[j].x, mv), y: lerp(layB[i].y, layA[j].y, mv), scale: 1, opacity: 1 });
+      }
+    });
+    const rid = n + k, rj = after.findIndex((x) => x.id === rid);
+    const rp = clamp01((local - 0.7) / 0.4);
+    const isFinal = k === steps.length - 1;
+    setTile(rid, { ...layA[rj], scale: 0.5 + 0.5 * overshoot(rp), opacity: clamp01((local - 0.7) / 0.12), green: isFinal && local > 0.75 });
+    // tokens made by earlier steps are in `before` already; nothing else to draw
+  }
+  // ---- target number turns green when solved ----
+  const solvedAt = lastStart + 0.75;
+  const tg = document.getElementById('target');
+  const pop = t >= solvedAt ? 1 + 0.08 * Math.max(0, 1 - (t - solvedAt) / 0.35) : 1;
+  tg.style.color = t >= solvedAt ? '#7ED957' : '#FFC93C';
+  tg.style.transform = `scale(${pop})`;
+  // ---- countdown ring and hint ----
+  const remain = T.thinkEnd - t;
+  const ringVisible = clamp01(1 - (t - T.thinkEnd) / 0.2);
+  const ring = document.getElementById('ring'), num = document.getElementById('ringNum'), arc = document.getElementById('ringArc');
+  const total = T.thinkEnd - T.thinkStart;
+  const frac = t <= T.thinkStart ? 1 : clamp01(remain / total);
+  const urgent = remain <= 3 && t > T.thinkStart;
+  arc.setAttribute('stroke-dashoffset', String(804.2477 * (1 - frac)));
+  arc.setAttribute('stroke', urgent ? '#FF5A5A' : '#FFC93C');
+  const shown = t <= T.thinkStart ? Math.round(total) : Math.max(0, Math.ceil(remain - 1e-9));
+  num.textContent = shown;
+  num.style.color = urgent ? '#FF5A5A' : '#F5F5F5';
+  const secFrac = t <= T.thinkStart ? 1 : ((total - remain) % 1);
+  num.style.transform = `scale(${1 + 0.14 * Math.max(0, 1 - secFrac / 0.25)})`;
+  ring.style.opacity = ringVisible; num.style.opacity = ringVisible;
+  document.getElementById('hint').style.opacity = clamp01(1 - (t - T.thinkEnd) / 0.2) * clamp01((t - 0.3) / 0.4);
+  // ---- solution label and lines ----
+  document.getElementById('solLabel').style.opacity = standard(clamp01((t - (T.thinkEnd + 0.15)) / 0.3));
+  lineEls.forEach((el, i) => {
+    const s = T.steps[i].start;
+    const a = standard(clamp01((t - (s + 0.12)) / 0.28));
+    el.style.opacity = a;
+    el.style.transform = `translateY(${(1 - a) * 24}px)`;
+    el.querySelector('.res').style.opacity = standard(clamp01((t - (s + 0.6)) / 0.15));
+  });
+  // ---- end card ----
+  const e = standard(clamp01((t - T.endStart) / 0.45));
+  document.getElementById('puzzle').style.opacity = 1 - e;
+  const end = document.getElementById('end');
+  end.style.opacity = e;
+  document.getElementById('mascot').style.transform = `translateY(${Math.sin((t - T.endStart) * 3) * 10}px) scale(${0.92 + 0.08 * overshoot(clamp01((t - T.endStart) / 0.6))})`;
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BrainScroll promo reel</title>
+<style>
+  @font-face { font-family: 'Nunito'; font-weight: 400; src: url('../../shared/src/commonMain/composeResources/font/nunito_regular.ttf'); }
+  @font-face { font-family: 'Nunito'; font-weight: 500; src: url('../../shared/src/commonMain/composeResources/font/nunito_medium.ttf'); }
+  @font-face { font-family: 'Nunito'; font-weight: 700; src: url('../../shared/src/commonMain/composeResources/font/nunito_bold.ttf'); }
+  /* Tokens from docs/design.md. The feed screens are drawn in dp (a 360 x 640 screen) and scaled by 2.6. */
+  :root {
+    --bg-page: #121212; --bg-surface: #1F1F1F; --bg-raised: #2A2A2A;
+    --text-primary: #F5F5F5; --text-secondary: #8C8C8C;
+    --correct: #7ED957; --pending: #FFC93C; --error: #FF5A5A; --blue: #4DB8FF; --orange: #FF9F43;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; background: var(--bg-page); overflow: hidden; font-family: 'Nunito', sans-serif; color: var(--text-primary); }
+  .abs { position: absolute; }
+  svg text { font-family: 'Nunito', sans-serif; }
+
+  /* ---- hook ---- */
+  #headline { left: 70px; top: 236px; width: 940px; font-weight: 700; font-size: 76px; line-height: 90px; letter-spacing: -1px; }
+  #headline .y { color: var(--pending); } #headline .g { color: var(--correct); }
+  .icon { position: absolute; width: 180px; height: 180px; border-radius: 44px; will-change: transform; }
+  .icon svg { position: absolute; left: 0; top: 0; }
+  .badge { position: absolute; right: -14px; top: -14px; min-width: 52px; height: 52px; padding: 0 14px; border-radius: 26px; background: var(--error); color: #fff; font-weight: 700; font-size: 32px; line-height: 52px; text-align: center; border: 5px solid var(--bg-page); box-sizing: content-box; }
+
+  /* ---- pivot ---- */
+  #pivot { left: 0; width: 1080px; top: 700px; text-align: center; font-weight: 700; font-size: 104px; line-height: 124px; letter-spacing: -2px; opacity: 0; }
+  #pivot .g { color: var(--correct); }
+
+  /* ---- the phone screen ---- */
+  #phone { left: 72px; top: 130px; width: 936px; height: 1664px; overflow: hidden; border-radius: 44px; background: var(--bg-page); outline: 3px solid #2A2A2A; outline-offset: 0; display: none; }
+  #screen { position: absolute; left: 0; top: 0; width: 360px; height: 640px; transform: scale(2.6); transform-origin: 0 0; }
+  .page { position: absolute; left: 0; top: 0; width: 360px; height: 640px; background: var(--bg-page); overflow: hidden; }
+
+  /* ---- end ---- */
+  #end { left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+  #mascot { left: 350px; top: 520px; width: 380px; height: 380px; }
+  .center { left: 0; width: 1080px; text-align: center; }
+  #endWord { top: 950px; font-weight: 700; font-size: 128px; letter-spacing: -2px; } #endWord b { color: var(--correct); font-weight: 700; }
+  #endTag { top: 1110px; font-weight: 500; font-size: 54px; color: var(--text-secondary); }
+  #endPill { left: 400px; top: 1230px; width: 280px; height: 84px; border-radius: 999px; background: var(--bg-surface); color: var(--correct); font-weight: 700; font-size: 38px; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div id="hook">
+  <div id="headline" class="abs">Are you tired of downloading <span class="y">countless apps</span> for various <span class="g">brain games</span>?</div>
+  <div id="wall"></div>
+</div>
+<div id="pivot" class="abs">What if they<br>all lived in<br><span class="g">one feed?</span></div>
+<div id="phone" class="abs"><div id="screen"></div></div>
+<div id="end" class="abs">
+  <div id="mascot" class="abs"></div>
+  <div id="endWord" class="abs center">brain<b>scroll</b></div>
+  <div id="endTag" class="abs center">15 brain games. One feed.</div>
+  <div id="endPill" class="abs">Coming soon</div>
+</div>
+
+<script>
+// ---- easing: the app's tokens (docs/design.md section 6) and Compose's FastOutSlowIn ----------------------------------
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = (s) => ((ax * s + bx) * s + cx) * s, Y = (s) => ((ay * s + by) * s + cy) * s;
+  return (x) => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let lo = 0, hi = 1, s = x;
+    for (let i = 0; i < 28; i++) { const v = X(s); if (Math.abs(v - x) < 1e-6) break; if (v < x) lo = s; else hi = s; s = (lo + hi) / 2; }
+    return Y(s);
+  };
+}
+const standard = bezier(0.2, 0, 0, 1), overshoot = bezier(0.34, 1.56, 0.64, 1), fastOutSlowIn = bezier(0.4, 0, 0.2, 1);
+const linear = (x) => Math.max(0, Math.min(1, x));
+const clamp01 = linear;
+const lerp = (a, b, p) => a + (b - a) * p;
+const $ = (id) => document.getElementById(id);
+const C = { page: '#121212', surface: '#1F1F1F', raised: '#2A2A2A', strong: '#8C8C8C', subtle: 'rgba(58,58,58,.55)', green: '#7ED957', greenOn: '#10240A', yellow: '#FFC93C', blue: '#4DB8FF', red: '#FF5A5A', orange: '#FF9F43', text: '#F5F5F5', dim: '#8C8C8C', disabled: '#6B6B6B',
+  purple: '#9B7BFF', pink: '#FF7AA8', teal: '#3DD6C6' };
+const mix = (a, b, p) => { const h = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)); const x = h(a), y = h(b); return '#' + x.map((v, i) => Math.round(lerp(v, y[i], p)).toString(16).padStart(2, '0')).join(''); };
+
+// ---- a value that glides to a new target each time an event sets one (what Compose's animate*AsState does) --------
+function seq(events, init, dur, ease) {
+  return (l) => {
+    let from = init, to = init, ts = -1e9;
+    for (const e of events) { if (e.t > l) break; from = from + (to - from) * ease(clamp01((e.t - ts) / dur)); to = e.v; ts = e.t; }
+    return from + (to - from) * ease(clamp01((l - ts) / dur));
+  };
+}
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// ---- small html builders (units are dp) ---------------------------------------------------------------------------
+const f1 = (n) => Math.round(n * 100) / 100;
+const box = (x, y, w, h, style, inner = '') => `<div style="position:absolute;left:${f1(x)}px;top:${f1(y)}px;width:${f1(w)}px;height:${f1(h)}px;${style}">${inner}</div>`;
+const txt = (x, y, w, h, s, font, color, extra = '') => box(x, y, w, h, `display:flex;align-items:center;justify-content:center;font:${font};color:${color};white-space:nowrap;${extra}`, s);
+const chip = (s, color, icon = '') => `<div style="display:inline-flex;align-items:center;gap:4px;background:${C.surface};border-radius:999px;padding:6px 12px;font:500 14px/20px Nunito;color:${color};white-space:nowrap">${icon}${s}</div>`;
+const BOLT = `<svg width="14" height="14" viewBox="0 0 14 14"><path d="M8.4 0 L2.1 7.7 L6.6 7.7 L5.3 14 L11.9 5.9 L7.4 5.9 Z" fill="${C.blue}"/></svg>`;
+const BULB = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${C.yellow}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`;
+const chipsRow = (...chips) => `<div style="position:absolute;left:0;top:64px;width:360px;display:flex;justify-content:center;gap:8px">${chips.join('')}</div>`;
+
+// the bar on top of every page (Hud.kt): back chevron, title, "?", bulb, answer streak with its "+1"
+function hud(title, st) {
+  return `<div style="position:absolute;left:0;top:0;width:360px;height:48px">
+    <svg style="position:absolute;left:23px;top:17px" width="14" height="14" viewBox="0 0 14 14"><path d="M9.8 1.4 L3.5 7 L9.8 12.6" fill="none" stroke="${C.text}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div style="position:absolute;left:56px;top:0;height:48px;display:flex;align-items:center">
+      <span style="font:500 18px/24px Nunito;color:${C.text}">${title}</span>
+      <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center"><span style="width:18px;height:18px;border:1.5px solid ${C.dim};border-radius:50%;display:flex;align-items:center;justify-content:center;font:400 12px/1 Nunito;color:${C.dim}">?</span></span>
+    </div>
+    <div style="position:absolute;right:8px;top:0;height:48px;display:flex;align-items:center">
+      <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center">${BULB}</span>
+      <span style="position:relative;display:inline-block;transform:scale(${st.scale})">${chip(st.shown, C.blue, BOLT)}
+        <span style="position:absolute;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font:700 22px/28px Nunito;color:${C.blue};opacity:${st.plusAlpha};transform:translateY(${st.plusLift}px)">+1</span></span>
+    </div></div>`;
+}
+// the win streak chip: a "+1" rises over the old number, then the number turns into the new one with a pop (Hud.kt)
+function streak(l, win, before) {
+  if (win == null || l < win) return { shown: before, plusAlpha: 0, plusLift: 0, scale: 1 };
+  const t = l - win;
+  const p = t < 0.35 ? 0.6 * standard(t / 0.35) : t < 0.65 ? 0.6 + 0.4 * standard((t - 0.35) / 0.3) : 0;
+  const alpha = t >= 0.65 ? 0 : p <= 0.6 ? p / 0.6 : (1 - p) / 0.4;
+  let scale = 1;
+  if (t >= 0.35) { const u = t - 0.35; scale = u < 0.1 ? lerp(1, 1.3, standard(u / 0.1)) : u < 0.35 ? lerp(1.3, 1, overshoot((u - 0.1) / 0.25)) : 1; }
+  return { shown: t >= 0.35 ? before + 1 : before, plusAlpha: Math.max(0, Math.min(1, alpha)), plusLift: -22 * p, scale };
+}
+// the circle buttons (RoundIconButton.kt) and their icons
+function arcPath(cx, cy, r, a0, sweep) {
+  const rad = (d) => d * Math.PI / 180, p = (d) => [cx + r * Math.cos(rad(d)), cy + r * Math.sin(rad(d))];
+  const s = p(a0), e = p(a0 + sweep);
+  return `M${f1(s[0])} ${f1(s[1])} A${r} ${r} 0 ${sweep > 180 ? 1 : 0} 1 ${f1(e[0])} ${f1(e[1])}`;
+}
+const ICON = {
+  restart: (col) => { const s = 28, a = (-50 + 285) * Math.PI / 180, r = s * 0.36, c = s / 2, tx = c + r * Math.cos(a), ty = c + r * Math.sin(a), tg = [-Math.sin(a), Math.cos(a)], nm = [Math.cos(a), Math.sin(a)], k = s * 0.2;
+    return `<svg width="28" height="28" viewBox="0 0 28 28"><path d="${arcPath(c, c, r, -50, 285)}" fill="none" stroke="${col}" stroke-width="2.8" stroke-linecap="round"/><polygon points="${f1(tx + tg[0] * k)},${f1(ty + tg[1] * k)} ${f1(tx + nm[0] * k)},${f1(ty + nm[1] * k)} ${f1(tx - nm[0] * k)},${f1(ty - nm[1] * k)}" fill="${col}"/></svg>`; },
+  undo: (col) => `<svg width="28" height="28" viewBox="0 0 28 28"><polygon points="2.8,10.08 10.08,3.92 10.08,16.24" fill="${col}"/><path d="M8.4 10.08 L16.24 10.08 A6.16 6.16 0 0 1 16.24 22.4 L6.16 22.4" fill="none" stroke="${col}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pencil: (col) => `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="${col}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.9 24.1 L5.6 16.8 L17.9 4.5 L23.5 10.1 L11.2 22.4 Z"/><path d="M15.1 7.3 L20.7 12.9"/></svg>`,
+  erase: (col) => `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.1 14 L8.4 5 L26.9 5 L26.9 23 L8.4 23 Z"/><path d="M13.4 10.6 L21.3 17.4 M21.3 10.6 L13.4 17.4"/></svg>`,
+};
+const roundBtn = (x, y, icon, { sel = false, enabled = true } = {}) =>
+  box(x, y, 56, 56, `border-radius:50%;background:${sel ? C.raised : C.surface};border:${sel ? 2.5 : 1.5}px solid ${sel ? C.yellow : 'rgba(140,140,140,.6)'};display:flex;align-items:center;justify-content:center;opacity:${enabled ? 1 : 0.35}`, icon);
+// the card that replaces the buttons when a puzzle is solved
+const HEART = `<svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 21.6 C0.5 13.2 1.9 1.9 12 7.2 C22.1 1.9 23.5 13.2 12 21.6 Z" fill="none" stroke="${C.dim}" stroke-width="2"/></svg>`;
+function resultCard(a, title, line) {
+  if (a <= 0) return '';
+  return box(16, 496 + (1 - a) * 16, 328, 112, `background:${C.surface};border-radius:16px;opacity:${a}`,
+    txt(0, 16, 328, 28, title, '700 22px Nunito', C.green) + txt(0, 48, 328, 22, line, '400 16px Nunito', C.text) + txt(0, 74, 328, 16, 'Swipe up for the next puzzle', '400 12px Nunito', C.dim)
+    + box(280, 0, 48, 48, 'display:flex;align-items:center;justify-content:center', HEART));
+}
+const hint = (y, lines, s) => txt(16, y, 328, lines * 22, s, '400 16px/22px Nunito', C.dim, 'white-space:normal;text-align:center');
+// a finger touch: a soft circle that grows and fades at the tapped place
+function ripples(l, taps) {
+  return taps.map((tp) => {
+    const t = l - tp.t; if (t < 0 || t > 0.4) return '';
+    const p = standard(t / 0.4);
+    return box(tp.x - 20, tp.y - 20, 40, 40, `border-radius:50%;background:rgba(255,255,255,${f1(0.34 * (1 - p))});transform:scale(${f1(0.45 + 0.75 * p)});z-index:50`);
+  }).join('');
+}
+const countUntil = (taps, l) => taps.filter((t) => t <= l).length;
+
+// ---- the shapes of the memory cards and the tubes (CardShapes.kt) ----------------------------------------------------
+const SYM = { circle: C.blue, triangle: C.yellow, star: C.orange, heart: C.red, diamond: C.green, square: C.text };
+const SYM_ORDER = ['circle', 'triangle', 'star', 'heart', 'diamond', 'square'];
+function shape(sym, color, size) {
+  const r = size / 2, cx = r, cy = r; let body = '';
+  switch (sym) {
+    case 'circle': body = `<circle cx="${cx}" cy="${cy}" r="${r * 0.82}" fill="${color}"/>`; break;
+    case 'triangle': body = `<polygon points="${cx},${cy - r * 0.88} ${cx + r * 0.95},${cy + r * 0.72} ${cx - r * 0.95},${cy + r * 0.72}" fill="${color}"/>`; break;
+    case 'star': { let p = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.42 : r * 0.95; p += `${f1(cx + rr * Math.cos(a))},${f1(cy + rr * Math.sin(a))} `; } body = `<polygon points="${p}" fill="${color}"/>`; break; }
+    case 'heart': body = `<path d="M${cx} ${cy + r * 0.85} C${cx - r * 1.05} ${cy + r * 0.15} ${cx - r * 0.9} ${cy - r * 0.85} ${cx} ${cy - r * 0.35} C${cx + r * 0.9} ${cy - r * 0.85} ${cx + r * 1.05} ${cy + r * 0.15} ${cx} ${cy + r * 0.85}Z" fill="${color}"/>`; break;
+    case 'diamond': body = `<polygon points="${cx},${cy - r * 0.95} ${cx + r * 0.7},${cy} ${cx},${cy + r * 0.95} ${cx - r * 0.7},${cy}" fill="${color}"/>`; break;
+    case 'square': { const s = r * 1.4; body = `<rect x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" rx="${r * 0.18}" fill="${color}"/>`; break; }
+  }
+  return `<svg width="${f1(size)}" height="${f1(size)}" viewBox="0 0 ${f1(size)} ${f1(size)}" style="display:block">${body}</svg>`;
+}
+
+// =====================================================================================================================
+// 1. Target number  (TargetPage.kt)
+// =====================================================================================================================
+function targetGame(S) {
+  const tile = Math.min(88, (328 - 30) / 4);
+  const rowTop = 202 + (262 - (tile + 16 + 66)) / 2, stepsTop = rowTop + tile + 16;
+  const COMBOS = [{ a: 6, op: '÷', b: 2, res: 3 }, { a: 3, op: '×', b: 9, res: 27 }, { a: 7, op: '+', b: 27, res: 34 }];
+  const TOKENS = [[7, 2, 6, 9], [7, 9, 3], [7, 27], [34]];
+  const tileX = (n, i) => { const w = n * tile + (n - 1) * 10; return 16 + (328 - w) / 2 + i * (tile + 10); };
+  const opX = (i) => 16 + i * 84, opY = 490;
+  const OPS = ['+', '−', '×', '÷'];
+  // the taps: first number, operation, second number, three times
+  const taps = [];
+  COMBOS.forEach((c, g) => {
+    const toks = TOKENS[g], ia = toks.indexOf(c.a), ib = toks.indexOf(c.b === 27 && g === 2 ? 27 : c.b);
+    const idxA = g === 0 ? 2 : g === 1 ? 2 : 0, idxB = g === 0 ? 1 : g === 1 ? 1 : 1;
+    taps.push({ x: tileX(toks.length, idxA) + tile / 2, y: rowTop + tile / 2 }, { x: opX(OPS.indexOf(c.op)) + 38, y: opY + 28 }, { x: tileX(toks.length, idxB) + tile / 2, y: rowTop + tile / 2 });
+  });
+  taps.forEach((t, i) => { t.t = S.taps[i]; });
+  const fits = (a, op, b) => op === '÷' ? b !== 0 && a % b === 0 : op === '−' ? a > b : true;
+  return {
+    taps, win: S.win,
+    html(l, st) {
+      const n = countUntil(S.taps, l), g = Math.min(3, Math.floor(n / 3)), p = n >= 9 ? 0 : n % 3;
+      const won = S.win != null && l >= S.win;
+      const toks = TOKENS[g];
+      const combo = COMBOS[Math.min(g, 2)];
+      const pickedA = p >= 1 ? (g === 0 ? 2 : g === 1 ? 2 : 0) : -1, opSel = p >= 2 ? OPS.indexOf(combo.op) : -1;
+      let o = hud('Target number', streak(l, S.win, 0));
+      o += chipsRow(chip(`Moves ${g}`, C.dim), chip('Fewest 3', C.dim));
+      o += box(180 - 56, 108, 112, 94, `background:${C.surface};border-radius:16px`, txt(0, 8, 112, 16, 'Target', '400 12px Nunito', C.dim) + txt(0, 24, 112, 62, '34', '700 52px Nunito', won ? C.green : C.yellow));
+      toks.forEach((v, i) => {
+        const sel = i === pickedA, reached = won && v === 34;
+        const dim = p >= 2 && i !== pickedA && !fits(combo.a, combo.op, toks[i]);
+        o += box(tileX(toks.length, i), rowTop, tile, tile, `background:${sel ? C.raised : C.surface};border-radius:16px;border:${sel ? 3 : 1.5}px solid ${reached ? C.green : sel ? C.yellow : 'rgba(140,140,140,.5)'};opacity:${dim ? 0.35 : 1}`,
+          txt(0, 0, tile - (sel ? 6 : 3), tile - (sel ? 6 : 3), v, `700 ${f1(tile * (String(v).length <= 2 ? 0.46 : 0.36))}px Nunito`, reached ? C.green : C.text));
+      });
+      const shown = COMBOS.slice(0, g).slice(-3);
+      shown.forEach((c, i) => { o += txt(16, stepsTop + 66 - 22 * (shown.length - i), 328, 22, `${c.a} ${c.op} ${c.b} = ${c.res}`, '400 16px Nunito', C.dim); });
+      if (won) o += resultCard(standard(clamp01((l - S.win) / 0.4)), 'Target reached!', '3 moves · 0:09');
+      else {
+        OPS.forEach((s, i) => { const sel = i === opSel; o += box(opX(i), opY, 76, 56, `background:${sel ? C.raised : C.surface};border-radius:12px;border:${sel ? 2.5 : 1.5}px solid ${sel ? C.yellow : 'rgba(140,140,140,.6)'};opacity:${p >= 1 ? 1 : 0.35}`, txt(0, 0, 76 - (sel ? 5 : 3), 56 - (sel ? 5 : 3), s, '700 22px Nunito', C.text)); });
+        o += roundBtn(116, 558, ICON.undo(C.text), { enabled: g > 0 }) + roundBtn(188, 558, ICON.restart(C.text), { enabled: g > 0 });
+      }
+      return o + ripples(l, taps);
+    },
+  };
+}
+
+// =====================================================================================================================
+// 2. Sudoku  (SudokuPage.kt)
+// =====================================================================================================================
+function sudokuGame(S) {
+  const SOL = ['534678912', '672195348', '198342567', '859761423', '426853791', '713924856', '961537284', '287419635', '345286179'].map((r) => [...r].map(Number));
+  const c1 = [1, 6], c2 = [4, 4];
+  const inCross = (r, c) => r === 4 || c === 4 || (r >= 3 && r <= 5 && c >= 3 && c <= 5);
+  const given = (r, c) => { if ((r === c1[0] && c === c1[1]) || (r === c2[0] && c === c2[1])) return false; if (inCross(r, c)) return true; return ((Math.imul(r * 9 + c + 7, 2654435761) >>> 0) % 100) >= 46; };
+  const CELL = Math.min(44, (328 - (6 + 5 + 16)) / 9), PITCH = CELL + 2, BW = 9 * CELL + 16 + 6 + 5;
+  const bx = 16 + (328 - BW) / 2, by = 108 + (356 - BW) / 2, gx = bx + 2.5 + 3, gy = by + 2.5 + 3;
+  const cx = (c) => gx + c * PITCH + CELL / 2, cy = (r) => gy + r * PITCH + CELL / 2;
+  const keyW = (328 - 32) / 9, keyX = (d) => 16 + (d - 1) * (keyW + 4), keyY = 492;
+  const taps = [
+    { t: S.taps[0], x: cx(c1[1]), y: cy(c1[0]) }, { t: S.taps[1], x: keyX(SOL[c1[0]][c1[1]]) + keyW / 2, y: keyY + 28 },
+    { t: S.taps[2], x: cx(c2[1]), y: cy(c2[0]) }, { t: S.taps[3], x: keyX(SOL[c2[0]][c2[1]]) + keyW / 2, y: keyY + 28 },
+  ];
+  // the cells of the row, the column and the box that the last digit completes, and how late each swells (45 ms a step)
+  const waveCells = [];
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (r === c2[0] || c === c2[1] || (Math.floor(r / 3) === 1 && Math.floor(c / 3) === 1)) waveCells.push([r, c]);
+  const wave = (tau) => {
+    if (tau < 0) return { flash: 0, scale: 1 };
+    if (tau < 0.1) return { flash: 1, scale: lerp(1, 1.18, standard(tau / 0.1)) };
+    if (tau < 0.5) return { flash: 1 - standard((tau - 0.1) / 0.4), scale: 1.18 };
+    if (tau < 0.75) return { flash: 0, scale: lerp(1.18, 1, overshoot((tau - 0.5) / 0.25)) };
+    return { flash: 0, scale: 1 };
+  };
+  return {
+    taps, win: null,
+    html(l, st) {
+      const n = countUntil(S.taps, l);
+      const sel = n >= 3 ? c2 : n >= 1 ? c1 : null;
+      const placed = {}; if (n >= 2) placed[c1.join()] = SOL[c1[0]][c1[1]]; if (n >= 4) placed[c2.join()] = SOL[c2[0]][c2[1]];
+      const val = (r, c) => given(r, c) ? SOL[r][c] : (placed[[r, c].join()] || 0);
+      const selVal = sel ? val(sel[0], sel[1]) : 0;
+      const isPeer = (r, c) => sel && (r === sel[0] || c === sel[1] || (Math.floor(r / 3) === Math.floor(sel[0] / 3) && Math.floor(c / 3) === Math.floor(sel[1] / 3)));
+      let o = hud('Sudoku', st) + chipsRow(chip('Mistakes: 0', C.dim));
+      let g = '';
+      const lineCol = mix(C.page, C.text, 0.78);
+      for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+        const v = val(r, c), isSel = sel && sel[0] === r && sel[1] === c, same = selVal && v === selVal;
+        const bg = isSel || same || isPeer(r, c) ? mix(C.raised, C.strong, 0.12) : C.surface;
+        const border = isSel ? `2.5px solid ${C.yellow}` : same ? `1.5px solid ${C.yellow}` : 'none';
+        let sc = 1, fl = 0;
+        if (n >= 4) { const i = waveCells.findIndex(([rr, cc]) => rr === r && cc === c); if (i >= 0) { const d = (Math.abs(r - c2[0]) + Math.abs(c - c2[1])) * 0.045; const w = wave(l - S.taps[3] - d); sc = w.scale; fl = w.flash; } }
+        const color = given(r, c) ? C.text : C.blue, bw = isSel ? 2.5 : same ? 1.5 : 0, ga = f1(fl * 0.55);
+        // the flash is a layer over the cell's own background (as in the app), so it fills the cell exactly
+        g += box(3 + c * PITCH, 3 + r * PITCH, CELL, CELL, `background-color:${bg};background-image:linear-gradient(rgba(126,217,87,${ga}),rgba(126,217,87,${ga}));border-radius:3px;border:${border};transform:scale(${f1(sc)});z-index:${isSel ? 6 : same ? 4 : 1}`,
+          (v ? txt(0, 0, CELL - 2 * bw, CELL - 2 * bw, v, `${given(r, c) ? 700 : 500} ${f1(CELL * 0.52)}px Nunito`, color) : ''));
+      }
+      let lines = '';
+      for (const k of [3, 6]) { const p = 3 + k * PITCH - 1; lines += `<line x1="${f1(p)}" y1="0" x2="${f1(p)}" y2="${f1(BW - 5)}" stroke="${lineCol}" stroke-width="2.5"/><line x1="0" y1="${f1(p)}" x2="${f1(BW - 5)}" y2="${f1(p)}" stroke="${lineCol}" stroke-width="2.5"/>`; }
+      o += box(bx, by, BW, BW, `background:${mix(C.page, C.strong, 0.5)};border:2.5px solid ${lineCol};border-radius:6px`, g + `<svg style="position:absolute;left:0;top:0;pointer-events:none;z-index:9" width="${f1(BW - 5)}" height="${f1(BW - 5)}">${lines}</svg>`);
+      for (let d = 1; d <= 9; d++) o += box(keyX(d), keyY, keyW, 56, `background:${C.surface};border-radius:12px;border:1.5px solid rgba(140,140,140,.6)`, txt(0, 0, keyW - 3, 53, d, '700 22px Nunito', C.text));
+      o += roundBtn(112, 556, ICON.pencil(C.text)) + roundBtn(192, 556, ICON.erase(C.text));
+      return o + ripples(l, taps);
+    },
+  };
+}
+
+// =====================================================================================================================
+// 3. Memory match  (MemoryPage.kt, MemoryCard.kt)
+// =====================================================================================================================
+function memoryGame(S) {
+  const LAYOUT = ['circle', 'star', 'triangle', 'heart', 'diamond', 'square', 'circle', 'star', 'heart', 'triangle', 'square', 'diamond'];
+  const size = Math.min(88, (328 - 24) / 4, (356 - 16) / 3), bw = 4 * size + 24, bh = 3 * size + 16;
+  const left = 16 + (328 - bw) / 2, top = 108 + (356 - bh) / 2;
+  const pos = (i) => ({ x: left + (i % 4) * (size + 8), y: top + Math.floor(i / 4) * (size + 8) });
+  const MATCHED0 = [0, 6, 2, 9, 4, 11, 5, 10];
+  // what the taps do, in order: [card, what happens to the board]
+  const T = S.taps, EV = [
+    { card: 1 }, { card: 3 }, { card: 1 }, { card: 7 }, { card: 3 }, { card: 8 },
+  ];
+  const taps = EV.map((e, i) => ({ t: T[i], x: pos(e.card).x + size / 2, y: pos(e.card).y + size / 2 }));
+  // face of each card over time: events of [time, face] with face 0 down, 1 up, 2 matched
+  const faceEv = Array.from({ length: 12 }, () => []);
+  faceEv[1].push({ t: T[0], f: 1 }); faceEv[3].push({ t: T[1], f: 1 }); faceEv[3].push({ t: T[2], f: 0 });
+  faceEv[7].push({ t: T[3], f: 2 }); faceEv[1].push({ t: T[3], f: 2 });
+  faceEv[3].push({ t: T[4], f: 1 }); faceEv[8].push({ t: T[5], f: 2 }); faceEv[3].push({ t: T[5], f: 2 });
+  const rot = LAYOUT.map((_, i) => seq(faceEv[i].map((e) => ({ t: e.t, v: e.f ? 180 : 0 })), MATCHED0.includes(i) ? 180 : 0, 0.3, standard));
+  const faceAt = (i, l) => { let f = MATCHED0.includes(i) ? 2 : 0; for (const e of faceEv[i]) if (e.t <= l) f = e.f; return f; };
+  const matchedAt = (i) => (MATCHED0.includes(i) ? -1e9 : (faceEv[i].find((e) => e.f === 2) || { t: 1e9 }).t);
+  return {
+    taps, win: S.win,
+    html(l, st) {
+      const n = countUntil(T, l);
+      const moves = 4 + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0) + (n >= 6 ? 1 : 0), mistakes = n >= 2 ? 1 : 0;
+      let o = hud('Memory match', st) + chipsRow(chip(`Moves ${moves}`, C.dim), chip(`Mistakes: ${mistakes}`, mistakes ? C.red : C.dim));
+      LAYOUT.forEach((sym, i) => {
+        const { x, y } = pos(i), r = rot[i](l), f = faceAt(i, l), front = r > 90;
+        let bg = C.surface, bd = `1px solid ${C.subtle}`, inner = '';
+        if (front) {
+          bd = f === 1 ? `2.5px solid ${C.yellow}` : 'none';
+          if (f === 2) bg = C.green;
+          inner = `<div style="position:absolute;left:${size / 5}px;top:${size / 5}px;transform:rotateY(180deg)">${shape(sym, f === 2 ? C.greenOn : SYM[sym], size * 0.6)}</div>`;
+        } else {
+          const rr = size / 4;
+          inner = `<svg style="position:absolute;left:${size / 4}px;top:${size / 4}px" width="${size / 2}" height="${size / 2}"><g fill="${C.disabled}" fill-opacity=".45"><circle cx="${size / 4 - rr * 0.42}" cy="${size / 4}" r="${rr * 0.52}"/><circle cx="${size / 4 + rr * 0.42}" cy="${size / 4}" r="${rr * 0.52}"/></g></svg>`;
+        }
+        const pop = f === 2 && l - matchedAt(i) < 0.25 + 0.3 && matchedAt(i) > -1e8 ? lerp(0.8, 1, overshoot(clamp01((l - matchedAt(i)) / 0.25))) : 1;
+        o += box(x, y, size, size, `background:${bg};border:${bd};border-radius:12px;transform:perspective(420px) rotateY(${f1(r)}deg) scale(${f1(pop)})`, inner);
+      });
+      if (S.win != null && l >= S.win) o += resultCard(standard(clamp01((l - S.win) / 0.4)), 'All pairs found!', '7 moves · 0:12');
+      else o += txt(16, 509, 328, 22, 'Turn over two cards and find the pairs', '400 16px Nunito', C.dim);
+      return o + ripples(l, taps);
+    },
+  };
+}
+
+// =====================================================================================================================
+// 4. Color tubes  (TubesPage.kt): the pour is ported from PourGeometry
+// =====================================================================================================================
+function tubesGame(S) {
+  const CAP = 4, W = Math.min(72, (328 - 36) / 4, ((356 - 14 - 12) / 2) / 2.6), H = W * 2.6, LIFT = 14, PAD = 3;
+  const START = [[0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 0], [3], [4, 4, 4, 4], []];
+  const left = (i) => { const inRow = Math.min(4, 7 - Math.floor(i / 4) * 4), rw = W * inRow + 12 * (inRow - 1); return 16 + (328 - rw) / 2 + (W + 12) * (i % 4); };
+  const top = (i) => 108 + LIFT + (H + 12) * Math.floor(i / 4);
+  const POUR = S.pourMs / 1000;
+  const T = S.taps;
+  const PL = [{ from: 3, to: 0, color: 0, amount: 1, t0: T[1] }, { from: 4, to: 3, color: 3, amount: 1, t0: T[3] }];
+  const taps = [3, 0, 4, 3].map((tube, i) => ({ t: T[i], x: left(tube) + W / 2, y: top(tube) + H / 2 }));
+  const selEv = [[3, T[0], 1], [3, T[1], 0], [4, T[2], 1], [4, T[3], 0]];
+  const lift = START.map((_, i) => seq(selEv.filter((e) => e[0] === i).map((e) => ({ t: e[1], v: e[2] ? -LIFT : 0 })), 0, 0.2, standard));
+  const selOf = (i, l) => { let s = 0; for (const e of selEv) if (e[0] === i && e[1] <= l) s = e[2]; return s; };
+  // the board as drawn: the one from before the pour while it runs, the one after it otherwise
+  const AFTER1 = [[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3], [3], [4, 4, 4, 4], []];
+  const AFTER2 = [[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [], [4, 4, 4, 4], []];
+  const boardAt = (l) => l < PL[0].t0 + POUR ? START : l < PL[1].t0 + POUR ? AFTER1 : AFTER2;
+  const sorted = (c) => c.length === CAP && c.every((v) => v === c[0]);
+  const geom = (a, l) => {
+    const p = clamp01((l - a.t0) / POUR);
+    const travel = p < 0.25 ? fastOutSlowIn(p / 0.25) : p < 0.75 ? 1 : 1 - fastOutSlowIn((p - 0.75) / 0.25);
+    const poured = p < 0.25 ? 0 : p < 0.75 ? fastOutSlowIn((p - 0.25) / 0.5) : 1;
+    const hl = left(a.from), ht = top(a.from), tl = left(a.to), tt = top(a.to);
+    const side = tl >= hl ? 1 : -1, ang = side * (30 + 28 * poured) * Math.PI / 180;
+    const hcx = hl + W / 2, hcy = ht + H / 2;
+    const rot = (x, y, r) => [x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)];
+    const lipT = [tl + W / 2 - side * W * 0.1, tt - W * 0.25], lipFC = rot(side * W / 2, -H / 2, ang);
+    const fcx = lipT[0] - lipFC[0], fcy = lipT[1] - lipFC[1];
+    const cx = hcx + (fcx - hcx) * travel, cy = hcy + (fcy - hcy) * travel;
+    const lipNow = rot(side * W / 2, -H / 2, ang * travel);
+    return { p, poured, flowing: p >= 0.25 && p <= 0.75, tx: cx - hcx, ty: cy - hcy, deg: ang * 180 / Math.PI * travel, lip: [cx + lipNow[0], cy + lipNow[1]], a };
+  };
+  const bursts = [{ tube: 0, t: PL[0].t0 + POUR, seed: 0 }, { tube: 3, t: PL[1].t0 + POUR, seed: 3 }];
+  return {
+    taps, win: S.win,
+    html(l, st) {
+      const tubes = boardAt(l);
+      const pa = PL.find((a) => l >= a.t0 && l < a.t0 + POUR), g = pa ? geom(pa, l) : null;
+      const moves = 9 + (l >= PL[0].t0 ? 1 : 0) + (l >= PL[1].t0 ? 1 : 0);
+      let o = hud('Color tubes', st) + chipsRow(chip(`Moves ${moves}`, C.dim));
+      let streamHtml = '';
+      tubes.forEach((contents, i) => {
+        let segs = contents.map((c) => ({ c, u: 1 }));
+        if (g && i === g.a.from) { let rm = g.a.amount * g.poured; while (rm > 0 && segs.length) { const tp = segs[segs.length - 1], tk = Math.min(rm, tp.u); rm -= tk; if (tp.u - tk <= 0.001) segs.pop(); else tp.u -= tk; } }
+        if (g && i === g.a.to) { const add = g.a.amount * g.poured, whole = Math.floor(add), part = add - whole; segs = segs.concat(Array.from({ length: whole }, () => ({ c: g.a.color, u: 1 }))); if (part > 0.001) segs.push({ c: g.a.color, u: part }); }
+        const sel = selOf(i, l) === 1, done = sorted(contents), slot = (H - 2 * PAD) / CAP;
+        let inner = '';
+        segs.forEach((s, j) => {
+          const sym = SYM_ORDER[s.c], hh = slot * s.u;
+          inner += box(0, H - 2 * PAD - slot * j - hh - 0, W - 2 * PAD, hh, `background:${SYM[sym]};display:flex;align-items:center;justify-content:center`, s.u >= 0.6 ? shape(sym, 'rgba(16,36,10,.55)', Math.min(slot, W) * 0.5) : '');
+        });
+        const tr = g && i === g.a.from ? `translate(${f1(g.tx)}px,${f1(g.ty)}px) rotate(${f1(g.deg)}deg)` : '';
+        const ly = lift[i](l);
+        o += box(left(i), top(i) + ly, W, H, `background:${C.surface};border-radius:6px 6px ${W / 2}px ${W / 2}px;border:${sel ? 2.5 : 1.5}px solid ${sel ? C.yellow : done ? C.green : C.strong};overflow:hidden;z-index:${g && i === g.a.from ? 20 : 1};transform:${tr}`,
+          box(PAD - (sel ? 1 : 0) - 0, PAD - (sel ? 1 : 0), W - 2 * PAD, H - 2 * PAD, `border-radius:3px 3px ${W / 2 - PAD}px ${W / 2 - PAD}px;overflow:hidden`, inner));
+      });
+      if (g && g.flowing) {
+        const tcont = START === tubes ? AFTER1[g.a.to] : tubes[g.a.to], before = g.a.to === 0 ? START[0] : AFTER1[3];
+        const inner = H - 2 * PAD, filled = (before.length + g.a.amount * g.poured) / CAP, surface = top(g.a.to) + H - PAD - inner * filled;
+        const sw = W * 0.14, x = g.lip[0], y0 = g.lip[1];
+        if (surface > y0) streamHtml = box(x - sw / 2, y0, sw, surface - y0, `background:${SYM[SYM_ORDER[g.a.color]]};border-radius:${sw / 2}px;z-index:15`);
+      }
+      o += streamHtml;
+      // the confetti that flies out of a tube the moment it is sorted
+      bursts.forEach((b) => {
+        const s = l - b.t; if (s < 0 || s > 0.9) return;
+        const R = rng(b.seed * 31 + 1), pal = [C.green, C.yellow, C.orange, C.blue, C.red], grav = W * 5, a = s > 0.54 ? (0.9 - s) / 0.36 : 1;
+        for (let k = 0; k < 16; k++) {
+          const ang = (-90 + (R() - 0.5) * 140) * Math.PI / 180, sp = W * (1.6 + R() * 1.8), size = W * (0.07 + R() * 0.06), spin = (R() - 0.5) * 540, col = pal[Math.floor(R() * pal.length)];
+          const x = left(b.tube) + W / 2 + Math.cos(ang) * sp * s, y = top(b.tube) + Math.sin(ang) * sp * s + 0.5 * grav * s * s;
+          o += box(x - size / 2, y - size * 0.3, size, size * 0.6, `background:${col};opacity:${f1(a)};transform:rotate(${f1(spin * s)}deg);z-index:30`);
+        }
+      });
+      if (S.win != null && l >= S.win) o += resultCard(standard(clamp01((l - S.win) / 0.4)), 'All colors sorted!', '11 moves · 0:21');
+      else {
+        o += txt(16, 507, 328, 22, 'Tap a tube, then the tube to pour into', '400 16px Nunito', C.dim);
+        o += roundBtn(116, 541, ICON.undo(C.text)) + roundBtn(188, 541, ICON.restart(C.text));
+      }
+      return o + ripples(l, taps);
+    },
+  };
+}
+
+// =====================================================================================================================
+// 5. Block Out  (BlockOutPage.kt)
+// =====================================================================================================================
+function blockGame(S) {
+  const N = 5, GAP = 4, PADF = 6, EXIT = 26, CELL = Math.min(64, (328 - EXIT - PADF * 2 - GAP * (N - 1)) / N, (356 - PADF * 2 - GAP * (N - 1)) / N);
+  const INNER = CELL * N + GAP * (N - 1), FRAME = INNER + 2 * PADF, fx = 16 + (328 - (FRAME + EXIT)) / 2, fy = 108 + (356 - FRAME) / 2;
+  const STEP = CELL + GAP, EXIT_ROW = 2;
+  const pal = [C.blue, C.green, mix(C.blue, C.red, 0.5), mix(C.green, C.blue, 0.5), mix(C.red, C.text, 0.35)];
+  // pieces: id, horizontal, line (row or column), start pos, length, target?
+  const P = [
+    { id: 'B', h: false, line: 0, pos: 0, len: 2 }, { id: 'C', h: true, line: 0, pos: 1, len: 2 }, { id: 'F', h: true, line: 1, pos: 1, len: 2 },
+    { id: 'T', h: true, line: 2, pos: 0, len: 2, target: true }, { id: 'P1', h: false, line: 3, pos: 1, len: 2 }, { id: 'P2', h: false, line: 4, pos: 2, len: 2 },
+    { id: 'D', h: true, line: 3, pos: 1, len: 2 }, { id: 'A', h: true, line: 4, pos: 0, len: 3 },
+  ];
+  let ci = 0; P.forEach((p) => { p.color = p.target ? C.orange : pal[ci++ % pal.length]; });
+  const T = S.taps, SLIDE = 0.18;
+  const moves = [{ id: 'P1', to: 0, sel: T[0], go: T[1] }, { id: 'P2', to: 3, sel: T[2], go: T[3] }, { id: 'T', to: 3, sel: T[4], go: T[5] }];
+  const cellX = (c) => fx + PADF + c * STEP, cellY = (r) => fy + PADF + r * STEP;
+  const center = (p, pos) => p.h ? [cellX(pos) + (p.len * CELL + (p.len - 1) * GAP) / 2, cellY(p.line) + CELL / 2] : [cellX(p.line) + CELL / 2, cellY(pos) + (p.len * CELL + (p.len - 1) * GAP) / 2];
+  const byId = Object.fromEntries(P.map((p) => [p.id, p]));
+  const taps = [];
+  moves.forEach((m) => { const p = byId[m.id]; const c = center(p, p.pos); taps.push({ t: m.sel, x: c[0], y: c[1] }); });
+  // destination cells: P1 -> (row 0, col 3), P2 -> (row 4, col 4), T -> (row 2, col 4)
+  const dest = [[0, 3], [4, 4], [2, 4]];
+  const tapList = []; moves.forEach((m, i) => { tapList.push(taps[i], { t: m.go, x: cellX(dest[i][1]) + CELL / 2, y: cellY(dest[i][0]) + CELL / 2 }); });
+  const posOf = Object.fromEntries(P.map((p) => { const mv = moves.find((m) => m.id === p.id); return [p.id, seq(mv ? [{ t: mv.go, v: mv.to }] : [], p.pos, SLIDE, fastOutSlowIn)]; }));
+  return {
+    taps: tapList, win: S.win,
+    html(l, st) {
+      const done = moves.filter((m) => l >= m.go).length;
+      let o = hud('Block Out', st) + chipsRow(chip(`Moves ${5 + done}`, C.dim), chip('Fewest 8', C.dim));
+      let b = '';
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) b += box(PADF + c * STEP, PADF + r * STEP, CELL, CELL, `background:${C.surface};border-radius:8px`);
+      P.forEach((p) => {
+        const pos = posOf[p.id](l), sel = moves.some((m) => m.id === p.id && l >= m.sel && l < m.go);
+        const w = p.h ? p.len * CELL + (p.len - 1) * GAP : CELL, h = p.h ? CELL : p.len * CELL + (p.len - 1) * GAP;
+        const x = PADF + (p.h ? pos * STEP : p.line * STEP), y = PADF + (p.h ? p.line * STEP : pos * STEP);
+        const mark = p.target ? `<svg width="${f1(CELL * 0.5)}" height="${f1(CELL * 0.5)}" viewBox="0 0 100 100"><path d="M12 16 L48 50 L12 84 M48 16 L84 50 L48 84" transform="translate(0 0)" fill="none" stroke="${C.page}" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
+        b += box(x, y, w, h, `background:${p.color};border-radius:8px;${sel ? `border:3px solid ${C.yellow};` : ''}display:flex;align-items:center;justify-content:center;z-index:5`, mark);
+      });
+      b += box(PADF + INNER, PADF + EXIT_ROW * STEP, PADF, CELL, `background:${C.page};z-index:9`);
+      o += box(fx, fy, FRAME, FRAME, `background:rgba(140,140,140,.22);border-radius:12px`, b);
+      o += `<svg style="position:absolute;left:${f1(fx + FRAME)}px;top:${f1(cellY(EXIT_ROW) + CELL * 0.2)}px" width="${EXIT}" height="${f1(CELL * 0.6)}"><polygon points="${EXIT * 0.1},${CELL * 0.6 * 0.2} ${EXIT * 0.9},${CELL * 0.6 * 0.5} ${EXIT * 0.1},${CELL * 0.6 * 0.8}" fill="${C.orange}"/></svg>`;
+      if (S.win != null && l >= S.win) o += resultCard(standard(clamp01((l - S.win) / 0.4)), 'The way is clear!', '8 moves · 0:34');
+      else {
+        o += hint(485, 3, 'Slide the blocks to clear a way for the orange block to the exit on the right. Drag a block, or tap it and then tap where it should go');
+        o += roundBtn(152, 573, ICON.restart(C.text));
+      }
+      return o + ripples(l, tapList);
+    },
+  };
+}
+
+// =====================================================================================================================
+// 6. Pipes  (PipesPage.kt)
+// =====================================================================================================================
+const NORTH = 1, EAST = 2, SOUTH = 4, WEST = 8, SIDES = [NORTH, EAST, SOUTH, WEST];
+const rotate = (m) => ((m << 1) & 15) | ((m >> 3) & 1);
+function pipesGame(S) {
+  const N = 5, GAP = 3, TILE = Math.min(64, (328 - GAP * 4) / N, (356 - GAP * 4) / N);
+  const BW = N * TILE + GAP * 4, bx = 16 + (328 - BW) / 2, by = 108 + (356 - BW) / 2;
+  // a random tree over all 25 tiles, no tile with four pipes
+  const R = rng(11); const solved = Array(N * N).fill(0), inT = new Set([12]), deg = Array(N * N).fill(0);
+  const D = [[0, -1, NORTH, SOUTH], [1, 0, EAST, WEST], [0, 1, SOUTH, NORTH], [-1, 0, WEST, EAST]];
+  while (inT.size < N * N) {
+    const edges = [];
+    inT.forEach((i) => { const x = i % N, y = Math.floor(i / N); D.forEach(([dx, dy, a, b]) => { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= N || ny >= N) return; const j = ny * N + nx; if (!inT.has(j) && deg[i] < 3) edges.push([i, j, a, b]); }); });
+    const [i, j, a, b] = edges[Math.floor(R() * edges.length)];
+    solved[i] |= a; solved[j] |= b; deg[i]++; deg[j]++; inT.add(j);
+  }
+  const popc = (m) => [0, 1, 2, 3].filter((k) => m & SIDES[k]).length;
+  const rotN = (m, k) => { for (let i = 0; i < k; i++) m = rotate(m); return m; };
+  // three tiles are still turned wrong: one needs two taps, two need one
+  const cand = solved.map((m, i) => i).filter((i) => { const k = popc(solved[i]); return (k === 1 || k === 3 || (k === 2 && rotN(solved[i], 2) !== solved[i] && (solved[i] === (NORTH | EAST) || solved[i] === (EAST | SOUTH) || solved[i] === (SOUTH | WEST) || solved[i] === (WEST | NORTH)))) && Math.floor(i / N) > 0 && i % N > 0 && i % N < N - 1; });
+  const pick = []; while (pick.length < 3) { const c = cand[Math.floor(R() * cand.length)]; if (!pick.includes(c) && !pick.some((p) => Math.abs((p % N) - (c % N)) + Math.abs(Math.floor(p / N) - Math.floor(c / N)) < 2)) pick.push(c); }
+  const need = [2, 1, 1], start = solved.slice();
+  pick.forEach((i, k) => { start[i] = rotN(solved[i], 4 - need[k]); });
+  const T = S.taps, order = [pick[0], pick[0], pick[1], pick[2]];
+  const tx = (i) => bx + (i % N) * (TILE + GAP) + TILE / 2, ty = (i) => by + Math.floor(i / N) * (TILE + GAP) + TILE / 2;
+  const taps = order.map((i, k) => ({ t: T[k], x: tx(i), y: ty(i) }));
+  const turns = (i, l) => order.reduce((a, t, k) => a + (t === i && T[k] <= l ? 1 : 0), 0);
+  const angEv = {}; order.forEach((i, k) => { (angEv[i] = angEv[i] || []).push({ t: T[k], v: (angEv[i].length + 1) * 90 }); });
+  const ang = {}; Object.keys(angEv).forEach((i) => { ang[i] = seq(angEv[i], 0, 0.15, standard); });
+  return {
+    taps, win: S.win,
+    html(l, st) {
+      const cur = start.map((m, i) => rotN(m, turns(i, l) % 4)), n = countUntil(T, l);
+      const matched = cur.map((m, i) => { const x = i % N, y = Math.floor(i / N); let r = 0; D.forEach(([dx, dy, a, b], k) => { if (!(m & a)) return; const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= N || ny >= N) return; if (cur[ny * N + nx] & b) r |= a; }); return r; });
+      let o = hud('Pipes', st) + chipsRow(chip(`Moves ${14 + n}`, C.dim), chip('Fewest 15', C.dim));
+      for (let i = 0; i < N * N; i++) {
+        const q = turns(i, l) % 4, base = rotN(cur[i], (4 - q) % 4), baseM = rotN(matched[i], (4 - q) % 4), s = TILE, c = s / 2, w = s * 0.16;
+        let svg = '';
+        const V = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+        SIDES.forEach((side, k) => {
+          if (!(base & side)) return;
+          const [vx, vy] = V[k];
+          if (baseM & side) svg += `<line x1="${c}" y1="${c}" x2="${f1(c + vx * s / 2)}" y2="${f1(c + vy * s / 2)}" stroke="${C.green}" stroke-width="${f1(w)}" stroke-linecap="round"/>`;
+          else svg += `<line x1="${c}" y1="${c}" x2="${f1(c + vx * s * 0.3)}" y2="${f1(c + vy * s * 0.3)}" stroke="${C.strong}" stroke-width="${f1(w)}" stroke-linecap="round"/><circle cx="${f1(c + vx * s * 0.42)}" cy="${f1(c + vy * s * 0.42)}" r="${f1(s * 0.07)}" fill="none" stroke="${C.strong}" stroke-width="${f1(s * 0.04)}"/>`;
+        });
+        svg += `<circle cx="${c}" cy="${c}" r="${f1(s * 0.09)}" fill="${C.dim}"/>`;
+        const a = ang[i] ? ang[i](l) : 0;
+        o += box(bx + (i % N) * (TILE + GAP), by + Math.floor(i / N) * (TILE + GAP), TILE, TILE, `background:${C.surface};border-radius:8px;border:1px solid rgba(140,140,140,.3)`,
+          `<svg style="position:absolute;left:-1px;top:-1px;transform:rotate(${f1(a)}deg)" width="${f1(TILE)}" height="${f1(TILE)}">${svg}</svg>`);
+      }
+      if (S.win != null && l >= S.win) o += resultCard(standard(clamp01((l - S.win) / 0.4)), 'All pipes connected!', '18 moves · 0:27');
+      else {
+        o += hint(496, 2, 'Tap a tile to turn it. Connect every pipe, no open ends');
+        o += roundBtn(152, 552, ICON.restart(C.text));
+      }
+      return o + ripples(l, taps);
+    },
+  };
+}
+
+// ---- generic apps for the "too many apps" wall (not any real app) -----------------------------------------------
+const GLYPHS = {
+  grid: () => [0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => `<rect x="${22 + c * 21}" y="${22 + r * 21}" width="15" height="15" rx="4" fill="#fff"/>`)).join(''),
+  cards: () => `<rect x="20" y="30" width="38" height="50" rx="8" fill="#fff" opacity=".6" transform="rotate(-12 39 55)"/><rect x="42" y="24" width="38" height="50" rx="8" fill="#fff"/>`,
+  calc: () => `<text x="50" y="52" text-anchor="middle" dominant-baseline="central" font-size="44" font-weight="700" fill="#fff">2+2</text>`,
+  dots: () => `<circle cx="34" cy="34" r="12" fill="#fff"/><circle cx="66" cy="34" r="7" fill="#fff"/><circle cx="34" cy="66" r="7" fill="#fff"/><circle cx="66" cy="66" r="12" fill="#fff"/>`,
+  bulb: () => `<circle cx="50" cy="42" r="19" fill="#fff"/><rect x="40" y="64" width="20" height="9" rx="4" fill="#fff"/><rect x="43" y="76" width="14" height="6" rx="3" fill="#fff"/>`,
+  puzzle: () => `<rect x="24" y="30" width="46" height="46" rx="8" fill="#fff"/><circle cx="74" cy="53" r="11" fill="#fff"/><circle cx="47" cy="26" r="11" fill="#fff"/>`,
+  shapes: () => `<polygon points="30,70 50,30 70,70" fill="#fff"/><circle cx="72" cy="32" r="10" fill="#fff" opacity=".7"/><rect x="24" y="22" width="16" height="16" rx="3" fill="#fff" opacity=".7"/>`,
+  clock: () => `<circle cx="50" cy="50" r="28" fill="none" stroke="#fff" stroke-width="8"/><path d="M50 34 V50 L61 57" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`,
+};
+const WALL = [
+  ['grid', C.blue], ['cards', C.orange], ['calc', C.purple], ['dots', C.pink],
+  ['bulb', C.teal], ['puzzle', C.red], ['shapes', C.yellow], ['clock', C.green],
+  ['calc', C.teal], ['grid', C.pink], ['cards', C.blue], ['puzzle', C.orange],
+  ['dots', C.yellow], ['clock', C.purple], ['shapes', C.red], ['bulb', C.blue],
+];
+const BADGES = { 1: 3, 4: 12, 6: 1, 9: 7, 11: 5, 14: 2, 2: 9 };
+
+let TL = null, icons = [], pages = [], games = [];
+const BUILDERS = [['target', 'Target number', targetGame], ['sudoku', 'Sudoku', sudokuGame], ['memory', 'Memory match', memoryGame], ['tubes', 'Color tubes', tubesGame], ['block', 'Block Out', blockGame], ['pipes', 'Pipes', pipesGame]];
+const WINS_BEFORE = [0, 1, 1, 2, 3, 4];
+
+window.initPromo = function (timeline, mascotSvg) {
+  TL = timeline;
+  $('mascot').innerHTML = mascotSvg;
+  $('mascot').firstElementChild.setAttribute('width', '380');
+  $('mascot').firstElementChild.setAttribute('height', '380');
+  const w = 180, gap = 26, x0 = (1080 - (4 * w + 3 * gap)) / 2, y0 = 650;
+  WALL.forEach(([g, color], i) => {
+    const el = document.createElement('div');
+    el.className = 'icon';
+    el.style.left = x0 + (i % 4) * (w + gap) + 'px';
+    el.style.top = y0 + Math.floor(i / 4) * (w + gap) + 'px';
+    el.style.background = color;
+    el.innerHTML = `<svg width="180" height="180" viewBox="0 0 100 100">${GLYPHS[g]()}</svg>` + (BADGES[i] ? `<div class="badge">${BADGES[i]}</div>` : '');
+    $('wall').appendChild(el);
+    icons.push({ el, cx: x0 + (i % 4) * (w + gap) + w / 2, cy: y0 + Math.floor(i / 4) * (w + gap) + w / 2, appear: 0.4 + i * 0.17 });
+  });
+  BUILDERS.forEach(([key, name, build], k) => {
+    games.push(build(TL.script[key]));
+    const el = document.createElement('div');
+    el.className = 'page'; el.style.zIndex = k + 1; el.style.display = 'none';
+    $('screen').appendChild(el);
+    pages.push(el);
+  });
+  render(0);
+};
+
+window.render = function (t) {
+  const T = TL.t;
+  // ---- hook: headline and the wall ----
+  $('hook').style.display = t < T.pivotEnd ? 'block' : 'none';
+  const hOut = clamp01((t - T.pivotStart) / 0.25);
+  $('headline').style.opacity = standard(clamp01(t / 0.35)) * (1 - hOut);
+  $('headline').style.transform = `translateY(${(1 - standard(clamp01(t / 0.35))) * 30}px)`;
+  const fly = standard(clamp01((t - T.pivotStart) / 0.6));
+  icons.forEach((ic, i) => {
+    const a = clamp01((t - ic.appear) / 0.32), s = overshoot(a);
+    const wob = a >= 1 ? Math.sin(t * 15 + i * 1.7) * (t > T.pivotStart - 1.6 ? 3.2 : 1.1) : 0;
+    const dx = (540 - ic.cx) * fly, dy = (1010 - ic.cy) * fly;
+    ic.el.style.opacity = a * (1 - clamp01((fly - 0.7) / 0.3));
+    ic.el.style.transform = `translate(${dx}px, ${dy}px) scale(${(0.4 + 0.6 * s) * (1 - fly)}) rotate(${wob}deg)`;
+    const b = ic.el.firstElementChild.nextElementSibling;
+    if (b) b.style.transform = `scale(${overshoot(clamp01((t - ic.appear - 0.25) / 0.3))})`;
+  });
+  // ---- pivot text ----
+  const pIn = standard(clamp01((t - (T.pivotStart + 0.3)) / 0.35)), pOut = clamp01((t - (T.pivotEnd - 0.25)) / 0.25);
+  $('pivot').style.opacity = pIn * (1 - pOut);
+  $('pivot').style.transform = `translateY(${(1 - pIn) * 40}px)`;
+  // ---- the feed: a vertical pager of real-looking game pages ----
+  const fe = standard(clamp01((t - T.endStart) / 0.45));
+  const phoneIn = standard(clamp01((t - (T.feedStart - 0.1)) / 0.4));
+  const ph = $('phone');
+  ph.style.display = t >= T.feedStart - 0.1 && fe < 1 ? 'block' : 'none';
+  ph.style.opacity = phoneIn * (1 - fe);
+  ph.style.transform = `translateY(${(1 - phoneIn) * 50}px)`;
+  TL.cards.forEach((card, k) => {
+    const l = t - card.start, el = pages[k];
+    const enter = k === 0 ? 1 : standard(clamp01(l / 0.45)), next = TL.cards[k + 1], leave = next ? standard(clamp01((t - next.start) / 0.45)) : 0;
+    const y = (1 - enter) * 640 - leave * 640;
+    const visible = l > -0.01 && leave < 1;
+    el.style.display = visible ? 'block' : 'none';
+    if (!visible) return;
+    el.style.transform = `translateY(${y}px)`;
+    el.innerHTML = games[k].html(Math.max(0, l), streak(Math.max(0, l), games[k].win, WINS_BEFORE[k]));
+  });
+  // ---- end ----
+  $('end').style.opacity = fe;
+  $('mascot').style.transform = `translateY(${Math.sin(Math.max(0, t - T.endStart) * 3) * 10}px) scale(${0.92 + 0.08 * overshoot(clamp01((t - T.endStart) / 0.6))})`;
+};
+</script>
+</body>
+</html>
