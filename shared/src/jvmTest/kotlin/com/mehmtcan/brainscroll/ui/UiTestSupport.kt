@@ -97,6 +97,8 @@ internal fun ComposeUiTest.start(
     dailyGame: (Long) -> GameKind = { GameKind.Word },
     /** The size of the screen in dp. A small phone is about 360 x 600 once the system bars are taken off. */
     screen: Pair<Int, Int> = 390 to 740,
+    /** The games that offer a level choice; a test sets them when it is about the choice. */
+    levelledGames: Set<GameKind> = emptySet(),
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -110,7 +112,7 @@ internal fun ComposeUiTest.start(
             LocalDensity provides Density(LocalDensity.current.density, fontScale),
         ) {
             Box(Modifier.requiredSize(screen.first.dp, screen.second.dp)) {
-                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame)
+                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame, levelledGames = levelledGames)
             }
         }
     }
@@ -172,12 +174,11 @@ internal fun ComposeUiTest.switchToEnglish() {
     goHome()
     clickAny("Akışın", "Your feed")
     waitForIdle()
-    onNodeWithTag("languageEN").performClick()
-    waitForIdle()
-    val turkishOn = onNodeWithTag("languageTR").fetchSemanticsNode().config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Selected) == true
-    if (turkishOn) onNodeWithTag("languageTR").performClick()
-    waitForIdle()
     onNodeWithTag("startFeed").performClick()
+    waitForIdle()
+    // The flag in the corner of the word puzzle switches the language; its description names the language that is on.
+    val description = onAllNodesWithTag("languageFlag")[0].fetchSemanticsNode().config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription)?.firstOrNull().orEmpty()
+    if (": Türkçe" in description) onAllNodesWithTag("languageFlag")[0].performClick()
     waitForIdle()
 }
 

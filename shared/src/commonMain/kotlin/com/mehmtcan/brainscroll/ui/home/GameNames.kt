@@ -4,6 +4,14 @@ import androidx.compose.runtime.Composable
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.game_hanoi
 import brainscroll.shared.generated.resources.game_jigsaw
+import brainscroll.shared.generated.resources.difficulty_easy
+import brainscroll.shared.generated.resources.difficulty_hard
+import brainscroll.shared.generated.resources.difficulty_medium
+import brainscroll.shared.generated.resources.game_arrows
+import brainscroll.shared.generated.resources.game_axissum
+import brainscroll.shared.generated.resources.game_ballslide
+import brainscroll.shared.generated.resources.game_colorflow
+import brainscroll.shared.generated.resources.game_nonogram
 import brainscroll.shared.generated.resources.game_blockout
 import brainscroll.shared.generated.resources.game_lights
 import brainscroll.shared.generated.resources.game_line
@@ -17,6 +25,7 @@ import brainscroll.shared.generated.resources.game_sudoku
 import brainscroll.shared.generated.resources.game_target
 import brainscroll.shared.generated.resources.game_tubes
 import brainscroll.shared.generated.resources.game_word_puzzle
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import org.jetbrains.compose.resources.stringResource
 
@@ -38,6 +47,21 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.Tents -> Res.string.game_tents
         GameKind.Jigsaw -> Res.string.game_jigsaw
         GameKind.BlockOut -> Res.string.game_blockout
+        GameKind.Arrows -> Res.string.game_arrows
+        GameKind.Nonogram -> Res.string.game_nonogram
+        GameKind.AxisSum -> Res.string.game_axissum
+        GameKind.BallSlide -> Res.string.game_ballslide
+        GameKind.ColorFlow -> Res.string.game_colorflow
         GameKind.Line -> Res.string.game_line
+    },
+)
+
+/** The name of a level in the language of the app. */
+@Composable
+fun difficultyName(difficulty: Difficulty): String = stringResource(
+    when (difficulty) {
+        Difficulty.Easy -> Res.string.difficulty_easy
+        Difficulty.Medium -> Res.string.difficulty_medium
+        Difficulty.Hard -> Res.string.difficulty_hard
     },
 )

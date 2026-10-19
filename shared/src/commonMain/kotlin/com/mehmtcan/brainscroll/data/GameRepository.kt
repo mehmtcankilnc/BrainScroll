@@ -4,6 +4,7 @@ import com.mehmtcan.brainscroll.account.MergeTicket
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.db.Game_result
 import com.mehmtcan.brainscroll.db.In_progress_round
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.FeedStore
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -23,6 +24,7 @@ private const val SETTING_APP_LANGUAGE = "app_language"
 private const val SETTING_SYNCED_USER = "synced_user_id"
 private const val SETTING_TELEMETRY = "telemetry_enabled"
 private const val SETTING_GAMES = "feed_games"
+private const val SETTING_DIFFICULTY_PREFIX = "feed_difficulty_"
 private const val SETTING_PENDING_CRASH = "pending_crash"
 private const val SETTING_MERGE_TICKET = "merge_ticket"
 private const val SETTING_DAILY_SENT = "daily_sent:"
@@ -53,6 +55,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             input = round.input,
             was_skipped = if (round.assisted) 1 else 0, // the column was "skipped" once; it now says the guide was used
             position = round.position.toLong(),
+            difficulty = round.difficulty.id.toLong(),
         )
     }
 
@@ -89,6 +92,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             finished_at = result.finishedAt,
             day_index = result.dayIndex,
             duration_ms = result.durationMs,
+            difficulty = result.difficulty.id.toLong(),
         )
     }
 
@@ -146,6 +150,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
                 finishedAt = it.finished_at,
                 durationMs = it.duration_ms,
                 puzzleDay = it.day_index.takeIf { day -> day != IstanbulDay.dayIndex(it.finished_at) },
+                difficulty = Difficulty.fromId(it.difficulty.toInt()),
             )
         }
 
@@ -178,6 +183,18 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     fun saveGames(games: Set<GameKind>) {
         settings.put(SETTING_GAMES, games.joinToString(",") { it.id })
+    }
+
+    /** The level the player chose for [game] in the feed. Medium until they choose. */
+    fun savedDifficulty(game: GameKind): Difficulty =
+        Difficulty.fromId(settings.get(SETTING_DIFFICULTY_PREFIX + game.id).executeAsOneOrNull()?.toIntOrNull())
+
+    /** The chosen level of every game that has one saved. */
+    fun savedDifficulties(): Map<GameKind, Difficulty> =
+        GameKind.entries.filter { settings.get(SETTING_DIFFICULTY_PREFIX + it.id).executeAsOneOrNull() != null }.associateWith { savedDifficulty(it) }
+
+    fun saveDifficulty(game: GameKind, difficulty: Difficulty) {
+        settings.put(SETTING_DIFFICULTY_PREFIX + game.id, difficulty.id.toString())
     }
 
     /** The most puzzles solved in one feed so far. Kept on this device only. */
@@ -313,6 +330,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             finished_at = result.finishedAt,
             day_index = result.dayIndex,
             duration_ms = result.durationMs,
+            difficulty = result.difficulty.id.toLong(),
         )
     }
 
@@ -359,6 +377,7 @@ private fun Game_result.toFinishedOrNull(): FinishedRound? = FinishedRound(
     finishedAt = finished_at,
     durationMs = duration_ms,
     puzzleDay = day_index.takeIf { it != IstanbulDay.dayIndex(finished_at) },
+    difficulty = Difficulty.fromId(difficulty.toInt()),
 )
 
 private fun In_progress_round.toStoredOrNull(): StoredRound? = StoredRound(
@@ -370,4 +389,5 @@ private fun In_progress_round.toStoredOrNull(): StoredRound? = StoredRound(
     input = input,
     assisted = was_skipped == 1L,
     position = position.toInt(),
+    difficulty = Difficulty.fromId(difficulty.toInt()),
 )

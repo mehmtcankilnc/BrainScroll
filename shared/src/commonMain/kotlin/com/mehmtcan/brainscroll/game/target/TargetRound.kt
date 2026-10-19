@@ -86,8 +86,8 @@ class TargetRound(
 
     override fun snapshot() = TargetSnapshot(id, index, game.state, elapsedMs)
 
-    /** "2367>48": the starting numbers, then the target. */
-    private fun encodedPuzzle() = numbers.joinToString("") + ">" + target
+    /** "2367>48": the starting numbers, then the target. With a number of two digits the numbers are split by commas: "2,15,3>120". */
+    private fun encodedPuzzle() = numbers.joinToString(if (numbers.any { it > 9 }) "," else "") + ">" + target
 
     override fun toStored() = StoredRound(
         id = id,
@@ -130,7 +130,8 @@ class TargetRound(
         fun restore(index: Int, stored: StoredRound, now: () -> Long): TargetRound? {
             val parts = stored.answer.split('>')
             if (parts.size != 2) return null
-            val numbers = parts[0].map { it.digitToIntOrNull()?.takeIf { digit -> digit in 1..9 } ?: return null }
+            val numbers = (if (',' in parts[0]) parts[0].split(',') else parts[0].map { it.toString() })
+                .map { it.toIntOrNull()?.takeIf { number -> number in 1..20 } ?: return null }
             val target = parts[1].toIntOrNull() ?: return null
             val round = try {
                 TargetRound(index, stored.id, numbers, target, stored.language, now)

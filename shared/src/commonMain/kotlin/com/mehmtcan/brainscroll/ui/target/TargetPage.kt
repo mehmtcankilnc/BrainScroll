@@ -188,7 +188,8 @@ fun TargetPage(
         TargetCard(state.target, reached = won)
 
         BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            val count = page.state.tokens.size.coerceAtLeast(4)
+            // The tile size follows the numbers the puzzle started with, so the row does not grow while numbers merge.
+            val count = remember(page.id) { page.state.tokens.size.coerceAtLeast(4) }
             val tile: Dp = minOf(MaxTile, (maxWidth - TileGap * (count - 1)) / count)
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(TileGap)) {

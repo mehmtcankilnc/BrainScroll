@@ -1,5 +1,21 @@
 package com.mehmtcan.brainscroll.game.guide
 
+import com.mehmtcan.brainscroll.game.arrows.ArrowsState
+import com.mehmtcan.brainscroll.game.axissum.AxisSumState
+import com.mehmtcan.brainscroll.game.ballslide.BallSlidePuzzle
+import com.mehmtcan.brainscroll.game.colorflow.FlowPuzzle
+import com.mehmtcan.brainscroll.game.colorflow.FlowSolver
+import com.mehmtcan.brainscroll.game.colorflow.FlowState
+import com.mehmtcan.brainscroll.game.colorflow.FlowStatus
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideSolver
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideState
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideStatus
+import com.mehmtcan.brainscroll.game.axissum.AxisSumStatus
+import com.mehmtcan.brainscroll.game.nonogram.NonogramMark
+import com.mehmtcan.brainscroll.game.nonogram.NonogramSolver
+import com.mehmtcan.brainscroll.game.nonogram.NonogramState
+import com.mehmtcan.brainscroll.game.nonogram.NonogramStatus
+import com.mehmtcan.brainscroll.game.arrows.ArrowsStatus
 import com.mehmtcan.brainscroll.game.hanoi.HanoiSolver
 import com.mehmtcan.brainscroll.game.hanoi.HanoiState
 import com.mehmtcan.brainscroll.game.hanoi.HanoiStatus
@@ -249,3 +265,90 @@ object BlockOutGuide {
     }
 }
 
+
+/** The guide of arrow escape: an arrow that can leave now (there is no wrong move to take back). */
+object ArrowsGuide {
+    fun step(state: ArrowsState): GuideStep? {
+        if (state.status != ArrowsStatus.Playing) return null
+        val cell = state.arrows.firstOrNull { it.free }?.head ?: return null
+        return GuideStep(GuideReason.ArrowsEscape, listOf(cell), listOf(cell / state.size + 1, cell % state.size + 1))
+    }
+}
+
+/**
+ * The guide of the mini nonogram (every picture can be worked out from its numbers). A filled cell that is not part of the picture
+ * is to be emptied first. Otherwise it points at a cell of the picture that is not filled yet, the one the numbers give soonest.
+ */
+object NonogramGuide {
+    fun step(state: NonogramState): GuideStep? {
+        if (state.status != NonogramStatus.Playing) return null
+        val (order, _) = NonogramSolver.deduce(state.size, state.rowClues, state.columnClues)
+        val picture = order.filter { it.second == NonogramSolver.FILLED }.map { it.first }
+        val wrong = state.marks.indices.filter { state.marks[it] == NonogramMark.FILLED && it !in picture }.minOrNull()
+        if (wrong != null) return step(GuideReason.NonogramEmpty, wrong, state.size)
+        val next = picture.firstOrNull { state.marks[it] != NonogramMark.FILLED } ?: return null
+        return step(GuideReason.NonogramFill, next, state.size)
+    }
+
+    private fun step(reason: GuideReason, cell: Int, size: Int) = GuideStep(reason, listOf(cell), listOf(cell / size + 1, cell % size + 1))
+}
+
+/**
+ * The guide of axis sum: the board has one way to erase numbers, [solution] (a mark per cell, true for a number that stays). A
+ * number that is erased but stays comes back first, then a number that stays but has to go.
+ */
+object AxisSumGuide {
+    fun step(state: AxisSumState, solution: List<Boolean>?): GuideStep? {
+        if (state.status != AxisSumStatus.Playing || solution == null) return null
+        val wrong = state.erased.indices.firstOrNull { state.erased[it] && solution[it] }
+        if (wrong != null) return step(GuideReason.AxisSumKeep, wrong, state.size)
+        val missing = state.erased.indices.firstOrNull { !state.erased[it] && !solution[it] } ?: return null
+        return step(GuideReason.AxisSumErase, missing, state.size)
+    }
+
+    private fun step(reason: GuideReason, cell: Int, size: Int) = GuideStep(reason, listOf(cell), listOf(cell / size + 1, cell % size + 1))
+}
+
+/**
+ * The guide of ball slide: the first slide of a shortest way from where the board is now (the cells it goes over are the cells of
+ * the step, and the direction is in the numbers). When the painted cells can no longer be completed it says so.
+ */
+object BallSlideGuide {
+    fun step(puzzle: BallSlidePuzzle, state: BallSlideState): GuideStep? {
+        if (state.status != BallSlideStatus.Playing) return null
+        val painted = state.painted.indices.fold(0L) { acc, i -> if (state.painted[i]) acc or (1L shl i) else acc }
+        val way = BallSlideSolver.shortest(puzzle, state.ball, painted) ?: return GuideStep(GuideReason.BallSlideStuck)
+        val dir = way.firstOrNull() ?: return null
+        // The cells the slide goes over: the page shows the way with arrows running along them, not a ring to tap.
+        val path = puzzle.slide(state.ball, dir)
+        if (path.isEmpty()) return null
+        return GuideStep(GuideReason.BallSlideMove, path, listOf(dir))
+    }
+}
+
+/**
+ * The guide of color flow: a way that joins every color and covers the board (found by the search); for the first color whose path is
+ * not that way's yet, the next few cells it goes through after what the player drew rightly so far. The number is the color.
+ */
+object FlowGuide {
+    /** How many cells the guide points at. */
+    private const val CELLS = 4
+
+    fun step(puzzle: FlowPuzzle, state: FlowState): GuideStep? {
+        if (state.status != FlowStatus.Playing) return null
+        val solution = FlowSolver.solve(puzzle) ?: return null
+        for (color in solution.indices) {
+            val way = solution[color]
+            val drawn = state.paths[color]
+            // The path may have been drawn from either dot.
+            val target = if (drawn.isNotEmpty() && drawn.first() == way.last()) way.asReversed() else way
+            if (drawn == target) continue
+            var common = 0
+            while (common < drawn.size && common < target.size && drawn[common] == target[common]) common++
+            val cells = target.subList(common, minOf(target.size, common + CELLS))
+            if (cells.isEmpty()) continue
+            return GuideStep(GuideReason.FlowRoute, cells, listOf(color))
+        }
+        return null
+    }
+}

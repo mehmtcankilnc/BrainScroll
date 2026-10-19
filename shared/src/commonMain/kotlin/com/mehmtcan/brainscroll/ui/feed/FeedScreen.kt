@@ -43,17 +43,24 @@ import androidx.compose.ui.input.key.utf16CodePoint
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_word_language
+import brainscroll.shared.generated.resources.notice_hard_mode
+import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.ui.home.nativeName
+import com.mehmtcan.brainscroll.ui.wordle.LanguageSwitch
 import brainscroll.shared.generated.resources.notice_not_in_list
 import brainscroll.shared.generated.resources.notice_too_short
 import com.mehmtcan.brainscroll.game.wordle.FeedSnapshot
 import com.mehmtcan.brainscroll.game.wordle.GuessError
 import com.mehmtcan.brainscroll.ui.components.NoticePill
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.memory.MemorySnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.memory.MemoryPage
 import com.mehmtcan.brainscroll.ui.howto.HowToPlaySheet
 import com.mehmtcan.brainscroll.ui.motion.CelebrateWin
+import com.mehmtcan.brainscroll.ui.home.difficultyName
 import com.mehmtcan.brainscroll.ui.home.displayName
 import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
 import com.mehmtcan.brainscroll.ui.streak.StreakKind
@@ -113,6 +120,13 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     fun show(text: StringResource) {
         notice = Notice(text, noticeCounter++)
     }
+    // The flag of the word puzzles: the language they come in. A tap switches to the other language.
+    val wordLanguage = feed.wordLanguages.first()
+    val otherLanguage = Language.entries.first { it != wordLanguage }
+    val flagDescription = stringResource(Res.string.a11y_word_language, wordLanguage.nativeName(), otherLanguage.nativeName())
+    val languageSwitch = remember(wordLanguage, flagDescription) {
+        LanguageSwitch(wordLanguage, flagDescription) { viewModel.setWordLanguage(otherLanguage) }
+    }
 
     // The feed scrolls freely: a puzzle that is left unfinished is simply saved where it is.
     LaunchedEffect(pagerState) {
@@ -137,6 +151,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
         when (word.error) {
             GuessError.WrongLength -> show(Res.string.notice_too_short)
             GuessError.NotInDictionary, GuessError.InvalidLetters -> show(Res.string.notice_not_in_list)
+            GuessError.HardMode -> show(Res.string.notice_hard_mode)
             else -> Unit
         }
     }
@@ -175,7 +190,9 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
         ) {
             Hud(
                 title = current.kind.displayName(),
-                badge = if (currentWord != null && feed.wordLanguages.size > 1) currentWord.language.name else null,
+                badge = listOfNotNull(
+                    feed.difficulties.getOrNull(page)?.takeIf { it != Difficulty.Medium && current.kind in viewModel.levelledGames }?.let { difficultyName(it) },
+                ).joinToString(" · ").ifEmpty { null },
                 solvedCount = feed.solvedCount,
                 onHome = onHome,
                 onHowToPlay = { howTo = current.kind },
@@ -191,7 +208,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                     key = { it },
                 ) { index ->
                     CompositionLocalProvider(LocalWinSignal provides winSignal) {
-                        GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page })
+                        GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page }, languageSwitch = languageSwitch)
                     }
                 }
                 notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET), onDismiss = { notice = null }) }
@@ -216,7 +233,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
             }
         }
         CelebrateWin(current, winSignal)
-        howTo?.let { HowToPlaySheet(it, onClose = { howTo = null }) }
+        howTo?.let { HowToPlaySheet(it, onClose = { howTo = null }, wordLanguage = currentWord?.language ?: feed.wordLanguages.first()) }
         if (streakInfo) StreakInfoSheet(StreakKind.Win, current = feed.solvedCount, best = bestFlow, onClose = { streakInfo = false })
     }
 }

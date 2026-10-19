@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.game.wordle
 
+import com.mehmtcan.brainscroll.game.Difficulty
+import com.mehmtcan.brainscroll.game.GameLevels
 import com.mehmtcan.brainscroll.game.FeedRound
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.PageSnapshot
@@ -13,6 +15,21 @@ import com.mehmtcan.brainscroll.game.queens.QueensRound
 import com.mehmtcan.brainscroll.game.blockout.BlockOutGenerator
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutRound
+import com.mehmtcan.brainscroll.game.nonogram.NonogramGenerator
+import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
+import com.mehmtcan.brainscroll.game.nonogram.NonogramRound
+import com.mehmtcan.brainscroll.game.arrows.ArrowsGenerator
+import com.mehmtcan.brainscroll.game.axissum.AxisSumGenerator
+import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
+import com.mehmtcan.brainscroll.game.axissum.AxisSumRound
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideGenerator
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideRound
+import com.mehmtcan.brainscroll.game.colorflow.FlowGenerator
+import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.colorflow.FlowRound
+import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
+import com.mehmtcan.brainscroll.game.arrows.ArrowsRound
 import com.mehmtcan.brainscroll.game.tents.TentsGenerator
 import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.tents.TentsRound
@@ -55,6 +72,8 @@ data class FeedSnapshot(
     val solvedCount: Int,
     /** A puzzle was started and not finished: there is a feed to go on with. */
     val hasUnfinished: Boolean,
+    /** The level of each page, in the order of [pages]. */
+    val difficulties: List<Difficulty> = emptyList(),
 ) {
     /**
      * The word puzzles among the pages, in order. This is the same as [pages] in a feed that only has word puzzles,
@@ -88,12 +107,19 @@ class EndlessFeed(
     games: List<GameKind> = listOf(GameKind.Word),
     /** The languages of the word puzzles; each new word puzzle is in one of them, chosen at random. */
     startLanguages: List<Language> = listOf(startLanguage),
+    /** The level of each game's new boards; a game that is not in the map is medium. */
+    difficulties: Map<GameKind, Difficulty> = emptyMap(),
     /** Makes the board of a new one-line page. The daily puzzle gives the board of its day; the default is a random 5x5 one. */
     private val lineBoard: (Random) -> LinePuzzle = { LineGenerator.generate(it.nextLong(), size = 5, checkpoints = 4) },
 ) {
     /** Every game this feed can show, in order. [games] is the part of it the player switched on. */
     private val allGames: List<GameKind> = games
     private var games: List<GameKind> = games
+
+    private var levels: Map<GameKind, Difficulty> = difficulties
+
+    /** The level each round was made for, by round id. A round restored from storage keeps the level it was saved with. */
+    private val roundLevels = mutableMapOf<String, Difficulty>()
 
     private val rounds = mutableListOf<FeedRound>()
     private val counted = mutableSetOf<Int>()
@@ -126,9 +152,17 @@ class EndlessFeed(
                 GameKind.Queens -> QueensRound.restore(rounds.size, stored, now)
                 GameKind.Tents -> TentsRound.restore(rounds.size, stored, now)
                 GameKind.BlockOut -> BlockOutRound.restore(rounds.size, stored, now)
+                GameKind.Arrows -> ArrowsRound.restore(rounds.size, stored, now)
+                GameKind.Nonogram -> NonogramRound.restore(rounds.size, stored, now)
+                GameKind.AxisSum -> AxisSumRound.restore(rounds.size, stored, now)
+                GameKind.BallSlide -> BallSlideRound.restore(rounds.size, stored, now)
+                GameKind.ColorFlow -> FlowRound.restore(rounds.size, stored, now)
                 GameKind.Line -> LineRound.restore(rounds.size, stored, now)
             }
-            if (round != null) rounds += round
+            if (round != null) {
+                rounds += round
+                roundLevels[round.id] = stored.difficulty
+            }
         }
         // Rounds restored from storage were re-numbered from 0, so save them again with their new position.
         rounds.forEach { persist(it) }
@@ -151,6 +185,26 @@ class EndlessFeed(
         val at = games.indexOf(previous)
         return if (at < 0) games.first() else games[(at + 1) % games.size]
     }
+
+    /** The level of the new boards of [kind]. */
+    fun difficultyOf(kind: GameKind): Difficulty = levels[kind] ?: Difficulty.DEFAULT
+
+    /**
+     * Changes the level of the boards of [kind] that come from now on. Pages of that game from [fromIndex] on that were not
+     * touched and were made for another level are drawn again; started and finished pages stay as they are.
+     */
+    fun setDifficulty(kind: GameKind, difficulty: Difficulty, fromIndex: Int) {
+        if (difficultyOf(kind) == difficulty) return
+        levels = levels + (kind to difficulty)
+        for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
+            val round = rounds[i]
+            if (round.kind == kind && round.isUntouched && !round.assisted && levelOf(round) != difficulty) rounds[i] = newRound(i, kind)
+        }
+    }
+
+    private fun levelOf(round: FeedRound): Difficulty = roundLevels[round.id] ?: Difficulty.DEFAULT
+
+    private fun stored(round: FeedRound): StoredRound = round.toStored().copy(difficulty = levelOf(round))
 
     /** The games that are switched on, in feed order. */
     val enabledGames: List<GameKind> get() = games
@@ -393,6 +447,98 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- Arrow escape actions (ignored on a page of another game) ---
+
+    /** Taps [cell] on the arrow escape board of page [index]: the arrow leaves, or it is a mistake. */
+    fun tapArrow(index: Int, cell: Int): ArrowsResult {
+        val round = rounds[index] as? ArrowsRound ?: return ArrowsResult.Ignored
+        val result = round.tap(cell)
+        if (result != ArrowsResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Puts the arrows of page [index] back. Returns false when none had left. */
+    fun restartArrows(index: Int): Boolean {
+        val round = rounds[index] as? ArrowsRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Axis sum actions (ignored on a page of another game) ---
+
+    /** Taps [cell] on the axis sum board of page [index]: the number is erased, or brought back. */
+    fun tapAxisSum(index: Int, cell: Int): AxisSumResult {
+        val round = rounds[index] as? AxisSumRound ?: return AxisSumResult.Ignored
+        val result = round.tap(cell)
+        if (result != AxisSumResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Brings the numbers of page [index] back. Returns false when none was erased. */
+    fun restartAxisSum(index: Int): Boolean {
+        val round = rounds[index] as? AxisSumRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Ball slide actions (ignored on a page of another game) ---
+
+    /** Slides the ball of page [index] in direction [dir] (see BallDir). */
+    fun slideBall(index: Int, dir: Int): BallSlideResult {
+        val round = rounds[index] as? BallSlideRound ?: return BallSlideResult.Ignored
+        val result = round.slide(dir)
+        if (result != BallSlideResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Takes the last slide of page [index] back. Returns false when there is none. */
+    fun undoBall(index: Int): Boolean {
+        val round = rounds[index] as? BallSlideRound ?: return false
+        return round.undo().also { if (it) persist(round) }
+    }
+
+    /** Puts the ball of page [index] on its start again. Returns false when nothing was done yet. */
+    fun restartBall(index: Int): Boolean {
+        val round = rounds[index] as? BallSlideRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Color flow actions (ignored on a page of another game) ---
+
+    /** A stroke begins on [cell] of the color flow board of page [index]. Returns false if it cannot begin there. */
+    fun startFlow(index: Int, cell: Int): Boolean = (rounds[index] as? FlowRound)?.start(cell) ?: false
+
+    /** The finger of the stroke on page [index] moves on to [cell]. Returns true if the board changed. */
+    fun extendFlow(index: Int, cell: Int): Boolean = (rounds[index] as? FlowRound)?.extend(cell) ?: false
+
+    /** The finger of the stroke on page [index] is lifted: the stroke counts, and the board is saved or finished. */
+    fun endFlow(index: Int): FlowResult {
+        val round = rounds[index] as? FlowRound ?: return FlowResult.Ignored
+        val result = round.end()
+        if (result != FlowResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Clears the paths of page [index]. Returns false when there were none. */
+    fun restartFlow(index: Int): Boolean {
+        val round = rounds[index] as? FlowRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
+    // --- Mini nonogram actions (ignored on a page of another game) ---
+
+    /** Sets the cells from [from] to [to] (on one row or column) of the nonogram board of page [index] to [value]. */
+    fun paintNonogram(index: Int, from: Int, to: Int, value: Int): NonogramResult {
+        val round = rounds[index] as? NonogramRound ?: return NonogramResult.Ignored
+        val result = round.paint(from, to, value)
+        if (result != NonogramResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Clears the board of page [index]. Returns false when it was clear. */
+    fun restartNonogram(index: Int): Boolean {
+        val round = rounds[index] as? NonogramRound ?: return false
+        return round.restart().also { if (it) persist(round) }
+    }
+
     // --- Block out actions (ignored on a page of another game) ---
 
     /** Slides [piece] of the block out board of page [index] to the place [to]. */
@@ -470,7 +616,7 @@ class EndlessFeed(
     /** After a move: a round that just ended becomes a result (once), anything else is saved as progress. */
     private fun afterMove(index: Int, round: FeedRound) {
         if (round.isFinished && counted.add(index)) {
-            val result = round.toFinished(finishedAt = now())
+            val result = round.toFinished(finishedAt = now()).copy(difficulty = levelOf(round))
             // Only a win without the guide counts; a loss or a guided puzzle leaves the number as it is.
             if (!result.assisted && result.outcome == Outcome.WON) solvedCount++
             store.finish(result)
@@ -490,7 +636,7 @@ class EndlessFeed(
         val round = rounds.getOrNull(index) ?: return
         if (round.isFinished || round.assisted) return
         round.markAssisted()
-        store.saveProgress(round.toStored())
+        store.saveProgress(stored(round))
     }
 
     /** The first page whose puzzle was started and is not finished, or null. The feed "to go on with". */
@@ -505,26 +651,35 @@ class EndlessFeed(
         wordLanguages = wordLanguages,
         solvedCount = solvedCount,
         hasUnfinished = firstUnfinishedIndex() != null,
+        difficulties = rounds.map { levelOf(it) },
     )
 
-    private fun newRound(index: Int, kind: GameKind): FeedRound = when (kind) {
+    /** A new page of [kind], made for the level chosen for that game. */
+    private fun newRound(index: Int, kind: GameKind): FeedRound = buildRound(index, kind).also { roundLevels[it.id] = difficultyOf(kind) }
+
+    private fun buildRound(index: Int, kind: GameKind): FeedRound = when (kind) {
         GameKind.Word -> {
             val list = wordLists.getValue(wordLanguages.random(random))
-            WordleRound(index, WordleGame(list, nextAnswer(list)), list, newId())
+            GameLevels.word(difficultyOf(kind)).let { WordleRound(index, WordleGame(list, nextAnswer(list), it.attempts, it.hardMode), list, newId()) }
         }
-        GameKind.Memory -> MemoryRound(index, newId(), MemoryGame.newLayout(random), language, now)
-        GameKind.Tubes -> TubesRound(index, newId(), TubesGame.newLayout(random), language, now)
-        GameKind.Mines -> MinesRound(index, newId(), random.nextInt(), language, now)
-        GameKind.Sudoku -> SudokuRound(index, newId(), random.nextInt(), language, now)
-        GameKind.Jigsaw -> SudokuRound(index, newId(), random.nextInt(), language, now, SudokuVariant.Jigsaw.defaultClues, SudokuVariant.Jigsaw)
-        GameKind.Lights -> LightsRound(index, newId(), random.nextInt(), language, now)
-        GameKind.Slide -> SlideRound(index, newId(), random.nextInt(), language, now)
-        GameKind.Target -> TargetGenerator.generate(random.nextInt()).let { TargetRound(index, newId(), it.numbers, it.target, language, now, it.par) }
-        GameKind.Pipes -> PipesGenerator.generate(random.nextInt()).let { PipesRound(index, newId(), it.start.toList(), language, now, it.par) }
-        GameKind.Hanoi -> HanoiGenerator.generate(random.nextInt()).let { HanoiRound(index, newId(), it.start.toList(), it.goal, language, now, it.par) }
-        GameKind.Queens -> QueensGenerator.generate(random.nextInt()).let { QueensRound(index, newId(), it.size, it.locked, language, now) }
-        GameKind.Tents -> TentsRound(index, newId(), TentsGenerator.generate(random.nextInt()), language, now)
-        GameKind.BlockOut -> BlockOutGenerator.generate(random.nextInt()).let { BlockOutRound(index, newId(), it.puzzle, language, now, it.par) }
+        GameKind.Memory -> MemoryRound(index, newId(), MemoryGame.newLayout(random, difficultyOf(kind)), language, now)
+        GameKind.Tubes -> GameLevels.tubes(difficultyOf(kind)).let { TubesRound(index, newId(), TubesGame.newLayout(random, it.colors, empty = it.empty), language, now) }
+        GameKind.Mines -> GameLevels.mines(difficultyOf(kind)).let { MinesRound(index, newId(), random.nextInt(), language, now, it.rows, it.cols, it.mines) }
+        GameKind.Sudoku -> SudokuRound(index, newId(), random.nextInt(), language, now, GameLevels.sudokuClues(difficultyOf(kind)))
+        GameKind.Jigsaw -> SudokuRound(index, newId(), random.nextInt(), language, now, GameLevels.jigsawClues(difficultyOf(kind)), SudokuVariant.Jigsaw)
+        GameKind.Lights -> GameLevels.lights(difficultyOf(kind)).let { LightsRound(index, newId(), random.nextInt(), language, now, it.size, it.taps) }
+        GameKind.Slide -> GameLevels.slide(difficultyOf(kind)).let { SlideRound(index, newId(), random.nextInt(), language, now, it.cols, it.rows, it.scramble) }
+        GameKind.Target -> TargetGenerator.generate(random.nextInt(), difficultyOf(kind)).let { TargetRound(index, newId(), it.numbers, it.target, language, now, it.par) }
+        GameKind.Pipes -> GameLevels.pipes(difficultyOf(kind)).let { PipesGenerator.generate(random.nextInt(), it.size, it.minPar) }.let { PipesRound(index, newId(), it.start.toList(), language, now, it.par) }
+        GameKind.Hanoi -> HanoiGenerator.generate(random.nextInt(), difficultyOf(kind)).let { HanoiRound(index, newId(), it.start.toList(), it.goal, language, now, it.par) }
+        GameKind.Queens -> GameLevels.queens(difficultyOf(kind)).let { QueensGenerator.generate(random.nextInt(), it.size, it.locked) }.let { QueensRound(index, newId(), it.size, it.locked, language, now) }
+        GameKind.Tents -> TentsRound(index, newId(), TentsGenerator.generate(random.nextInt(), difficultyOf(kind)), language, now)
+        GameKind.BlockOut -> GameLevels.blockOut(difficultyOf(kind)).let { BlockOutGenerator.generate(random.nextInt(), it.size, it.minPar) }.let { BlockOutRound(index, newId(), it.puzzle, language, now, it.par) }
+        GameKind.Arrows -> ArrowsRound(index, newId(), ArrowsGenerator.generate(random.nextInt(), difficultyOf(kind)), language, now)
+        GameKind.Nonogram -> NonogramRound(index, newId(), NonogramGenerator.generate(random.nextInt(), difficultyOf(kind)), language, now)
+        GameKind.AxisSum -> AxisSumRound(index, newId(), AxisSumGenerator.generate(random.nextInt(), difficultyOf(kind)), language, now)
+        GameKind.ColorFlow -> FlowGenerator.generate(random.nextInt(), difficultyOf(kind)).let { FlowRound(index, newId(), it.puzzle, language, now) }
+        GameKind.BallSlide -> BallSlideGenerator.generate(random.nextInt(), difficultyOf(kind)).let { BallSlideRound(index, newId(), it.puzzle, it.par, language, now) }
         GameKind.Line -> LineRound(index, newId(), lineBoard(random), language, now)
     }
 
@@ -533,7 +688,7 @@ class EndlessFeed(
         when {
             round.isFinished -> Unit // `finish` already moved it to the history
             round.isUntouched -> store.deleteProgress(round.id)
-            else -> store.saveProgress(round.toStored())
+            else -> store.saveProgress(stored(round))
         }
     }
 

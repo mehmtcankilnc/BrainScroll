@@ -111,7 +111,7 @@ fun DailyGameScreen(viewModel: DailyGameViewModel, onBack: () -> Unit, modifier:
             }
         }
         ui.page?.let { CelebrateWin(it, winSignal) }
-        if (howTo) HowToPlaySheet(ui.game, onClose = { howTo = false })
+        if (howTo) HowToPlaySheet(ui.game, onClose = { howTo = false }, wordLanguage = (ui.page as? com.mehmtcan.brainscroll.game.wordle.RoundSnapshot)?.language)
         if (streakInfo) {
             StreakInfoSheet(
                 StreakKind.Daily,

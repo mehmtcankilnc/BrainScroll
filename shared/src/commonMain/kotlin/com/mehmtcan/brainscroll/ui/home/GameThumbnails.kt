@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.ui.home
 
 import androidx.compose.foundation.Canvas
+import com.mehmtcan.brainscroll.ui.colorflow.drawFlowBoard
 import com.mehmtcan.brainscroll.ui.queens.drawCrown
 import com.mehmtcan.brainscroll.ui.tents.drawTent
 import com.mehmtcan.brainscroll.ui.tents.drawTree
@@ -12,12 +13,16 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import com.mehmtcan.brainscroll.ui.ballslide.drawWall
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -85,6 +90,11 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.Tents -> TentsThumb(side)
             GameKind.Jigsaw -> JigsawThumb(side)
             GameKind.BlockOut -> BlockOutThumb(side)
+            GameKind.Arrows -> ArrowsThumb(side)
+            GameKind.Nonogram -> NonogramThumb(side)
+            GameKind.AxisSum -> AxisSumThumb(side)
+            GameKind.BallSlide -> BallSlideThumb(side)
+            GameKind.ColorFlow -> ColorFlowThumb(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -523,6 +533,158 @@ private fun JigsawThumb(side: Dp) {
             cornerRadius = androidx.compose.ui.geometry.CornerRadius(frame * 1.6f),
             style = androidx.compose.ui.graphics.drawscope.Stroke(width = frame * 0.6f),
         )
+    }
+}
+
+// --- Mini nonogram: a small board with a heart, and the numbers beside it ---
+
+// --- Axis sum: the numbers, two of them erased, with the sums of the columns on top and of the rows on the left ---
+
+@Composable
+private fun AxisSumThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val n = 4
+    val gap = side * 0.03f
+    val tile = (side * 0.9f - gap * (n - 1)) / n
+    val digits = listOf(listOf(4, 7, 2), listOf(6, 1, 8), listOf(3, 9, 5))
+    val erased = setOf(0 to 1, 1 to 2)
+    val columnSums = listOf(13, 10, 7)
+    val rowSums = listOf(6, 7, 17)
+    Grid(rows = n, cols = n, gap = gap) { r, c ->
+        when {
+            r == 0 && c == 0 -> Spacer(Modifier.size(tile))
+            r == 0 -> Cell(tile, colors.bgRaised, radius = tile * 0.2f) { Mark(columnSums[c - 1].toString(), tile * 0.42f, colors.correctFill) }
+            c == 0 -> Cell(tile, colors.bgRaised, radius = tile * 0.2f) { Mark(rowSums[r - 1].toString(), tile * 0.42f, colors.correctFill) }
+            else -> {
+                val gone = (r - 1) to (c - 1) in erased
+                Cell(tile, colors.bgSurface.copy(alpha = if (gone) 0.25f else 1f), colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.2f) {
+                    Mark(digits[r - 1][c - 1].toString(), tile * 0.46f, colors.textPrimary.copy(alpha = if (gone) 0.25f else 1f))
+                }
+            }
+        }
+    }
+}
+
+// --- Color flow: dots joined by paths on a small board ---
+
+@Composable
+private fun ColorFlowThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val paths = listOf(listOf(0, 4, 8, 12), listOf(1, 2, 3, 7), listOf(5, 6, 10, 9), listOf(11, 15))
+    val dots = listOf(0 to 12, 1 to 7, 5 to 9, 11 to 13)
+    Canvas(Modifier.size(side * 0.9f)) {
+        val cell = size.width / 4f
+        drawFlowBoard(4, 0f, 0f, cell, paths, dots, colors.bgSurface, colors.borderStrong.copy(alpha = 0.35f))
+    }
+}
+
+// --- Ball slide: a trail of painted cells, two walls and the yellow ball ---
+
+@Composable
+private fun BallSlideThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val n = 4
+    val gap = side * 0.03f
+    val tile = (side * 0.9f - gap * (n - 1)) / n
+    // P painted, W wall, B the ball (on a painted cell), . empty.
+    val rows = listOf("PPPP", "W..P", ".W.P", "..BP")
+    Grid(rows = n, cols = n, gap = gap) { r, c ->
+        when (rows[r][c]) {
+            'W' -> Cell(tile, Color.Transparent, radius = tile * 0.18f) {
+                val base = com.mehmtcan.brainscroll.ui.ballslide.ballSlideWallColor(colors)
+                val mortar = colors.bgPage.copy(alpha = 0.6f)
+                Canvas(Modifier.size(tile)) {
+                    drawWall(Offset.Zero, size.width, base, mortar, androidx.compose.ui.geometry.CornerRadius(tile.toPx() * 0.18f))
+                }
+            }
+            'P' -> Cell(tile, colors.correctFill.copy(alpha = 0.16f), colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.18f)
+            'B' -> Cell(tile, colors.correctFill.copy(alpha = 0.16f), colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.18f) {
+                Box(Modifier.size(tile * 0.6f).background(colors.pendingFill, CircleShape))
+            }
+            else -> Cell(tile, colors.bgSurface, colors.borderStrong.copy(alpha = 0.35f), 0.5.dp, tile * 0.18f)
+        }
+    }
+}
+
+@Composable
+private fun NonogramThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val n = 5
+    val rows = listOf(".#.#.", "#####", "#####", ".###.", "..#..")
+    Canvas(Modifier.size(side * 0.88f)) {
+        val clue = size.width * 0.18f
+        val gap = size.width * 0.025f
+        val cell = (size.width - clue - gap * (n - 1)) / n
+        val step = cell + gap
+        val corner = androidx.compose.ui.geometry.CornerRadius(cell * 0.2f)
+        for (r in 0 until n) for (c in 0 until n) {
+            val filled = rows[r][c] == '#'
+            drawRoundRect(
+                if (filled) colors.correctFill else colors.bgSurface,
+                androidx.compose.ui.geometry.Offset(clue + c * step, clue + r * step),
+                androidx.compose.ui.geometry.Size(cell, cell),
+                corner,
+            )
+        }
+        // The numbers: little bars, a stand-in for the digits of a board.
+        for (i in 0 until n) {
+            val bar = cell * 0.5f
+            drawRoundRect(colors.textSecondary, androidx.compose.ui.geometry.Offset(clue + i * step + (cell - bar) / 2, clue * 0.3f), androidx.compose.ui.geometry.Size(bar, clue * 0.35f), androidx.compose.ui.geometry.CornerRadius(2f))
+            drawRoundRect(colors.textSecondary, androidx.compose.ui.geometry.Offset(clue * 0.3f, clue + i * step + (cell - bar) / 2), androidx.compose.ui.geometry.Size(clue * 0.35f, bar), androidx.compose.ui.geometry.CornerRadius(2f))
+        }
+    }
+}
+
+// --- Arrow escape: a small board of arrows, some pointing at the edge, some at each other ---
+
+@Composable
+private fun ArrowsThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val palette = com.mehmtcan.brainscroll.ui.arrows.arrowPalette(colors)
+    // Quiet tiles like the board, with a few winding arrows in the colors of the game: (row, column) from the tail to the head.
+    val paths = listOf(
+        listOf(0 to 3, 0 to 2, 0 to 1, 1 to 1),
+        listOf(1 to 3, 2 to 3, 2 to 2),
+        listOf(3 to 0, 3 to 1, 3 to 2, 3 to 3),
+        listOf(1 to 0, 2 to 0, 2 to 1),
+    )
+    val tile = colors.bgSurface
+    val edge = colors.borderStrong.copy(alpha = 0.35f)
+    Canvas(Modifier.size(side * 0.9f)) {
+        val cell = size.width / 4f
+        val gap = size.width * 0.015f
+        val corner = androidx.compose.ui.geometry.CornerRadius(cell * 0.2f)
+        for (r in 0 until 4) for (c in 0 until 4) {
+            val topLeft = Offset(c * cell + gap, r * cell + gap)
+            val tileSize = androidx.compose.ui.geometry.Size(cell - 2 * gap, cell - 2 * gap)
+            drawRoundRect(tile, topLeft, tileSize, corner)
+            drawRoundRect(edge, topLeft, tileSize, corner, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.5.dp.toPx()))
+        }
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = cell * 0.2f, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+        paths.forEachIndexed { index, cells ->
+            val color = palette[index % palette.size]
+            val pts = cells.map { (r, c) -> Offset((c + 0.5f) * cell, (r + 0.5f) * cell) }
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(pts[0].x, pts[0].y)
+                for (i in 1 until pts.size) lineTo(pts[i].x, pts[i].y)
+            }
+            drawPath(path, color, style = stroke)
+            val end = pts.last()
+            val prev = pts[pts.size - 2]
+            val dx = (end.x - prev.x).coerceIn(-1f, 1f)
+            val dy = (end.y - prev.y).coerceIn(-1f, 1f)
+            val tip = Offset(end.x + dx * cell * 0.42f, end.y + dy * cell * 0.42f)
+            val half = cell * 0.27f
+            drawPath(
+                androidx.compose.ui.graphics.Path().apply {
+                    moveTo(tip.x, tip.y)
+                    lineTo(end.x - dy * half, end.y + dx * half)
+                    lineTo(end.x + dy * half, end.y - dx * half)
+                    close()
+                },
+                color,
+            )
+        }
     }
 }
 

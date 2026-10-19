@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.game.hanoi
 
+import com.mehmtcan.brainscroll.game.Difficulty
 import kotlin.random.Random
 
 /** A puzzle: for every disk from the smallest the tower it starts on, the goal tower and the fewest moves that solve it. */
@@ -14,6 +15,22 @@ class HanoiPuzzle(val start: IntArray, val goal: Int, val par: Int)
 object HanoiGenerator {
     const val DEFAULT_DISKS = 4
     const val DEFAULT_MIN_PAR = 5
+
+    /** Disks and fewest moves of a board at [difficulty]: easy 3 disks, medium 4 (as it always was), hard 5. */
+    fun disksFor(difficulty: Difficulty): Int = when (difficulty) {
+        Difficulty.Easy -> 3
+        Difficulty.Medium -> DEFAULT_DISKS
+        Difficulty.Hard -> 5
+    }
+
+    fun minParFor(difficulty: Difficulty): Int = when (difficulty) {
+        Difficulty.Easy -> 3
+        Difficulty.Medium -> DEFAULT_MIN_PAR
+        Difficulty.Hard -> 14
+    }
+
+    /** A board at [difficulty]. Medium is the board [generate] always made for a seed. */
+    fun generate(seed: Int, difficulty: Difficulty): HanoiPuzzle = generate(seed, disksFor(difficulty), minParFor(difficulty))
 
     /** How many positions are tried before settling for the last one (it never comes to that for four disks). */
     private const val MAX_ATTEMPTS = 1_000

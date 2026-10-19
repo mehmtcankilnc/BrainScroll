@@ -115,7 +115,7 @@ private val CellGap = 2.dp
 private val CellShape = RoundedCornerShape(3.dp)
 
 /** The thick line round the whole board, and between the regions of the jigsaw board: the same line, so the two boards look alike. */
-private val OuterBorder = 2.5.dp
+private val OuterBorder = 3.5.dp
 
 /** Inside the border of the whole board. */
 private val FramePadding = 3.dp
@@ -580,7 +580,7 @@ private fun Key(
 }
 
 /** A pencil lying at an angle, tip down left. */
-private fun DrawScope.drawPencil(color: Color) {
+internal fun DrawScope.drawPencil(color: Color) {
     val s = size.minDimension
     val stroke = Stroke(width = s * 0.1f, cap = StrokeCap.Round, join = StrokeJoin.Round)
     val body = Path().apply {
@@ -596,7 +596,7 @@ private fun DrawScope.drawPencil(color: Color) {
 }
 
 /** A backspace key: a tag pointing left with a cross in it. */
-private fun DrawScope.drawErase(color: Color) {
+internal fun DrawScope.drawErase(color: Color) {
     val s = size.minDimension
     val stroke = Stroke(width = s * 0.09f, cap = StrokeCap.Round, join = StrokeJoin.Round)
     val tag = Path().apply {

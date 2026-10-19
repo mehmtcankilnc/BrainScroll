@@ -2,6 +2,11 @@ package com.mehmtcan.brainscroll.ui.feed
 
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.queens.QueensResult
+import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
+import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
+import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
@@ -50,6 +55,19 @@ interface FeedActions {
     fun restartTents(page: Int): Boolean
     fun slideBlock(page: Int, piece: Int, to: Int): BlockOutResult
     fun restartBlockOut(page: Int): Boolean
+    fun tapArrow(page: Int, cell: Int): ArrowsResult
+    fun restartArrows(page: Int): Boolean
+    fun tapAxisSum(page: Int, cell: Int): AxisSumResult
+    fun restartAxisSum(page: Int): Boolean
+    fun slideBall(page: Int, dir: Int): BallSlideResult
+    fun undoBall(page: Int): Boolean
+    fun restartBall(page: Int): Boolean
+    fun startFlow(page: Int, cell: Int): Boolean
+    fun extendFlow(page: Int, cell: Int): Boolean
+    fun endFlow(page: Int): FlowResult
+    fun restartFlow(page: Int): Boolean
+    fun paintNonogram(page: Int, from: Int, to: Int, value: Int): NonogramResult
+    fun restartNonogram(page: Int): Boolean
     fun dragLine(page: Int, cell: Int): LineResult
     fun tapLine(page: Int, cell: Int): LineResult
     fun undoLine(page: Int): Boolean

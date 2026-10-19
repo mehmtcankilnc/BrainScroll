@@ -62,14 +62,14 @@ private val KeyHeight = 48.dp // minimum touch target, docs/design.md section 4
 private val KeyGap = 4.dp
 
 /** The width of the special keys at the right, in letter keys. */
-private const val SPECIAL_UNITS = 1.4f
+internal const val SPECIAL_UNITS = 1.4f
 
 /** Holding delete: the wait before it starts repeating, and the time between two deletions after that. */
 private const val HOLD_DELAY_MILLIS = 400L
 private const val HOLD_REPEAT_MILLIS = 70L
 
 /** The width of Enter, in letter keys. */
-private const val ENTER_UNITS = 3.4f
+internal const val ENTER_UNITS = 3.4f
 
 @Composable
 fun WordleKeyboard(

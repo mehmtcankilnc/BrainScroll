@@ -6,6 +6,14 @@ import com.mehmtcan.brainscroll.game.guide.GuideStep
 import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.hanoi.HanoiSnapshot
 import com.mehmtcan.brainscroll.game.queens.QueensSnapshot
+import com.mehmtcan.brainscroll.game.arrows.ArrowsSnapshot
+import com.mehmtcan.brainscroll.game.axissum.AxisSumSnapshot
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideSnapshot
+import com.mehmtcan.brainscroll.game.colorflow.FlowSnapshot
+import com.mehmtcan.brainscroll.ui.colorflow.ColorFlowPage
+import com.mehmtcan.brainscroll.ui.ballslide.BallSlidePage
+import com.mehmtcan.brainscroll.ui.axissum.AxisSumPage
+import com.mehmtcan.brainscroll.game.nonogram.NonogramSnapshot
 import com.mehmtcan.brainscroll.game.blockout.BlockOutSnapshot
 import com.mehmtcan.brainscroll.game.tents.TentsSnapshot
 import com.mehmtcan.brainscroll.game.lights.LightsSnapshot
@@ -20,6 +28,8 @@ import com.mehmtcan.brainscroll.game.tubes.TubesSnapshot
 import com.mehmtcan.brainscroll.game.wordle.RoundSnapshot
 import com.mehmtcan.brainscroll.ui.hanoi.HanoiPage
 import com.mehmtcan.brainscroll.ui.queens.QueensPage
+import com.mehmtcan.brainscroll.ui.arrows.ArrowsPage
+import com.mehmtcan.brainscroll.ui.nonogram.NonogramPage
 import com.mehmtcan.brainscroll.ui.blockout.BlockOutPage
 import com.mehmtcan.brainscroll.ui.tents.TentsPage
 import com.mehmtcan.brainscroll.ui.lights.LightsPage
@@ -31,6 +41,7 @@ import com.mehmtcan.brainscroll.ui.slide.SlidePage
 import com.mehmtcan.brainscroll.ui.sudoku.SudokuPage
 import com.mehmtcan.brainscroll.ui.target.TargetPage
 import com.mehmtcan.brainscroll.ui.tubes.TubesPage
+import com.mehmtcan.brainscroll.ui.wordle.LanguageSwitch
 import com.mehmtcan.brainscroll.ui.wordle.WordlePage
 
 /**
@@ -38,7 +49,7 @@ import com.mehmtcan.brainscroll.ui.wordle.WordlePage
  * The endless feed and the daily puzzle of the day both use it, each with its own [FeedActions].
  */
 @Composable
-fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: Set<String>, guide: GuideStep? = null) {
+fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: Set<String>, guide: GuideStep? = null, languageSwitch: LanguageSwitch? = null) {
     CompositionLocalProvider(LocalGuide provides guide) {
         when (item) {
             is RoundSnapshot -> WordlePage(
@@ -48,6 +59,7 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 onEnter = { actions.submit(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
+                languageSwitch = languageSwitch,
             )
             is MemorySnapshot -> MemoryPage(
                 page = item,
@@ -128,6 +140,44 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 page = item,
                 onTap = { cell -> actions.tapTent(index, cell) },
                 onRestart = { actions.restartTents(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is ArrowsSnapshot -> ArrowsPage(
+                page = item,
+                onTap = { cell -> actions.tapArrow(index, cell) },
+                onRestart = { actions.restartArrows(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is FlowSnapshot -> ColorFlowPage(
+                page = item,
+                onStart = { cell -> actions.startFlow(index, cell) },
+                onExtend = { cell -> actions.extendFlow(index, cell) },
+                onEnd = { actions.endFlow(index) },
+                onRestart = { actions.restartFlow(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is BallSlideSnapshot -> BallSlidePage(
+                page = item,
+                onSlide = { dir -> actions.slideBall(index, dir) },
+                onUndo = { actions.undoBall(index) },
+                onRestart = { actions.restartBall(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is AxisSumSnapshot -> AxisSumPage(
+                page = item,
+                onTap = { cell -> actions.tapAxisSum(index, cell) },
+                onRestart = { actions.restartAxisSum(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is NonogramSnapshot -> NonogramPage(
+                page = item,
+                onPaint = { from, to, value -> actions.paintNonogram(index, from, to, value) },
+                onRestart = { actions.restartNonogram(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )

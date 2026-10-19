@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
@@ -67,7 +68,7 @@ fun Hud(
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     Row(
-        modifier = modifier.fillMaxWidth().height(48.dp).padding(start = Spacing.sm, end = Spacing.sm),
+        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = Spacing.sm, end = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ChevronButton(stringResource(Res.string.tab_home), colors.textPrimary, onHome, touch = 44.dp)

@@ -11,17 +11,18 @@ CREATE TABLE game_result (
     was_skipped INTEGER NOT NULL,   -- 1 if the player used the guide (the column was "skipped" once)
     finished_at INTEGER NOT NULL,   -- epoch millis
     day_index INTEGER NOT NULL,     -- Istanbul day of finished_at (IstanbulDay.dayIndex)
-    duration_ms INTEGER             -- daily puzzles only: how long it took, measured by the server
+    duration_ms INTEGER,            -- daily puzzles only: how long it took, measured by the server
+    difficulty INTEGER NOT NULL DEFAULT 1 -- 0 easy, 1 medium, 2 hard
 );
 
 insertResult:
-INSERT OR IGNORE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms, difficulty)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- A daily result that the server holds for the signed-in account wins over the one this device made while anonymous.
 replaceResult:
-INSERT OR REPLACE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO game_result(id, game, mode, language, answer, guesses, outcome, was_skipped, finished_at, day_index, duration_ms, difficulty)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM game_result ORDER BY finished_at ASC, id ASC;

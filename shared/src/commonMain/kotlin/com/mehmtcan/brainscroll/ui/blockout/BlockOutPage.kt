@@ -181,10 +181,12 @@ fun BlockOutPage(
             val framePad = FramePad
             val cellSize: Dp = minOf(
                 MaxCell,
-                (maxWidth - ExitWidth - framePad * 2 - CellGap * (n - 1)) / n,
+                (maxWidth - ExitWidth * 2 - framePad * 2 - CellGap * (n - 1)) / n,
                 (maxHeight - framePad * 2 - CellGap * (n - 1)) / n,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // The same room as the exit has on the right, so the board itself stays in the middle.
+                Spacer(Modifier.width(ExitWidth))
                 Board(
                     state = state,
                     cell = cellSize,

@@ -20,6 +20,11 @@ enum class GameKind(val id: String) {
     Tents("tents"),
     Jigsaw("jigsaw"),
     BlockOut("blockout"),
+    Arrows("arrows"),
+    Nonogram("nonogram"),
+    AxisSum("axissum"),
+    BallSlide("ballslide"),
+    ColorFlow("colorflow"),
 
     /** "Tek Çizgi": the daily puzzle, and a page of the feed (see docs/tek-cizgi-plan.md). */
     Line("line"),
@@ -39,7 +44,7 @@ val FinishedRound.moveCount: Int
     get() = when (game) {
         GameKind.Word -> guesses.size
         GameKind.Memory -> guesses.size / 2
-        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
+        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
     }
 
 /**

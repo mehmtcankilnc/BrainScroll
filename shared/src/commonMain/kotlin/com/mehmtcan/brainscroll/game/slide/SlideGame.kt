@@ -106,7 +106,12 @@ class SlideGame(
         const val DEFAULT_SCRAMBLE = 80
 
         /** A board whose tiles are on average closer to home than this is too easy to be worth a page. */
-        private const val MIN_DISTANCE = 14
+        private fun minDistance(cols: Int, rows: Int) = when {
+            cols == 3 && rows == 4 -> 14 // the board there always was
+            cols * rows <= 9 -> 8
+            cols * rows >= 16 -> 24
+            else -> 14
+        }
 
         /** The extra random slides tried before settling for a board that is still too easy. */
         private const val MAX_EXTRA = 500
@@ -132,7 +137,7 @@ class SlideGame(
             var blank = board.size - 1
             var previous = -1
             var steps = 0
-            while (steps < scramble || (distance(board, cols) < MIN_DISTANCE && steps < scramble + MAX_EXTRA)) {
+            while (steps < scramble || (distance(board, cols) < minDistance(cols, rows) && steps < scramble + MAX_EXTRA)) {
                 val options = neighbors(blank, cols, rows).filter { it != previous }
                 val next = options[random.nextInt(options.size)]
                 board[blank] = board[next]

@@ -121,5 +121,7 @@ class LightsUiTest {
         assertEquals("lights", event.props["game"])
         assertEquals("WON", event.props["outcome"])
         assertEquals(taps.size.toString(), event.props["moves"])
+        assertEquals("1", event.props["difficulty"], "the level of the board (medium here) goes with the event")
+        assertTrue(event.props["seconds"]?.toIntOrNull() != null, "so does the time, in seconds")
     }
 }

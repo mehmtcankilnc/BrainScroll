@@ -60,7 +60,7 @@ fun WordleGrid(round: RoundSnapshot, modifier: Modifier = Modifier) {
                 when {
                     rowIndex < round.rows.size -> {
                         val row = round.rows[rowIndex]
-                        Row(horizontalArrangement = Arrangement.spacedBy(TileGap)) {
+                        Row(modifier = Modifier.testTag("wordleRow"), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
                             row.word.forEachIndexed { i, letter ->
                                 RevealTile(
                                     letter = letter.toString(),
@@ -74,7 +74,7 @@ fun WordleGrid(round: RoundSnapshot, modifier: Modifier = Modifier) {
                     }
                     rowIndex == round.rows.size && !round.isFinished ->
                         if (round.pending != null) PendingRow(round.pending, tileSize) else InputRow(round, tileSize)
-                    else -> Row(horizontalArrangement = Arrangement.spacedBy(TileGap)) {
+                    else -> Row(modifier = Modifier.testTag("wordleRow"), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
                         repeat(round.wordLength) { LetterTile("", TileState.Empty, size = tileSize) }
                     }
                 }

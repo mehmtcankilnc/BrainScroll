@@ -11,6 +11,11 @@ import com.mehmtcan.brainscroll.game.PageSnapshot
 import com.mehmtcan.brainscroll.game.daily.dailyGameId
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.queens.QueensResult
+import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
+import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
+import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
@@ -265,6 +270,19 @@ class DailyGameViewModel(
     override fun restartTents(page: Int): Boolean = act(false) { it.restartTents(0) }
     override fun slideBlock(page: Int, piece: Int, to: Int): BlockOutResult = act(BlockOutResult.Ignored) { it.slideBlock(0, piece, to) }
     override fun restartBlockOut(page: Int): Boolean = act(false) { it.restartBlockOut(0) }
+    override fun tapArrow(page: Int, cell: Int): ArrowsResult = act(ArrowsResult.Ignored) { it.tapArrow(0, cell) }
+    override fun restartArrows(page: Int): Boolean = act(false) { it.restartArrows(0) }
+    override fun tapAxisSum(page: Int, cell: Int): AxisSumResult = act(AxisSumResult.Ignored) { it.tapAxisSum(0, cell) }
+    override fun restartAxisSum(page: Int): Boolean = act(false) { it.restartAxisSum(0) }
+    override fun slideBall(page: Int, dir: Int): BallSlideResult = act(BallSlideResult.Ignored) { it.slideBall(0, dir) }
+    override fun undoBall(page: Int): Boolean = act(false) { it.undoBall(0) }
+    override fun restartBall(page: Int): Boolean = act(false) { it.restartBall(0) }
+    override fun startFlow(page: Int, cell: Int): Boolean = act(false) { it.startFlow(0, cell) }
+    override fun extendFlow(page: Int, cell: Int): Boolean = act(false) { it.extendFlow(0, cell) }
+    override fun endFlow(page: Int): FlowResult = act(FlowResult.Ignored) { it.endFlow(0) }
+    override fun restartFlow(page: Int): Boolean = act(false) { it.restartFlow(0) }
+    override fun paintNonogram(page: Int, from: Int, to: Int, value: Int): NonogramResult = act(NonogramResult.Ignored) { it.paintNonogram(0, from, to, value) }
+    override fun restartNonogram(page: Int): Boolean = act(false) { it.restartNonogram(0) }
     override fun dragLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.dragLine(0, cell) }
     override fun tapLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.tapLine(0, cell) }
     override fun undoLine(page: Int): Boolean = act(false) { it.undoLine(0) }

@@ -25,6 +25,20 @@ import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.guide_hanoi_move
 import brainscroll.shared.generated.resources.guide_jigsaw_only_digit
 import brainscroll.shared.generated.resources.guide_jigsaw_only_place
+import brainscroll.shared.generated.resources.guide_arrows_escape
+import brainscroll.shared.generated.resources.arrows_dir_down
+import brainscroll.shared.generated.resources.arrows_dir_left
+import brainscroll.shared.generated.resources.arrows_dir_right
+import brainscroll.shared.generated.resources.arrows_dir_up
+import brainscroll.shared.generated.resources.guide_ballslide_move
+import brainscroll.shared.generated.resources.guide_colorflow_route
+import com.mehmtcan.brainscroll.game.memory.CardSymbol
+import com.mehmtcan.brainscroll.ui.memory.symbolName
+import brainscroll.shared.generated.resources.guide_ballslide_stuck
+import brainscroll.shared.generated.resources.guide_axissum_erase
+import brainscroll.shared.generated.resources.guide_axissum_keep
+import brainscroll.shared.generated.resources.guide_nonogram_empty
+import brainscroll.shared.generated.resources.guide_nonogram_fill
 import brainscroll.shared.generated.resources.guide_blockout_down
 import brainscroll.shared.generated.resources.guide_blockout_left
 import brainscroll.shared.generated.resources.guide_blockout_right
@@ -89,6 +103,24 @@ fun guideText(step: GuideStep): String {
             },
             n[1],
         )
+        GuideReason.ArrowsEscape -> stringResource(Res.string.guide_arrows_escape, n[0], n[1])
+        GuideReason.BallSlideMove -> stringResource(
+            Res.string.guide_ballslide_move,
+            stringResource(
+                when (n[0]) {
+                    0 -> Res.string.arrows_dir_up
+                    1 -> Res.string.arrows_dir_right
+                    2 -> Res.string.arrows_dir_down
+                    else -> Res.string.arrows_dir_left
+                },
+            ),
+        )
+        GuideReason.FlowRoute -> stringResource(Res.string.guide_colorflow_route, stringResource(symbolName(CardSymbol.entries[n[0] % CardSymbol.entries.size])))
+        GuideReason.BallSlideStuck -> stringResource(Res.string.guide_ballslide_stuck)
+        GuideReason.AxisSumErase -> stringResource(Res.string.guide_axissum_erase, n[0], n[1])
+        GuideReason.AxisSumKeep -> stringResource(Res.string.guide_axissum_keep, n[0], n[1])
+        GuideReason.NonogramFill -> stringResource(Res.string.guide_nonogram_fill, n[0], n[1])
+        GuideReason.NonogramEmpty -> stringResource(Res.string.guide_nonogram_empty, n[0], n[1])
         GuideReason.LightsTap -> stringResource(Res.string.guide_lights_tap)
         GuideReason.SlideTile -> stringResource(Res.string.guide_slide_tile)
         GuideReason.TubesPour -> stringResource(Res.string.guide_tubes_pour)

@@ -37,6 +37,17 @@ object TentsSolver {
         return found.toList()
     }
 
+    /** True if plain reasoning ([deduce], applied again and again) finds every tent of [tents] with no guessing. */
+    fun solvesByLogic(size: Int, trees: Set<Int>, rowTargets: List<Int>, columnTargets: List<Int>, tents: Set<Int>): Boolean {
+        val known = HashSet<Int>()
+        while (true) {
+            val more = deduce(size, trees, rowTargets, columnTargets, known)
+            if (more.isEmpty()) break
+            known += more
+        }
+        return known == tents
+    }
+
     /**
      * The tents that follow from the board by plain reasoning, in reading order, not counting those in [known]: no tent where no
      * tree is next to the cell, none next to a tent, a row or column that has all its tents (the rest of it is free of them) or

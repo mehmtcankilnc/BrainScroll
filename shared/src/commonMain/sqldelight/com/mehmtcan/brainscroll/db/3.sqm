@@ -1,0 +1,5 @@
+-- Migration from database version 3 to 4: every round and result carries its difficulty level
+-- (0 easy, 1 medium, 2 hard). Rows from before levels existed are medium.
+-- Never edit this file once a build that contains it has reached a device. A change is a new migration file.
+ALTER TABLE in_progress_round ADD COLUMN difficulty INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE game_result ADD COLUMN difficulty INTEGER NOT NULL DEFAULT 1;

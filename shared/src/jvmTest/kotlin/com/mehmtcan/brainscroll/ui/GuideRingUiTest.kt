@@ -38,5 +38,8 @@ class GuideRingUiTest {
     @Test fun hanoi() = ring(GameKind.Hanoi, "hanoi", "hanoiTower")
     @Test fun queens() = ring(GameKind.Queens, "queens", "queensCell")
     @Test fun tents() = ring(GameKind.Tents, "tents", "tentsCell")
+    @Test fun arrows() = ring(GameKind.Arrows, "arrows", "arrowsCell")
+    @Test fun axissum() = ring(GameKind.AxisSum, "axissum", "axisSumCell")
+    @Test fun nonogram() = ring(GameKind.Nonogram, "nonogram", "nonogramCell")
     @Test fun jigsaw() = ring(GameKind.Jigsaw, "jigsaw", "sudokuCell")
 }

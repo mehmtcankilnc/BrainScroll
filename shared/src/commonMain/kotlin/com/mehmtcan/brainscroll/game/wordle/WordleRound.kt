@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.game.wordle
 
 import com.mehmtcan.brainscroll.game.FeedRound
+import com.mehmtcan.brainscroll.game.GameLevels
 import com.mehmtcan.brainscroll.game.guide.GuideTask
 import com.mehmtcan.brainscroll.game.guide.WordGuide
 import com.mehmtcan.brainscroll.game.GameKind
@@ -144,7 +145,9 @@ class WordleRound(
     companion object {
         /** Rebuilds a round from storage by replaying its guesses and typing its pending letters again. */
         fun restore(index: Int, stored: StoredRound, wordList: WordList): WordleRound {
-            val round = WordleRound(index, WordleGame(wordList, stored.answer), wordList, stored.id)
+            // The attempts and the hard mode of the level the puzzle was made for.
+            val shape = GameLevels.word(stored.difficulty)
+            val round = WordleRound(index, WordleGame(wordList, stored.answer, shape.attempts, shape.hardMode), wordList, stored.id)
             stored.guesses.forEach { round.game.perform(WordleAction.Submit(it)) }
             stored.input.forEach { round.type(it) }
             round.assisted = stored.assisted

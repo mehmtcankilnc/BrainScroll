@@ -8,12 +8,13 @@ CREATE TABLE in_progress_round (
     guesses TEXT NOT NULL,          -- accepted guesses, comma separated
     input TEXT NOT NULL,            -- letters typed for the next guess
     was_skipped INTEGER NOT NULL, -- 1 if the player used the guide (the column was "skipped" once)
-    position INTEGER NOT NULL       -- order in the feed
+    position INTEGER NOT NULL,      -- order in the feed
+    difficulty INTEGER NOT NULL DEFAULT 1 -- 0 easy, 1 medium, 2 hard
 );
 
 upsert:
-INSERT OR REPLACE INTO in_progress_round(id, game, mode, language, answer, guesses, input, was_skipped, position)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO in_progress_round(id, game, mode, language, answer, guesses, input, was_skipped, position, difficulty)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM in_progress_round ORDER BY position ASC, id ASC;

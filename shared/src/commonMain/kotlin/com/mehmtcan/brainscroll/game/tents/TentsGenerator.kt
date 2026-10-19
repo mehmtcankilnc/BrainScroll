@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.game.tents
 
+import com.mehmtcan.brainscroll.game.Difficulty
+import com.mehmtcan.brainscroll.game.GameLevels
 import kotlin.random.Random
 
 /**
@@ -15,13 +17,20 @@ object TentsGenerator {
     /** How many random boards are tried for one seed before giving up (it never comes to that for 6 by 6). */
     private const val MAX_ATTEMPTS = 20_000
 
-    fun generate(seed: Int, size: Int = TentsPuzzle.DEFAULT_SIZE, tents: Int = DEFAULT_TENTS): TentsPuzzle {
+    /** A board at [difficulty] (see [GameLevels.tents]). */
+    fun generate(seed: Int, difficulty: Difficulty): TentsPuzzle = GameLevels.tents(difficulty).let { generate(seed, it.size, it.tents, it.byLogic) }
+
+    /**
+     * A board with one solution. [byLogic] true keeps only boards that plain reasoning finishes (an easy board: no guess, no deep
+     * step), false only boards that need more than that, null any.
+     */
+    fun generate(seed: Int, size: Int = TentsPuzzle.DEFAULT_SIZE, tents: Int = DEFAULT_TENTS, byLogic: Boolean? = null): TentsPuzzle {
         require(size in TentsPuzzle.MIN_SIZE..TentsPuzzle.MAX_SIZE) { "a small board" }
         val random = Random(seed)
         repeat(MAX_ATTEMPTS) {
             val puzzle = candidate(random, size, tents) ?: return@repeat
             val found = TentsSolver.solutions(size, puzzle.trees, puzzle.rowTargets, puzzle.columnTargets)
-            if (found.size == 1) return puzzle
+            if (found.size == 1 && (byLogic == null || TentsSolver.solvesByLogic(size, puzzle.trees, puzzle.rowTargets, puzzle.columnTargets, puzzle.tents) == byLogic)) return puzzle
         }
         error("no board with one solution found")
     }

@@ -18,11 +18,19 @@ import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
 import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.GameLevels
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
 import com.mehmtcan.brainscroll.game.hanoi.HanoiResult
 import com.mehmtcan.brainscroll.game.queens.QueensResult
+import com.mehmtcan.brainscroll.game.LEVELLED_GAMES
+import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
+import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
+import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
 import com.mehmtcan.brainscroll.game.lights.LightsResult
@@ -49,6 +57,14 @@ import com.mehmtcan.brainscroll.stats.LightsStats
 import com.mehmtcan.brainscroll.stats.MinesStats
 import com.mehmtcan.brainscroll.stats.HanoiStats
 import com.mehmtcan.brainscroll.stats.QueensStats
+import com.mehmtcan.brainscroll.stats.ArrowsStats
+import com.mehmtcan.brainscroll.stats.AxisSumStats
+import com.mehmtcan.brainscroll.stats.BallSlideStats
+import com.mehmtcan.brainscroll.stats.FlowStats
+import com.mehmtcan.brainscroll.stats.computeFlowStats
+import com.mehmtcan.brainscroll.stats.computeBallSlideStats
+import com.mehmtcan.brainscroll.stats.computeAxisSumStats
+import com.mehmtcan.brainscroll.stats.NonogramStats
 import com.mehmtcan.brainscroll.stats.BlockOutStats
 import com.mehmtcan.brainscroll.stats.TentsStats
 import com.mehmtcan.brainscroll.stats.LineStats
@@ -61,6 +77,8 @@ import com.mehmtcan.brainscroll.stats.computeLightsStats
 import com.mehmtcan.brainscroll.stats.computeMinesStats
 import com.mehmtcan.brainscroll.stats.computeHanoiStats
 import com.mehmtcan.brainscroll.stats.computeQueensStats
+import com.mehmtcan.brainscroll.stats.computeArrowsStats
+import com.mehmtcan.brainscroll.stats.computeNonogramStats
 import com.mehmtcan.brainscroll.stats.computeBlockOutStats
 import com.mehmtcan.brainscroll.stats.computeTentsStats
 import com.mehmtcan.brainscroll.stats.computeLineStats
@@ -73,6 +91,7 @@ import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.stats.Stats
+import com.mehmtcan.brainscroll.stats.atLevel
 import com.mehmtcan.brainscroll.stats.computeStats
 import com.mehmtcan.brainscroll.sync.SyncCoordinator
 import com.mehmtcan.brainscroll.time.IstanbulDay
@@ -105,6 +124,10 @@ data class ProfileState(
     val favorites: List<FinishedRound>,
     /** How many results and favorites still wait to be uploaded to the cloud. */
     val backupPending: Int = 0,
+    /** The level the per-game statistics below are for (the daily puzzle and the totals are not about a level). */
+    val statsLevel: Difficulty = Difficulty.DEFAULT,
+    /** The endless word numbers at [statsLevel] (the guess bars follow the attempts of that level). */
+    val endless: Stats = computeStats(emptyList()),
     /** Statistics of the daily puzzle (both languages together). */
     val daily: Stats = computeStats(emptyList(), mode = Mode.DAILY),
     /** Memory match, from the endless feed. */
@@ -133,6 +156,16 @@ data class ProfileState(
     val queens: QueensStats = computeQueensStats(emptyList()),
     /** Block out, from the endless feed. */
     val blockOut: BlockOutStats = computeBlockOutStats(emptyList()),
+    /** Arrow escape, from the endless feed. */
+    val arrows: ArrowsStats = computeArrowsStats(emptyList()),
+    /** Mini nonogram, from the endless feed. */
+    val nonogram: NonogramStats = computeNonogramStats(emptyList()),
+    /** Axis sum, from the endless feed. */
+    val axisSum: AxisSumStats = computeAxisSumStats(emptyList()),
+    /** Ball slide, from the endless feed. */
+    val ballSlide: BallSlideStats = computeBallSlideStats(emptyList()),
+    /** Color flow, from the endless feed. */
+    val colorFlow: FlowStats = computeFlowStats(emptyList()),
     /** Tents, from the endless feed. */
     val tents: TentsStats = computeTentsStats(emptyList()),
     /** The same, for each language alone. */
@@ -161,7 +194,9 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow),
+    /** The games that offer a level choice. */
+    val levelledGames: Set<GameKind> = LEVELLED_GAMES,
 ) : ViewModel(), FeedActions {
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -185,8 +220,25 @@ class FeedViewModel(
 
     private val _enabledGames = MutableStateFlow(games.toSet())
 
+    private val _difficulties = MutableStateFlow(repository.savedDifficulties())
+
+    /** The level the player chose for each game; a game that is not in the map is medium. */
+    val difficulties: StateFlow<Map<GameKind, Difficulty>> = _difficulties
+
     /** The games the player wants in the feed (docs/decisions.md, Ana Sayfa). Always at least one. */
     val enabledGames: StateFlow<Set<GameKind>> = _enabledGames
+
+    private val _statsLevel = MutableStateFlow(Difficulty.DEFAULT)
+
+    /** The level the per-game statistics are shown for. */
+    val statsLevel: StateFlow<Difficulty> = _statsLevel
+
+    /** Shows the per-game statistics of [level]. */
+    fun setStatsLevel(level: Difficulty) {
+        if (_statsLevel.value == level) return
+        _statsLevel.value = level
+        refreshProfile()
+    }
 
     private val _guide = MutableStateFlow<GuideState?>(null)
 
@@ -285,7 +337,7 @@ class FeedViewModel(
         _appLanguage.value = language
     }
 
-    private val _wordLanguages = MutableStateFlow(repository.savedWordLanguages() ?: listOf(resolvedAppLanguage))
+    private val _wordLanguages = MutableStateFlow(listOf((repository.savedWordLanguages() ?: listOf(resolvedAppLanguage)).first()))
 
     /** The languages of the word puzzles in the feed: at least one. Until the player chooses, the app language. */
     val wordLanguages: StateFlow<List<Language>> = _wordLanguages
@@ -304,6 +356,7 @@ class FeedViewModel(
             startSolved = startSolved,
             now = now,
             games = games.filter { it in chosen },
+            difficulties = _difficulties.value.filterKeys { it in levelledGames },
         ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
     }
 
@@ -394,9 +447,11 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
-            telemetry.event(mode, props + ("game" to result.game.id))
+            // The time in seconds (anonymous, like the rest) is what lets the levels be balanced by how long boards really take.
+            val seconds = result.durationMs?.let { mapOf("seconds" to (it / 1000).toString()) }.orEmpty()
+            telemetry.event(mode, props + ("game" to result.game.id) + ("difficulty" to result.difficulty.id.toString()) + seconds)
         }
         viewModelScope.launch {
             account.events.collect { event ->
@@ -626,6 +681,119 @@ class FeedViewModel(
         return f.restartTents(page).also { publish() }
     }
 
+    /** Taps an arrow of the arrow escape board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun tapArrow(page: Int, cell: Int): ArrowsResult {
+        val f = feed ?: return ArrowsResult.Ignored
+        val result = f.tapArrow(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == ArrowsResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Taps a number of the axis sum board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun tapAxisSum(page: Int, cell: Int): AxisSumResult {
+        val f = feed ?: return AxisSumResult.Ignored
+        val result = f.tapAxisSum(page, cell)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == AxisSumResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Slides the ball of the ball slide board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun slideBall(page: Int, dir: Int): BallSlideResult {
+        val f = feed ?: return BallSlideResult.Ignored
+        val result = f.slideBall(page, dir)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == BallSlideResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** A stroke begins on [cell] of the color flow board on [page]. */
+    override fun startFlow(page: Int, cell: Int): Boolean {
+        val f = feed ?: return false
+        return f.startFlow(page, cell).also { publish() }
+    }
+
+    /** The finger of the stroke on [page] moves on to [cell]: the paths are drawn as it goes. */
+    override fun extendFlow(page: Int, cell: Int): Boolean {
+        val f = feed ?: return false
+        return f.extendFlow(page, cell).also { if (it) publish() }
+    }
+
+    /** The finger of the stroke on [page] is lifted. Returns what the stroke did, so the screen can buzz accordingly. */
+    override fun endFlow(page: Int): FlowResult {
+        val f = feed ?: return FlowResult.Ignored
+        val result = f.endFlow(page)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == FlowResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Clears the paths of the color flow board on [page]. */
+    override fun restartFlow(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartFlow(page).also { publish() }
+    }
+
+    /** Takes the last slide of the ball slide board on [page] back. */
+    override fun undoBall(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.undoBall(page).also { publish() }
+    }
+
+    /** Puts the ball of the ball slide board on [page] on its start again. */
+    override fun restartBall(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartBall(page).also { publish() }
+    }
+
+    /** Brings the numbers of the axis sum board on [page] back. */
+    override fun restartAxisSum(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartAxisSum(page).also { publish() }
+    }
+
+    /** Puts the arrows of the arrow escape board on [page] back. */
+    override fun restartArrows(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartArrows(page).also { publish() }
+    }
+
+    /** Paints a stroke of cells on the nonogram board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun paintNonogram(page: Int, from: Int, to: Int, value: Int): NonogramResult {
+        val f = feed ?: return NonogramResult.Ignored
+        val result = f.paintNonogram(page, from, to, value)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == NonogramResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Clears the nonogram board on [page]. */
+    override fun restartNonogram(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartNonogram(page).also { publish() }
+    }
+
     /** Slides a piece of the block out board on [page]. Returns what happened, so the screen can buzz accordingly. */
     override fun slideBlock(page: Int, piece: Int, to: Int): BlockOutResult {
         val f = feed ?: return BlockOutResult.Ignored
@@ -734,14 +902,40 @@ class FeedViewModel(
         publish()
     }
 
-    /** Switches a language of the word puzzles on or off. The last language that is on stays. Applies to puzzles still to come. */
-    fun setWordLanguageEnabled(language: Language, enabled: Boolean) {
-        val current = _wordLanguages.value
-        val next = Language.entries.filter { if (it == language) enabled else it in current }
-        if (next.isEmpty() || next == current) return
-        _wordLanguages.value = next
-        repository.saveWordLanguages(next)
-        act { it.setWordLanguages(next.toSet(), fromIndex = page) }
+    /** The one level of the whole feed: the level every game has, or medium when the games were set apart (an older version let each have its own). */
+    fun feedDifficulty(): Difficulty =
+        levelledGames.map { _difficulties.value[it] ?: Difficulty.DEFAULT }.distinct().singleOrNull() ?: Difficulty.DEFAULT
+
+    /** Sets the level of every game that has levels at once: the feed has one level. Applies to pages still to come. */
+    fun setFeedDifficulty(difficulty: Difficulty) {
+        val changed = levelledGames.filter { (_difficulties.value[it] ?: Difficulty.DEFAULT) != difficulty }
+        if (changed.isEmpty()) return
+        _difficulties.value = _difficulties.value + changed.associateWith { difficulty }
+        changed.forEach { repository.saveDifficulty(it, difficulty) }
+        // One change of the feed, not one for each game.
+        act { feed -> changed.forEach { feed.setDifficulty(it, difficulty, fromIndex = page) } }
+    }
+
+    /**
+     * Sets the level of the boards of [game] (only for a game that has levels). Applies to pages that are still to come;
+     * puzzles that were started are left alone.
+     */
+    fun setDifficulty(game: GameKind, difficulty: Difficulty) {
+        if (game !in levelledGames || (_difficulties.value[game] ?: Difficulty.DEFAULT) == difficulty) return
+        _difficulties.value = _difficulties.value + (game to difficulty)
+        repository.saveDifficulty(game, difficulty)
+        act { it.setDifficulty(game, difficulty, fromIndex = page) }
+    }
+
+    /**
+     * Sets the language of the word puzzles that come from now on. An untouched word page on show is drawn again in the new
+     * language; a puzzle that was started goes on in the language it began in.
+     */
+    fun setWordLanguage(language: Language) {
+        if (_wordLanguages.value == listOf(language)) return
+        _wordLanguages.value = listOf(language)
+        repository.saveWordLanguages(listOf(language))
+        act { it.setWordLanguage(language, fromIndex = page) }
     }
 
     /** Hearts or un-hearts a finished puzzle. Its result is saved the moment it ends, so the id always exists. */
@@ -757,25 +951,34 @@ class FeedViewModel(
     fun refreshProfile() {
         val history = repository.history()
         val today = IstanbulDay.dayIndex(now())
+        val level = _statsLevel.value
+        val atLevel = history.atLevel(level)
         _profile.value = ProfileState(
+            statsLevel = level,
             stats = computeStats(history),
+            endless = computeStats(atLevel, maxAttempts = GameLevels.word(level).attempts),
             favorites = repository.favoriteResults(),
             backupPending = repository.pendingCount(),
             daily = computeStats(history, mode = Mode.DAILY),
-            memory = computeMemoryStats(history),
-            tubes = computeTubesStats(history),
-            mines = computeMinesStats(history),
-            sudoku = computeSudokuStats(history),
-            jigsaw = computeJigsawStats(history),
-            lights = computeLightsStats(history),
-            slide = computeSlideStats(history),
-            target = computeTargetStats(history),
-            pipes = computePipesStats(history),
-            line = computeLineStats(history),
-            hanoi = computeHanoiStats(history),
-            queens = computeQueensStats(history),
-            blockOut = computeBlockOutStats(history),
-            tents = computeTentsStats(history),
+            memory = computeMemoryStats(atLevel),
+            tubes = computeTubesStats(atLevel),
+            mines = computeMinesStats(atLevel),
+            sudoku = computeSudokuStats(atLevel),
+            jigsaw = computeJigsawStats(atLevel),
+            lights = computeLightsStats(atLevel),
+            slide = computeSlideStats(atLevel),
+            target = computeTargetStats(atLevel),
+            pipes = computePipesStats(atLevel),
+            line = computeLineStats(atLevel),
+            hanoi = computeHanoiStats(atLevel),
+            queens = computeQueensStats(atLevel),
+            blockOut = computeBlockOutStats(atLevel),
+            arrows = computeArrowsStats(atLevel),
+            axisSum = computeAxisSumStats(atLevel),
+            ballSlide = computeBallSlideStats(atLevel),
+            colorFlow = computeFlowStats(atLevel),
+            nonogram = computeNonogramStats(atLevel),
+            tents = computeTentsStats(atLevel),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },

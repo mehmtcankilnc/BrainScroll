@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.stats
 
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.moveCount
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
@@ -281,6 +282,93 @@ fun computeBlockOutStats(history: List<FinishedRound>): BlockOutStats {
     )
 }
 
+/** What the statistics screen shows for arrow escape. Every result is a win (the game cannot be lost). */
+data class ArrowsStats(
+    val played: Int,
+    /** The fastest game (see ArrowsRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** Boards cleared without a single mistake. */
+    val flawless: Int,
+)
+
+fun computeArrowsStats(history: List<FinishedRound>): ArrowsStats {
+    val results = history.filter { it.game == GameKind.Arrows && it.mode == Mode.ENDLESS && !it.assisted }
+    return ArrowsStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        flawless = results.count { it.moveCount == 0 },
+    )
+}
+
+/** What the statistics screen shows for axis sum. Every result is a win (the game cannot be lost). */
+data class AxisSumStats(
+    val played: Int,
+    /** The fastest game (see AxisSumRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest taps a finished board took. */
+    val fewestTaps: Int?,
+)
+
+fun computeAxisSumStats(history: List<FinishedRound>): AxisSumStats {
+    val results = history.filter { it.game == GameKind.AxisSum && it.mode == Mode.ENDLESS && !it.assisted }
+    return AxisSumStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestTaps = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for ball slide. Every result is a win (the game cannot be lost). */
+data class BallSlideStats(
+    val played: Int,
+    /** The fastest game (see BallSlideRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest slides a finished board took. */
+    val fewestMoves: Int?,
+)
+
+fun computeBallSlideStats(history: List<FinishedRound>): BallSlideStats {
+    val results = history.filter { it.game == GameKind.BallSlide && it.mode == Mode.ENDLESS && !it.assisted }
+    return BallSlideStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for color flow. Every result is a win (the game cannot be lost). */
+data class FlowStats(
+    val played: Int,
+    /** The fastest game (see FlowRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest strokes a finished board took. */
+    val fewestMoves: Int?,
+)
+
+fun computeFlowStats(history: List<FinishedRound>): FlowStats {
+    val results = history.filter { it.game == GameKind.ColorFlow && it.mode == Mode.ENDLESS && !it.assisted }
+    return FlowStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the mini nonogram: the games and the fastest one (the game counts time only). */
+data class NonogramStats(
+    val played: Int,
+    /** The fastest game (see NonogramRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeNonogramStats(history: List<FinishedRound>): NonogramStats {
+    val results = history.filter { it.game == GameKind.Nonogram && it.mode == Mode.ENDLESS && !it.assisted }
+    return NonogramStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+    )
+}
+
 fun computeTubesStats(history: List<FinishedRound>): TubesStats {
     val results = history.filter { it.game == GameKind.Tubes && it.mode == Mode.ENDLESS && !it.assisted }
     return TubesStats(
@@ -289,3 +377,9 @@ fun computeTubesStats(history: List<FinishedRound>): TubesStats {
         fewestMoves = results.minOfOrNull { it.moveCount },
     )
 }
+
+/**
+ * The results made at [level], for the per-game statistics: the best time of an easy board says nothing about a hard one, so
+ * each game's numbers are read for one level at a time. The daily puzzle and the totals use the whole history.
+ */
+fun List<FinishedRound>.atLevel(level: Difficulty): List<FinishedRound> = filter { it.difficulty == level }

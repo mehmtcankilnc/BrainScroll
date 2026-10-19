@@ -254,7 +254,12 @@ fun AppShell(
                                     tab = Tab.Feed
                                 },
                             )
-                            SubPage.Stats -> StatsPage(profileState)
+                            SubPage.Stats -> StatsPage(
+                                profileState,
+                                // The choice only shows once a game has levels.
+                                showLevels = viewModel.levelledGames.isNotEmpty(),
+                                onLevel = viewModel::setStatsLevel,
+                            )
                             SubPage.Favorites -> FavoritesPage(
                                 profileState,
                                 // A feed left half done is lost by this, so ask first, but only when there is one.

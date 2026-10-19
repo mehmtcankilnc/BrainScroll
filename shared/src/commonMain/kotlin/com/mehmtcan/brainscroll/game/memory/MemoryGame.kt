@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.game.memory
 
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.Game
 import kotlin.random.Random
 
@@ -124,6 +125,16 @@ class MemoryGame(
 
     companion object {
         const val PAIRS = 6
+
+        /** Pairs of a board at [difficulty]: easy 4, medium 6 (as it always was), hard 8, every symbol there is. */
+        fun pairsFor(difficulty: Difficulty): Int = when (difficulty) {
+            Difficulty.Easy -> 4
+            Difficulty.Medium -> PAIRS
+            Difficulty.Hard -> 8
+        }
+
+        /** A shuffled board for [difficulty]. */
+        fun newLayout(random: Random, difficulty: Difficulty): List<CardSymbol> = newLayout(random, pairsFor(difficulty))
 
         /** A shuffled board of [pairs] different symbols, two cards each. */
         fun newLayout(random: Random, pairs: Int = PAIRS): List<CardSymbol> {

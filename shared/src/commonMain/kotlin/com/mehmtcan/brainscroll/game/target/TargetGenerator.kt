@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.game.target
 
+import com.mehmtcan.brainscroll.game.Difficulty
 import kotlin.random.Random
 
 /** The four operations. [symbol] is what is saved; the screen shows × and ÷. */
@@ -46,18 +47,42 @@ object TargetGenerator {
     /** The target needs at least this many operations. Higher is harder (3 means all four numbers are used). */
     const val DEFAULT_MIN_STEPS = 2
 
+    /** Hard: six numbers, one of them 10 to 20, and a big target (100 to 300) that needs at least four operations. */
+    const val HARD_NUMBER_COUNT = 6
+    val HARD_BIG_NUMBERS = 10..20
+    const val HARD_MIN_TARGET = 100
+    const val HARD_MAX_TARGET = 300
+    const val HARD_MIN_STEPS = 4
+
     /** How many draws of numbers are tried before the rule is relaxed (a draw with no fitting target is rare). */
     private const val MAX_DRAWS = 200
 
-    fun generate(seed: Int, minSteps: Int = DEFAULT_MIN_STEPS): TargetPuzzle {
+    /** A puzzle at [difficulty]: easy is two operations to a target up to 40, medium as it always was, hard needs three or more. */
+    fun generate(seed: Int, difficulty: Difficulty): TargetPuzzle = when (difficulty) {
+        Difficulty.Easy -> generate(seed, 2, maxSteps = 2, maxTarget = 40)
+        Difficulty.Medium -> generate(seed)
+        Difficulty.Hard -> generate(seed, HARD_MIN_STEPS, maxTarget = HARD_MAX_TARGET, minTarget = HARD_MIN_TARGET, numberCount = HARD_NUMBER_COUNT, bigNumber = HARD_BIG_NUMBERS)
+    }
+
+    fun generate(
+        seed: Int,
+        minSteps: Int = DEFAULT_MIN_STEPS,
+        maxSteps: Int = Int.MAX_VALUE,
+        maxTarget: Int = MAX_TARGET,
+        minTarget: Int = MIN_TARGET,
+        numberCount: Int = NUMBER_COUNT,
+        bigNumber: IntRange? = null,
+    ): TargetPuzzle {
         val random = Random(seed)
         var steps = minSteps
         while (true) {
             repeat(MAX_DRAWS) {
-                val numbers = List(NUMBER_COUNT) { random.nextInt(1, 10) }
+                val numbers = List(numberCount) { random.nextInt(1, 10) }.toMutableList()
+                // One of the numbers can be a bigger one (10 to 20), at a random place.
+                if (bigNumber != null) numbers[random.nextInt(numberCount)] = random.nextInt(bigNumber.first, bigNumber.last + 1)
                 val best = reachable(numbers)
                 val candidates = best.filter { (value, depth) ->
-                    value in MIN_TARGET..MAX_TARGET && depth >= steps && value !in numbers
+                    value in minTarget..maxTarget && depth in steps..maxSteps && value !in numbers
                 }.keys.sorted()
                 if (candidates.isNotEmpty()) {
                     val target = candidates[random.nextInt(candidates.size)]

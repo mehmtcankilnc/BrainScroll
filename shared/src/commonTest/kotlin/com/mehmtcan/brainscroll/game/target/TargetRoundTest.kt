@@ -81,6 +81,17 @@ class TargetRoundTest {
     }
 
     @Test
+    fun aBigNumberIsSavedWithCommasAndComesBack() {
+        val numbers = listOf(2, 15, 3, 7, 4, 9)
+        val target = (TargetGenerator.reachable(numbers).keys - numbers.toSet()).filter { it >= 100 }.min()
+        val r = TargetRound(0, "t2", numbers, target, Language.EN, { clock })
+        val stored = r.toStored()
+        assertEquals("2,15,3,7,4,9>$target", stored.answer)
+        val back = assertNotNull(TargetRound.restore(0, stored, { clock }))
+        assertEquals(r.snapshot().state, back.snapshot().state)
+    }
+
+    @Test
     fun aSavedRoundThatCannotBeReadIsDropped() {
         val stored = round().toStored()
         assertNull(TargetRound.restore(0, stored.copy(answer = "2367"), { clock }))

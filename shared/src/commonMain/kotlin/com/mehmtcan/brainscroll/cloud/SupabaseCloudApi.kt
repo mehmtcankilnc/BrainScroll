@@ -1,6 +1,7 @@
 package com.mehmtcan.brainscroll.cloud
 
 import com.mehmtcan.brainscroll.data.FavoriteRecord
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -99,6 +100,8 @@ internal data class ResultRow(
     @SerialName("finished_at") val finishedAt: Long,
     @SerialName("day_index") val dayIndex: Int,
     @SerialName("duration_ms") val durationMs: Long? = null,
+    /** 0 easy, 1 medium, 2 hard. A row without it (older server data) is medium. */
+    val difficulty: Int = 1,
 )
 
 @Serializable
@@ -120,6 +123,7 @@ internal fun FinishedRound.toRow() = ResultRow(
     finishedAt = finishedAt,
     dayIndex = dayIndex.toInt(),
     durationMs = durationMs,
+    difficulty = difficulty.id,
 )
 
 /** A row this version of the app does not understand (a newer game or language) is skipped, not fatal. */
@@ -136,6 +140,7 @@ internal fun ResultRow.toFinishedRoundOrNull(): FinishedRound? {
         assisted = wasSkipped,
         finishedAt = finishedAt,
         durationMs = durationMs,
+        difficulty = Difficulty.fromId(difficulty),
         puzzleDay = this.dayIndex.toLong().takeIf { it != com.mehmtcan.brainscroll.time.IstanbulDay.dayIndex(finishedAt) },
     )
 }

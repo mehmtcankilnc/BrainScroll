@@ -10,7 +10,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import com.mehmtcan.brainscroll.game.wordle.Language
+import com.mehmtcan.brainscroll.ui.components.LanguageFlagButton
+import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +45,9 @@ import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import org.jetbrains.compose.resources.stringResource
 
+/** The flag of a word puzzle: the language it shows, what a screen reader says, and what a tap does. */
+class LanguageSwitch(val language: Language, val description: String, val onSwitch: () -> Unit)
+
 /** Height reserved for the keyboard (3 keys of 48 dp plus gaps), reused by the result card so the grid does not jump. */
 private val BottomAreaHeight = 152.dp
 
@@ -47,6 +61,8 @@ fun WordlePage(
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The language flag in the top right corner; null when the page has none. */
+    languageSwitch: LanguageSwitch? = null,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
@@ -56,13 +72,40 @@ fun WordlePage(
     // Only a puzzle that ends while it is shown gets the arrival animation; a finished one appears at once.
     val justFinished = rememberJustFinished(status)
 
+    // When the language is switched on this page, the puzzle is made again: it shrinks away and the new one grows in.
+    val reduce = LocalReduceMotion.current
+    val renew = remember { Animatable(1f) }
+    var shownId by remember { mutableStateOf(round.id) }
+    LaunchedEffect(round.id) {
+        if (shownId == round.id) return@LaunchedEffect
+        shownId = round.id
+        if (reduce) {
+            renew.snapTo(0.3f)
+            renew.animateTo(1f, tween(Motion.FAST))
+        } else {
+            renew.snapTo(0f)
+            renew.animateTo(1f, tween(Motion.SLOW, easing = Motion.Overshoot))
+        }
+    }
+
     Column(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(Spacing.sm))
+        Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.CenterEnd) {
+            if (languageSwitch != null) LanguageFlagButton(languageSwitch.language, languageSwitch.description, languageSwitch.onSwitch)
+        }
 
-        WordleGrid(round, modifier = Modifier.weight(1f).fillMaxWidth())
+        val renewing = renew.value
+        WordleGrid(
+            round,
+            modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer {
+                val scale = 0.85f + 0.15f * renewing
+                scaleX = scale
+                scaleY = scale
+                alpha = renewing.coerceIn(0f, 1f)
+            },
+        )
 
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {

@@ -3,6 +3,7 @@ package com.mehmtcan.brainscroll.ui
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
@@ -36,6 +37,8 @@ class SmallScreenUiTest {
     @Test fun tents() = shot(GameKind.Tents, "tents")
     @Test fun jigsaw() = shot(GameKind.Jigsaw, "jigsaw")
     @Test fun blockout() = shot(GameKind.BlockOut, "blockout")
+    @Test fun arrows() = shot(GameKind.Arrows, "arrows")
+    @Test fun nonogram() = shot(GameKind.Nonogram, "nonogram")
 
     /** The towers and the restart button are both on the short screen with big text, and nothing runs off its edge. */
     @Test
@@ -108,21 +111,57 @@ class SmallScreenUiTest {
             }
         }
     }
+
+    /** The arrow board and the restart button are both on the short screen with big text, and nothing runs off its edge. */
+    @Test
+    fun arrowsFitsAShortScreenWithBigText() = runComposeUiTest {
+        start(games = listOf(GameKind.Arrows), openFeed = false, fontScale = 1.5f, screen = 360 to 600)
+        openTab("Akış", "Feed")
+        waitForIdle()
+        mainClock.advanceTimeBy(1_500)
+        waitForIdle()
+        snap("303_small_arrows_big_text")
+        val root = onRoot().fetchSemanticsNode().boundsInRoot
+        for (tag in listOf("arrowsCell", "arrowsRestart")) {
+            for (node in onAllNodesWithTag(tag).fetchSemanticsNodes()) {
+                val b = node.boundsInRoot
+                assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")
+            }
+        }
+    }
+
+
+    /** The nonogram board, its numbers and the restart button are all on the short screen with big text, and nothing runs off its edge. */
+    @Test
+    fun nonogramFitsAShortScreenWithBigText() = runComposeUiTest {
+        start(games = listOf(GameKind.Nonogram), openFeed = false, fontScale = 1.5f, screen = 360 to 600)
+        openTab("Akış", "Feed")
+        waitForIdle()
+        mainClock.advanceTimeBy(1_500)
+        waitForIdle()
+        snap("304_small_nonogram_big_text")
+        val root = onRoot().fetchSemanticsNode().boundsInRoot
+        for (tag in listOf("nonogramCell", "nonogramRestart", "nonogramRowClue", "nonogramColumnClue")) {
+            for (node in onAllNodesWithTag(tag).fetchSemanticsNodes()) {
+                val b = node.boundsInRoot
+                assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")
+            }
+        }
+    }
+
     @Test fun word() = shot(GameKind.Word, "word")
 
     @Test
-    fun theRulesSheetFitsAShortScreenWithBigText() = runComposeUiTest {
+    fun theRulesCardFitsAShortScreenWithBigText() = runComposeUiTest {
         start(fontScale = 1.5f, screen = 360 to 600)
         onAllNodesWithTag("howToButton")[0].performClick()
         waitForIdle()
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
         snap("301_small_howto")
-        val sheet = onAllNodesWithTag("howToSheet")[0].fetchSemanticsNode().boundsInRoot
-        // The "Got it" button is on screen, whatever the text size.
-        // The texts follow the language of the machine (Turkish here, English on the CI runner).
-        val gotIt = listOf("Anladım", "Got it").first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
-        val button = onAllNodesWithText(gotIt)[0].fetchSemanticsNode().boundsInRoot
-        assertTrue(button.bottom <= sheet.bottom + 1f && button.top >= 0f, "the button of the sheet is in view")
+        // The card and its OK button are on screen, whatever the text size.
+        val root = onRoot().fetchSemanticsNode().boundsInRoot
+        val button = onNodeWithTag("howToOk").fetchSemanticsNode().boundsInRoot
+        assertTrue(button.bottom <= root.bottom + 1f && button.top >= 0f, "the OK button of the card is in view")
     }
 }

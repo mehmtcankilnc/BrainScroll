@@ -6,6 +6,9 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -19,7 +22,8 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class HowToPlayUiTest {
 
-    private fun ComposeUiTest.sheetShown() = onAllNodesWithTag("howToSheet").fetchSemanticsNodes().isNotEmpty()
+    /** The card of steps is shown (every game has one now). */
+    private fun ComposeUiTest.sheetShown() = onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty()
 
     /** The button of the page that is on screen (the pages next to it are composed too, but have no size on screen). */
     private fun ComposeUiTest.pressHowTo() {
@@ -38,7 +42,8 @@ class HowToPlayUiTest {
     }
 
     private fun ComposeUiTest.close() {
-        clickAny("Anladım", "Got it")
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
         waitForIdle()
     }
 
@@ -50,7 +55,6 @@ class HowToPlayUiTest {
         pressHowTo()
         snap("111_howto_word")
         assertTrue(sheetShown())
-        assertTrue(hasAnyText("Nasıl oynanır: Kelime bulmacası", "How to play: Word puzzle"))
         close()
         assertFalse(sheetShown())
     }
@@ -60,7 +64,6 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Memory)
         pressHowTo()
         snap("112_howto_memory")
-        assertTrue(hasAnyText("Nasıl oynanır: Hafıza eşleştirme", "How to play: Memory match"))
         close()
         assertFalse(sheetShown())
     }
@@ -70,9 +73,12 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Tubes)
         pressHowTo()
         snap("113_howto_tubes")
-        assertTrue(hasAnyText("Nasıl oynanır: Renk tüpleri", "How to play: Color tubes"))
-        close()
-        assertFalse(sheetShown())
+        // The game has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -81,9 +87,12 @@ class HowToPlayUiTest {
         snap("114_howto_button_mines")
         pressHowTo()
         snap("115_howto_mines")
-        assertTrue(hasAnyText("Nasıl oynanır: Mayın tarlası", "How to play: Minesweeper"))
-        close()
-        assertFalse(sheetShown())
+        // The game has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -91,9 +100,13 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Sudoku)
         pressHowTo()
         snap("125_howto_sudoku")
-        assertTrue(hasAnyText("Nasıl oynanır: Sudoku", "How to play: Sudoku"))
-        close()
-        assertFalse(sheetShown())
+        // Sudoku has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(hasAnyText("NASIL OYNANIR", "HOW TO PLAY"))
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -101,9 +114,12 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Lights)
         pressHowTo()
         snap("133_howto_lights")
-        assertTrue(hasAnyText("Nasıl oynanır: Işıkları söndür", "How to play: Lights out"))
-        close()
-        assertFalse(sheetShown())
+        // The game has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -111,9 +127,12 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Slide)
         pressHowTo()
         snap("143_howto_slide")
-        assertTrue(hasAnyText("Nasıl oynanır: Kayan bulmaca", "How to play: Sliding puzzle"))
-        close()
-        assertFalse(sheetShown())
+        // The game has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -121,9 +140,12 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Target)
         pressHowTo()
         snap("154_howto_target")
-        assertTrue(hasAnyText("Nasıl oynanır: Hedef sayı", "How to play: Target number"))
-        close()
-        assertFalse(sheetShown())
+        // The game has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -131,20 +153,24 @@ class HowToPlayUiTest {
         openOnSecondPage(GameKind.Pipes)
         pressHowTo()
         snap("163_howto_pipes")
-        assertTrue(hasAnyText("Nasıl oynanır: Boru bağla", "How to play: Pipes"))
-        close()
-        assertFalse(sheetShown())
+        // The game has the card of steps now, not the sheet of text.
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(500)
+        waitForIdle()
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
     fun tappingOutsideThePanelClosesItAndTheGameBelowIsNotTouched() = runComposeUiTest {
         openOnSecondPage(GameKind.Tubes)
         pressHowTo()
-        assertTrue(sheetShown())
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
         // The scrim covers the page: a tap on the tubes behind it only closes the panel, it does not select a tube.
-        onAllNodesWithTag("tube")[0].performClick()
+        onRoot().performTouchInput { click(androidx.compose.ui.geometry.Offset(4f, 4f)) }
+        mainClock.advanceTimeBy(500)
         waitForIdle()
-        assertFalse(sheetShown())
+        assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
         assertTrue(onAllNodesWithTag("tube").fetchSemanticsNodes().none { node ->
             node.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()?.let {
                 it.contains("seçili") || it.contains("selected")

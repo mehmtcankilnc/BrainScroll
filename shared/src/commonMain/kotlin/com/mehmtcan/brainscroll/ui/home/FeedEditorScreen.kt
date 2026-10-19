@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -37,13 +38,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.a11y_difficulty
 import brainscroll.shared.generated.resources.back
 import brainscroll.shared.generated.resources.confirm_cancel
-import brainscroll.shared.generated.resources.editor_language
 import brainscroll.shared.generated.resources.new_feed_confirm
 import brainscroll.shared.generated.resources.new_feed_message
 import brainscroll.shared.generated.resources.new_feed_title
@@ -51,12 +53,17 @@ import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
 import com.mehmtcan.brainscroll.ui.feed.FeedUiState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import brainscroll.shared.generated.resources.editor_language_hint
 import brainscroll.shared.generated.resources.editor_selected
+import brainscroll.shared.generated.resources.editor_next
+import brainscroll.shared.generated.resources.editor_difficulty_title
+import brainscroll.shared.generated.resources.editor_difficulty_subtitle
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.backhandler.BackHandler
 import brainscroll.shared.generated.resources.editor_subtitle
 import brainscroll.shared.generated.resources.editor_title
 import brainscroll.shared.generated.resources.home_start_feed
 import brainscroll.shared.generated.resources.personalize_last_game
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.components.AppButton
@@ -79,16 +86,24 @@ fun Language.nativeName(): String = when (this) {
  * once, to the puzzles that are still to come. The last game that is on can not be switched off.
  */
 @Composable
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFeed: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val enabled by feedViewModel.enabledGames.collectAsStateWithLifecycle()
     val wordLanguages by feedViewModel.wordLanguages.collectAsStateWithLifecycle()
     val wordLanguage = wordLanguages.first()
+    val difficulties by feedViewModel.difficulties.collectAsStateWithLifecycle()
 
     val feedState by feedViewModel.state.collectAsStateWithLifecycle()
     val hasUnfinished = (feedState as? FeedUiState.Ready)?.feed?.hasUnfinished == true
     var confirmNewFeed by remember { mutableStateOf(false) }
+    // Step 0 picks the games; step 1 picks the level of the whole feed. Without a game that has levels there is no step 1.
+    var step by remember { mutableIntStateOf(0) }
+    val hasLevels = enabled.any { it in feedViewModel.levelledGames }
+    if (!hasLevels && step == 1) step = 0
+    BackHandler(enabled = step == 1) { step = 0 }
+    val level = remember(difficulties) { feedViewModel.feedDifficulty() }
 
     Box(modifier = modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -98,27 +113,31 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                 ChevronButton(
                     description = stringResource(Res.string.back),
                     color = colors.textPrimary,
-                    onClick = onBack,
+                    onClick = { if (step == 1) step = 0 else onBack() },
                     touch = 48.dp,
                 )
                 BasicText(
-                    text = stringResource(Res.string.editor_title),
+                    text = stringResource(if (step == 1) Res.string.editor_difficulty_title else Res.string.editor_title),
                     style = type.title.copy(color = colors.textPrimary),
                     modifier = Modifier.weight(1f),
                 )
-                BasicText(
+                if (step == 0) BasicText(
                     text = stringResource(Res.string.editor_selected, enabled.size),
                     style = type.label.copy(color = colors.correctFill),
                     modifier = Modifier.padding(start = Spacing.sm).testTag("editorSelectedCount"),
                 )
             }
             BasicText(
-                text = stringResource(Res.string.editor_subtitle),
+                text = stringResource(if (step == 1) Res.string.editor_difficulty_subtitle else Res.string.editor_subtitle),
                 style = type.body.copy(color = colors.textSecondary),
                 modifier = Modifier.padding(start = Spacing.md, bottom = Spacing.md),
             )
         }
-        Column(
+        if (step == 1) {
+            Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = Spacing.lg), contentAlignment = Alignment.Center) {
+                FeedDifficultyStep(current = level, onSelect = feedViewModel::setFeedDifficulty)
+            }
+        } else Column(
             modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
@@ -127,48 +146,42 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth()) {
                     pair.forEach { game ->
                         val on = game in enabled
-                        GameCard(
-                            game = game,
-                            wordLanguage = wordLanguage,
-                            on = on,
-                            // The last game that is on can not be switched off: the feed would be empty.
-                            onClick = if (on && enabled.size == 1) null else ({ feedViewModel.setGameEnabled(game, !on) }),
-                            modifier = Modifier.weight(1f),
-                        )
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                            GameCard(
+                                game = game,
+                                wordLanguage = wordLanguage,
+                                on = on,
+                                // The last game that is on can not be switched off: the feed would be empty.
+                                onClick = if (on && enabled.size == 1) null else ({ feedViewModel.setGameEnabled(game, !on) }),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                     if (pair.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
 
-            if (GameKind.Word in enabled) {
-                Column(Modifier.fillMaxWidth().padding(top = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    BasicText(stringResource(Res.string.editor_language), style = type.body.copy(color = colors.textPrimary))
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                        Language.entries.forEach { option ->
-                            val chosen = option in wordLanguages
-                            WordLanguageChip(
-                                language = option,
-                                chosen = chosen,
-                                // The last language that is on stays: there would be no word puzzles.
-                                onClick = if (chosen && wordLanguages.size == 1) null else ({ feedViewModel.setWordLanguageEnabled(option, !chosen) }),
-                            )
-                        }
-                    }
-                    BasicText(stringResource(Res.string.editor_language_hint), style = type.caption.copy(color = colors.textSecondary))
-                }
-            }
             if (enabled.size == 1) {
                 BasicText(stringResource(Res.string.personalize_last_game), style = type.caption.copy(color = colors.textSecondary))
             }
             Spacer(Modifier.height(Spacing.sm))
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.md)) {
-            AppButton(
-                stringResource(Res.string.home_start_feed),
-                { if (hasUnfinished) confirmNewFeed = true else onStartFeed() },
-                modifier = Modifier.testTag("startFeed"),
-                primary = true,
-            )
+            if (step == 0 && hasLevels) {
+                AppButton(
+                    stringResource(Res.string.editor_next),
+                    { step = 1 },
+                    modifier = Modifier.testTag("editorNext"),
+                    primary = true,
+                )
+            } else {
+                AppButton(
+                    stringResource(Res.string.home_start_feed),
+                    { if (hasUnfinished) confirmNewFeed = true else onStartFeed() },
+                    modifier = Modifier.testTag("startFeed"),
+                    primary = true,
+                )
+            }
         }
     }
     if (confirmNewFeed) {
@@ -255,28 +268,5 @@ private fun CheckMark(on: Boolean, modifier: Modifier = Modifier) {
                 drawPath(path, color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
         }
-    }
-}
-
-/** A language of the word puzzles: filled green when it is in the feed. Several can be on at the same time. */
-@Composable
-private fun WordLanguageChip(language: Language, chosen: Boolean, onClick: (() -> Unit)?) {
-    val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
-    Box(
-        modifier = Modifier
-            .testTag("language" + language.name)
-            .clip(Radius.pill)
-            .background(if (chosen) colors.correctFill else colors.bgSurface)
-            .border(1.dp, if (chosen) colors.correctFill else colors.borderSubtle, Radius.pill)
-            .semantics { selected = chosen }
-            .then(
-                if (onClick != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Checkbox, onClick = onClick)
-                else Modifier,
-            )
-            .padding(horizontal = Spacing.lg, vertical = Spacing.sm + 2.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText(language.nativeName(), style = type.label.copy(color = if (chosen) colors.correctOn else colors.textSecondary))
     }
 }

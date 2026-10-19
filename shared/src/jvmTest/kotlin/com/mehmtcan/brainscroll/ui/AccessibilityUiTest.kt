@@ -111,14 +111,11 @@ class AccessibilityUiTest {
     }
 
     @Test
-    fun theWordLanguageChoicesSayWhichOnesAreOn() = runComposeUiTest {
-        startDaily()
-        goHome()
-        clickAny("Akışın", "Your feed")
+    fun theLanguageFlagOfAWordPuzzleSaysWhichLanguageIsOn() = runComposeUiTest {
+        start()
         waitForIdle()
-        val flags = listOf("languageTR", "languageEN").map { onNodeWithTag(it).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected) }
-        assertEquals(1, flags.count { it == true }, "by default the word puzzles come in one language, the app language")
-        assertEquals(2, flags.count { it != null }, "both choices say whether they are on")
+        val description = onAllNodesWithTag("languageFlag")[0].fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.firstOrNull().orEmpty()
+        assertTrue(description.contains("Türkçe") || description.contains("English"), "the flag names the language of the puzzles: $description")
     }
 
     @Test

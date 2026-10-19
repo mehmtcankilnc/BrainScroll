@@ -116,6 +116,22 @@ import brainscroll.shared.generated.resources.stat_three_stars
 import brainscroll.shared.generated.resources.stats_hanoi
 import brainscroll.shared.generated.resources.stats_queens
 import brainscroll.shared.generated.resources.stats_tents
+import brainscroll.shared.generated.resources.stats_arrows
+import brainscroll.shared.generated.resources.stats_axissum
+import brainscroll.shared.generated.resources.stats_ballslide
+import brainscroll.shared.generated.resources.stats_colorflow
+import brainscroll.shared.generated.resources.favorite_colorflow_result
+import brainscroll.shared.generated.resources.favorite_colorflow_tag
+import brainscroll.shared.generated.resources.favorite_ballslide_result
+import brainscroll.shared.generated.resources.favorite_ballslide_tag
+import brainscroll.shared.generated.resources.favorite_axissum_result
+import brainscroll.shared.generated.resources.favorite_axissum_tag
+import brainscroll.shared.generated.resources.stats_nonogram
+import brainscroll.shared.generated.resources.favorite_nonogram_result
+import brainscroll.shared.generated.resources.favorite_nonogram_tag
+import brainscroll.shared.generated.resources.stat_flawless
+import brainscroll.shared.generated.resources.favorite_arrows_result
+import brainscroll.shared.generated.resources.favorite_arrows_tag
 import brainscroll.shared.generated.resources.stats_blockout
 import brainscroll.shared.generated.resources.favorite_blockout_result
 import brainscroll.shared.generated.resources.favorite_blockout_tag
@@ -150,9 +166,13 @@ import brainscroll.shared.generated.resources.favorite_tubes_tag
 import brainscroll.shared.generated.resources.stats_filter_all
 import brainscroll.shared.generated.resources.stats_streak_note
 import brainscroll.shared.generated.resources.stats_endless
+import brainscroll.shared.generated.resources.stats_level_hint
 import brainscroll.shared.generated.resources.stats_title
 import brainscroll.shared.generated.resources.tab_ranks
 import com.mehmtcan.brainscroll.daily.formatDuration
+import com.mehmtcan.brainscroll.game.Difficulty
+import com.mehmtcan.brainscroll.ui.components.SegmentedControl
+import com.mehmtcan.brainscroll.ui.home.difficultyName
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.line.lineStars
 import com.mehmtcan.brainscroll.game.moveCount
@@ -375,7 +395,13 @@ private fun ProfileRow(title: String, hint: String? = null, value: String? = nul
  * the saved results.
  */
 @Composable
-fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
+fun StatsPage(
+    profile: ProfileState,
+    modifier: Modifier = Modifier,
+    /** True once a game has levels: the per-game numbers are then for one level at a time. */
+    showLevels: Boolean = false,
+    onLevel: (Difficulty) -> Unit = {},
+) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     // Null shows both languages together.
@@ -401,6 +427,21 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
             }
         }
         item { Spacer(Modifier.height(Spacing.xs)) }
+
+        // The numbers of each game below are for one level: the best time of an easy board does not belong next to a hard one's.
+        if (showLevels) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    SegmentedControl(
+                        options = Difficulty.entries.map { difficultyName(it) },
+                        selectedIndex = Difficulty.entries.indexOf(profile.statsLevel),
+                        onSelect = { onLevel(Difficulty.entries[it]) },
+                        modifier = Modifier.testTag("statsLevel"),
+                    )
+                    BasicText(stringResource(Res.string.stats_level_hint), style = type.caption.copy(color = colors.textSecondary))
+                }
+            }
+        }
 
         // The daily puzzle: its streak counts days, not answers, and it has a time. The numbers can be shown for
         // both languages together or for one (there are two puzzles a day, one per language).
@@ -440,14 +481,14 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
 
         // The endless feed: word puzzles, with how many guesses they took.
         item {
-            StatGroup(stringResource(Res.string.stats_endless), profile.stats.played, "statsWord") {
+            StatGroup(stringResource(Res.string.stats_endless), profile.endless.played, "statsWord") {
                 TileGrid(
                     listOf(
-                        profile.stats.played.toString() to stringResource(Res.string.stat_played),
-                        "${(profile.stats.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
+                        profile.endless.played.toString() to stringResource(Res.string.stat_played),
+                        "${(profile.endless.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
                     ),
                 )
-                GuessDistribution(profile.stats.guessDistribution)
+                GuessDistribution(profile.endless.guessDistribution)
             }
         }
         // Memory match has no guesses: results, the fastest win and the fewest moves.
@@ -485,6 +526,57 @@ fun StatsPage(profile: ProfileState, modifier: Modifier = Modifier) {
                     listOf(
                         profile.tents.played.toString() to stringResource(Res.string.stat_played),
                         (profile.tents.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_arrows), profile.arrows.played, "statsArrows") {
+                TileGrid(
+                    listOf(
+                        profile.arrows.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.arrows.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                        profile.arrows.flawless.toString() to stringResource(Res.string.stat_flawless),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_axissum), profile.axisSum.played, "statsAxisSum") {
+                TileGrid(
+                    listOf(
+                        profile.axisSum.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.axisSum.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_ballslide), profile.ballSlide.played, "statsBallSlide") {
+                TileGrid(
+                    listOf(
+                        profile.ballSlide.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.ballSlide.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_colorflow), profile.colorFlow.played, "statsColorFlow") {
+                TileGrid(
+                    listOf(
+                        profile.colorFlow.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.colorFlow.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_nonogram), profile.nonogram.played, "statsNonogram") {
+                TileGrid(
+                    listOf(
+                        profile.nonogram.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.nonogram.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
                     ),
                 )
             }
@@ -620,6 +712,8 @@ fun FavoritesPage(profile: ProfileState, onReplay: (FinishedRound) -> Unit = {},
 private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
     val time = round.durationMs ?: return false
     if (round.outcome != Outcome.WON || round.assisted) return false
+    // The best times on the profile are for one level: a puzzle of another level is not compared with them.
+    if (!(round.mode == Mode.DAILY && round.game == GameKind.Word) && round.difficulty != profile.statsLevel) return false
     val best = if (round.mode == Mode.DAILY && round.game == GameKind.Word) profile.daily.bestTimeMs else when (round.game) {
         GameKind.Word -> null
         GameKind.Memory -> profile.memory.bestTimeMs
@@ -635,6 +729,11 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
         GameKind.Tents -> profile.tents.bestTimeMs
         GameKind.Jigsaw -> profile.jigsaw.bestTimeMs
         GameKind.BlockOut -> profile.blockOut.bestTimeMs
+        GameKind.Arrows -> profile.arrows.bestTimeMs
+        GameKind.Nonogram -> profile.nonogram.bestTimeMs
+        GameKind.AxisSum -> profile.axisSum.bestTimeMs
+        GameKind.BallSlide -> profile.ballSlide.bestTimeMs
+        GameKind.ColorFlow -> profile.colorFlow.bestTimeMs
         GameKind.Line -> profile.line.bestTimeMs
     }
     return best != null && time <= best
@@ -756,23 +855,7 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
     ) {
         // Memory and tubes results have no word (their board is a list of numbers), so the game's name is shown instead.
         BasicText(
-            text = when (round.game) {
-                GameKind.Word -> round.answer
-                GameKind.Memory -> stringResource(Res.string.favorite_memory_tag)
-                GameKind.Tubes -> stringResource(Res.string.favorite_tubes_tag)
-                GameKind.Mines -> stringResource(Res.string.favorite_mines_tag)
-                GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_tag)
-                GameKind.Lights -> stringResource(Res.string.favorite_lights_tag)
-                GameKind.Slide -> stringResource(Res.string.favorite_slide_tag)
-                GameKind.Target -> stringResource(Res.string.favorite_target_tag)
-                GameKind.Pipes -> stringResource(Res.string.favorite_pipes_tag)
-                GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_tag)
-                GameKind.Queens -> stringResource(Res.string.favorite_queens_tag)
-                GameKind.Tents -> stringResource(Res.string.favorite_tents_tag)
-                GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_tag)
-                GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_tag)
-                GameKind.Line -> stringResource(Res.string.favorite_line_tag)
-            },
+            text = favoriteTag(round) + (if (round.difficulty != Difficulty.Medium) " · " + difficultyName(round.difficulty) else ""),
             style = type.heading.copy(color = colors.textPrimary),
             modifier = Modifier.weight(1f),
         )
@@ -793,6 +876,11 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                     round.game == GameKind.Tents -> stringResource(Res.string.favorite_tents_result, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_result, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Nonogram -> stringResource(Res.string.favorite_nonogram_result, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.Arrows -> stringResource(Res.string.favorite_arrows_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Line && round.mode == Mode.DAILY -> stringResource(Res.string.favorite_line_stars, round.lineStars, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     else -> stringResource(Res.string.favorite_won, round.guesses.size)
@@ -829,4 +917,29 @@ private fun DailyFilterChip(text: String, selected: Boolean, onClick: () -> Unit
         selected = selected,
         onClick = onClick,
     )
+}
+
+/** The line a favorite starts with: the word of a word puzzle, the name of the game for the others. */
+@Composable
+private fun favoriteTag(round: FinishedRound): String = when (round.game) {
+    GameKind.Word -> round.answer
+    GameKind.Memory -> stringResource(Res.string.favorite_memory_tag)
+    GameKind.Tubes -> stringResource(Res.string.favorite_tubes_tag)
+    GameKind.Mines -> stringResource(Res.string.favorite_mines_tag)
+    GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_tag)
+    GameKind.Lights -> stringResource(Res.string.favorite_lights_tag)
+    GameKind.Slide -> stringResource(Res.string.favorite_slide_tag)
+    GameKind.Target -> stringResource(Res.string.favorite_target_tag)
+    GameKind.Pipes -> stringResource(Res.string.favorite_pipes_tag)
+    GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_tag)
+    GameKind.Queens -> stringResource(Res.string.favorite_queens_tag)
+    GameKind.Tents -> stringResource(Res.string.favorite_tents_tag)
+    GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_tag)
+    GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_tag)
+    GameKind.Arrows -> stringResource(Res.string.favorite_arrows_tag)
+    GameKind.Nonogram -> stringResource(Res.string.favorite_nonogram_tag)
+    GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_tag)
+    GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_tag)
+    GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_tag)
+    GameKind.Line -> stringResource(Res.string.favorite_line_tag)
 }

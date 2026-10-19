@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
@@ -92,6 +94,9 @@ private val BottomAreaHeight = 152.dp
 private val CellGap = 4.dp
 private val MaxCell = 56.dp
 
+/** How far the numbers may reach into the padding at the side of the page (the page pads 16 dp, 4 dp stay free). */
+private val SideRoom = 12.dp
+
 /** What a cell holds, for tests: 0 empty, 1 tent, 2 grass, 3 tree, 4 tent that breaks a rule. */
 internal val TentsCellValue = SemanticsPropertyKey<Int>("TentsCellValue")
 private var SemanticsPropertyReceiver.cellValue by TentsCellValue
@@ -140,8 +145,14 @@ fun TentsPage(
         BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth().testTag("tentsBoard"), contentAlignment = Alignment.Center) {
             // One more column and one more row than the board, for the numbers.
             val lines = state.size + 1
-            val cellSize: Dp = minOf(MaxCell, (maxWidth - CellGap * (lines - 1)) / lines, (maxHeight - CellGap * (lines - 1)) / lines)
-            Column(verticalArrangement = Arrangement.spacedBy(CellGap)) {
+            // The row numbers sit on the right, so the cell size is worked out as if the same room were on the left too; the
+            // board is then shifted right by half a cell and the numbers may reach into the side padding.
+            val columns = state.size + 2
+            val cellSize: Dp = minOf(MaxCell, (maxWidth + SideRoom * 2 - CellGap * (columns - 1)) / columns, (maxHeight - CellGap * (lines - 1)) / lines)
+            Column(
+                modifier = Modifier.wrapContentWidth(Alignment.CenterHorizontally, unbounded = true).offset(x = (cellSize + CellGap) / 2),
+                verticalArrangement = Arrangement.spacedBy(CellGap),
+            ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                     for (column in 0 until state.size) {
                         Clue(
@@ -343,7 +354,7 @@ private fun DrawScope.drawCross(color: Color) {
 }
 
 /** Three blades of grass: the player's note that there is no tent here. */
-private fun DrawScope.drawGrass(color: Color) {
+internal fun DrawScope.drawGrass(color: Color) {
     val w = size.width
     val h = size.height
     val stroke = w * 0.09f

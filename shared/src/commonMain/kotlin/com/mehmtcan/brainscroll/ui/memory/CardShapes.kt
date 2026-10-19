@@ -43,7 +43,7 @@ fun symbolColor(symbol: CardSymbol, colors: BrainScrollColors): Color = when (sy
     CardSymbol.Moon -> colors.borderStrong
 }
 
-private fun DrawScope.drawSymbol(symbol: CardSymbol, color: Color) {
+internal fun DrawScope.drawSymbol(symbol: CardSymbol, color: Color) {
     val center = Offset(size.width / 2f, size.height / 2f)
     val r = min(size.width, size.height) / 2f
     when (symbol) {

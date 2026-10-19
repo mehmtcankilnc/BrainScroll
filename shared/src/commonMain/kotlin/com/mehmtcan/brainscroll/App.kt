@@ -17,6 +17,7 @@ import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.data.rememberDriverProvider
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.LEVELLED_GAMES
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.AppShell
 import com.mehmtcan.brainscroll.time.IstanbulDay
@@ -44,7 +45,9 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
     /** The games in the feed, in order. Tests can ask for just one. */
     /** Which game is the daily puzzle on a day (by day number). The app always plays One Line; tests fix another game. */
     dailyGame: (Long) -> GameKind = { GameKind.Line },
-    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut),
+    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow),
+    /** The games that offer a level choice. Tests can ask for a set before every game has levels. */
+    levelledGames: Set<GameKind> = LEVELLED_GAMES,
 ) {
     // Tests pass their own haptics to see when the phone would buzz.
     CompositionLocalProvider(
@@ -64,6 +67,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 cloudServices = cloudServices,
                 platformInfo = platformInfo,
                 games = games,
+                levelledGames = levelledGames,
             )
         }
         // The daily puzzle shares the database and the account with the feed, so it is built from what the feed owns.

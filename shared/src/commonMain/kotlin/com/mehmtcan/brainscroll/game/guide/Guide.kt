@@ -56,6 +56,30 @@ enum class GuideReason {
     /** Slide the piece this many cells in this direction: it is the first move of the shortest way. */
     BlockOutSlide,
 
+    /** This arrow can leave the board now. */
+    ArrowsEscape,
+
+    /** Draw the path of this color (the number, counted from 0) along these cells: they are the next ones of a way that wins. */
+    FlowRoute,
+
+    /** Slide the ball this way (the number is the direction, see BallDir): it is the first slide of the shortest way. */
+    BallSlideMove,
+
+    /** No slide paints the rest of the board from here: undo or start again. */
+    BallSlideStuck,
+
+    /** Erase the number on this cell: it is not part of the sums. */
+    AxisSumErase,
+
+    /** Bring back the number on this cell: it is part of the sums. */
+    AxisSumKeep,
+
+    /** Fill this cell: the numbers leave no other possibility for it. */
+    NonogramFill,
+
+    /** Empty this filled cell: it is not part of the picture. */
+    NonogramEmpty,
+
     /** Tap the light: it is part of the shortest way to put all of them out. */
     LightsTap,
 

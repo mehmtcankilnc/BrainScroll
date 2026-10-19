@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.game.wordle
 
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.time.IstanbulDay
 
@@ -19,6 +20,8 @@ data class StoredRound(
     val game: GameKind = GameKind.Word,
     /** True once the player asked the guide for a step: the puzzle no longer counts for streaks and statistics. */
     val assisted: Boolean = false,
+    /** The level the board was made for. Older rows have none and read as medium. */
+    val difficulty: Difficulty = Difficulty.DEFAULT,
 )
 
 /** A puzzle that is over. These rows are append-only history; streaks and statistics are derived from them. */
@@ -40,6 +43,8 @@ data class FinishedRound(
     val game: GameKind = GameKind.Word,
     /** True if the player used the guide: the result stays in the history but counts for no streak and no statistic. */
     val assisted: Boolean = false,
+    /** The level the board was made for. Older results have none and read as medium. */
+    val difficulty: Difficulty = Difficulty.DEFAULT,
 ) {
     /** The Istanbul day this result counts for (docs/decisions.md). */
     val dayIndex: Long get() = puzzleDay ?: IstanbulDay.dayIndex(finishedAt)
