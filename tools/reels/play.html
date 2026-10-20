@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BrainScroll game reels</title>
+<style>
+  @font-face { font-family: 'Nunito'; font-weight: 400; src: url('../../shared/src/commonMain/composeResources/font/nunito_regular.ttf'); }
+  @font-face { font-family: 'Nunito'; font-weight: 500; src: url('../../shared/src/commonMain/composeResources/font/nunito_medium.ttf'); }
+  @font-face { font-family: 'Nunito'; font-weight: 700; src: url('../../shared/src/commonMain/composeResources/font/nunito_bold.ttf'); }
+  :root {
+    --bg-page: #121212; --bg-surface: #1F1F1F; --bg-raised: #2A2A2A;
+    --text-primary: #F5F5F5; --text-secondary: #8C8C8C;
+    --correct: #7ED957; --pending: #FFC93C; --error: #FF5A5A; --blue: #4DB8FF; --orange: #FF9F43;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; background: var(--bg-page); overflow: hidden; font-family: 'Nunito', sans-serif; color: var(--text-primary); }
+  .abs { position: absolute; }
+  svg text { font-family: 'Nunito', sans-serif; }
+
+  /* caption band above the phone, timer under it */
+  #cap { left: 60px; top: 52px; width: 960px; height: 168px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 700; font-size: 68px; line-height: 80px; letter-spacing: -1px; opacity: 0; }
+  #cap .g { color: var(--correct); } #cap .y { color: var(--pending); } #cap .b { color: var(--blue); } #cap .o { color: var(--orange); }
+  #timer { left: 144px; top: 226px; width: 792px; height: 28px; display: none; align-items: center; gap: 18px; }
+  #tnum { width: 44px; text-align: center; font-weight: 700; font-size: 34px; color: var(--pending); }
+  #track { flex: 1; height: 12px; border-radius: 6px; background: var(--bg-raised); overflow: hidden; }
+  #fill { height: 100%; width: 100%; border-radius: 6px; background: var(--pending); transform-origin: 0 0; }
+
+  /* the phone: a 360 x 640 dp screen scaled by 2.2 */
+  #phone { left: 144px; top: 262px; width: 792px; height: 1408px; overflow: hidden; border-radius: 44px; background: var(--bg-page); outline: 3px solid #2A2A2A; outline-offset: 0; opacity: 0; }
+  #screen { position: absolute; left: 0; top: 0; width: 360px; height: 640px; transform: scale(2.2); transform-origin: 0 0; }
+  .page { position: absolute; left: 0; top: 0; width: 360px; height: 640px; background: var(--bg-page); overflow: hidden; }
+  #glow { left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; pointer-events: none; }
+
+  /* end card */
+  #end { left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+  #mascot { left: 350px; top: 520px; width: 380px; height: 380px; }
+  .center { left: 0; width: 1080px; text-align: center; }
+  #endWord { top: 950px; font-weight: 700; font-size: 128px; letter-spacing: -2px; } #endWord b { color: var(--correct); font-weight: 700; }
+  #endTag { top: 1110px; font-weight: 500; font-size: 50px; color: var(--text-secondary); }
+  #endPill { left: 400px; top: 1230px; width: 280px; height: 84px; border-radius: 999px; background: var(--bg-surface); color: var(--correct); font-weight: 700; font-size: 38px; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div id="glow" class="abs"></div>
+<div id="cap" class="abs"></div>
+<div id="timer" class="abs"><div id="tnum"></div><div id="track"><div id="fill"></div></div></div>
+<div id="phone" class="abs"><div id="screen"><div class="page" id="pg"></div></div></div>
+<div id="end" class="abs">
+  <div id="mascot" class="abs"></div>
+  <div id="endWord" class="abs center">brain<b>scroll</b></div>
+  <div id="endTag" class="abs center">Brain games of every kind. One feed.</div>
+  <div id="endPill" class="abs">Coming soon</div>
+</div>
+<script src="shared.js"></script>
+<script>
+// =====================================================================================================================
+// Common pieces: the card at the bottom (with a colored title), the feed page frame, text fitting
+// =====================================================================================================================
+const lerpColor = (a, b, p) => mix(a, b, clamp01(p));
+function resultCardC(a, title, line, color) {
+  if (a <= 0) return '';
+  return box(16, 496 + (1 - a) * 16, 328, 112, `background:${C.surface};border-radius:16px;opacity:${a}`,
+    txt(0, 16, 328, 28, title, '700 22px Nunito', color) + txt(0, 48, 328, 22, line, '400 16px Nunito', C.text) + txt(0, 74, 328, 16, 'Swipe up for the next puzzle', '400 12px Nunito', C.dim)
+    + box(280, 0, 48, 48, 'display:flex;align-items:center;justify-content:center', HEART));
+}
+const measureCtx = document.createElement('canvas').getContext('2d');
+function fitPx(text, weight, widthPx, maxPx) {
+  measureCtx.font = `${weight} 100px Nunito`;
+  const w = measureCtx.measureText(text).width;
+  return Math.min(maxPx, widthPx / w * 100 * 0.985);
+}
+// a swipe: a soft circle that travels a little way in the swipe's direction and fades
+function swipeDot(l, t0, x, y, dx, dy) {
+  const tt = l - (t0 - 0.12);
+  if (tt < 0 || tt > 0.5) return '';
+  const p = standard(clamp01(tt / 0.3)), a = 0.36 * (1 - clamp01((tt - 0.16) / 0.26)) * clamp01(tt / 0.06);
+  return box(x + dx * 34 * p - 20, y + dy * 34 * p - 20, 40, 40, `border-radius:50%;background:rgba(255,255,255,${f1(a)});z-index:50`);
+}
+let TL = null, SC = null;
+
+// =====================================================================================================================
+// 1. Ball Slide  (BallSlidePage.kt)
+// =====================================================================================================================
+function ballScene(D) {
+  const n = D.n, N = n * n, side = 328, cell = side / n, gap = 2, bx = 16, by = 122;
+  const DR = [-1, 0, 1, 0], DC = [0, 1, 0, -1];
+  const open = D.walls.filter((w) => !w).length;
+  const center = (c) => [(c % n + 0.5) * cell, (Math.floor(c / n) + 0.5) * cell];
+  const dur = (len) => Math.min(450, Math.max(150, len * 70)) / 1000;
+  const lastStart = D.slides[D.slides.length - 1].t0;
+  const win = lastStart + 0.55;          // the result waits until the ball has stopped (MAX_SLIDE_MILLIS + 100)
+  const wallSvg = (c) => {
+    const x = (c % n) * cell + gap, y = Math.floor(c / n) * cell + gap, s = cell - 2 * gap, r = cell * 0.18, course = s / 3, joint = s * 0.045;
+    const line = 'rgba(18,18,18,.6)';
+    let g = `<clipPath id="w${c}"><rect x="${f1(x)}" y="${f1(y)}" width="${f1(s)}" height="${f1(s)}" rx="${f1(r)}"/></clipPath><g clip-path="url(#w${c})"><rect x="${f1(x)}" y="${f1(y)}" width="${f1(s)}" height="${f1(s)}" fill="#C77A35"/>`;
+    for (const row of [1, 2]) g += `<rect x="${f1(x)}" y="${f1(y + row * course - joint / 2)}" width="${f1(s)}" height="${f1(joint)}" fill="${line}"/>`;
+    [[0.5], [0.25, 0.75], [0.5]].forEach((xs, row) => xs.forEach((u) => { g += `<rect x="${f1(x + s * u - joint / 2)}" y="${f1(y + row * course)}" width="${f1(joint)}" height="${f1(course)}" fill="${line}"/>`; }));
+    g += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(s)}" height="${f1(s * 0.07)}" fill="rgba(255,255,255,.22)"/><rect x="${f1(x)}" y="${f1(y + s * 0.9)}" width="${f1(s)}" height="${f1(s * 0.1)}" fill="rgba(0,0,0,.3)"/></g>`;
+    return g;
+  };
+  return {
+    win,
+    html(t) {
+      // state at time t
+      const painted = new Set([D.start]);
+      let ball = D.start, moves = 0, active = null, countPainted = new Set([D.start]);
+      for (const s of D.slides) {
+        if (t < s.t0) break;
+        moves++;
+        s.path.forEach((c) => countPainted.add(c));
+        const d = dur(s.path.length), p = fastOutSlowIn(clamp01((t - s.t0) / d)), passed = p * s.path.length;
+        if (t >= s.t0 + d) { s.path.forEach((c) => painted.add(c)); ball = s.path[s.path.length - 1]; }
+        else { s.path.forEach((c, i) => { if (passed > i) painted.add(c); }); active = { s, passed }; }
+      }
+      let bp = center(ball);
+      if (active) {
+        const { s, passed } = active, whole = Math.max(0, Math.min(Math.floor(passed), s.path.length - 1));
+        const from = center(whole === 0 ? s.from : s.path[whole - 1]), to = center(s.path[whole]), f = passed - whole;
+        bp = [lerp(from[0], to[0], f), lerp(from[1], to[1], f)];
+      }
+      const won = t >= win, finished = countPainted.size === open;
+      let o = hud('Ball Slide', streak(t, win, D.streakBefore));
+      o += chipsRow(chip(`Painted ${countPainted.size} / ${open}`, C.dim), chip(`Slides ${moves}`, C.dim), chip(`Best ${D.par}`, C.dim));
+      let svg = `<svg width="${side}" height="${side}" viewBox="0 0 ${side} ${side}" style="position:absolute;left:${bx}px;top:${by}px">`;
+      for (let c = 0; c < N; c++) {
+        const x = (c % n) * cell + gap, y = Math.floor(c / n) * cell + gap, s = cell - 2 * gap, r = cell * 0.18;
+        if (D.walls[c]) { svg += wallSvg(c); continue; }
+        svg += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(s)}" height="${f1(s)}" rx="${f1(r)}" fill="${C.surface}"/>`;
+        if (painted.has(c)) svg += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(s)}" height="${f1(s)}" rx="${f1(r)}" fill="rgba(126,217,87,.16)"/>`;
+        svg += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(s)}" height="${f1(s)}" rx="${f1(r)}" fill="none" stroke="rgba(140,140,140,.35)" stroke-width="1.5"/>`;
+      }
+      svg += `<circle cx="${f1(bp[0])}" cy="${f1(bp[1])}" r="${f1(cell * 0.3)}" fill="${C.yellow}"/><circle cx="${f1(bp[0] - cell * 0.1)}" cy="${f1(bp[1] - cell * 0.1)}" r="${f1(cell * 0.09)}" fill="rgba(255,255,255,.55)"/></svg>`;
+      o += svg;
+      if (won) o += resultCardC(standard(clamp01((t - win) / 0.4)), 'Every cell is painted!', `${D.slides.length} slides · ${D.timeText}`, C.green);
+      else {
+        o += hint(496, 2, 'Swipe on the board. The ball slides until a wall or the edge stops it');
+        o += roundBtn(116, 552, ICON.undo(C.text), { enabled: moves > 0 }) + roundBtn(188, 552, ICON.restart(C.text), { enabled: moves > 0 });
+      }
+      for (const s of D.slides) {
+        const [cx, cy] = center(s.from);
+        o += swipeDot(t, s.t0, bx + cx, by + cy, DC[s.dir], DR[s.dir]);
+      }
+      return o;
+    },
+  };
+}
+
+// =====================================================================================================================
+// 2. Mini Nonogram  (NonogramPage.kt), 10 x 10
+// =====================================================================================================================
+function nonogramScene(D) {
+  const n = D.n, picture = D.picture.split('').map((c) => c === '#');
+  const rc = D.rowClues, cc = D.colClues;
+  const maxR = Math.max(...rc.map((a) => Math.max(1, a.length))), maxC = Math.max(...cc.map((a) => Math.max(1, a.length)));
+  const unit = 0.55, CG = 2, MAXCELL = 40;
+  const cell = Math.min(MAXCELL, (328 + 24 - CG * (n + 1)) / (n + maxR * unit * 2), (356 - CG * (n - 1)) / (n + maxC * unit));
+  const clueW = cell * unit * maxR, clueH = cell * unit * maxC;
+  const boardSide = cell * n + CG * (n - 1);
+  const totalW = clueW + CG + boardSide, totalH = clueH + CG + boardSide;
+  const left = 16 + (328 - totalW) / 2 - (clueW + CG) / 2, top = 108 + (356 - totalH) / 2;
+  const cx0 = left + clueW + CG, cy0 = top + clueH + CG;           // top left of the first cell
+  const cellXY = (c) => [cx0 + (c % n) * (cell + CG), cy0 + Math.floor(c / n) * (cell + CG)];
+  // when each cell gets filled: stroke k runs from its first to its last cell, a cell every `perCell` seconds
+  const fillT = new Array(n * n).fill(null);
+  const strokeRows = [];
+  D.strokes.forEach((s) => {
+    const [a, b] = [s.from, s.to], horiz = Math.floor(a / n) === Math.floor(b / n), step = horiz ? 1 : n, len = (b - a) / step + 1;
+    for (let k = 0; k < len; k++) fillT[a + k * step] = s.t0 + k * D.perCell;
+  });
+  const lastFill = Math.max(...fillT.filter((v) => v != null));
+  const winT = lastFill + D.perCell;      // every cell is right: the picture takes its color
+  const settle = winT + 0.45;             // the result waits for the color (COLOR_MILLIS + 50)
+  // the moment each line starts to match its numbers
+  const lineDoneT = (cells, clues) => {
+    const times = cells.map((c) => fillT[c]).filter((v) => v != null).sort((x, y) => x - y);
+    const want = JSON.stringify(clues);
+    const filledAt = (tt) => cells.map((c) => (fillT[c] != null && fillT[c] <= tt && picture[c]) ? 1 : 0);
+    const runs = (arr) => { const o = []; let r = 0; for (const v of arr) { if (v) r++; else if (r) { o.push(r); r = 0; } } if (r) o.push(r); return o; };
+    for (const tt of times) if (JSON.stringify(runs(filledAt(tt))) === want) return tt;
+    return null;
+  };
+  const rowDone = [...Array(n)].map((_, r) => lineDoneT([...Array(n)].map((_, c) => r * n + c), rc[r]));
+  const colDone = [...Array(n)].map((_, c) => lineDoneT([...Array(n)].map((_, r) => r * n + c), cc[c]));
+  const accent = D.accent;
+  const fadeStart = settle + 0.1;         // reel only: the numbers step back so the picture can be seen
+  const zoomP = (t) => standard(clamp01((t - fadeStart) / 0.9));
+  const clueColor = (doneT, t) => {
+    if (doneT == null || t < doneT) return C.text;
+    return lerpColor(C.text, '#434343', standard(clamp01((t - doneT) / 0.2)));   // textSecondary at 40% on the page
+  };
+  return {
+    winT, settle, lastFill, glowStart: fadeStart,
+    html(t) {
+      const filledNow = fillT.filter((v, i) => v != null && v <= t).length;
+      const won = t >= winT;
+      const z = zoomP(t), clueA = 1 - clamp01((t - fadeStart) / 0.5);
+      let o = hud('Mini Nonogram', streak(t, settle, D.streakBefore));
+      o += chipsRow(chip(`Filled ${filledNow}`, C.dim));
+      let inner = '';
+      for (let c = 0; c < n; c++) {
+        const x = cx0 + c * (cell + CG) - cx0;
+        inner += box(cx0 + c * (cell + CG), top, cell, clueH, `display:flex;flex-direction:column;justify-content:flex-end;align-items:center;opacity:${f1(clueA)}`,
+          cc[c].map((v) => `<div style="font:700 ${f1(cell * 0.4)}px/${f1(cell * 0.4 * 1.2)}px Nunito;color:${clueColor(colDone[c], t)}">${v}</div>`).join(''));
+      }
+      for (let r = 0; r < n; r++) {
+        inner += box(left, cy0 + r * (cell + CG), clueW, cell, `display:flex;justify-content:flex-end;align-items:center;gap:${f1(cell * 0.12)}px;opacity:${f1(clueA)}`,
+          rc[r].map((v) => `<div style="font:700 ${f1(cell * 0.4)}px/${f1(cell * 0.4 * 1.2)}px Nunito;color:${clueColor(rowDone[r], t)}">${v}</div>`).join(''));
+      }
+      const morph = standard(clamp01((t - fadeStart) / 0.6));        // reel only: the empty cells step back and the picture closes up
+      for (let c = 0; c < n * n; c++) {
+        const [x, y] = cellXY(c), ft = fillT[c];
+        let col = C.surface;
+        const isFilled = ft != null && t >= ft;
+        if (isFilled) {
+          col = lerpColor(C.surface, C.green, standard(clamp01((t - ft) / 0.1)));
+          if (won) col = lerpColor(col, accent, standard(clamp01((t - winT) / 0.4)));
+        }
+        if (isFilled && picture[c] && morph > 0) {
+          const e = CG * morph;
+          inner += box(x - e / 2, y - e / 2, cell + e, cell + e, `background:${col};border-radius:${f1(lerp(16, 3, morph))}px;border:1px solid rgba(140,140,140,${f1(0.3 * (1 - morph))})`);
+        } else inner += box(x, y, cell, cell, `background:${col};border-radius:16px;border:1px solid rgba(140,140,140,.3);opacity:${f1(1 - (isFilled ? 0 : morph))}`);
+      }
+      o += `<div style="position:absolute;left:0;top:0;width:360px;height:640px;transform-origin:${f1(cx0 + boardSide / 2)}px ${f1(cy0 + boardSide / 2)}px;transform:scale(${f1(1 + 0.2 * z)})">${inner}</div>`;
+      if (t >= settle) o += resultCardC(standard(clamp01((t - settle) / 0.4)), `It is a ${D.name}!`, D.timeText, accent);
+      else {
+        o += hint(507, 1, 'Fill the cells to reveal the picture');
+        o += roundBtn(112, 541, `<svg width="28" height="28" viewBox="0 0 28 28"><path d="M8.4 8.4 L19.6 19.6 M19.6 8.4 L8.4 19.6" stroke="${C.text}" stroke-width="2.52" stroke-linecap="round" fill="none"/></svg>`)
+          + roundBtn(192, 541, ICON.restart(C.text), { enabled: filledNow > 0 });
+      }
+      for (const s of D.strokes) {
+        const a = cellXY(s.from), b = cellXY(s.to), len = Math.max(1, Math.abs(s.to - s.from) / (Math.floor(s.from / n) === Math.floor(s.to / n) ? 1 : n) + 1);
+        const dt = (len - 1) * D.perCell, tt = t - s.t0;
+        if (tt < -0.05 || tt > dt + 0.4) continue;
+        const p = len === 1 ? 0 : clamp01(tt / dt), x = lerp(a[0], b[0], p) + cell / 2, y = lerp(a[1], b[1], p) + cell / 2;
+        const al = 0.36 * clamp01((tt + 0.05) / 0.08) * (1 - clamp01((tt - dt - 0.05) / 0.3));
+        o += box(x - 20, y - 20, 40, 40, `border-radius:50%;background:rgba(255,255,255,${f1(al)});z-index:50`);
+      }
+      return o;
+    },
+  };
+}
+
+// =====================================================================================================================
+// 3. Topic Groups  (TopicGroupsPage.kt)
+// =====================================================================================================================
+const FLAG_EN = `<svg width="38" height="38" viewBox="0 0 38 38"><defs><clipPath id="fl"><circle cx="19" cy="19" r="19"/></clipPath></defs><g clip-path="url(#fl)"><rect width="38" height="38" fill="#012169"/><path d="M0 0 L38 38 M38 0 L0 38" stroke="#fff" stroke-width="7.6"/><path d="M0 0 L38 38 M38 0 L0 38" stroke="#C8102E" stroke-width="2.66"/><rect x="15.2" y="0" width="7.6" height="38" fill="#fff"/><rect x="0" y="15.2" width="38" height="7.6" fill="#fff"/><rect x="17.1" y="0" width="3.8" height="38" fill="#C8102E"/><rect x="0" y="17.1" width="38" height="3.8" fill="#C8102E"/></g><circle cx="19" cy="19" r="18" fill="none" stroke="rgba(140,140,140,.6)" stroke-width="2"/></svg>`;
+function topicScene(D) {
+  const G = [C.blue, C.green, C.yellow, C.orange];
+  const words = D.groups.flatMap((g) => g.words);             // word w belongs to group floor(w / 4)
+  const tileW = (328 - 8 * 3) / 4, tileH = Math.min(tileW * 0.92, 84, (368 - 8 * 3) / 4);
+  const boardH = tileH * 4 + 8 * 3, bx = 16, by = 96 + (368 - boardH) / 2;
+  const FLY = 0.32, BDELAY = 0.28, BMS = 0.2, LATE = BDELAY + BMS;
+  const slotXY = (s) => [bx + (s % 4) * (tileW + 8), by + Math.floor(s / 4) * (tileH + 8)];
+  // events: the shuffle, then every group that is found (the last one comes by itself with the one before it)
+  const solves = D.solves.map((s) => ({ g: s.g, t: s.t }));           // in the order found, 4 entries
+  const solvedAt = (g) => solves.find((s) => s.g === g).t;
+  const rankOf = (g) => solves.findIndex((s) => s.g === g);
+  const boardAt = (t) => (t >= D.shuffleAt ? D.orderShuffled : D.orderInit);
+  const slotOf = (w, t) => {
+    const g = Math.floor(w / 4), rank = rankOf(g);
+    if (solves[rank].t <= t) return rank * 4 + w % 4;
+    const done = solves.filter((s) => s.t <= t).length;
+    const rest = boardAt(t).filter((x) => solves.every((s) => s.t > t || Math.floor(x / 4) !== s.g));
+    return done * 4 + rest.indexOf(w);
+  };
+  const evTimes = [D.shuffleAt, ...solves.map((s) => s.t)].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+  const posFns = words.map((_, w) => {
+    const xs = [], ys = [];
+    let init = slotXY(slotOf(w, -1));
+    evTimes.forEach((et) => { const p = slotXY(slotOf(w, et + 1e-6)); xs.push({ t: et, v: p[0] }); ys.push({ t: et, v: p[1] }); });
+    return { x: seq(xs, init[0], FLY, standard), y: seq(ys, init[1], FLY, standard) };
+  });
+  const pickT = {}, pickedGroupOf = {};
+  D.picks.forEach((p) => p.words.forEach((w, k) => { pickT[w] = p.t0 + k * p.dt; }));
+  const foundT = (w) => solvedAt(Math.floor(w / 4));
+  const winT = solves[3].t;
+  const taps = [{ t: D.shuffleAt, x: 142, y: 569 }];
+  D.picks.forEach((p) => p.words.forEach((w, k) => { const tt = p.t0 + k * p.dt, [x, y] = slotXY(slotOf(w, tt)); taps.push({ t: tt, x: x + tileW / 2, y: y + tileH / 2 }); }));
+  const settle = winT + LATE + BDELAY + BMS + 0.05;      // the last group shows a moment after the one before it
+  const late = (g) => (rankOf(g) === 3 ? LATE : 0);
+  return {
+    win: settle, winT,
+    html(t) {
+      const found = solves.filter((s) => s.t <= t).length;
+      let o = hud('Topic Groups', streak(t, settle, D.streakBefore));
+      o += box(16, 56, 328, 32, 'display:flex;gap:8px;align-items:center', chip(`Found ${found}/4`, C.dim) + chip('Mistakes 0', C.dim));
+      o += box(296, 48, 48, 48, 'display:flex;align-items:center;justify-content:center', FLAG_EN);
+      // tiles
+      for (let w = 0; w < 16; w++) {
+        const g = Math.floor(w / 4), fT = foundT(w), isFound = t >= fT, pk = pickT[w] != null && t >= pickT[w] && !isFound;
+        const x = posFns[w].x(t), y = posFns[w].y(t);
+        let fill = C.raised, ink = C.text, grow = 1, borderA = 0.35;
+        if (isFound) {
+          const p = standard(clamp01((t - fT - late(g)) / FLY));
+          const from = pickT[w] != null ? C.text : C.raised;
+          fill = lerpColor(from, G[g], p); ink = lerpColor(pickT[w] != null ? C.page : C.text, C.page, p); borderA = 0;
+        } else if (pk) {
+          const p = standard(clamp01((t - pickT[w]) / 0.1)); fill = lerpColor(C.raised, C.text, p); ink = lerpColor(C.text, C.page, p); grow = 1 + 0.05 * p; borderA = 0.35 * (1 - p);
+        }
+        const banner = isFound ? standard(clamp01((t - fT - BDELAY - late(g)) / BMS)) : 0;
+        const px = fitPx(words[w], 700, tileW - 10, tileH * 0.27);
+        o += box(x, y, tileW, tileH, `background:${fill};border-radius:12px;border:1.5px solid rgba(140,140,140,${f1(borderA)});transform:scale(${f1(grow)});z-index:${isFound ? 2 : pk ? 1 : 0}`,
+          txt(0, 0, tileW - 3, tileH - 3, words[w], `700 ${f1(px)}px Nunito`, ink, `opacity:${f1(1 - banner)}`));
+      }
+      // banners over found groups
+      solves.forEach((s, rank) => {
+        const sh = standard(clamp01((t - s.t - BDELAY - late(s.g)) / BMS));
+        if (sh <= 0) return;
+        const g = D.groups[s.g], title = g.title.toUpperCase(), joined = g.words.join(', ');
+        const w = tileW * 4 + 24, y = by + rank * (tileH + 8);
+        o += box(bx, y, w, tileH, `background:${G[s.g]};border-radius:12px;opacity:${f1(sh)};z-index:3`,
+          txt(0, tileH * 0.17, w, tileH * 0.34, title, `700 ${f1(fitPx(title, 700, w - 16, tileH * 0.27))}px Nunito`, C.page)
+          + txt(0, tileH * 0.52, w, tileH * 0.3, joined, `500 ${f1(fitPx(joined, 500, w - 16, tileH * 0.2))}px Nunito`, C.page));
+      });
+      if (t >= settle) o += resultCardC(standard(clamp01((t - settle) / 0.4)), 'All groups found!', `0 mistakes · ${D.timeText}`, C.green);
+      else {
+        o += hint(519, 1, 'Pick four words that share a topic');
+        const btn = (s, en) => `<div style="opacity:${en ? 1 : 0.35};display:inline-flex;align-items:center;background:${C.raised};border-radius:999px;padding:6px 14px;font:500 14px/20px Nunito;color:${C.text};border:1px solid rgba(140,140,140,.45);white-space:nowrap">${s}</div>`;
+        const selecting = D.picks.some((p) => t >= p.t0 && t < p.solveAt);
+        o += box(0, 553, 360, 32, 'display:flex;justify-content:center;gap:12px', btn('Shuffle', true) + btn('Clear', selecting));
+      }
+      // taps
+      taps.forEach((tp) => { const tt = t - tp.t; if (tt < 0 || tt > 0.4) return; const p = standard(tt / 0.4); o += box(tp.x - 20, tp.y - 20, 40, 40, `border-radius:50%;background:rgba(255,255,255,${f1(0.34 * (1 - p))});transform:scale(${f1(0.45 + 0.75 * p)});z-index:50`); });
+      return o;
+    },
+  };
+}
+
+// =====================================================================================================================
+// the page: caption, timer, phone, end card
+// =====================================================================================================================
+window.initPlay = function (timeline, mascotSvg) {
+  TL = timeline;
+  $('mascot').innerHTML = mascotSvg;
+  $('mascot').firstElementChild.setAttribute('width', '380');
+  $('mascot').firstElementChild.setAttribute('height', '380');
+  SC = { ballslide: ballScene, nonogram: nonogramScene, topics: topicScene }[TL.kind](TL.data);
+  // the glow behind the finished picture (nonogram only)
+  if (TL.kind === 'nonogram') $('glow').style.background = `radial-gradient(circle at 540px 930px, ${TL.data.accent}55 0%, ${TL.data.accent}00 46%)`;
+  render(0);
+};
+
+window.render = function (t) {
+  const T = TL.t;
+  // phone
+  const pin = standard(clamp01((t - T.phoneIn) / 0.45)), fe = standard(clamp01((t - T.endStart) / 0.45));
+  const ph = $('phone');
+  ph.style.opacity = pin * (1 - fe);
+  ph.style.transform = `translateY(${(1 - pin) * 60}px)`;
+  ph.style.display = fe >= 1 ? 'none' : 'block';
+  $('pg').innerHTML = SC.html(Math.max(0, t - T.phoneIn));
+  // caption: the item whose time range holds t, faded in and out
+  let cap = null;
+  for (const c of TL.caps) if (t >= c.from && t < c.to) cap = c;
+  const cEl = $('cap');
+  if (cap) {
+    const a = standard(clamp01((t - cap.from) / 0.3)) * (1 - standard(clamp01((t - (cap.to - 0.25)) / 0.25)));
+    cEl.innerHTML = `<div>${cap.html}</div>`;
+    cEl.style.opacity = a * (1 - fe);
+    cEl.style.transform = `translateY(${(1 - standard(clamp01((t - cap.from) / 0.3))) * 24}px)`;
+  } else cEl.style.opacity = 0;
+  // timer
+  const tm = TL.timer, tEl = $('timer');
+  if (tm && t >= tm.from && t < tm.to + 0.2) {
+    const left = Math.max(0, tm.to - t), frac = left / (tm.to - tm.from);
+    tEl.style.display = 'flex';
+    $('tnum').textContent = Math.ceil(left - 1e-6) || 0;
+    $('fill').style.transform = `scaleX(${frac})`;
+    const urgent = left <= 3;
+    $('fill').style.background = urgent ? '#FF9F43' : '#FFC93C';
+    $('tnum').style.color = urgent ? '#FF9F43' : '#FFC93C';
+    tEl.style.opacity = standard(clamp01((t - tm.from) / 0.25)) * (1 - clamp01((t - tm.to) / 0.2));
+  } else tEl.style.display = 'none';
+  // glow
+  if (TL.kind === 'nonogram') {
+    const g = standard(clamp01((t - T.phoneIn - SC.glowStart) / 1.0));
+    $('glow').style.opacity = g * (1 - fe);
+  }
+  // end
+  $('end').style.opacity = fe;
+  $('mascot').style.transform = `translateY(${Math.sin(Math.max(0, t - T.endStart) * 3) * 10}px) scale(${0.92 + 0.08 * overshoot(clamp01((t - T.endStart) / 0.6))})`;
+};
+</script>
+</body>
+</html>

@@ -26,6 +26,17 @@ export function synthVoice(out, lines, { voice = 'af_heart', speed = 1.28 } = {}
   return JSON.parse(fs.readFileSync(path.join(out, 'durations.json'), 'utf8'));
 }
 
+/** Sound effects and a music bed from synth.py. spec: { sounds: [{ name, kind, midi, dur, vol }], music: { name, seconds, bpm, root, mode, seed, vol } }. Returns { name: file }. */
+export function synth(out, spec) {
+  fs.writeFileSync(path.join(out, 'synth.json'), JSON.stringify(spec));
+  const r = spawnSync(PYTHON, [path.join(here, 'synth.py'), path.join(out, 'synth.json'), out], { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error('synth failed: ' + r.stderr);
+  const files = {};
+  for (const s of spec.sounds || []) files[s.name] = path.join(out, s.name + '.wav');
+  if (spec.music) files[spec.music.name] = path.join(out, spec.music.name + '.wav');
+  return files;
+}
+
 /** Short sine blips. specs: { name: [frequency, seconds, volume] }. Returns { name: file }. */
 export function makeTones(out, specs) {
   const files = {};

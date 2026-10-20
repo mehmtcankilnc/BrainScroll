@@ -25,7 +25,7 @@ const dur = synthVoice(out, [
   { id: 'pivot', text: 'What if they all lived in one feed?' },
   ...GAMES.map(([key, name]) => ({ id: 'g_' + key, text: name + '.' })),
   { id: 'more', text: 'And so on.' },
-  { id: 'end', text: 'BrainScroll. Fifteen brain games. One feed.' },
+  { id: 'end', text: 'BrainScroll. Brain games of every kind. One feed.' },
 ]);
 
 const hookAt = 0.3;

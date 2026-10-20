@@ -1,0 +1,205 @@
+{
+ "sounds": [
+  {
+   "name": "ballslide_whoosh",
+   "kind": "glide",
+   "dur": 0.2,
+   "vol": 0.45,
+   "midi": 64
+  },
+  {
+   "name": "ballslide_cell",
+   "kind": "pluck",
+   "midi": 67,
+   "dur": 0.6,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_00",
+   "kind": "pluck",
+   "midi": 55,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_01",
+   "kind": "pluck",
+   "midi": 57,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_02",
+   "kind": "pluck",
+   "midi": 59,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_03",
+   "kind": "pluck",
+   "midi": 62,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_04",
+   "kind": "pluck",
+   "midi": 64,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_05",
+   "kind": "pluck",
+   "midi": 67,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_06",
+   "kind": "pluck",
+   "midi": 69,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_07",
+   "kind": "pluck",
+   "midi": 71,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_08",
+   "kind": "pluck",
+   "midi": 74,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_fill_09",
+   "kind": "pluck",
+   "midi": 76,
+   "dur": 0.5,
+   "vol": 0.5
+  },
+  {
+   "name": "nonogram_line_00",
+   "kind": "chime",
+   "midi": 79,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_01",
+   "kind": "chime",
+   "midi": 81,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_02",
+   "kind": "chime",
+   "midi": 83,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_03",
+   "kind": "chime",
+   "midi": 86,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_04",
+   "kind": "chime",
+   "midi": 88,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_05",
+   "kind": "chime",
+   "midi": 91,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_06",
+   "kind": "chime",
+   "midi": 93,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "nonogram_line_07",
+   "kind": "chime",
+   "midi": 95,
+   "dur": 0.8,
+   "vol": 0.45
+  },
+  {
+   "name": "win_ballslide_chord",
+   "kind": "chord",
+   "midi": 72,
+   "dur": 1.8,
+   "vol": 0.5
+  },
+  {
+   "name": "win_nonogram_chord",
+   "kind": "chord",
+   "midi": 69,
+   "dur": 2.2,
+   "vol": 0.5
+  },
+  {
+   "name": "ui_tap",
+   "kind": "pop",
+   "midi": 84,
+   "dur": 0.06,
+   "vol": 0.5
+  },
+  {
+   "name": "ui_good",
+   "kind": "pluck",
+   "midi": 72,
+   "dur": 0.45,
+   "vol": 0.5
+  },
+  {
+   "name": "ui_warning",
+   "kind": "boop",
+   "midi": 55,
+   "dur": 0.35,
+   "vol": 0.5
+  },
+  {
+   "name": "ui_win_chord",
+   "kind": "chord",
+   "midi": 67,
+   "dur": 2.0,
+   "vol": 0.5
+  },
+  {
+   "name": "tubes_pour",
+   "kind": "pour",
+   "dur": 0.3,
+   "vol": 0.4
+  },
+  {
+   "name": "mines_boom",
+   "kind": "boom_soft",
+   "dur": 0.5,
+   "vol": 0.6
+  },
+  {
+   "name": "hanoi_thunk",
+   "kind": "thunk",
+   "midi": 55,
+   "dur": 0.22,
+   "vol": 0.5
+  }
+ ]
+}
