@@ -6,6 +6,7 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
 import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
@@ -66,6 +67,9 @@ interface FeedActions {
     fun extendFlow(page: Int, cell: Int): Boolean
     fun endFlow(page: Int): FlowResult
     fun restartFlow(page: Int): Boolean
+    fun tapTopicWord(page: Int, word: Int): TopicGroupsResult
+    fun shuffleTopicWords(page: Int): Boolean
+    fun clearTopicSelection(page: Int): Boolean
     fun paintNonogram(page: Int, from: Int, to: Int, value: Int): NonogramResult
     fun restartNonogram(page: Int): Boolean
     fun dragLine(page: Int, cell: Int): LineResult

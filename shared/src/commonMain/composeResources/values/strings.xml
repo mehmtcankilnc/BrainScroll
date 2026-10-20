@@ -411,6 +411,7 @@
     <string name="editor_next">Next</string>
     <string name="editor_difficulty_title">Difficulty</string>
     <string name="editor_difficulty_subtitle">One level for every game in your feed.</string>
+    <string name="editor_difficulty_note">This level applies to all your games, not just one.</string>
     <string name="editor_difficulty_label">Feed difficulty</string>
     <string name="editor_subtitle">Pick the games you want to play.</string>
     <string name="editor_selected">%1$d games selected</string>
@@ -438,6 +439,7 @@
     <string name="account_guest_hint">Sign in to back up your progress</string>
     <string name="profile_stats_hint">Numbers for every game</string>
     <string name="profile_favorites_hint">Puzzles you gave a heart</string>
+    <string name="profile_friends_hint">Your code, requests and friends</string>
     <string name="profile_ranks_hint">Fastest players and longest streaks</string>
     <string name="profile_settings_hint">App language, account, privacy</string>
     <string name="stat_won">Won</string>
@@ -706,5 +708,27 @@
     <string name="guide_blockout_down">Slide the marked block down by %1$d. It is the first step of the shortest way.</string>
     <string name="guide_blockout_left">Slide the marked block left by %1$d. It is the first step of the shortest way.</string>
     <string name="guide_blockout_right">Slide the marked block right by %1$d. It is the first step of the shortest way.</string>
+    <string name="game_topicgroups">Topic Groups</string>
+    <string name="topicgroups_found">Found %1$d/4</string>
+    <string name="topicgroups_mistakes">Mistakes %1$d</string>
+    <string name="topicgroups_hint">Pick four words that share a topic</string>
+    <string name="topicgroups_shuffle">Shuffle</string>
+    <string name="topicgroups_clear">Clear</string>
+    <string name="topicgroups_won">All groups found!</string>
+    <string name="topicgroups_result">%1$d mistakes · %2$s</string>
+    <string name="a11y_topicgroups_found">%1$d of 4 groups found</string>
+    <string name="a11y_topicgroups_mistakes">%1$d mistakes</string>
+    <string name="a11y_topicgroups_word">%1$s</string>
+    <string name="a11y_topicgroups_word_selected">%1$s, picked</string>
+    <string name="a11y_topicgroups_group">%1$s: %2$s</string>
+    <string name="a11y_topicgroups_shuffle">Shuffle the words</string>
+    <string name="a11y_topicgroups_clear">Put the picked words back</string>
+    <string name="stats_topicgroups">Topic Groups</string>
+    <string name="favorite_topicgroups_tag">Topic Groups</string>
+    <string name="favorite_topicgroups_result">%1$d mistakes · %2$s</string>
+    <string name="guide_topicgroups_group">These four words go together: %1$s.</string>
+    <string name="howto_card_topicgroups_1">Sixteen words hide four groups. Tap four words that share a topic.</string>
+    <string name="howto_card_topicgroups_2">Right? The group is found and its topic is shown.</string>
+    <string name="howto_card_topicgroups_3">Wrong? That is a mistake. Find all four groups to win.</string>
 
 </resources>

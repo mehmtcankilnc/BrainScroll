@@ -74,6 +74,9 @@ enum class GuideReason {
     /** Bring back the number on this cell: it is part of the sums. */
     AxisSumKeep,
 
+    /** These four words are a group: the text is its topic. */
+    TopicGroupsGroup,
+
     /** Fill this cell: the numbers leave no other possibility for it. */
     NonogramFill,
 

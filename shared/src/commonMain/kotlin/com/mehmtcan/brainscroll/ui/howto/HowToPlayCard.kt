@@ -124,7 +124,11 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
     val close by rememberUpdatedState(onClose)
     BackHandler(enabled = true) { close() }
 
+    // The overlay is drawn where the window keeps its layers, not where the card is called, so what the caller provided (the
+    // language of the word pictures) is read here and handed on inside.
+    val wordLanguage = LocalHowToWordLanguage.current
     Overlay {
+      androidx.compose.runtime.CompositionLocalProvider(LocalHowToWordLanguage provides wordLanguage) {
         Box(modifier = modifier.fillMaxSize().testTag("howToCard")) {
             Box(
                 Modifier
@@ -191,6 +195,7 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
                 }
             }
         }
+      }
     }
 }
 

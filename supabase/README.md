@@ -18,6 +18,10 @@ Dashboard -> Table Editor, or run `npx supabase db diff --linked` to compare it 
 
 - A migration is never edited after it has been pushed. A change is a new file in `migrations/`.
 - Every table has Row Level Security on and policies for `authenticated` only (anonymous users are `authenticated`).
+- Supabase stops granting Data API access to new `public` tables automatically (all projects, 2026-10-30). A new table
+  therefore says what it exposes in its own migration: `revoke all ... from anon, authenticated`, then the `grant`s it
+  needs (usually none, because access goes through `security definer` functions), plus `enable row level security`.
+  Same for views (`security_invoker = on`) and sequences. Existing tables keep their grants.
 - `config.toml` mirrors the dashboard's auth settings (site URL, redirect URL, anonymous sign-ins, manual linking).
   The dashboard is the real setting; we do not run `supabase config push`.
 

@@ -32,6 +32,7 @@ import brainscroll.shared.generated.resources.arrows_dir_right
 import brainscroll.shared.generated.resources.arrows_dir_up
 import brainscroll.shared.generated.resources.guide_ballslide_move
 import brainscroll.shared.generated.resources.guide_colorflow_route
+import brainscroll.shared.generated.resources.guide_topicgroups_group
 import com.mehmtcan.brainscroll.game.memory.CardSymbol
 import com.mehmtcan.brainscroll.ui.memory.symbolName
 import brainscroll.shared.generated.resources.guide_ballslide_stuck
@@ -116,6 +117,7 @@ fun guideText(step: GuideStep): String {
             ),
         )
         GuideReason.FlowRoute -> stringResource(Res.string.guide_colorflow_route, stringResource(symbolName(CardSymbol.entries[n[0] % CardSymbol.entries.size])))
+        GuideReason.TopicGroupsGroup -> stringResource(Res.string.guide_topicgroups_group, step.text)
         GuideReason.BallSlideStuck -> stringResource(Res.string.guide_ballslide_stuck)
         GuideReason.AxisSumErase -> stringResource(Res.string.guide_axissum_erase, n[0], n[1])
         GuideReason.AxisSumKeep -> stringResource(Res.string.guide_axissum_keep, n[0], n[1])

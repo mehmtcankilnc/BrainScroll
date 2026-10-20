@@ -95,6 +95,7 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.AxisSum -> AxisSumThumb(side)
             GameKind.BallSlide -> BallSlideThumb(side)
             GameKind.ColorFlow -> ColorFlowThumb(side)
+            GameKind.TopicGroups -> TopicGroupsThumb(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -725,3 +726,36 @@ private fun BlockOutThumb(side: Dp) {
     }
 }
 
+
+/** Word groups: two groups found (a bar each, in the colors of the game, with the topic and the words as lines) and eight words left. */
+@Composable
+private fun TopicGroupsThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val palette = com.mehmtcan.brainscroll.ui.topicgroups.topicGroupColors(colors)
+    val tile = colors.bgRaised
+    val ink = colors.bgPage
+    Canvas(Modifier.size(side * 0.9f)) {
+        val gap = size.width * 0.04f
+        val tileW = (size.width - 3 * gap) / 4f
+        val tileH = tileW * 0.72f
+        val top = (size.height - (4 * tileH + 3 * gap)) / 2f
+        val corner = androidx.compose.ui.geometry.CornerRadius(tileH * 0.22f)
+        fun lineAt(center: Offset, width: Float, height: Float, color: Color) =
+            drawRoundRect(color, Offset(center.x - width / 2f, center.y - height / 2f), androidx.compose.ui.geometry.Size(width, height), androidx.compose.ui.geometry.CornerRadius(height / 2f))
+        // The two groups that are found.
+        for (row in 0 until 2) {
+            val y = top + row * (tileH + gap)
+            drawRoundRect(palette[row], Offset(0f, y), androidx.compose.ui.geometry.Size(size.width, tileH), corner)
+            val center = Offset(size.width / 2f, y + tileH / 2f)
+            lineAt(center - Offset(0f, tileH * 0.17f), size.width * (if (row == 0) 0.34f else 0.26f), tileH * 0.17f, ink)
+            lineAt(center + Offset(0f, tileH * 0.17f), size.width * (if (row == 0) 0.62f else 0.7f), tileH * 0.12f, ink.copy(alpha = 0.7f))
+        }
+        // The words that are left, three of them picked.
+        for (row in 2 until 4) for (column in 0 until 4) {
+            val origin = Offset(column * (tileW + gap), top + row * (tileH + gap))
+            val picked = row == 2 && column < 3
+            drawRoundRect(if (picked) colors.textPrimary else tile, origin, androidx.compose.ui.geometry.Size(tileW, tileH), corner)
+            lineAt(origin + Offset(tileW / 2f, tileH / 2f), tileW * (0.45f + 0.1f * ((row + column) % 3)), tileH * 0.16f, if (picked) ink else colors.textSecondary)
+        }
+    }
+}

@@ -11,6 +11,7 @@ import brainscroll.shared.generated.resources.game_arrows
 import brainscroll.shared.generated.resources.game_axissum
 import brainscroll.shared.generated.resources.game_ballslide
 import brainscroll.shared.generated.resources.game_colorflow
+import brainscroll.shared.generated.resources.game_topicgroups
 import brainscroll.shared.generated.resources.game_nonogram
 import brainscroll.shared.generated.resources.game_blockout
 import brainscroll.shared.generated.resources.game_lights
@@ -52,6 +53,7 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.AxisSum -> Res.string.game_axissum
         GameKind.BallSlide -> Res.string.game_ballslide
         GameKind.ColorFlow -> Res.string.game_colorflow
+        GameKind.TopicGroups -> Res.string.game_topicgroups
         GameKind.Line -> Res.string.game_line
     },
 )

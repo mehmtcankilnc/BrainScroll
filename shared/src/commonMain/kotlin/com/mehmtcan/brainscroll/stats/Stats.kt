@@ -354,6 +354,24 @@ fun computeFlowStats(history: List<FinishedRound>): FlowStats {
     )
 }
 
+/** What the statistics screen shows for the word groups game. Every result is a win (the game cannot be lost). */
+data class TopicGroupsStats(
+    val played: Int,
+    /** The fastest game (see TopicGroupsRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** Boards solved without a single mistake. */
+    val flawless: Int,
+)
+
+fun computeTopicGroupsStats(history: List<FinishedRound>): TopicGroupsStats {
+    val results = history.filter { it.game == GameKind.TopicGroups && it.mode == Mode.ENDLESS && !it.assisted }
+    return TopicGroupsStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        flawless = results.count { it.moveCount == 0 },
+    )
+}
+
 /** What the statistics screen shows for the mini nonogram: the games and the fastest one (the game counts time only). */
 data class NonogramStats(
     val played: Int,

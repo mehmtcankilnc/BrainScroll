@@ -39,6 +39,7 @@ class SmallScreenUiTest {
     @Test fun blockout() = shot(GameKind.BlockOut, "blockout")
     @Test fun arrows() = shot(GameKind.Arrows, "arrows")
     @Test fun nonogram() = shot(GameKind.Nonogram, "nonogram")
+    @Test fun topicgroups() = shot(GameKind.TopicGroups, "topicgroups")
 
     /** The towers and the restart button are both on the short screen with big text, and nothing runs off its edge. */
     @Test
@@ -163,5 +164,28 @@ class SmallScreenUiTest {
         val root = onRoot().fetchSemanticsNode().boundsInRoot
         val button = onNodeWithTag("howToOk").fetchSemanticsNode().boundsInRoot
         assertTrue(button.bottom <= root.bottom + 1f && button.top >= 0f, "the OK button of the card is in view")
+    }
+
+    /** The sixteen words and the two buttons are all on the short screen with big text, and nothing runs off its edge. */
+    @Test
+    fun topicGroupsFitsAShortScreenWithBigText() = runComposeUiTest {
+        start(games = listOf(GameKind.TopicGroups), openFeed = false, fontScale = 1.5f, screen = 360 to 600)
+        openTab("Akış", "Feed")
+        waitForIdle()
+        mainClock.advanceTimeBy(1_500)
+        waitForIdle()
+        snap("304_small_topicgroups_big_text")
+        val root = onRoot().fetchSemanticsNode().boundsInRoot
+        for (tag in listOf("topicTile", "topicShuffle", "topicClear")) {
+            val nodes = onAllNodesWithTag(tag).fetchSemanticsNodes().filter { it.boundsInRoot.width > 0f && it.boundsInRoot.top >= 0f }
+            assertTrue(nodes.isNotEmpty(), tag)
+            for (node in nodes) {
+                val b = node.boundsInRoot
+                assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")
+            }
+        }
+        // A tile is still big enough to hit.
+        val tile = onAllNodesWithTag("topicTile").fetchSemanticsNodes().first { it.boundsInRoot.width > 0f && it.boundsInRoot.top >= 0f }.boundsInRoot
+        assertTrue(tile.height >= 40f && tile.width >= 40f, "a tile is ${tile.width} x ${tile.height}")
     }
 }

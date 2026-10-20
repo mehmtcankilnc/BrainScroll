@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.game.guide
 
 import com.mehmtcan.brainscroll.game.arrows.ArrowsState
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsState
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsStatus
 import com.mehmtcan.brainscroll.game.axissum.AxisSumState
 import com.mehmtcan.brainscroll.game.ballslide.BallSlidePuzzle
 import com.mehmtcan.brainscroll.game.colorflow.FlowPuzzle
@@ -266,12 +268,26 @@ object BlockOutGuide {
 }
 
 
-/** The guide of arrow escape: an arrow that can leave now (there is no wrong move to take back). */
+/** The guide of arrow escape: an arrow that can leave now (there is no wrong move to take back). It points at every cell of the arrow; the numbers are its head. */
 object ArrowsGuide {
     fun step(state: ArrowsState): GuideStep? {
         if (state.status != ArrowsStatus.Playing) return null
-        val cell = state.arrows.firstOrNull { it.free }?.head ?: return null
-        return GuideStep(GuideReason.ArrowsEscape, listOf(cell), listOf(cell / state.size + 1, cell % state.size + 1))
+        val arrow = state.arrows.firstOrNull { it.free } ?: return null
+        val cell = arrow.head
+        return GuideStep(GuideReason.ArrowsEscape, arrow.cells.toList(), listOf(cell / state.size + 1, cell % state.size + 1))
+    }
+}
+
+/**
+ * The guide of the word groups game: the four words of a group that is not found yet, and its topic. With words already picked it
+ * points at the group most of them belong to (the first one on a tie), otherwise at the first group that is left.
+ */
+object TopicGroupsGuide {
+    fun step(state: TopicGroupsState): GuideStep? {
+        if (state.status != TopicGroupsStatus.Playing) return null
+        val left = state.titles.indices.filter { it !in state.solved }
+        val group = left.maxByOrNull { g -> state.selected.count { it / 4 == g } } ?: return null
+        return GuideStep(GuideReason.TopicGroupsGroup, state.wordsOf(group), text = state.titles[group])
     }
 }
 

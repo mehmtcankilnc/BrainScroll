@@ -116,10 +116,17 @@ class SocialUiTest {
         snap("27_ranks_filters")
         clickAny("En uzun", "Longest")
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:false" } }
-        // The section tab and the "Players" choice both say "Friends"; the choice is the second one.
+        // The friends have a page of their own now, so the only "Friends" on the ranks page is the choice of whose results.
         val friendsLabel = if (onAllNodesWithText("Arkadaşlar").fetchSemanticsNodes().isNotEmpty()) "Arkadaşlar" else "Friends"
-        onAllNodesWithText(friendsLabel)[1].performClick()
+        onAllNodesWithText(friendsLabel)[0].performClick()
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:true" } }
+    }
+
+    @Test
+    fun theRanksPageHasNoFriendsTab() = runComposeUiTest {
+        openRanks(cloud(member = true, username = "carol"))
+        assertFalse(hasAnyText("Davet kodun", "Your invite code"))
+        assertEquals(0, onAllNodesWithText("Arkadaşlar").fetchSemanticsNodes().size + onAllNodesWithText("Friends").fetchSemanticsNodes().size, "the tab is gone")
     }
 
     @Test
@@ -127,8 +134,9 @@ class SocialUiTest {
         val cloud = cloud(member = true, username = "carol") {
             friendsState = FriendsState(friends = listOf("bob"), incoming = listOf("dora"), outgoing = listOf("erin"))
         }
-        openRanks(cloud)
-        clickFirstChip("Arkadaşlar", "Friends")
+        start(cloud)
+        // The friends are a page of the profile, not a part of the ranks.
+        openProfilePage("Arkadaşlar", "Friends")
         waitForText("ABCD2345")
         snap("24_ranks_friends")
 
@@ -146,7 +154,7 @@ class SocialUiTest {
     }
 
     @Test
-    fun anInviteLinkAddsTheFriendAndOpensTheRanksTab() = runComposeUiTest {
+    fun anInviteLinkAddsTheFriendAndOpensTheFriendsPage() = runComposeUiTest {
         val cloud = cloud(member = true, username = "carol")
         start(cloud)
         DeepLinkInbox.deliver("com.mehmtcan.brainscroll://invite?code=ZZZZ9999")

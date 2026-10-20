@@ -72,6 +72,7 @@ private fun cardOf(kind: GameKind): HowToCardContent = when (kind) {
     GameKind.AxisSum -> AxisSumHowTo
     GameKind.BallSlide -> BallSlideHowTo
     GameKind.ColorFlow -> ColorFlowHowTo
+    GameKind.TopicGroups -> TopicGroupsHowTo
     GameKind.Line -> LineHowTo
 }
 

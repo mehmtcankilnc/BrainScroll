@@ -451,7 +451,7 @@ private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boole
                     BasicText(
                         text = when (game) {
                             GameKind.Word -> stringResource(Res.string.ranks_guesses, row.guesses)
-                            GameKind.Line -> stringResource(Res.string.ranks_stars, LineScoring.starsOf(row.guesses))
+                            GameKind.Line -> stringResource(Res.string.ranks_stars, row.guesses.coerceIn(0, LineScoring.MAX_STARS))
                             else -> stringResource(Res.string.ranks_moves, row.guesses)
                         },
                         style = type.label.copy(color = colors.textSecondary),

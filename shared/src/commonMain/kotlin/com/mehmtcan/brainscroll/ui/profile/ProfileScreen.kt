@@ -94,7 +94,6 @@ import brainscroll.shared.generated.resources.favorite_lost
 import brainscroll.shared.generated.resources.favorite_won
 import brainscroll.shared.generated.resources.favorites_empty
 import brainscroll.shared.generated.resources.favorites_title
-import brainscroll.shared.generated.resources.guess_distribution
 import brainscroll.shared.generated.resources.stat_best_streak
 import brainscroll.shared.generated.resources.stat_best_time
 import brainscroll.shared.generated.resources.stat_day_streak
@@ -120,6 +119,11 @@ import brainscroll.shared.generated.resources.stats_arrows
 import brainscroll.shared.generated.resources.stats_axissum
 import brainscroll.shared.generated.resources.stats_ballslide
 import brainscroll.shared.generated.resources.stats_colorflow
+import brainscroll.shared.generated.resources.stats_topicgroups
+import brainscroll.shared.generated.resources.ranks_friends
+import brainscroll.shared.generated.resources.profile_friends_hint
+import brainscroll.shared.generated.resources.favorite_topicgroups_result
+import brainscroll.shared.generated.resources.favorite_topicgroups_tag
 import brainscroll.shared.generated.resources.favorite_colorflow_result
 import brainscroll.shared.generated.resources.favorite_colorflow_tag
 import brainscroll.shared.generated.resources.favorite_ballslide_result
@@ -163,10 +167,7 @@ import brainscroll.shared.generated.resources.favorite_mines_result
 import brainscroll.shared.generated.resources.favorite_mines_tag
 import brainscroll.shared.generated.resources.favorite_tubes_result
 import brainscroll.shared.generated.resources.favorite_tubes_tag
-import brainscroll.shared.generated.resources.stats_filter_all
-import brainscroll.shared.generated.resources.stats_streak_note
 import brainscroll.shared.generated.resources.stats_endless
-import brainscroll.shared.generated.resources.stats_level_hint
 import brainscroll.shared.generated.resources.stats_title
 import brainscroll.shared.generated.resources.tab_ranks
 import com.mehmtcan.brainscroll.daily.formatDuration
@@ -190,7 +191,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /** Where the profile can lead. Each is a page of its own with a back button (docs/decisions.md, Sadeleştirme). */
-enum class ProfileTarget { Stats, Favorites, Settings, Ranks }
+enum class ProfileTarget { Stats, Favorites, Settings, Ranks, Friends }
 
 /**
  * The profile tab, top to bottom: who you are and whether your progress is backed up, the two streaks (tap one to see
@@ -259,6 +260,7 @@ fun ProfileScreen(
                     value = profile.favorites.size.takeIf { it > 0 }?.toString(),
                 ) { onOpen(ProfileTarget.Favorites) }
                 ProfileRow(stringResource(Res.string.tab_ranks), stringResource(Res.string.profile_ranks_hint)) { onOpen(ProfileTarget.Ranks) }
+                ProfileRow(stringResource(Res.string.ranks_friends), stringResource(Res.string.profile_friends_hint)) { onOpen(ProfileTarget.Friends) }
                 ProfileRow(stringResource(Res.string.profile_settings), stringResource(Res.string.profile_settings_hint), last = true) { onOpen(ProfileTarget.Settings) }
             }
             Spacer(Modifier.height(Spacing.xl))
@@ -404,9 +406,7 @@ fun StatsPage(
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    // Null shows both languages together.
-    var dailyLanguage by remember { mutableStateOf<Language?>(null) }
-    val daily = dailyLanguage?.let { profile.dailyByLanguage[it] } ?: profile.daily
+    val daily = profile.daily
     // The endless numbers already include memory match, so only the daily puzzle is added.
     val played = profile.stats.played + profile.daily.played
     val won = profile.stats.won + profile.daily.won
@@ -431,28 +431,18 @@ fun StatsPage(
         // The numbers of each game below are for one level: the best time of an easy board does not belong next to a hard one's.
         if (showLevels) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    SegmentedControl(
-                        options = Difficulty.entries.map { difficultyName(it) },
-                        selectedIndex = Difficulty.entries.indexOf(profile.statsLevel),
-                        onSelect = { onLevel(Difficulty.entries[it]) },
-                        modifier = Modifier.testTag("statsLevel"),
-                    )
-                    BasicText(stringResource(Res.string.stats_level_hint), style = type.caption.copy(color = colors.textSecondary))
-                }
+                SegmentedControl(
+                    options = Difficulty.entries.map { difficultyName(it) },
+                    selectedIndex = Difficulty.entries.indexOf(profile.statsLevel),
+                    onSelect = { onLevel(Difficulty.entries[it]) },
+                    modifier = Modifier.testTag("statsLevel"),
+                )
             }
         }
 
-        // The daily puzzle: its streak counts days, not answers, and it has a time. The numbers can be shown for
-        // both languages together or for one (there are two puzzles a day, one per language).
+        // The daily puzzle: its streak counts days, not answers, and it has a time.
         item {
             StatGroup(stringResource(Res.string.stats_daily), profile.daily.played, "statsDaily") {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    DailyFilterChip(stringResource(Res.string.stats_filter_all), dailyLanguage == null) { dailyLanguage = null }
-                    Language.entries.forEach { language ->
-                        DailyFilterChip(language.name, dailyLanguage == language) { dailyLanguage = language }
-                    }
-                }
                 StatTiles(
                     played = daily.played,
                     winRate = daily.winRate,
@@ -460,9 +450,6 @@ fun StatsPage(
                     best = profile.dayStreak.best,
                     streakLabel = stringResource(Res.string.stat_day_streak),
                 )
-                if (dailyLanguage != null) {
-                    BasicText(stringResource(Res.string.stats_streak_note), style = type.caption.copy(color = colors.textSecondary))
-                }
                 daily.bestTimeMs?.let { best ->
                     BasicText(
                         text = stringResource(Res.string.stat_best_time) + ": " + formatDuration(best),
@@ -475,7 +462,6 @@ fun StatsPage(
                         style = type.caption.copy(color = colors.textSecondary),
                     )
                 }
-                GuessDistribution(daily.guessDistribution)
             }
         }
 
@@ -488,7 +474,6 @@ fun StatsPage(
                         "${(profile.endless.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
                     ),
                 )
-                GuessDistribution(profile.endless.guessDistribution)
             }
         }
         // Memory match has no guesses: results, the fastest win and the fewest moves.
@@ -537,6 +522,17 @@ fun StatsPage(
                         profile.arrows.played.toString() to stringResource(Res.string.stat_played),
                         (profile.arrows.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
                         profile.arrows.flawless.toString() to stringResource(Res.string.stat_flawless),
+                    ),
+                )
+            }
+        }
+        item {
+            StatGroup(stringResource(Res.string.stats_topicgroups), profile.topicGroups.played, "statsTopicGroups") {
+                TileGrid(
+                    listOf(
+                        profile.topicGroups.played.toString() to stringResource(Res.string.stat_played),
+                        (profile.topicGroups.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
+                        profile.topicGroups.flawless.toString() to stringResource(Res.string.stat_flawless),
                     ),
                 )
             }
@@ -734,6 +730,7 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
         GameKind.AxisSum -> profile.axisSum.bestTimeMs
         GameKind.BallSlide -> profile.ballSlide.bestTimeMs
         GameKind.ColorFlow -> profile.colorFlow.bestTimeMs
+        GameKind.TopicGroups -> profile.topicGroups.bestTimeMs
         GameKind.Line -> profile.line.bestTimeMs
     }
     return best != null && time <= best
@@ -814,33 +811,6 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
     }
 }
 
-/** One horizontal bar per number of guesses. The longest bar fills the width, the rest are proportional. */
-@Composable
-private fun GuessDistribution(counts: List<Int>) {
-    val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
-    val most = counts.maxOrNull()?.coerceAtLeast(1) ?: 1
-
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        counts.forEachIndexed { i, count ->
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                BasicText("${i + 1}", style = type.label.copy(color = colors.textSecondary), modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    // A bar for zero wins stays a thin stub so the row is still visible.
-                    val fraction = if (count == 0) 0.02f else count.toFloat() / most
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction)
-                            .height(20.dp)
-                            .background(if (count == 0) colors.bgSurface else colors.correctFill, Radius.tile),
-                    )
-                }
-                BasicText("$count", style = type.label.copy(color = colors.textPrimary), modifier = Modifier.width(28.dp))
-            }
-        }
-    }
-}
-
 @Composable
 private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> Unit) {
     val colors = BrainScrollTheme.colors
@@ -880,6 +850,7 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
                     round.game == GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
+                    round.game == GameKind.TopicGroups -> stringResource(Res.string.favorite_topicgroups_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Arrows -> stringResource(Res.string.favorite_arrows_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Line && round.mode == Mode.DAILY -> stringResource(Res.string.favorite_line_stars, round.lineStars, formatDuration(round.durationMs ?: 0L))
                     round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
@@ -907,18 +878,6 @@ private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> U
     }
 }
 
-@Composable
-private fun DailyFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = BrainScrollTheme.colors
-    Chip(
-        text = text,
-        textColor = if (selected) colors.textPrimary else colors.textSecondary,
-        raised = selected,
-        selected = selected,
-        onClick = onClick,
-    )
-}
-
 /** The line a favorite starts with: the word of a word puzzle, the name of the game for the others. */
 @Composable
 private fun favoriteTag(round: FinishedRound): String = when (round.game) {
@@ -941,5 +900,6 @@ private fun favoriteTag(round: FinishedRound): String = when (round.game) {
     GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_tag)
     GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_tag)
     GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_tag)
+    GameKind.TopicGroups -> stringResource(Res.string.favorite_topicgroups_tag)
     GameKind.Line -> stringResource(Res.string.favorite_line_tag)
 }

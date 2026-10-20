@@ -28,6 +28,9 @@ import com.mehmtcan.brainscroll.game.ballslide.BallSlideRound
 import com.mehmtcan.brainscroll.game.colorflow.FlowGenerator
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowRound
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsGenerator
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsRound
 import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.arrows.ArrowsRound
 import com.mehmtcan.brainscroll.game.tents.TentsGenerator
@@ -157,6 +160,7 @@ class EndlessFeed(
                 GameKind.AxisSum -> AxisSumRound.restore(rounds.size, stored, now)
                 GameKind.BallSlide -> BallSlideRound.restore(rounds.size, stored, now)
                 GameKind.ColorFlow -> FlowRound.restore(rounds.size, stored, now)
+                GameKind.TopicGroups -> TopicGroupsRound.restore(rounds.size, stored, now)
                 GameKind.Line -> LineRound.restore(rounds.size, stored, now)
             }
             if (round != null) {
@@ -238,6 +242,7 @@ class EndlessFeed(
         for (i in fromIndex.coerceAtLeast(0) until rounds.size) {
             val round = rounds[i]
             if (round is WordleRound && round.isUntouched && !round.assisted && round.language !in next) rounds[i] = newRound(i, GameKind.Word)
+            if (round is TopicGroupsRound && round.isUntouched && !round.assisted && round.language !in next) rounds[i] = newRound(i, GameKind.TopicGroups)
         }
     }
 
@@ -523,6 +528,28 @@ class EndlessFeed(
         return round.restart().also { if (it) persist(round) }
     }
 
+    // --- Word groups actions (ignored on a page of another game) ---
+
+    /** Taps [word] of the word groups board of page [index]: the word is picked, put back, or the four picked are checked. */
+    fun tapTopicWord(index: Int, word: Int): TopicGroupsResult {
+        val round = rounds[index] as? TopicGroupsRound ?: return TopicGroupsResult.Ignored
+        val result = round.tap(word)
+        if (result != TopicGroupsResult.Ignored) afterMove(index, round)
+        return result
+    }
+
+    /** Mixes up the words of the word groups board of page [index] that are not found yet. Returns false when there is nothing to mix. */
+    fun shuffleTopicWords(index: Int): Boolean {
+        val round = rounds[index] as? TopicGroupsRound ?: return false
+        return round.shuffle().also { if (it) persist(round) }
+    }
+
+    /** Puts the picked words of page [index] back. Returns false when none was picked. */
+    fun clearTopicSelection(index: Int): Boolean {
+        val round = rounds[index] as? TopicGroupsRound ?: return false
+        return round.clearSelection().also { if (it) persist(round) }
+    }
+
     // --- Mini nonogram actions (ignored on a page of another game) ---
 
     /** Sets the cells from [from] to [to] (on one row or column) of the nonogram board of page [index] to [value]. */
@@ -679,6 +706,7 @@ class EndlessFeed(
         GameKind.Nonogram -> NonogramRound(index, newId(), NonogramGenerator.generate(random.nextInt(), difficultyOf(kind)), language, now)
         GameKind.AxisSum -> AxisSumRound(index, newId(), AxisSumGenerator.generate(random.nextInt(), difficultyOf(kind)), language, now)
         GameKind.ColorFlow -> FlowGenerator.generate(random.nextInt(), difficultyOf(kind)).let { FlowRound(index, newId(), it.puzzle, language, now) }
+        GameKind.TopicGroups -> TopicGroupsRound(index, newId(), TopicGroupsGenerator.generate(random.nextInt(), wordLanguages.random(random), difficultyOf(kind)), now)
         GameKind.BallSlide -> BallSlideGenerator.generate(random.nextInt(), difficultyOf(kind)).let { BallSlideRound(index, newId(), it.puzzle, it.par, language, now) }
         GameKind.Line -> LineRound(index, newId(), lineBoard(random), language, now)
     }

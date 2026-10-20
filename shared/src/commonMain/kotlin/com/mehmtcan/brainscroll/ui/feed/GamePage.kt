@@ -10,6 +10,8 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsSnapshot
 import com.mehmtcan.brainscroll.game.axissum.AxisSumSnapshot
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideSnapshot
 import com.mehmtcan.brainscroll.game.colorflow.FlowSnapshot
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsSnapshot
+import com.mehmtcan.brainscroll.ui.topicgroups.TopicGroupsPage
 import com.mehmtcan.brainscroll.ui.colorflow.ColorFlowPage
 import com.mehmtcan.brainscroll.ui.ballslide.BallSlidePage
 import com.mehmtcan.brainscroll.ui.axissum.AxisSumPage
@@ -173,6 +175,15 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 onRestart = { actions.restartAxisSum(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is TopicGroupsSnapshot -> TopicGroupsPage(
+                page = item,
+                onTap = { word -> actions.tapTopicWord(index, word) },
+                onShuffle = { actions.shuffleTopicWords(index) },
+                onClear = { actions.clearTopicSelection(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+                languageSwitch = languageSwitch,
             )
             is NonogramSnapshot -> NonogramPage(
                 page = item,

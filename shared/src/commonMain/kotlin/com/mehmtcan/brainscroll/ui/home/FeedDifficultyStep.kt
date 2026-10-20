@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.editor_difficulty_label
+import brainscroll.shared.generated.resources.editor_difficulty_note
 import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
@@ -223,5 +224,11 @@ fun FeedDifficultyStep(current: Difficulty, onSelect: (Difficulty) -> Unit, modi
                 }
             }
         }
+
+        BasicText(
+            text = stringResource(Res.string.editor_difficulty_note),
+            style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+            modifier = Modifier.testTag("difficultyNote"),
+        )
     }
 }

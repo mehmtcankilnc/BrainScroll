@@ -102,6 +102,8 @@ import com.mehmtcan.brainscroll.ui.profile.PrivacyUi
 import com.mehmtcan.brainscroll.ui.profile.FavoritesPage
 import com.mehmtcan.brainscroll.ui.profile.ProfileScreen
 import com.mehmtcan.brainscroll.ui.profile.ProfileTarget
+import com.mehmtcan.brainscroll.ui.social.FriendsScreen
+import brainscroll.shared.generated.resources.ranks_friends
 import com.mehmtcan.brainscroll.ui.profile.SettingsPage
 import com.mehmtcan.brainscroll.ui.profile.StatsPage
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
@@ -121,7 +123,7 @@ private enum class Tab(val label: StringResource) {
 }
 
 /** Pages that open over the tabs with a back button (docs/decisions.md, Sadeleştirme). They are not tabs. */
-private enum class SubPage { Daily, Ranks, Stats, Favorites, Settings, FeedEditor }
+private enum class SubPage { Daily, Ranks, Friends, Stats, Favorites, Settings, FeedEditor }
 
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -160,7 +162,7 @@ fun AppShell(
     LaunchedEffect(socialViewModel) {
         socialViewModel.events.collect { event ->
             // An invite link opens the friends part, where the player sees what happened to it.
-            if (event.kind in INVITE_EVENTS) subPage = SubPage.Ranks
+            if (event.kind in INVITE_EVENTS) subPage = SubPage.Friends
             accountNotice = ShellNotice(noticeFor(event.kind), name = event.name)
             delay(ACCOUNT_NOTICE_MILLIS)
             accountNotice = null
@@ -222,6 +224,7 @@ fun AppShell(
                             onBack = { subPage = null },
                             title = when (subPage) {
                                 SubPage.Ranks -> stringResource(Res.string.tab_ranks)
+                                SubPage.Friends -> stringResource(Res.string.ranks_friends)
                                 SubPage.Stats -> stringResource(Res.string.stats_title)
                                 SubPage.Favorites -> stringResource(Res.string.favorites_title)
                                 SubPage.Settings -> stringResource(Res.string.profile_settings)
@@ -238,6 +241,14 @@ fun AppShell(
                                 else DailyGameScreen(dailyGameViewModel, onBack = { subPage = null })
                             }
                             SubPage.Ranks -> RanksScreen(
+                                viewModel = socialViewModel,
+                                signIn = RanksSignIn(
+                                    canSignInWithApple = viewModel.canSignInWithApple,
+                                    onSignInWithGoogle = viewModel::signInWithGoogle,
+                                    onSignInWithApple = viewModel::signInWithApple,
+                                ),
+                            )
+                            SubPage.Friends -> FriendsScreen(
                                 viewModel = socialViewModel,
                                 signIn = RanksSignIn(
                                     canSignInWithApple = viewModel.canSignInWithApple,
@@ -316,6 +327,7 @@ fun AppShell(
                                 ProfileTarget.Favorites -> SubPage.Favorites
                                 ProfileTarget.Settings -> SubPage.Settings
                                 ProfileTarget.Ranks -> SubPage.Ranks
+                                ProfileTarget.Friends -> SubPage.Friends
                             }
                         },
                     )

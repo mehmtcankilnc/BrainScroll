@@ -254,7 +254,7 @@ fun ArrowsPage(
                                 .then(if (isHead) Modifier.headSemantics(arrow, c, n) { tap(c) } else Modifier)
                                 .pointerInput(c) { detectTapGestures { tap(c) } },
                         ) {
-                            if (isHead) GuideMark(isGuided(c), Radius.card) { Spacer(Modifier.size(cell)) }
+                            GuideMark(isGuided(c), Radius.card) { Spacer(Modifier.size(cell)) }
                         }
                     }
                 }

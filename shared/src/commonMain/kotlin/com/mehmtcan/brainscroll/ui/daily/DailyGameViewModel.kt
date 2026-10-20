@@ -15,6 +15,7 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
 import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
@@ -281,6 +282,9 @@ class DailyGameViewModel(
     override fun extendFlow(page: Int, cell: Int): Boolean = act(false) { it.extendFlow(0, cell) }
     override fun endFlow(page: Int): FlowResult = act(FlowResult.Ignored) { it.endFlow(0) }
     override fun restartFlow(page: Int): Boolean = act(false) { it.restartFlow(0) }
+    override fun tapTopicWord(page: Int, word: Int): TopicGroupsResult = act(TopicGroupsResult.Ignored) { it.tapTopicWord(0, word) }
+    override fun shuffleTopicWords(page: Int): Boolean = act(false) { it.shuffleTopicWords(0) }
+    override fun clearTopicSelection(page: Int): Boolean = act(false) { it.clearTopicSelection(0) }
     override fun paintNonogram(page: Int, from: Int, to: Int, value: Int): NonogramResult = act(NonogramResult.Ignored) { it.paintNonogram(0, from, to, value) }
     override fun restartNonogram(page: Int): Boolean = act(false) { it.restartNonogram(0) }
     override fun dragLine(page: Int, cell: Int): LineResult = act(LineResult.Ignored) { it.dragLine(0, cell) }

@@ -30,6 +30,7 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
 import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
 import com.mehmtcan.brainscroll.game.tents.TentsResult
@@ -61,6 +62,8 @@ import com.mehmtcan.brainscroll.stats.ArrowsStats
 import com.mehmtcan.brainscroll.stats.AxisSumStats
 import com.mehmtcan.brainscroll.stats.BallSlideStats
 import com.mehmtcan.brainscroll.stats.FlowStats
+import com.mehmtcan.brainscroll.stats.TopicGroupsStats
+import com.mehmtcan.brainscroll.stats.computeTopicGroupsStats
 import com.mehmtcan.brainscroll.stats.computeFlowStats
 import com.mehmtcan.brainscroll.stats.computeBallSlideStats
 import com.mehmtcan.brainscroll.stats.computeAxisSumStats
@@ -160,6 +163,8 @@ data class ProfileState(
     val arrows: ArrowsStats = computeArrowsStats(emptyList()),
     /** Mini nonogram, from the endless feed. */
     val nonogram: NonogramStats = computeNonogramStats(emptyList()),
+    /** Word groups, from the endless feed. */
+    val topicGroups: TopicGroupsStats = computeTopicGroupsStats(emptyList()),
     /** Axis sum, from the endless feed. */
     val axisSum: AxisSumStats = computeAxisSumStats(emptyList()),
     /** Ball slide, from the endless feed. */
@@ -194,7 +199,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups),
     /** The games that offer a level choice. */
     val levelledGames: Set<GameKind> = LEVELLED_GAMES,
 ) : ViewModel(), FeedActions {
@@ -447,7 +452,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             // The time in seconds (anonymous, like the rest) is what lets the levels be balanced by how long boards really take.
             val seconds = result.durationMs?.let { mapOf("seconds" to (it / 1000).toString()) }.orEmpty()
@@ -775,6 +780,31 @@ class FeedViewModel(
         return f.restartArrows(page).also { publish() }
     }
 
+    /** Taps a word of the word groups board on [page]. Returns what happened, so the screen can buzz accordingly. */
+    override fun tapTopicWord(page: Int, word: Int): TopicGroupsResult {
+        val f = feed ?: return TopicGroupsResult.Ignored
+        val result = f.tapTopicWord(page, word)
+        publish()
+        // A board that just ended is a new result: the statistics and the cloud backup follow.
+        if (result == TopicGroupsResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Mixes up the words of the word groups board on [page]. */
+    override fun shuffleTopicWords(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.shuffleTopicWords(page).also { publish() }
+    }
+
+    /** Puts the picked words of the word groups board on [page] back. */
+    override fun clearTopicSelection(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.clearTopicSelection(page).also { publish() }
+    }
+
     /** Paints a stroke of cells on the nonogram board on [page]. Returns what happened, so the screen can buzz accordingly. */
     override fun paintNonogram(page: Int, from: Int, to: Int, value: Int): NonogramResult {
         val f = feed ?: return NonogramResult.Ignored
@@ -978,6 +1008,7 @@ class FeedViewModel(
             ballSlide = computeBallSlideStats(atLevel),
             colorFlow = computeFlowStats(atLevel),
             nonogram = computeNonogramStats(atLevel),
+            topicGroups = computeTopicGroupsStats(atLevel),
             tents = computeTentsStats(atLevel),
             dailyByLanguage = Language.entries.associateWith { computeStats(history, language = it, mode = Mode.DAILY) },
             dayStreak = DayStreaks.compute(

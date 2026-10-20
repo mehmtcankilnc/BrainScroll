@@ -100,7 +100,6 @@ import brainscroll.shared.generated.resources.ranks_streak_caption
 import brainscroll.shared.generated.resources.ranks_streaks
 import brainscroll.shared.generated.resources.ranks_moves
 import brainscroll.shared.generated.resources.ranks_stars
-import brainscroll.shared.generated.resources.ranks_today_game
 import brainscroll.shared.generated.resources.filter_game
 import brainscroll.shared.generated.resources.ranks_you
 import brainscroll.shared.generated.resources.scope_all_time
@@ -135,11 +134,15 @@ data class RanksSignIn(
     val onSignInWithApple: () -> Unit,
 )
 
-/** The ranks tab: speed and streak tables, and the friends. */
+/** The ranks tab: the speed and streak tables. The friends have a page of their own, in the profile. */
 @Composable
 fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modifier = Modifier) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
-    LaunchedEffect(viewModel) { viewModel.onShown() }
+    LaunchedEffect(viewModel) {
+        viewModel.onShown()
+        // The friends page leaves its section open; the tables start from the speed table again.
+        if (ui.section == Section.Friends) viewModel.selectSection(Section.Speed)
+    }
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
@@ -148,20 +151,41 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
         item { SectionTabs(ui, viewModel) }
         // The choices for the open table are always in view, each with its name above it.
         if (ui.section != Section.Friends) item { FilterBar(ui, viewModel) }
-
-        // Who may do what: anonymous players only look, friends need a username.
-        when (ui.access) {
-            Access.Offline -> item { Card { Body(stringResource(Res.string.gate_offline)) } }
-            Access.Anonymous -> item { SignInCard(signIn) }
-            Access.NeedsUsername -> item { UsernameCard(viewModel) }
-            Access.Checking, Access.Ready -> Unit
-        }
+        gateItems(ui, viewModel, signIn)
 
         when (ui.section) {
             Section.Speed -> speedSection(ui, viewModel)
             Section.Streak -> streakSection(ui, viewModel)
-            Section.Friends -> friendsSection(ui, viewModel)
+            Section.Friends -> Unit
         }
+    }
+}
+
+/** The friends page of the profile: my invite code, adding a friend, the requests and the list. */
+@Composable
+fun FriendsScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modifier = Modifier) {
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
+    LaunchedEffect(viewModel) {
+        viewModel.onShown()
+        viewModel.selectSection(Section.Friends)
+    }
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        gateItems(ui, viewModel, signIn)
+        friendsSection(ui, viewModel)
+    }
+}
+
+/** Who may do what: anonymous players only look, friends need a username. */
+private fun LazyListScope.gateItems(ui: SocialUiState, viewModel: SocialViewModel, signIn: RanksSignIn) {
+    when (ui.access) {
+        Access.Offline -> item { Card { Body(stringResource(Res.string.gate_offline)) } }
+        Access.Anonymous -> item { SignInCard(signIn) }
+        Access.NeedsUsername -> item { UsernameCard(viewModel) }
+        Access.Checking, Access.Ready -> Unit
     }
 }
 
@@ -170,14 +194,13 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
 /** Which table: one control across the width. */
 @Composable
 private fun SectionTabs(ui: SocialUiState, viewModel: SocialViewModel) {
-    val sections = listOf(Section.Speed, Section.Streak, Section.Friends)
+    val sections = listOf(Section.Speed, Section.Streak)
     SegmentedControl(
         options = listOf(
             stringResource(Res.string.ranks_speed),
             stringResource(Res.string.ranks_streaks),
-            stringResource(Res.string.ranks_friends),
         ),
-        selectedIndex = sections.indexOf(ui.section),
+        selectedIndex = sections.indexOf(ui.section).coerceAtLeast(0),
         onSelect = { viewModel.selectSection(sections[it]) },
     )
 }
@@ -247,18 +270,6 @@ private fun Filters(ui: SocialUiState, viewModel: SocialViewModel) {
                     onSelect = { viewModel.selectScope(if (it == 0) DailyScope.Today else DailyScope.AllTime) },
                 )
             }
-            if (ui.scope == DailyScope.Today) {
-                // Today there is one daily game, so there is nothing to choose: it is named.
-                Caption(stringResource(Res.string.ranks_today_game, ui.todayGame.displayName()))
-            } else {
-                LabeledControl(stringResource(Res.string.filter_game)) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                        GameKind.entries.forEach { game ->
-                            Choice(game.displayName(), ui.game == game) { viewModel.selectGame(game) }
-                        }
-                    }
-                }
-            }
             if (ui.game == GameKind.Word) {
                 LabeledControl(stringResource(Res.string.filter_language)) {
                     SegmentedControl(
@@ -319,7 +330,7 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
             rank = row.rank,
             name = row.username,
             isMe = row.isMe,
-            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else if (ui.game == GameKind.Line) stringResource(Res.string.ranks_stars, LineScoring.starsOf(row.guesses)) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
+            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else if (ui.game == GameKind.Line) stringResource(Res.string.ranks_stars, row.guesses.coerceIn(0, LineScoring.MAX_STARS)) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
         )
     }
 }

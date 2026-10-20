@@ -51,6 +51,15 @@ class DifficultyUiTest {
     }
 
     @Test
+    fun aShortNoteSaysTheLevelIsForEveryGameNotOne() = runComposeUiTest {
+        openEditor(levelled = setOf(GameKind.Hanoi))
+        onNodeWithTag("editorNext").performClick()
+        waitForIdle()
+        assertEquals(1, onAllNodesWithTag("difficultyNote").fetchSemanticsNodes().size)
+        assertTrue(hasAnyText("tüm oyunlarını etkiler", "applies to all your games"))
+    }
+
+    @Test
     fun choosingALevelSelectsItAndTheChoiceIsRemembered() = runComposeUiTest {
         openEditor(levelled = setOf(GameKind.Hanoi))
         onNodeWithTag("editorNext").performClick()

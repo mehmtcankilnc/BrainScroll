@@ -41,5 +41,6 @@ class GuideRingUiTest {
     @Test fun arrows() = ring(GameKind.Arrows, "arrows", "arrowsCell")
     @Test fun axissum() = ring(GameKind.AxisSum, "axissum", "axisSumCell")
     @Test fun nonogram() = ring(GameKind.Nonogram, "nonogram", "nonogramCell")
+    @Test fun topicgroups() = ring(GameKind.TopicGroups, "topicgroups", "topicTile")
     @Test fun jigsaw() = ring(GameKind.Jigsaw, "jigsaw", "sudokuCell")
 }

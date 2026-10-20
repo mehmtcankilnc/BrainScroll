@@ -125,7 +125,8 @@ class ArrowsRoundTest {
         val r = round()
         val step = assertNotNull(assertNotNull(r.guideTask())())
         assertEquals(GuideReason.ArrowsEscape, step.reason)
-        val cell = step.cells.single()
+        val arrow = puzzle.arrows.first { it.cells.toList() == step.cells }
+        val cell = arrow.head
         assertTrue(cell in ArrowsRules.free(puzzle, BooleanArray(puzzle.arrowCount) { true }).map { puzzle.arrows[it].head })
         assertEquals(listOf(cell / puzzle.size + 1, cell % puzzle.size + 1), step.numbers)
         r.finish()

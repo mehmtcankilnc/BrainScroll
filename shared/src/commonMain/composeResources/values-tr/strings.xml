@@ -411,6 +411,7 @@
     <string name="editor_next">İleri</string>
     <string name="editor_difficulty_title">Zorluk</string>
     <string name="editor_difficulty_subtitle">Akışındaki bütün oyunlar için tek seviye.</string>
+    <string name="editor_difficulty_note">Seçtiğin seviye tek bir oyunu değil, tüm oyunlarını etkiler.</string>
     <string name="editor_difficulty_label">Akış zorluğu</string>
     <string name="editor_subtitle">Oynamak istediğin oyunları seç.</string>
     <string name="editor_selected">%1$d oyun seçili</string>
@@ -438,6 +439,7 @@
     <string name="account_guest_hint">İlerlemeni yedeklemek için giriş yap</string>
     <string name="profile_stats_hint">Her oyun için sayılar</string>
     <string name="profile_favorites_hint">Kalp verdiğin bulmacalar</string>
+    <string name="profile_friends_hint">Davet kodun, istekler ve arkadaşların</string>
     <string name="profile_ranks_hint">En hızlı oyuncular ve en uzun seriler</string>
     <string name="profile_settings_hint">Uygulama dili, hesap, gizlilik</string>
     <string name="stat_won">Kazanılan</string>
@@ -706,5 +708,27 @@
     <string name="guide_blockout_down">İşaretli bloğu %1$d aşağı kaydır. En az hamleyle çözen yolun ilk adımı bu.</string>
     <string name="guide_blockout_left">İşaretli bloğu %1$d sola kaydır. En az hamleyle çözen yolun ilk adımı bu.</string>
     <string name="guide_blockout_right">İşaretli bloğu %1$d sağa kaydır. En az hamleyle çözen yolun ilk adımı bu.</string>
+    <string name="game_topicgroups">Tema Grupları</string>
+    <string name="topicgroups_found">Bulunan %1$d/4</string>
+    <string name="topicgroups_mistakes">Hata %1$d</string>
+    <string name="topicgroups_hint">Ortak konusu olan dört kelimeyi seç</string>
+    <string name="topicgroups_shuffle">Karıştır</string>
+    <string name="topicgroups_clear">Temizle</string>
+    <string name="topicgroups_won">Tüm gruplar bulundu!</string>
+    <string name="topicgroups_result">%1$d hata · %2$s</string>
+    <string name="a11y_topicgroups_found">4 gruptan %1$d tanesi bulundu</string>
+    <string name="a11y_topicgroups_mistakes">%1$d hata</string>
+    <string name="a11y_topicgroups_word">%1$s</string>
+    <string name="a11y_topicgroups_word_selected">%1$s, seçili</string>
+    <string name="a11y_topicgroups_group">%1$s: %2$s</string>
+    <string name="a11y_topicgroups_shuffle">Kelimeleri karıştır</string>
+    <string name="a11y_topicgroups_clear">Seçili kelimeleri geri bırak</string>
+    <string name="stats_topicgroups">Tema Grupları</string>
+    <string name="favorite_topicgroups_tag">Tema Grupları</string>
+    <string name="favorite_topicgroups_result">%1$d hata · %2$s</string>
+    <string name="guide_topicgroups_group">Bu dört kelime birlikte: %1$s.</string>
+    <string name="howto_card_topicgroups_1">On altı kelime dört grup saklıyor. Ortak konusu olan dört kelimeye dokun.</string>
+    <string name="howto_card_topicgroups_2">Doğru mu? Grup bulunur ve konusu görünür.</string>
+    <string name="howto_card_topicgroups_3">Yanlış mı? Bu bir hata sayılır. Kazanmak için dört grubu da bul.</string>
 
 </resources>

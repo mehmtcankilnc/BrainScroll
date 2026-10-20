@@ -21,6 +21,7 @@ import kotlin.time.Clock
 import com.mehmtcan.brainscroll.social.DailyRow
 import com.mehmtcan.brainscroll.social.FakeSocialApi
 import kotlin.test.Test
+import androidx.compose.ui.test.onAllNodesWithText
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -114,5 +115,24 @@ class DailyGameUiTest {
         waitForIdle()
         assertTrue(onAllNodesWithTag("starsSheet").fetchSemanticsNodes().isNotEmpty(), "the round i explains the stars")
         snap("212_daily_line_stars_info")
+    }
+
+    /** The server sends the stars themselves in the moves of a One Line row: 3 must show as 3, not be read as a score code (which gave 2). */
+    @Test
+    fun theSpeedTableShowsTheStarsTheServerSends() = runComposeUiTest {
+        val google = AccountState.SignedIn("user-1", AccountState.SignedIn.Kind.Google, "a@b.c")
+        val cloud = TestCloud(
+            account = FakeAccountService(google),
+            social = FakeSocialApi(member = true, username = "carol").apply {
+                gameToday = listOf(DailyRow(1, "alice", 3, 42_000), DailyRow(2, "carol", 3, 55_000, isMe = true), DailyRow(3, "bob", 1, 61_000))
+            },
+        )
+        start(cloud, openFeed = false, dailyGame = lineDay)
+        openTab("Sıralama", "Ranks")
+        waitUntil(timeoutMillis = 5_000) { hasAnyText("alice") }
+        snap("203_ranks_line_stars")
+        assertEquals(2, onAllNodesWithText("3 yıldız", substring = true).fetchSemanticsNodes().size + onAllNodesWithText("3 stars", substring = true).fetchSemanticsNodes().size)
+        assertTrue(hasAnyText("1 yıldız", "1 stars"))
+        assertFalse(hasAnyText("2 yıldız", "2 stars"))
     }
 }
