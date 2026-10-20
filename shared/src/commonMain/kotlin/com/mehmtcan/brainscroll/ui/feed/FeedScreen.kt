@@ -1,5 +1,9 @@
 package com.mehmtcan.brainscroll.ui.feed
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import com.mehmtcan.brainscroll.ui.sound.LocalSoundEffects
+import com.mehmtcan.brainscroll.ui.sound.rememberSoundHaptics
 import com.mehmtcan.brainscroll.ui.motion.LocalWinSignal
 import com.mehmtcan.brainscroll.ui.motion.WinSignal
 import androidx.compose.runtime.CompositionLocalProvider
@@ -143,7 +147,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val currentWord = current as? RoundSnapshot
 
     // Rejected guesses show a message. The tick makes the same error show again. (Only word puzzles have guesses.)
-    val haptics = LocalHaptics.current
+    val haptics = rememberSoundHaptics(LocalHaptics.current, LocalSoundEffects.current)
     LaunchedEffect(currentWord?.index, currentWord?.errorTick) {
         val word = currentWord ?: return@LaunchedEffect
         if (word.errorTick == 0) return@LaunchedEffect
@@ -199,9 +203,24 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 onStreak = { streakInfo = true },
                 onGuide = if (current.isFinished) null else ({ viewModel.requestGuide(page) }),
             )
-            Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+            // Is a finger down on the feed? Watched without taking part, so the lock after a winning swipe ends when it is lifted.
+            var fingerDown by remember { mutableStateOf(false) }
+            LaunchedEffect(winSignal.scrollLocked, fingerDown) {
+                if (winSignal.scrollLocked && !fingerDown) winSignal.scrollLocked = false
+            }
+            Box(
+                modifier = Modifier.weight(1f).fillMaxSize().pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            fingerDown = event.changes.any { it.pressed }
+                        }
+                    }
+                },
+            ) {
                 VerticalPager(
                     state = pagerState,
+                    userScrollEnabled = !winSignal.scrollLocked,
                     modifier = Modifier
                         .fillMaxSize(),
                     beyondViewportPageCount = 1,

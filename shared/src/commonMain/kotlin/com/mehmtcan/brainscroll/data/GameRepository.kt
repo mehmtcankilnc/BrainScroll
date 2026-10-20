@@ -23,6 +23,7 @@ private const val SETTING_WORD_LANGUAGES = "word_languages"
 private const val SETTING_APP_LANGUAGE = "app_language"
 private const val SETTING_SYNCED_USER = "synced_user_id"
 private const val SETTING_TELEMETRY = "telemetry_enabled"
+private const val SETTING_SOUND = "sound_enabled"
 private const val SETTING_GAMES = "feed_games"
 private const val SETTING_DIFFICULTY_PREFIX = "feed_difficulty_"
 private const val SETTING_PENDING_CRASH = "pending_crash"
@@ -217,7 +218,7 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             results.deleteAll()
             progress.deleteAll()
             queue.deleteAll()
-            settings.deleteAllExcept(listOf(SETTING_LANGUAGE, SETTING_WORD_LANGUAGES, SETTING_APP_LANGUAGE, SETTING_TELEMETRY))
+            settings.deleteAllExcept(listOf(SETTING_LANGUAGE, SETTING_WORD_LANGUAGES, SETTING_APP_LANGUAGE, SETTING_TELEMETRY, SETTING_SOUND))
         }
     }
 
@@ -225,6 +226,13 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
 
     /** Whether anonymous usage counts and crash reports may be sent. On until the player turns it off. */
     fun telemetryEnabled(): Boolean = settings.get(SETTING_TELEMETRY).executeAsOneOrNull() != "0"
+
+    /** Whether the games play their sound effects. On until the player turns it off. */
+    fun soundEnabled(): Boolean = settings.get(SETTING_SOUND).executeAsOneOrNull() != "0"
+
+    fun setSoundEnabled(enabled: Boolean) {
+        settings.put(SETTING_SOUND, if (enabled) "1" else "0")
+    }
 
     fun setTelemetryEnabled(enabled: Boolean) {
         settings.put(SETTING_TELEMETRY, if (enabled) "1" else "0")

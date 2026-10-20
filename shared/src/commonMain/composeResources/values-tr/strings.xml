@@ -731,4 +731,5 @@
     <string name="howto_card_topicgroups_2">Doğru mu? Grup bulunur ve konusu görünür.</string>
     <string name="howto_card_topicgroups_3">Yanlış mı? Bu bir hata sayılır. Kazanmak için dört grubu da bul.</string>
 
+    <string name="sound_title">Ses efektleri</string>
 </resources>

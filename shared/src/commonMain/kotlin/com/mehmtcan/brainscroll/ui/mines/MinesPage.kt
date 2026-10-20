@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.ui.mines
 
+import com.mehmtcan.brainscroll.ui.sound.withoutSound
+import com.mehmtcan.brainscroll.ui.sound.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -117,7 +119,7 @@ fun MinesPage(
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    val haptics = LocalHaptics.current
+    val haptics = LocalHaptics.current.withoutSound()
     val state = page.state
 
     val status = when (state.status) {
@@ -125,7 +127,13 @@ fun MinesPage(
         MinesStatus.Won -> WordleStatus.Won
         MinesStatus.Lost -> WordleStatus.Lost
     }
-    OutcomeHaptics(status, page.id)
+    OutcomeHaptics(status, page.id, haptics)
+    // One explosion, whatever the board does after it; a win has the chord of the app.
+    WinSound(
+        status,
+        listOf(WinStep(0, Sfx.UiWinChord, UI_WIN_CHORD_VOLUME)),
+        lostSteps = listOf(WinStep(0, Sfx.MinesBoom, MINES_BOOM_VOLUME)),
+    )
     val justFinished = rememberJustFinished(status)
 
     // In flag mode a tap flags and a long press opens: the two swap places.

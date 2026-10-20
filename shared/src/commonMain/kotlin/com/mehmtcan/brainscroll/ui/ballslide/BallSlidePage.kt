@@ -90,6 +90,7 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.sound.*
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -139,6 +140,7 @@ fun BallSlidePage(
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val haptics = LocalHaptics.current
+    val sounds = LocalSoundEffects.current
     val reduce = LocalReduceMotion.current
     val state = page.state
     val won = state.status == BallSlideStatus.Won
@@ -146,7 +148,9 @@ fun BallSlidePage(
 
     // The result and the buzz wait until the ball has stopped and the last cells are painted.
     val status = rememberSettledStatus(if (won) WordleStatus.Won else WordleStatus.Playing, MAX_SLIDE_MILLIS.toLong() + 100)
-    OutcomeHaptics(status, page.id)
+    // The win has the sound of this game, so the buzz of the outcome is the quiet one.
+    OutcomeHaptics(status, page.id, haptics.withoutSound())
+    WinSound(status, listOf(WinStep(0, Sfx.BallSlideWinChord, BALLSLIDE_CHORD_VOLUME)))
     val justFinished = rememberJustFinished(status)
 
     // The slide (or the undo) that is shown: the ball goes along the cells, and a cell is painted (or cleared) when the ball has
@@ -175,7 +179,16 @@ fun BallSlidePage(
                     handledMoves = state.moves
                     slideProgress.snapTo(0f)
                     slideMoves = state.moves
-                    slideProgress.animateTo(path.size.toFloat(), tween(duration(path.size), easing = FastOutSlowInEasing))
+                    // The ball plays the same note whenever it comes to the middle of a cell.
+                    var played = 0
+                    fun playCells(upTo: Float) {
+                        while (played < path.size && upTo >= played + BALLSLIDE_CELL_THRESHOLD) {
+                            sounds.play(BALLSLIDE_CELL_SOUND, BALLSLIDE_CELL_VOLUME)
+                            played++
+                        }
+                    }
+                    slideProgress.animateTo(path.size.toFloat(), tween(duration(path.size), easing = FastOutSlowInEasing)) { playCells(value) }
+                    playCells(path.size.toFloat())
                 }
                 drawnBall = state.ball
             }
@@ -199,7 +212,10 @@ fun BallSlidePage(
 
     val latestSlide by rememberUpdatedState { dir: Int ->
         when (onSlide(dir)) {
-            BallSlideResult.Moved, BallSlideResult.Solved -> haptics.perform(HapticKind.Light)
+            BallSlideResult.Moved, BallSlideResult.Solved -> {
+                haptics.perform(HapticKind.Light)
+                sounds.play(Sfx.BallSlideWhoosh, BALLSLIDE_WHOOSH_VOLUME)
+            }
             BallSlideResult.Ignored -> Unit
         }
     }

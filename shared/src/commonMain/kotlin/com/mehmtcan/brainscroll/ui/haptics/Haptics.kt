@@ -46,8 +46,7 @@ expect fun rememberPlatformHaptics(): Haptics
  * already finished when it appears (restored from the last session, or scrolled back to) stays quiet.
  */
 @Composable
-fun OutcomeHaptics(status: WordleStatus, pageId: String? = null) {
-    val haptics = LocalHaptics.current
+fun OutcomeHaptics(status: WordleStatus, pageId: String? = null, haptics: Haptics = LocalHaptics.current) {
     val signal = LocalWinSignal.current
     var wasPlaying by remember { mutableStateOf(status == WordleStatus.Playing) }
     LaunchedEffect(status) {

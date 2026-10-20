@@ -1,5 +1,8 @@
 package com.mehmtcan.brainscroll.ui.memory
 
+import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,8 +63,11 @@ private val CardGap = 8.dp
 private val MaxCard = 88.dp
 private const val COLUMNS = 4
 
-/** How long two wrong cards stay face up before they turn back, unless the next tap hides them sooner. */
-private const val MISMATCH_MILLIS = 900L
+/**
+ * How long two wrong cards stay face up before they turn back, unless the next tap hides them sooner: the second card turns over
+ * and the pair shakes first (about 600 ms), and then there is a moment to look at them.
+ */
+private const val MISMATCH_MILLIS = 1_400L
 
 /** One full-screen page of the feed: the title, the counters, the board of cards, and the hint or the result. */
 @Composable
@@ -77,6 +83,8 @@ fun MemoryPage(
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val haptics = LocalHaptics.current
+    val feedbackScope = rememberCoroutineScope()
+    val reduceMotion = LocalReduceMotion.current
     val state = page.state
 
     // The same buzz and arrival rules as the word puzzle: only a board that ends while it is shown celebrates.
@@ -122,8 +130,15 @@ fun MemoryPage(
         Board(page, onFlip = { card ->
             when (onFlip(card)) {
                 FlipResult.Opened -> haptics.perform(HapticKind.Light)
-                FlipResult.Match -> haptics.perform(HapticKind.Medium)
-                FlipResult.Mismatch -> haptics.perform(HapticKind.Warning)
+                // The answer comes when the second card has finished turning over, together with the shake of the two cards.
+                FlipResult.Match -> feedbackScope.launch {
+                    if (!reduceMotion) delay(MemoryFlipMillis)
+                    haptics.perform(HapticKind.Medium)
+                }
+                FlipResult.Mismatch -> feedbackScope.launch {
+                    if (!reduceMotion) delay(MemoryFlipMillis)
+                    haptics.perform(HapticKind.Warning)
+                }
                 FlipResult.Ignored -> Unit
             }
         }, modifier = Modifier.weight(1f).fillMaxWidth())
@@ -167,6 +182,7 @@ private fun Board(page: MemorySnapshot, onFlip: (Int) -> Unit, modifier: Modifie
                                 else -> CardFace.Down
                             },
                             size = cardSize,
+                            wrong = state.mismatchShown && index in state.faceUp,
                             onClick = { onFlip(index) },
                             modifier = Modifier.guideHighlight(isGuided(index), Radius.control),
                         )

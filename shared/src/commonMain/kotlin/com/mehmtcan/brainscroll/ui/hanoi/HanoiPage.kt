@@ -1,5 +1,10 @@
 package com.mehmtcan.brainscroll.ui.hanoi
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.rememberCoroutineScope
+import com.mehmtcan.brainscroll.ui.sound.withoutSound
+import com.mehmtcan.brainscroll.ui.sound.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -144,6 +149,9 @@ fun HanoiPage(
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val haptics = LocalHaptics.current
+    val quiet = haptics.withoutSound()
+    val sounds = LocalSoundEffects.current
+    val soundScope = rememberCoroutineScope()
     val reduce = LocalReduceMotion.current
     val state = page.state
     val finished = state.status == HanoiStatus.Won
@@ -225,7 +233,12 @@ fun HanoiPage(
                                         when (onMove(from, tower)) {
                                             HanoiResult.Moved, HanoiResult.Solved -> {
                                                 selected = null
-                                                haptics.perform(HapticKind.Medium)
+                                                quiet.perform(HapticKind.Medium)
+                                                // The disk lands when its move is over.
+                                                soundScope.launch {
+                                                    if (!reduce) delay(MOVE_MILLIS - 40L)
+                                                    sounds.play(Sfx.HanoiThunk, HANOI_THUNK_VOLUME)
+                                                }
                                                 if (!reduce) moving = DiskMove(from, tower, before[from].last(), before)
                                             }
                                             // Not allowed (a bigger disk on a smaller one): the disk stays lifted, the phone buzzes.

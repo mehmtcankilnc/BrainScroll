@@ -175,6 +175,7 @@ fun AppShell(
     val profileState by viewModel.profile.collectAsStateWithLifecycle()
     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
     val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
+    val soundOn by viewModel.soundEnabled.collectAsStateWithLifecycle()
     val social by socialViewModel.ui.collectAsStateWithLifecycle()
     val feedState by viewModel.state.collectAsStateWithLifecycle()
     // What the cloud brought in (after signing in to an existing account, for one) may change today's daily result.
@@ -290,6 +291,7 @@ fun AppShell(
                                 ),
                                 privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
                                 language = LanguageUi(selected = appLanguage, onSelect = viewModel::setAppLanguage),
+                                sound = PrivacyUi(enabled = soundOn, onChange = viewModel::setSoundEnabled),
                             )
                             null -> Unit
                         }

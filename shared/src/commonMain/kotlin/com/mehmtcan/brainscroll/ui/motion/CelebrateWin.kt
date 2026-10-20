@@ -11,6 +11,7 @@ import com.mehmtcan.brainscroll.game.PageSnapshot
 import kotlinx.coroutines.delay
 
 private const val CONFETTI_MILLIS = 2_300L
+private const val SCROLL_LOCK_CAP_MILLIS = 1_500L
 
 /**
  * Throws confetti once when [current] is won while it is on screen and its page has finished showing the win (see
@@ -24,6 +25,18 @@ fun CelebrateWin(current: PageSnapshot, signal: WinSignal? = LocalWinSignal.curr
     if (!current.isFinished) seenPlaying += current.id
     // Not before the page itself says its win is on show (the last disk has landed, the last tile has turned).
     val shown = signal?.isShown(current.id) ?: true
+    // From the winning move on, the feed does not scroll until the finger that made it is lifted (the screen lets go then; the cap
+    // is only for a finger that never comes up). The confetti is not waited for.
+    LaunchedEffect(current.id, current.isWon) {
+        if (current.isWon && current.id in seenPlaying && current.id !in celebrated) {
+            signal?.scrollLocked = true
+            try {
+                delay(SCROLL_LOCK_CAP_MILLIS)
+            } finally {
+                signal?.scrollLocked = false
+            }
+        }
+    }
     LaunchedEffect(current.id, current.isWon, shown) {
         if (current.isWon && shown && current.id in seenPlaying && celebrated.add(current.id)) {
             confettiFor = current.id

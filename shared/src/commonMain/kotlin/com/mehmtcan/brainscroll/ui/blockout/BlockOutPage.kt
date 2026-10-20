@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.ui.blockout
 
+import com.mehmtcan.brainscroll.ui.sound.withoutSound
+import com.mehmtcan.brainscroll.ui.sound.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -152,7 +154,10 @@ fun BlockOutPage(
 
     fun slide(piece: Int, to: Int): BlockOutResult {
         val result = onSlide(piece, to)
-        if (result != BlockOutResult.Ignored) haptics.perform(HapticKind.Medium)
+        if (result != BlockOutResult.Ignored) {
+            // A slide is a move, not an answer: the buzz only, no sound of its own.
+            haptics.withoutSound().perform(HapticKind.Medium)
+        }
         return result
     }
 

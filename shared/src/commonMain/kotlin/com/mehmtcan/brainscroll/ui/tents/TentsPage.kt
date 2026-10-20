@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -122,6 +125,13 @@ fun TentsPage(
     val type = BrainScrollTheme.typography
     val haptics = LocalHaptics.current
     val state = page.state
+    // A placement that breaks a rule sounds wrong: the number of broken cells went up.
+    val broken = state.conflicts.count { it }
+    var lastBroken by remember { mutableIntStateOf(broken) }
+    LaunchedEffect(broken) {
+        if (broken > lastBroken) haptics.perform(HapticKind.Warning)
+        lastBroken = broken
+    }
     val won = state.status == TentsStatus.Won
 
     // The result, the buzz and the card wait until the last tent has settled into its cell.

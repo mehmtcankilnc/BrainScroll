@@ -26,6 +26,12 @@ class WinSignal {
     }
 
     fun isShown(pageId: String): Boolean = pageId in shown
+
+    /**
+     * True from the move that wins a puzzle until the finger that made it is lifted: the feed does not scroll in that time, so a swipe
+     * that wins cannot carry the player to the next page. The feed screen lets go as soon as no finger is down.
+     */
+    var scrollLocked by mutableStateOf(false)
 }
 
 /** The signal of the screen the pages are on (the feed, the daily puzzle). Null in a page that stands on its own. */

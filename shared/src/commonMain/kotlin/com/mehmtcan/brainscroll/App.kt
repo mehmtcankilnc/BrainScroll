@@ -31,6 +31,8 @@ import com.mehmtcan.brainscroll.ui.motion.rememberReduceMotion
 import com.mehmtcan.brainscroll.telemetry.rememberPlatformInfo
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.social.SocialViewModel
+import com.mehmtcan.brainscroll.ui.sound.LocalSoundEffects
+import com.mehmtcan.brainscroll.ui.sound.rememberSoundEffects
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.rememberHighContrast
 import kotlin.time.Clock
@@ -113,7 +115,11 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
             // The daily puzzle is in the app language; the speed tables start on it too.
             dailyViewModel.selectLanguage(feedViewModel.resolvedAppLanguage)
         }
-        AppShell(feedViewModel, dailyViewModel, dailyGameViewModel, socialViewModel, appLanguage)
+        val soundOn by feedViewModel.soundEnabled.collectAsStateWithLifecycle()
+        val sounds = rememberSoundEffects(soundOn)
+        CompositionLocalProvider(LocalSoundEffects provides sounds) {
+            AppShell(feedViewModel, dailyViewModel, dailyGameViewModel, socialViewModel, appLanguage)
+        }
     }
     }
 }

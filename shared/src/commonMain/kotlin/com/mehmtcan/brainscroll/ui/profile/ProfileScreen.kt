@@ -750,7 +750,7 @@ private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
 
 /** The account and the privacy choice. */
 @Composable
-fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, modifier: Modifier = Modifier) {
+fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, sound: PrivacyUi, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     LazyColumn(
@@ -758,6 +758,7 @@ fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, m
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         item { LanguageSection(language) }
+        item { SoundSection(sound) }
         item { AccountSection(account) }
         item { PrivacySection(privacy) }
         item { Spacer(Modifier.height(Spacing.xl)) }

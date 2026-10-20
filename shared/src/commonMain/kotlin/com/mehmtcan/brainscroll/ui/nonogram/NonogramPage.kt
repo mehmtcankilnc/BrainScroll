@@ -1,10 +1,11 @@
 package com.mehmtcan.brainscroll.ui.nonogram
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -28,14 +29,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke as StrokeStyle
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -92,6 +107,7 @@ import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.sound.*
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollColors
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
@@ -110,6 +126,22 @@ private val SideRoom = 12.dp
 
 /** How long the board waits for the picture to take its colors before the result shows. */
 private const val COLOR_MILLIS = 400
+
+/** The whole reveal runs on one clock of this length; the parts below are cut out of it. */
+private const val REVEAL_MILLIS = 1000
+private const val REVEAL_DELAY = 100L
+private const val CLUES_MILLIS = 500
+private const val MORPH_MILLIS = 600
+private const val ZOOM_MILLIS = 900
+private const val ZOOM_TARGET = 1.2f
+
+private val CellRadius = 16.dp
+private val PictureRadius = 3.dp
+
+private fun lerpFloat(a: Float, b: Float, t: Float) = a + (b - a) * t
+
+/** One part of the reveal: [clock] (0..1 over [REVEAL_MILLIS]) turned into 0..1 over [millis] with the standard curve. */
+private fun part(clock: Float, millis: Int): Float = Motion.Standard.transform((clock * REVEAL_MILLIS / millis).coerceIn(0f, 1f))
 
 /** What a cell holds, for tests: see [NonogramMark]. */
 internal val NonogramCellValue = SemanticsPropertyKey<Int>("NonogramCellValue")
@@ -147,15 +179,59 @@ fun NonogramPage(
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    val haptics = LocalHaptics.current
+    val haptics = LocalHaptics.current.withoutSound()
     val state = page.state
     val won = state.status == NonogramStatus.Won
     val n = state.size
 
     // The result, the buzz and the card wait until the picture has taken its colors.
     val status = rememberSettledStatus(if (won) WordleStatus.Won else WordleStatus.Playing, COLOR_MILLIS.toLong() + 50)
-    OutcomeHaptics(status, page.id)
+    OutcomeHaptics(status, page.id, haptics)
+    // The sound starts with the picture taking its colors.
+    WinSound(if (won) WordleStatus.Won else WordleStatus.Playing, listOf(WinStep(0, Sfx.NonogramWinChord, NONOGRAM_CHORD_VOLUME)))
+    val sounds = LocalSoundEffects.current
+    val soundScope = rememberCoroutineScope()
+    // Counters of the sounds (not of the game): the strokes made and the rattles played, from the start of the puzzle.
+    var strokeNo by remember { mutableIntStateOf(0) }
+    var rattles by remember { mutableIntStateOf(0) }
+    var lastRattle by remember { mutableStateOf<TimeMark?>(null) }
+    LaunchedEffect(page.id, state.canRestart) {
+        if (!state.canRestart) {
+            strokeNo = 0
+            rattles = 0
+            lastRattle = null
+        }
+    }
+    /** One note for each cell the stroke fills, in the order of the stroke, [NONOGRAM_FILL_GAP_MILLIS] apart. */
+    fun playFill(from: Int, to: Int, before: List<Int>) {
+        val step = if (from / n == to / n) 1 else n
+        val dir = if (to >= from) step else -step
+        val cells = generateSequence(from) { if (it == to) null else it + dir }.toList()
+            .filter { before[it] != NonogramMark.FILLED }
+        val stroke = strokeNo++
+        soundScope.launch {
+            cells.forEachIndexed { k, _ ->
+                if (k > 0) delay(NONOGRAM_FILL_GAP_MILLIS)
+                sounds.play(nonogramFillSound(stroke, k), NONOGRAM_FILL_VOLUME)
+            }
+        }
+    }
     val justFinished = rememberJustFinished(status)
+    val reduceMotion = LocalReduceMotion.current
+
+    // The reveal after the win: numbers and empty cells step back, the picture closes up, grows and glows. 0 while playing.
+    // A puzzle that is already solved when it is first shown starts at the end.
+    val reveal = remember { Animatable(if (status == WordleStatus.Won) 1f else 0f) }
+    LaunchedEffect(status, reduceMotion) {
+        when {
+            status != WordleStatus.Won -> reveal.snapTo(0f)
+            reduceMotion || !justFinished -> reveal.snapTo(1f)
+            else -> {
+                delay(REVEAL_DELAY)
+                reveal.animateTo(1f, tween(REVEAL_MILLIS, easing = LinearEasing))
+            }
+        }
+    }
 
     // Which mark the finger puts down: filling or crossing.
     var mode by remember { mutableIntStateOf(NonogramMark.FILLED) }
@@ -171,6 +247,14 @@ fun NonogramPage(
     LaunchedEffect(state.rowDone, state.columnDone) {
         val newRow = state.rowDone.indices.firstOrNull { state.rowDone[it] && !seenRows[it] }
         val newColumn = state.columnDone.indices.firstOrNull { state.columnDone[it] && !seenColumns[it] }
+        if (newRow != null || newColumn != null) {
+            // Lines that finish together (a cell closes a row and a column) rattle once.
+            val last = lastRattle
+            if (last == null || last.elapsedNow() >= NONOGRAM_LINE_MIN_GAP_MILLIS.milliseconds) {
+                sounds.play(nonogramLineSound(rattles++), NONOGRAM_LINE_VOLUME)
+                lastRattle = TimeSource.Monotonic.markNow()
+            }
+        }
         completed = when {
             newRow != null -> true to newRow
             newColumn != null -> false to newColumn
@@ -202,7 +286,26 @@ fun NonogramPage(
         val accent = remember(state.picture, colors) { accentOf(state.picture, colors) }
         val language = stringResource(Res.string.nonogram_language)
 
-        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth().testTag("nonogramBoard"), contentAlignment = Alignment.Center) {
+        BoxWithConstraints(
+            modifier = Modifier.weight(1f).fillMaxWidth().testTag("nonogramBoard").drawBehind {
+                val glow = part(reveal.value, REVEAL_MILLIS)
+                if (glow > 0f) {
+                    // The glow ends a little before half the width, around the middle of the area.
+                    val radius = size.width * 1.05f
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            0f to accent.copy(alpha = 0x55 / 255f * glow),
+                            0.46f to accent.copy(alpha = 0f),
+                            center = center,
+                            radius = radius,
+                        ),
+                        radius = radius,
+                        center = center,
+                    )
+                }
+            },
+            contentAlignment = Alignment.Center,
+        ) {
             val density = LocalDensity.current
             val maxRowClues = state.rowClues.maxOf { it.size.coerceAtLeast(1) }
             val maxColumnClues = state.columnClues.maxOf { it.size.coerceAtLeast(1) }
@@ -219,6 +322,9 @@ fun NonogramPage(
             val clueWidth = cell * unit * maxRowClues
             val clueHeight = cell * unit * maxColumnClues
             val step = with(density) { (cell + CellGap).toPx() }
+            val boardSide = cell * n + CellGap * (n - 1)
+            // Grows to 1.2 unless the board would then leave the area it has (the page keeps 4 dp at the sides free).
+            val zoomTarget = minOf(ZOOM_TARGET, maxHeight / boardSide, (maxWidth + SideRoom * 2) / boardSide).coerceAtLeast(1f)
 
             fun cellAt(position: Offset): Int {
                 val column = (position.x / step).toInt().coerceIn(0, n - 1)
@@ -236,7 +342,21 @@ fun NonogramPage(
 
             // Shifted left by half the clue area, so the board itself is in the middle; the numbers may reach into the side padding.
             Column(
-                modifier = Modifier.wrapContentWidth(Alignment.CenterHorizontally, unbounded = true).offset(x = -(clueWidth + CellGap) / 2),
+                modifier = Modifier
+                    .wrapContentWidth(Alignment.CenterHorizontally, unbounded = true)
+                    .offset(x = -(clueWidth + CellGap) / 2)
+                    .graphicsLayer {
+                        // Grows around the middle of the board, which also moves to the middle of the area once the numbers are gone.
+                        if (reduceMotion) return@graphicsLayer
+                        val zoom = part(reveal.value, ZOOM_MILLIS)
+                        val boardLeft = (clueWidth + CellGap).toPx()
+                        val boardTop = (clueHeight + CellGap).toPx()
+                        val side = boardSide.toPx()
+                        transformOrigin = TransformOrigin((boardLeft + side / 2) / size.width, (boardTop + side / 2) / size.height)
+                        scaleX = 1f + (zoomTarget - 1f) * zoom
+                        scaleY = scaleX
+                        translationY = (size.height / 2 - boardTop - side / 2) * zoom
+                    },
                 horizontalAlignment = Alignment.Start,
             ) {
                 Row {
@@ -251,6 +371,7 @@ fun NonogramPage(
                                 length = clueHeight,
                                 description = stringResource(Res.string.a11y_nonogram_column_clue, column + 1, clueText(state.columnClues[column])),
                                 tag = "nonogramColumnClue",
+                                fade = { part(reveal.value, CLUES_MILLIS) },
                             )
                         }
                     }
@@ -267,13 +388,14 @@ fun NonogramPage(
                                 length = clueWidth,
                                 description = stringResource(Res.string.a11y_nonogram_row_clue, row + 1, clueText(state.rowClues[row])),
                                 tag = "nonogramRowClue",
+                                fade = { part(reveal.value, CLUES_MILLIS) },
                             )
                         }
                     }
                     Spacer(Modifier.width(CellGap))
                     Box(
                         modifier = Modifier
-                            .size(cell * n + CellGap * (n - 1))
+                            .size(boardSide)
                             .pointerInput(n, step) {
                                 awaitEachGesture {
                                     val down = awaitFirstDown()
@@ -293,7 +415,11 @@ fun NonogramPage(
                                         stroke = Stroke(start, end, value)
                                     }
                                     stroke = null
-                                    if (onPaint(start, end, value) != NonogramResult.Ignored) haptics.perform(HapticKind.Light)
+                                    val before = marks
+                                    if (onPaint(start, end, value) != NonogramResult.Ignored) {
+                                        haptics.perform(HapticKind.Light)
+                                        if (value == NonogramMark.FILLED) playFill(start, end, before)
+                                    }
                                 }
                             },
                     ) {
@@ -311,7 +437,12 @@ fun NonogramPage(
                                                 solved = won,
                                                 accent = accent,
                                                 size = cell,
-                                                onTap = { onPaint(index, index, if (state.marks[index] == mode) NonogramMark.EMPTY else mode) },
+                                                morph = { part(reveal.value, MORPH_MILLIS) },
+                                                onTap = {
+                                                    val value = if (state.marks[index] == mode) NonogramMark.EMPTY else mode
+                                                    val before = state.marks
+                                                    if (onPaint(index, index, value) != NonogramResult.Ignored && value == NonogramMark.FILLED) playFill(index, index, before)
+                                                },
                                             )
                                         }
                                     }
@@ -387,7 +518,7 @@ private fun inStroke(stroke: Stroke, cell: Int, n: Int): Boolean {
  * Their size follows the cell, not the text size setting: they have to fit.
  */
 @Composable
-private fun ClueBox(numbers: List<Int>, done: Boolean, vertical: Boolean, cell: Dp, length: Dp, description: String, tag: String) {
+private fun ClueBox(numbers: List<Int>, done: Boolean, vertical: Boolean, cell: Dp, length: Dp, description: String, tag: String, fade: () -> Float) {
     val colors = BrainScrollTheme.colors
     val density = LocalDensity.current
     val color by animateColorAsState(
@@ -401,7 +532,8 @@ private fun ClueBox(numbers: List<Int>, done: Boolean, vertical: Boolean, cell: 
         textAlign = TextAlign.Center,
     )
     val shown = numbers.ifEmpty { listOf(0) }
-    val modifier = if (vertical) Modifier.width(cell).height(length) else Modifier.width(length).height(cell)
+    val size = if (vertical) Modifier.width(cell).height(length) else Modifier.width(length).height(cell)
+    val modifier = size.graphicsLayer { alpha = 1f - fade() }
     val semantic = Modifier.testTag(tag).semantics(mergeDescendants = true) { contentDescription = description }
     if (vertical) {
         Column(modifier.then(semantic), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -420,10 +552,9 @@ private fun ClueBox(numbers: List<Int>, done: Boolean, vertical: Boolean, cell: 
  * (the finger itself is handled by the board).
  */
 @Composable
-private fun Cell(row: Int, column: Int, mark: Int, solved: Boolean, accent: Color, size: Dp, onTap: () -> Unit) {
+private fun Cell(row: Int, column: Int, mark: Int, solved: Boolean, accent: Color, size: Dp, morph: () -> Float, onTap: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val extraBorder = if (LocalHighContrast.current) 1f else 0f
-    val shape = Radius.card
     val reduce = LocalReduceMotion.current
     val filled = mark == NonogramMark.FILLED
     val fill by animateColorAsState(
@@ -452,8 +583,33 @@ private fun Cell(row: Int, column: Int, mark: Int, solved: Boolean, accent: Colo
                 role = Role.Button
                 onClick { onTap(); true }
             }
-            .background(fill, shape)
-            .border((1f + extraBorder).dp, colors.borderStrong.copy(alpha = 0.3f), shape),
+            .graphicsLayer {
+                // Once solved, the picture's cells grow by the gap and touch; the others (empty, crossed) fade out.
+                val m = if (solved) morph() else 0f
+                if (filled) {
+                    val grown = (size.toPx() + CellGap.toPx() * m) / size.toPx()
+                    scaleX = grown
+                    scaleY = grown
+                } else {
+                    alpha = 1f - m
+                }
+            }
+            .drawBehind {
+                val m = if (solved && filled) morph() else 0f
+                val corner = lerpFloat(CellRadius.toPx(), PictureRadius.toPx(), m)
+                drawRoundRect(fill, cornerRadius = CornerRadius(corner))
+                val borderAlpha = 0.3f * (1f - m)
+                if (borderAlpha > 0f) {
+                    val width = (1f + extraBorder).dp.toPx()
+                    drawRoundRect(
+                        colors.borderStrong.copy(alpha = borderAlpha),
+                        topLeft = Offset(width / 2, width / 2),
+                        size = Size(this.size.width - width, this.size.height - width),
+                        cornerRadius = CornerRadius((corner - width / 2).coerceAtLeast(0f)),
+                        style = StrokeStyle(width),
+                    )
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (mark == NonogramMark.CROSS) {

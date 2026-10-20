@@ -1,5 +1,10 @@
 package com.mehmtcan.brainscroll.ui.memory
 
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -49,6 +54,9 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 /** What a card shows (docs/design.md section 7). */
+/** How long a card takes to turn over: what the answer of a pair waits for. */
+const val MemoryFlipMillis = Motion.BASE + 100L
+
 enum class CardFace { Down, Up, Matched }
 
 /**
@@ -66,6 +74,8 @@ fun MemoryCard(
     size: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The card is one of two that do not match: once it has turned over, it shakes and takes the red outline. */
+    wrong: Boolean = false,
 ) {
     val colors = BrainScrollTheme.colors
     val reduce = LocalReduceMotion.current
@@ -81,6 +91,22 @@ fun MemoryCard(
     }
     val showFront = rotation.value > 90f
 
+    // The answer waits for the card to be face up. The shake goes left and right and settles.
+    val shake = remember { Animatable(0f) }
+    var wrongShown by remember { mutableStateOf(false) }
+    LaunchedEffect(wrong, reduce) {
+        if (!wrong) {
+            wrongShown = false
+            shake.snapTo(0f)
+            return@LaunchedEffect
+        }
+        if (!reduce) delay(MemoryFlipMillis)
+        wrongShown = true
+        if (!reduce) {
+            for (x in listOf(-1f, 1f, -0.6f, 0.6f, 0f)) shake.animateTo(x, tween(55, easing = LinearEasing))
+        }
+    }
+
     val description = cardDescription(position, symbol, face)
     Box(
         modifier = modifier
@@ -90,6 +116,7 @@ fun MemoryCard(
             .graphicsLayer {
                 rotationY = rotation.value
                 cameraDistance = 12f * density.density
+                translationX = shake.value * 5.dp.toPx()
             }
             .background(
                 when {
@@ -100,7 +127,7 @@ fun MemoryCard(
                 Radius.control,
             )
             .then(
-                if (showFront && face == CardFace.Up) Modifier.border((2.5f + extraBorder).dp, colors.pendingFill, Radius.control)
+                if (showFront && face == CardFace.Up) Modifier.border((2.5f + extraBorder).dp, if (wrongShown) colors.error else colors.pendingFill, Radius.control)
                 else if (!showFront) Modifier.border((1f + extraBorder).dp, colors.borderSubtle, Radius.control)
                 else Modifier,
             )

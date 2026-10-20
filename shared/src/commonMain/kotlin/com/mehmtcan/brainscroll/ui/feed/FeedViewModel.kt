@@ -337,6 +337,14 @@ class FeedViewModel(
     /** The language the app's texts are in now: the chosen one, or the device's. */
     val resolvedAppLanguage: Language get() = _appLanguage.value?.wordLanguage ?: startLanguage
 
+    private val _soundEnabled = MutableStateFlow(repository.soundEnabled())
+    val soundEnabled: StateFlow<Boolean> = _soundEnabled
+
+    fun setSoundEnabled(enabled: Boolean) {
+        repository.setSoundEnabled(enabled)
+        _soundEnabled.value = enabled
+    }
+
     fun setAppLanguage(language: AppLanguage?) {
         repository.saveAppLanguage(language)
         _appLanguage.value = language

@@ -1,5 +1,8 @@
 package com.mehmtcan.brainscroll.ui.feed
 
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
+import com.mehmtcan.brainscroll.ui.sound.LocalSoundEffects
+import com.mehmtcan.brainscroll.ui.sound.rememberSoundHaptics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.mehmtcan.brainscroll.game.guide.GuideStep
@@ -52,7 +55,9 @@ import com.mehmtcan.brainscroll.ui.wordle.WordlePage
  */
 @Composable
 fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: Set<String>, guide: GuideStep? = null, languageSwitch: LanguageSwitch? = null) {
-    CompositionLocalProvider(LocalGuide provides guide) {
+    // The sounds of the games come with their haptics: inside a game page only, never in the menus and the tabs.
+    val haptics = rememberSoundHaptics(LocalHaptics.current, LocalSoundEffects.current)
+    CompositionLocalProvider(LocalGuide provides guide, LocalHaptics provides haptics) {
         when (item) {
             is RoundSnapshot -> WordlePage(
                 round = item,
