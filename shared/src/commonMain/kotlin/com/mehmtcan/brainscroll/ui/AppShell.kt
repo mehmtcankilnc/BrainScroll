@@ -1,6 +1,11 @@
 package com.mehmtcan.brainscroll.ui
 
 import androidx.compose.foundation.background
+import com.mehmtcan.brainscroll.stats.Rescue
+import com.mehmtcan.brainscroll.ui.pro.LocalOpenPaywall
+import com.mehmtcan.brainscroll.ui.pro.PaywallSheet
+import com.mehmtcan.brainscroll.ui.pro.PaywallSource
+import com.mehmtcan.brainscroll.ui.profile.LookUi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import brainscroll.shared.generated.resources.back
@@ -146,6 +151,22 @@ fun AppShell(
     // Sign-in results are shown in a short message above whatever tab is open.
     // Friends and username messages too ([name] fills a %1$s in the text).
     var accountNotice by remember { mutableStateOf<ShellNotice?>(null) }
+    // The purchase screen, and the streak the "bring it back" version of it is about (docs/pro-plan.md section 7).
+    var paywall by remember { mutableStateOf<PaywallRequest?>(null) }
+    val openPaywall: (PaywallSource) -> Unit = { source -> paywall = PaywallRequest(source) }
+    // No free guide step left: the player tapped the light bulb, so the purchase screen is asked for.
+    LaunchedEffect(viewModel) { viewModel.paywallRequests.collect { openPaywall(it) } }
+    // The one paywall that comes by itself: a broken streak that Pro would bring back, offered when the player arrives at a
+    // puzzle (the feed, or the daily puzzle) and before one starts. Arriving takes a tap, so never on a cold start.
+    LaunchedEffect(tab, subPage) {
+        val arrivedAtPuzzle = (subPage == null && tab == Tab.Feed) || subPage == SubPage.Daily
+        if (arrivedAtPuzzle && paywall == null) {
+            viewModel.rescueOffer()?.let { rescue ->
+                viewModel.markRescueShown()
+                paywall = PaywallRequest(PaywallSource.StreakRescue, rescue)
+            }
+        }
+    }
     LaunchedEffect(viewModel) {
         viewModel.accountEvents.collect { event ->
             accountNotice = when (event) {
@@ -176,6 +197,8 @@ fun AppShell(
     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
     val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
     val soundOn by viewModel.soundEnabled.collectAsStateWithLifecycle()
+    val isPro by viewModel.pro.isPro.collectAsStateWithLifecycle()
+    val look by viewModel.look.collectAsStateWithLifecycle()
     val social by socialViewModel.ui.collectAsStateWithLifecycle()
     val feedState by viewModel.state.collectAsStateWithLifecycle()
     // What the cloud brought in (after signing in to an existing account, for one) may change today's daily result.
@@ -207,7 +230,7 @@ fun AppShell(
     // The sheets and dialogs are drawn by this host over everything, the tab bar and the system bars included.
     val overlayHost = remember { OverlayHost() }
     key(appLanguage) {
-    CompositionLocalProvider(LocalOverlayHost provides overlayHost) {
+    CompositionLocalProvider(LocalOverlayHost provides overlayHost, LocalOpenPaywall provides openPaywall) {
     Box(Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(colors.bgPage)) {
         Box(
@@ -292,6 +315,14 @@ fun AppShell(
                                 privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
                                 language = LanguageUi(selected = appLanguage, onSelect = viewModel::setAppLanguage),
                                 sound = PrivacyUi(enabled = soundOn, onChange = viewModel::setSoundEnabled),
+                                // Nothing to choose where nothing can be bought.
+                                look = if (viewModel.pro.available) LookUi(
+                                    look = look,
+                                    pro = isPro,
+                                    onAccent = viewModel::setAccent,
+                                    onAmoled = viewModel::setAmoled,
+                                    onPro = { openPaywall(PaywallSource.Theme) },
+                                ) else null,
                             )
                             null -> Unit
                         }
@@ -323,6 +354,8 @@ fun AppShell(
                         profile = profileState,
                         account = accountState,
                         username = social.username,
+                        onPro = openPaywall,
+                        telemetry = viewModel.telemetry,
                         onOpen = { target ->
                             subPage = when (target) {
                                 ProfileTarget.Stats -> SubPage.Stats
@@ -359,11 +392,17 @@ fun AppShell(
             onCancel = { replaying = null },
         )
     }
+    paywall?.let { request ->
+        PaywallSheet(request.source, onClose = { paywall = null }, telemetry = viewModel.telemetry, rescue = request.rescue)
+    }
     OverlayLayers(overlayHost)
     }
     }
     }
 }
+
+/** What the purchase screen is open for, and for a streak rescue the streak it is about. */
+private class PaywallRequest(val source: PaywallSource, val rescue: Rescue? = null)
 
 private class ShellNotice(val text: StringResource, val name: String? = null, val detail: String? = null)
 
@@ -447,7 +486,7 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
                             modifier = Modifier
                                 .width(20.dp)
                                 .height(3.dp)
-                                .background(if (active) colors.correctFill else Color.Transparent, Radius.pill),
+                                .background(if (active) colors.accent else Color.Transparent, Radius.pill),
                         )
                     }
                     }

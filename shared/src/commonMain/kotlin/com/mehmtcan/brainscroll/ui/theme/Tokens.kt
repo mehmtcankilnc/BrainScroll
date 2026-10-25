@@ -30,6 +30,9 @@ data class BrainScrollColors(
     val error: Color,
     val streakDay: Color,
     val streakAnswer: Color,
+    /** The color of the app's own controls (buttons, switches, the tab bar). Not the "correct" of a puzzle: that stays green. */
+    val accent: Color,
+    val accentOn: Color,
 )
 
 val DarkColors = BrainScrollColors(
@@ -50,7 +53,42 @@ val DarkColors = BrainScrollColors(
     error = Palette.Red500,
     streakDay = Palette.Orange500,
     streakAnswer = Palette.Blue500,
+    accent = Palette.Green500,
+    accentOn = Palette.Green900,
 )
+
+/** The accent colors Pro offers for the app's controls (docs/pro-plan.md section 8.5). The meaning colors of the games never change. */
+enum class Accent(val id: String) {
+    Green("green"),
+    Blue("blue"),
+    Orange("orange"),
+    Yellow("yellow");
+
+    companion object {
+        fun fromId(id: String?): Accent = entries.firstOrNull { it.id == id } ?: Green
+    }
+}
+
+internal val Accent.fill: Color
+    get() = when (this) {
+        Accent.Green -> Palette.Green500
+        Accent.Blue -> Palette.Blue500
+        Accent.Orange -> Palette.Orange500
+        Accent.Yellow -> Palette.Yellow500
+    }
+
+internal val Accent.on: Color
+    get() = when (this) {
+        Accent.Green -> Palette.Green900
+        Accent.Blue -> Palette.Blue900
+        Accent.Orange -> Palette.Orange900
+        Accent.Yellow -> Palette.Yellow900
+    }
+
+fun BrainScrollColors.withAccent(accent: Accent) = copy(accent = accent.fill, accentOn = accent.on)
+
+/** Pure black behind everything, for OLED screens. Cards keep their gray, so they still stand out. */
+fun BrainScrollColors.amoled() = copy(bgPage = Color.Black)
 
 /** Text styles (docs/design.md section 3). Color is left unset, callers choose it. */
 @Immutable

@@ -9,19 +9,41 @@ data class DayStreak(
     val freezesAvailable: Int,
 )
 
+/** How freezes are earned: one for every [every] days of streak, at most [max] kept. */
+data class FreezeRule(val every: Int, val max: Int) {
+    companion object {
+        val FREE = FreezeRule(every = 7, max = 1)
+
+        /** BrainScroll Pro (docs/pro-plan.md section 6). */
+        val PRO = FreezeRule(every = 4, max = 3)
+    }
+}
+
+/** What Pro would bring back: the streak with the free rule and with the Pro rule, when the Pro one is longer. */
+data class Rescue(val freeStreak: Int, val proStreak: Int)
+
 /**
  * Day streak with freezes. THIS IS A LOCAL DRAFT: the exact freeze rules are decided in phase 6
  * (docs/decisions.md). The draft follows the suggestion there: every 7 days of streak earn one freeze, at most
- * one is kept, and a freeze is used automatically to bridge a missed day.
+ * one is kept, and a freeze is used automatically to bridge a missed day. Pro earns them faster ([FreezeRule.PRO]).
  *
  * Days are Istanbul day indexes ([com.mehmtcan.brainscroll.time.IstanbulDay.dayIndex]). Only finishing the
  * daily puzzle matters, winning or losing, so the caller passes the days on which it was finished.
  */
 object DayStreaks {
-    const val FREEZE_EVERY = 7
-    const val MAX_FREEZES = 1
+    /** The rule of the player: Pro or not. The whole history is always counted with it. */
+    fun ruleFor(pro: Boolean): FreezeRule = if (pro) FreezeRule.PRO else FreezeRule.FREE
 
-    fun compute(finishedDays: Collection<Long>, today: Long): DayStreak {
+    /** [Rescue] when Pro would give a longer streak than the free rule does today, else null. */
+    fun rescue(finishedDays: Collection<Long>, today: Long): Rescue? {
+        val free = compute(finishedDays, today, FreezeRule.FREE).current
+        val pro = compute(finishedDays, today, FreezeRule.PRO).current
+        return if (pro > free) Rescue(free, pro) else null
+    }
+
+    fun compute(finishedDays: Collection<Long>, today: Long, pro: Boolean): DayStreak = compute(finishedDays, today, ruleFor(pro))
+
+    fun compute(finishedDays: Collection<Long>, today: Long, rule: FreezeRule = FreezeRule.FREE): DayStreak {
         val days = finishedDays.distinct().sorted()
         if (days.isEmpty()) return DayStreak(current = 0, best = 0, freezesAvailable = 0)
 
@@ -41,7 +63,7 @@ object DayStreaks {
                 }
                 else -> 1 // too many missed days: a new streak starts
             }
-            if (streak % FREEZE_EVERY == 0) freezes = minOf(freezes + 1, MAX_FREEZES)
+            if (streak % rule.every == 0) freezes = minOf(freezes + 1, rule.max)
             if (streak > best) best = streak
             previous = day
         }

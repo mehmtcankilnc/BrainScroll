@@ -25,12 +25,20 @@ private fun nunitoFontFamily(): FontFamily = FontFamily(
  * without passing them as parameters (CompositionLocal).
  */
 @Composable
-fun BrainScrollTheme(highContrast: Boolean = false, content: @Composable () -> Unit) {
+fun BrainScrollTheme(
+    highContrast: Boolean = false,
+    /** The look Pro unlocks. The caller passes the defaults for a player who is not Pro. */
+    accent: Accent = Accent.Green,
+    amoled: Boolean = false,
+    content: @Composable () -> Unit,
+) {
     val fontFamily = nunitoFontFamily()
     val typography = remember(fontFamily) { BrainScrollTypography(fontFamily) }
+    // The system's high contrast wins over pure black: it needs its lighter borders on a gray page to be seen.
+    val colors = DarkColors.withAccent(accent).let { if (highContrast) it.highContrast() else if (amoled) it.amoled() else it }
 
     CompositionLocalProvider(
-        LocalBrainScrollColors provides (if (highContrast) DarkColors.highContrast() else DarkColors),
+        LocalBrainScrollColors provides colors,
         LocalHighContrast provides highContrast,
         LocalBrainScrollTypography provides typography,
         content = content,

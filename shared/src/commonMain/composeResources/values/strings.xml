@@ -732,4 +732,48 @@
     <string name="howto_card_topicgroups_3">Wrong? That is a mistake. Find all four groups to win.</string>
 
     <string name="sound_title">Sound effects</string>
+
+    <!-- BrainScroll Pro (docs/pro-plan.md): one payment, for good. Nothing here talks about renewal or a trial. -->
+    <string name="pro_title">BrainScroll Pro</string>
+    <string name="pro_badge">PRO</string>
+    <string name="pro_tagline">Games are always free. Pro gives you convenience and looks, and supports me while I build the app.</string>
+    <string name="pro_benefit_hints">Unlimited guide steps</string>
+    <string name="pro_benefit_freeze">More streak freezes: one every 4 days, keep up to 3</string>
+    <string name="pro_benefit_look">Accent colors and a pure black theme</string>
+    <string name="pro_benefit_badge">A supporter badge on your profile</string>
+    <string name="pro_price_caption">One-time payment, yours for good</string>
+    <string name="pro_price_unavailable">The price could not be loaded. Check your connection.</string>
+    <string name="pro_buy">Get Pro</string>
+    <string name="pro_restore">Restore purchase</string>
+    <string name="pro_privacy">Privacy</string>
+    <string name="pro_working">Waiting for the store…</string>
+    <string name="pro_cancelled">Purchase cancelled.</string>
+    <string name="pro_pending">Your purchase is waiting for approval. Pro unlocks as soon as it is approved.</string>
+    <string name="pro_failed">The purchase could not be completed. Please try again.</string>
+    <string name="pro_restored">Pro restored. Thank you!</string>
+    <string name="pro_restore_none">No purchase found for this store account.</string>
+    <string name="pro_restore_failed">The store could not be reached. Try again later.</string>
+    <string name="pro_thanks">Pro is on. Thank you!</string>
+    <string name="pro_card_hint">Unlimited guide steps, more streak freezes, colors</string>
+    <string name="pro_active_title">Pro is active, thank you</string>
+    <string name="pro_active_hint">Restore purchase</string>
+    <string name="rescue_title">Your streak broke. You can bring it back.</string>
+    <string name="rescue_body">With Pro, your %1$d-day streak comes back.</string>
+    <string name="rescue_rule">Pro gives you 1 streak freeze every 4 days.</string>
+    <string name="rescue_later">Not now</string>
+    <string name="rescue_done">Your streak is back: %1$d days.</string>
+    <string name="guide_left">%1$d free guide steps left today</string>
+    <string name="guide_left_none">No free guide steps left today. Pro gives unlimited steps.</string>
+    <string name="guide_unlimited">Unlimited guide steps</string>
+    <string name="look_title">Look</string>
+    <string name="look_accent">Accent color</string>
+    <string name="look_amoled">Pure black</string>
+    <string name="look_use_pro">Use with Pro</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_yellow">Yellow</string>
+    <string name="streak_daily_3_pro">Every 4 days in a row earns a streak freeze (Pro). It covers a missed day by itself. You can keep up to three.</string>
+    <string name="streak_pro_hint">With BrainScroll Pro: one freeze every 4 days, keep up to 3.</string>
+    <string name="streak_pro_button">See BrainScroll Pro</string>
 </resources>

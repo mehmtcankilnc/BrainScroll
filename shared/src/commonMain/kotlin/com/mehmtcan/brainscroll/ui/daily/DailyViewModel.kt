@@ -22,6 +22,9 @@ import com.mehmtcan.brainscroll.telemetry.NoTelemetry
 import com.mehmtcan.brainscroll.telemetry.Telemetry
 import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.stats.DayStreaks
+import com.mehmtcan.brainscroll.ui.pro.NoPro
+import com.mehmtcan.brainscroll.ui.pro.ProState
+import kotlinx.coroutines.flow.drop
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -81,6 +84,8 @@ class DailyViewModel(
     /** Called after something changed that should be backed up (a favorite), so a sync can be scheduled. */
     private val onLocalChange: () -> Unit = {},
     private val telemetry: Telemetry = NoTelemetry,
+    /** Pro changes how the day streak is counted (more freezes). */
+    private val pro: ProState = NoPro,
 ) : ViewModel() {
 
     private var language = initialLanguage
@@ -108,6 +113,7 @@ class DailyViewModel(
             // Load as soon as there is an account, and again if the account changes (another account, other results).
             signedIn.collect { ready -> if (ready) refresh() else offline() }
         }
+        viewModelScope.launch { pro.isPro.drop(1).collect { publish() } }
     }
 
     // --- Screen actions ---
@@ -293,6 +299,7 @@ class DailyViewModel(
         val dayStreak = DayStreaks.compute(
             finishedDays = repository.history().filter { it.mode == Mode.DAILY }.map { it.dayIndex },
             today = today,
+            pro = pro.isPro.value,
         )
         return DailyUiState(
             language = language,

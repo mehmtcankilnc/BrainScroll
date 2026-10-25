@@ -78,7 +78,7 @@ fun NoticePill(text: String, modifier: Modifier = Modifier, detail: String? = nu
             }
             .then(swipe)
             .background(colors.bgSurface, Radius.card)
-            .border(1.5.dp, colors.correctFill, Radius.card)
+            .border(1.5.dp, colors.accent, Radius.card)
             .padding(start = Spacing.lg, end = if (onDismiss != null) 0.dp else Spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {

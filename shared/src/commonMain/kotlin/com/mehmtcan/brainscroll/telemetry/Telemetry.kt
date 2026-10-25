@@ -17,6 +17,12 @@ enum class TelemetryEvent(val wireName: String) {
     SignedIn("signed_in"),
     FriendAdded("friend_added"),
     AccountDeleted("account_deleted"),
+    PaywallShown("paywall_shown"),
+    PurchaseStarted("purchase_started"),
+    PurchaseSucceeded("purchase_succeeded"),
+    PurchaseCancelled("purchase_cancelled"),
+    PurchaseFailed("purchase_failed"),
+    PurchaseRestored("purchase_restored"),
 }
 
 /** One event with its small values, for example `outcome` to `WON`. */

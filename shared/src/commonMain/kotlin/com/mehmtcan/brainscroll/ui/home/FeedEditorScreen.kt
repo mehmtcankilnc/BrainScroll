@@ -123,7 +123,7 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                 )
                 if (step == 0) BasicText(
                     text = stringResource(Res.string.editor_selected, enabled.size),
-                    style = type.label.copy(color = colors.correctFill),
+                    style = type.label.copy(color = colors.accent),
                     modifier = Modifier.padding(start = Spacing.sm).testTag("editorSelectedCount"),
                 )
             }
@@ -212,7 +212,7 @@ private fun GameCard(game: GameKind, wordLanguage: Language, on: Boolean, onClic
             .testTag("gameCard")
             .clip(Radius.card)
             .background(colors.bgSurface)
-            .border(if (on) 1.5.dp else 1.dp, if (on) colors.correctFill else colors.borderSubtle, Radius.card)
+            .border(if (on) 1.5.dp else 1.dp, if (on) colors.accent else colors.borderSubtle, Radius.card)
             .semantics(mergeDescendants = true) {
                 contentDescription = name
                 selected = on
@@ -252,13 +252,13 @@ private fun CheckMark(on: Boolean, modifier: Modifier = Modifier) {
         modifier = modifier
             .size(CHECK_SIZE)
             .then(
-                if (on) Modifier.background(colors.correctFill, CircleShape)
+                if (on) Modifier.background(colors.accent, CircleShape)
                 else Modifier.border(1.5.dp, colors.borderStrong.copy(alpha = 0.7f), CircleShape),
             ),
         contentAlignment = Alignment.Center,
     ) {
         if (on) {
-            val color = colors.correctOn
+            val color = colors.accentOn
             Canvas(Modifier.size(10.dp)) {
                 val path = Path().apply {
                     moveTo(0.12f * size.width, 0.55f * size.height)

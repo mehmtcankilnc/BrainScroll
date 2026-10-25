@@ -47,7 +47,7 @@ fun SegmentedControl(
             options.forEachIndexed { index, label ->
                 val chosen = index == selectedIndex
                 val textColor by animateColorAsState(if (chosen) colors.textPrimary else colors.textSecondary, tween(Motion.BASE))
-                val barColor by animateColorAsState(if (chosen) colors.correctFill else colors.bgPage.copy(alpha = 0f), tween(Motion.BASE))
+                val barColor by animateColorAsState(if (chosen) colors.accent else colors.bgPage.copy(alpha = 0f), tween(Motion.BASE))
                 Column(
                     modifier = Modifier
                         .weight(1f)

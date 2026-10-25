@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.ui.howto.HowToIconButton
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.a11y_answer_streak
+import com.mehmtcan.brainscroll.game.guide.QuotaState
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -64,6 +65,8 @@ fun Hud(
     modifier: Modifier = Modifier,
     /** Asks the guide for the next move; null when the puzzle is over and there is nothing to ask. */
     onGuide: (() -> Unit)? = null,
+    /** The free guide steps left, shown as a badge on the light bulb. */
+    quota: QuotaState? = null,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
@@ -94,7 +97,7 @@ fun Hud(
             HowToIconButton(onHowToPlay)
         }
         // The light bulb is in the bar, next to the win streak, so it is never over the puzzle.
-        if (onGuide != null) GuideIconButton(onGuide)
+        if (onGuide != null) GuideIconButton(onGuide, quota = quota)
         val celebration = rememberStreakCelebration(solvedCount)
         Box(Modifier.testTag("winStreak")) {
             Box(Modifier.graphicsLayer { scaleX = celebration.scale; scaleY = celebration.scale }) {

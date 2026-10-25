@@ -37,7 +37,7 @@ fun AppButton(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .background(if (danger) colors.error else if (primary) colors.correctFill else colors.bgSurface, Radius.control)
+            .background(if (danger) colors.error else if (primary) colors.accent else colors.bgSurface, Radius.control)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -48,7 +48,7 @@ fun AppButton(
     ) {
         BasicText(
             text = text,
-            style = BrainScrollTheme.typography.label.copy(color = if (danger) colors.textPrimary else if (primary) colors.correctOn else colors.textPrimary),
+            style = BrainScrollTheme.typography.label.copy(color = if (danger) colors.textPrimary else if (primary) colors.accentOn else colors.textPrimary),
         )
     }
 }
@@ -68,7 +68,7 @@ fun AppOutlinedButton(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .border(1.5.dp, colors.correctFill, Radius.control)
+            .border(1.5.dp, colors.accent, Radius.control)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -77,7 +77,7 @@ fun AppOutlinedButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.correctFill))
+        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.accent))
     }
 }
 
@@ -105,7 +105,7 @@ fun AppTextButton(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.correctFill))
-        ForwardChevron(colors.correctFill)
+        BasicText(text = text, style = BrainScrollTheme.typography.label.copy(color = colors.accent))
+        ForwardChevron(colors.accent)
     }
 }

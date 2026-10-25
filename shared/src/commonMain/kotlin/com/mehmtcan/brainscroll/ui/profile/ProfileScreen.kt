@@ -78,6 +78,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.mehmtcan.brainscroll.telemetry.NoTelemetry
+import com.mehmtcan.brainscroll.telemetry.Telemetry
+import com.mehmtcan.brainscroll.ui.pro.PaywallSource
+import com.mehmtcan.brainscroll.ui.theme.Accent
+import com.mehmtcan.brainscroll.ui.theme.LocalBrainScrollColors
+import com.mehmtcan.brainscroll.ui.theme.withAccent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -206,6 +213,9 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     /** The name on the tables, once the player has one. */
     username: String? = null,
+    /** Opens the purchase screen from the Pro card. */
+    onPro: (PaywallSource) -> Unit = {},
+    telemetry: Telemetry = NoTelemetry,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
@@ -222,6 +232,7 @@ fun ProfileScreen(
         ) {
             Spacer(Modifier.height(Spacing.md))
             AccountCard(account, username) { onOpen(ProfileTarget.Settings) }
+            ProCard(onPro, telemetry)
 
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
                 StreakTile(
@@ -750,18 +761,23 @@ private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
 
 /** The account and the privacy choice. */
 @Composable
-fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, sound: PrivacyUi, modifier: Modifier = Modifier) {
+fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, sound: PrivacyUi, modifier: Modifier = Modifier, look: LookUi? = null) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    LazyColumn(
-        modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        item { LanguageSection(language) }
-        item { SoundSection(sound) }
-        item { AccountSection(account) }
-        item { PrivacySection(privacy) }
-        item { Spacer(Modifier.height(Spacing.xl)) }
+    // Tapping a locked accent color shows it on the whole page for a moment.
+    var preview by remember { mutableStateOf<Accent?>(null) }
+    CompositionLocalProvider(LocalBrainScrollColors provides (preview?.let { colors.withAccent(it) } ?: colors)) {
+        LazyColumn(
+            modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            item { LanguageSection(language) }
+            item { SoundSection(sound) }
+            if (look != null) item { LookSection(look, onPreview = { preview = it }) }
+            item { AccountSection(account) }
+            item { PrivacySection(privacy) }
+            item { Spacer(Modifier.height(Spacing.xl)) }
+        }
     }
 }
 

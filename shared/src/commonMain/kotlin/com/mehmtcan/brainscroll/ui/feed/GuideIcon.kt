@@ -21,7 +21,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.ui.graphics.graphicsLayer
 import brainscroll.shared.generated.resources.guide_button
+import brainscroll.shared.generated.resources.guide_left
+import brainscroll.shared.generated.resources.guide_left_none
+import com.mehmtcan.brainscroll.game.guide.QuotaState
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import org.jetbrains.compose.resources.stringResource
 
@@ -30,9 +35,16 @@ import org.jetbrains.compose.resources.stringResource
  * and in the bar, so it is never over the puzzle; the sentence of the guide shows under the board.
  */
 @Composable
-fun GuideIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun GuideIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, quota: QuotaState? = null) {
     val colors = BrainScrollTheme.colors
-    val description = stringResource(Res.string.guide_button)
+    // With a quota the bulb says how many free steps are left, and goes dim at none (still a button: it opens the purchase screen).
+    val showQuota = quota != null && !quota.unlimited
+    val left = quota?.freeLeft ?: 0
+    val description = when {
+        showQuota && left == 0 -> stringResource(Res.string.guide_left_none)
+        showQuota -> stringResource(Res.string.guide_left, left)
+        else -> stringResource(Res.string.guide_button)
+    }
     Box(
         modifier = modifier
             .testTag("guideButton")
@@ -41,7 +53,7 @@ fun GuideIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(32.dp).background(colors.bgSurface, CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(32.dp).graphicsLayer { alpha = if (showQuota && left == 0) 0.45f else 1f }.background(colors.bgSurface, CircleShape), contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(18.dp)) {
                 val stroke = 1.8.dp.toPx()
                 val w = size.width
@@ -51,6 +63,18 @@ fun GuideIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
                 drawArc(colors.pendingFill, startAngle = 0f, sweepAngle = 360f, useCenter = false, topLeft = Offset(0.17f * w, 0.02f * h), size = Size(0.66f * w, 0.66f * h), style = line)
                 drawLine(colors.pendingFill, Offset(0.36f * w, 0.82f * h), Offset(0.64f * w, 0.82f * h), stroke, StrokeCap.Round)
                 drawLine(colors.pendingFill, Offset(0.41f * w, 0.97f * h), Offset(0.59f * w, 0.97f * h), stroke, StrokeCap.Round)
+            }
+        }
+        if (showQuota) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .size(18.dp)
+                    .background(if (left == 0) colors.bgRaised else colors.pendingFill, CircleShape)
+                    .testTag("guideBadge"),
+                contentAlignment = Alignment.Center,
+            ) {
+                BasicText(left.toString(), style = BrainScrollTheme.typography.caption.copy(color = if (left == 0) colors.textSecondary else colors.pendingOn))
             }
         }
     }

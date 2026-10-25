@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.App
+import com.mehmtcan.brainscroll.ui.pro.StoreBilling
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.FakeAccountMergeApi
 import com.mehmtcan.brainscroll.account.FakeAccountService
@@ -99,6 +100,10 @@ internal fun ComposeUiTest.start(
     screen: Pair<Int, Int> = 390 to 740,
     /** The games that offer a level choice; a test sets them when it is about the choice. */
     levelledGames: Set<GameKind> = emptySet(),
+    /** The store behind Pro; a test about Pro passes a fake one. Without one the app is free and unlimited, as on the desktop. */
+    store: StoreBilling? = null,
+    /** Pixels per dp. 1 unless a test draws a store screenshot at a real phone's size. */
+    density: Float? = null,
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -109,10 +114,10 @@ internal fun ComposeUiTest.start(
         DisposableEffect(Unit) { onDispose { owner.viewModelStore.clear() } }
         CompositionLocalProvider(
             LocalViewModelStoreOwner provides owner,
-            LocalDensity provides Density(LocalDensity.current.density, fontScale),
+            LocalDensity provides Density(density ?: LocalDensity.current.density, fontScale),
         ) {
             Box(Modifier.requiredSize(screen.first.dp, screen.second.dp)) {
-                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame, levelledGames = levelledGames)
+                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame, levelledGames = levelledGames, store = { store })
             }
         }
     }

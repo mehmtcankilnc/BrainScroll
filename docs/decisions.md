@@ -52,6 +52,7 @@ Son güncelleme: 2026-10-05
 ## Seriler
 - **Gün serisi:** günlük bulmacayı **bitirmek** yeter (kaybetsen de). Kazanma oranı ayrı istatistik.
 - **Seri dondurma** hakkı vardır (kazanma/verilme kuralı Faz 6'da netleşir; öneri: her 7 günlük seride 1 hak, en fazla 1 biriken).
+  - **Pro farkı (2026-10-25):** BrainScroll Pro ile her **4** günlük seride 1 hak, en fazla **3** biriken (`FreezeRule.PRO`). Seri her zaman tüm geçmişten, oyuncunun kuralıyla yeniden hesaplanır; Pro alınınca kopuk bir serinin geri gelmesi bilerek kabul edildi (seri kurtarma). İade olursa ücretsiz kuralla hesaplanır, seri kısalabilir.
 - **Doğru cevap serisi (sonsuz akış):** yanlış/kayıp seriyi bozar. **Atlamak bozmaz, ama akış başına yalnızca 1 atlama hakkı** vardır.
   - "Akış" = oturum (karar, 2026-10-10): soğuk başlangıç veya 30 dk hareketsizlik sonrası atlama hakkı yenilenir. Seri ve atlanmış bulmacalar etkilenmez.
 
@@ -235,3 +236,13 @@ Son güncelleme: 2026-10-05
 - **Sıralama:** "Seri" sekmesi **günlük seriyi** yarıştırır (akıştaki sayı sıralamada hiç yoktu), olduğu gibi kalır.
 - **Sudoku ve hafıza:** hata sınırı kalktı (sudokuda 3, hafızada 6), oyunlar yalnız kazanılır. Hata sayacı bilgi amaçlı ("Hata: 2"), kazanma oranı sudoku istatistiğinden çıktı. Eski kayıp sonuçlar geçmişte kalır.
 - **Kaldırılan:** `Streaks`, `Stats.currentStreak/bestStreak`, kazanma serisi metinleri.
+
+## BrainScroll Pro: tek seferlik satın alım (2026-10-25, plan: `docs/pro-plan.md`)
+- **Model:** tek seferlik, süresiz "BrainScroll Pro" (non-consumable, `brainscroll_pro`, hak `pro`). Abonelik ve deneme yok. Fiyat $4.99, TR ve diğer ülkeler mağazanın basamağı; kodda fiyat yazılmaz.
+- **Neden abonelik değil:** ipucu limiti, seri hakkı ve tema tek seferlik rahatlıklardır; aylık değer üretmeyen şeye abonelik satılmaz. Arşiv, antrenman modu, özel ligler gibi sürekli değer üreten sunucu özellikleri çıkarsa abonelik yeniden konuşulur (plan bölüm 12).
+- **Pro içeriği:** sınırsız ipucu, daha çok seri koruma (4 günde 1, 3'e kadar), vurgu rengi ve saf siyah tema, destekçi rozeti. **Hiçbir oyun, günlük bulmaca, sıralama ya da arkadaş özelliği kilitlenmez.**
+- **Ücretsiz ipucu:** günde 5, cihazın yerel gece yarısında yenilenir. Kota `FeedViewModel.requestGuide` yolunda (feed testlerindeki `markGuided` çağrılarına dokunmaz): hak yoksa paywall açılır ve arama yapılmaz, hak ancak adım bulununca düşer, arama sürerken ikinci dokunuş yok sayılır. Hesap silme kotayı sıfırlamaz (`guide_quota_*` ve `pro_cached` korunur).
+- **Mağaza yokken** (masaüstü, RevenueCat anahtarı boş) uygulama ücretsiz ve limitsizdir; satın alım arayüzü görünmez. Satın alacak yer yokken duvar çıkmaz.
+- **Paywall:** her zaman kapatılabilir; kendiliğinden yalnızca seri kurtarma durumunda çıkar: ücretsiz seri 0, Pro seri en az 3, kopuş başına bir kez, günde en fazla bir otomatik paywall, yalnızca Akış'a ya da günlük bulmacaya gelince (bulmaca başlamadan). Pro seri kazandırmıyorsa hiç çıkmaz.
+- **Vurgu rengi:** yalnızca uygulamanın kendi kontrolleri (`accent`/`accentOn` jetonları). Doğru/yanlış/bekleyen renkleri (`correctFill`, `error`, `pendingFill`) oyun anlamı taşıdığı için değişmez. Kırmızı seçenek konmadı (hata rengiyle karışır). Saf siyah ve yüksek kontrast birlikte açıksa yüksek kontrast kazanır.
+- **Önbellek:** son bilinen `pro` yerelde (`pro_cached`); ağ hatası silmez, mağazanın kesin "hayır" cevabı (iade) siler.

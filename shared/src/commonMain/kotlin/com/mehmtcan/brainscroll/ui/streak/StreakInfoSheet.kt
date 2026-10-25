@@ -14,6 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import brainscroll.shared.generated.resources.streak_daily_3_pro
+import brainscroll.shared.generated.resources.streak_pro_button
+import brainscroll.shared.generated.resources.streak_pro_hint
+import com.mehmtcan.brainscroll.ui.pro.LocalOpenPaywall
+import com.mehmtcan.brainscroll.ui.pro.LocalPro
+import com.mehmtcan.brainscroll.ui.pro.PaywallSource
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -59,8 +67,11 @@ fun StreakInfoSheet(kind: StreakKind, current: Int?, best: Int, onClose: () -> U
     val type = BrainScrollTheme.typography
     val accent = if (kind == StreakKind.Daily) colors.streakDay else colors.streakAnswer
     val title = stringResource(if (kind == StreakKind.Daily) Res.string.streak_daily_title else Res.string.streak_win_title)
+    val pro = LocalPro.current
+    val isPro by pro.isPro.collectAsStateWithLifecycle()
+    val openPaywall = LocalOpenPaywall.current
     val lines = if (kind == StreakKind.Daily) {
-        listOf(Res.string.streak_daily_1, Res.string.streak_daily_2, Res.string.streak_daily_3)
+        listOf(Res.string.streak_daily_1, Res.string.streak_daily_2, if (isPro) Res.string.streak_daily_3_pro else Res.string.streak_daily_3)
     } else {
         listOf(Res.string.streak_win_1, Res.string.streak_win_2, Res.string.streak_win_3, Res.string.streak_win_4)
     }
@@ -81,6 +92,15 @@ fun StreakInfoSheet(kind: StreakKind, current: Int?, best: Int, onClose: () -> U
         }
         if (kind == StreakKind.Daily) {
             BasicText(stringResource(Res.string.daily_freeze, freezes), style = type.label.copy(color = colors.textSecondary))
+        }
+        // The way to Pro from here is a button the player taps; the sheet never opens it by itself.
+        if (kind == StreakKind.Daily && pro.available && !isPro) {
+            BasicText(stringResource(Res.string.streak_pro_hint), style = type.label.copy(color = colors.textSecondary))
+            AppButton(
+                text = stringResource(Res.string.streak_pro_button),
+                onClick = { close(); openPaywall(PaywallSource.Streak) },
+                modifier = Modifier.testTag("streakPro"),
+            )
         }
         AppButton(text = stringResource(Res.string.howto_done), onClick = close, primary = true, modifier = Modifier.padding(top = Spacing.xs))
     }

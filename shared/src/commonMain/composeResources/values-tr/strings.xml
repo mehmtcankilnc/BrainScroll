@@ -732,4 +732,48 @@
     <string name="howto_card_topicgroups_3">Yanlış mı? Bu bir hata sayılır. Kazanmak için dört grubu da bul.</string>
 
     <string name="sound_title">Ses efektleri</string>
+
+    <!-- BrainScroll Pro (docs/pro-plan.md): tek seferlik ödeme, süresiz. Burada yenileme ya da deneme geçmez. -->
+    <string name="pro_title">BrainScroll Pro</string>
+    <string name="pro_badge">PRO</string>
+    <string name="pro_tagline">Oyunlar her zaman ücretsiz. Pro sana kolaylık ve görünüm verir ve uygulamayı geliştirmeme destek olur.</string>
+    <string name="pro_benefit_hints">Sınırsız ipucu</string>
+    <string name="pro_benefit_freeze">Daha çok seri koruma: 4 günde 1 hak, 3'e kadar saklama</string>
+    <string name="pro_benefit_look">Vurgu renkleri ve saf siyah tema</string>
+    <string name="pro_benefit_badge">Profilinde destekçi rozeti</string>
+    <string name="pro_price_caption">Tek seferlik ödeme, süresiz</string>
+    <string name="pro_price_unavailable">Fiyat yüklenemedi. Bağlantını kontrol et.</string>
+    <string name="pro_buy">Pro'yu al</string>
+    <string name="pro_restore">Satın alımı geri yükle</string>
+    <string name="pro_privacy">Gizlilik</string>
+    <string name="pro_working">Mağaza bekleniyor…</string>
+    <string name="pro_cancelled">Satın alma iptal edildi.</string>
+    <string name="pro_pending">Satın alımın onay bekliyor. Onaylanır onaylanmaz Pro açılır.</string>
+    <string name="pro_failed">Satın alma tamamlanamadı. Lütfen tekrar dene.</string>
+    <string name="pro_restored">Pro geri yüklendi. Teşekkürler!</string>
+    <string name="pro_restore_none">Bu mağaza hesabında satın alım bulunamadı.</string>
+    <string name="pro_restore_failed">Mağazaya ulaşılamadı. Sonra tekrar dene.</string>
+    <string name="pro_thanks">Pro aktif, teşekkürler!</string>
+    <string name="pro_card_hint">Sınırsız ipucu, daha çok seri koruma, renkler</string>
+    <string name="pro_active_title">Pro aktif, teşekkürler</string>
+    <string name="pro_active_hint">Satın alımı geri yükle</string>
+    <string name="rescue_title">Serin koptu, geri getirebilirsin.</string>
+    <string name="rescue_body">Pro ile %1$d günlük serin geri gelir.</string>
+    <string name="rescue_rule">Pro, 4 günde 1 seri koruma hakkı verir.</string>
+    <string name="rescue_later">Şimdi değil</string>
+    <string name="rescue_done">Serin geri geldi: %1$d gün.</string>
+    <string name="guide_left">Bugün %1$d ücretsiz ipucu kaldı</string>
+    <string name="guide_left_none">Bugünkü ücretsiz ipucu hakkı bitti. Pro ile sınırsız.</string>
+    <string name="guide_unlimited">Sınırsız ipucu</string>
+    <string name="look_title">Görünüm</string>
+    <string name="look_accent">Vurgu rengi</string>
+    <string name="look_amoled">Saf siyah</string>
+    <string name="look_use_pro">Pro ile kullan</string>
+    <string name="accent_green">Yeşil</string>
+    <string name="accent_blue">Mavi</string>
+    <string name="accent_orange">Turuncu</string>
+    <string name="accent_yellow">Sarı</string>
+    <string name="streak_daily_3_pro">Üst üste her 4 günde bir seri dondurma hakkı kazanırsın (Pro). Kaçırdığın günü kendiliğinden kapatır. En fazla üç tane tutulur.</string>
+    <string name="streak_pro_hint">BrainScroll Pro ile: 4 günde 1 hak, 3'e kadar saklama.</string>
+    <string name="streak_pro_button">BrainScroll Pro'ya bak</string>
 </resources>

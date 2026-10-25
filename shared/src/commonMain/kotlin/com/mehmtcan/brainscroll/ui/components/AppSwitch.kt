@@ -30,7 +30,7 @@ import com.mehmtcan.brainscroll.ui.theme.Radius
 @Composable
 fun AppSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, description: String, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
-    val track by animateColorAsState(if (checked) colors.correctFill else colors.bgRaised, tween(Motion.BASE, easing = Motion.Standard))
+    val track by animateColorAsState(if (checked) colors.accent else colors.bgRaised, tween(Motion.BASE, easing = Motion.Standard))
     val knobOffset by animateDpAsState(if (checked) 22.dp else 2.dp, tween(Motion.BASE, easing = Motion.Standard))
     Box(
         modifier = modifier
@@ -50,7 +50,7 @@ fun AppSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, description:
             Modifier
                 .offset(x = knobOffset)
                 .size(24.dp)
-                .background(if (checked) colors.correctOn else colors.textSecondary, CircleShape),
+                .background(if (checked) colors.accentOn else colors.textSecondary, CircleShape),
         )
     }
 }

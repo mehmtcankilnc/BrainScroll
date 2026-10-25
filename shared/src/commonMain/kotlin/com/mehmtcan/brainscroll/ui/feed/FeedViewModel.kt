@@ -93,6 +93,19 @@ import com.mehmtcan.brainscroll.stats.computeTargetStats
 import com.mehmtcan.brainscroll.stats.computeMemoryStats
 import com.mehmtcan.brainscroll.stats.computeTubesStats
 import com.mehmtcan.brainscroll.stats.DayStreaks
+import com.mehmtcan.brainscroll.stats.Rescue
+import com.mehmtcan.brainscroll.stats.RescuePolicy
+import com.mehmtcan.brainscroll.game.guide.GuideQuota
+import com.mehmtcan.brainscroll.game.guide.QuotaState
+import com.mehmtcan.brainscroll.time.localDayIndex
+import com.mehmtcan.brainscroll.ui.theme.Accent
+import com.mehmtcan.brainscroll.ui.theme.Look
+import com.mehmtcan.brainscroll.ui.pro.PaywallSource
+import com.mehmtcan.brainscroll.ui.pro.ProController
+import com.mehmtcan.brainscroll.ui.pro.StoreBilling
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import com.mehmtcan.brainscroll.stats.Stats
 import com.mehmtcan.brainscroll.stats.atLevel
 import com.mehmtcan.brainscroll.stats.computeStats
@@ -202,7 +215,12 @@ class FeedViewModel(
     private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups),
     /** The games that offer a level choice. */
     val levelledGames: Set<GameKind> = LEVELLED_GAMES,
+    /** The store behind Pro; null means free with nothing to buy (desktop, tests, no keys yet). */
+    billing: StoreBilling? = null,
 ) : ViewModel(), FeedActions {
+    /** BrainScroll Pro. The quota, the streak rule and the look all ask it. */
+    val pro = ProController(billing, repository, viewModelScope)
+
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
 
@@ -250,24 +268,86 @@ class FeedViewModel(
     /** The step the guide gave, with the page it is for: it only counts while that page looks the same. */
     val guide: StateFlow<GuideState?> = _guide
 
-    /** The player asks the guide for a step on page [index]. The puzzle is neutral from then on. */
+    private var guideSearching = false
+
+    /** No limit for Pro, and none where nothing can be bought (desktop, no store keys): a limit with no way out would be a wall. */
+    private fun unlimitedGuide(): Boolean = pro.isPro.value || !pro.available
+
+    private fun readQuota(): QuotaState = GuideQuota.state(localDayIndex(now()), repository.guideUse(), unlimitedGuide())
+
+    private val _quota = MutableStateFlow(readQuota())
+
+    /** The free guide steps left today (docs/pro-plan.md section 5), for the badge on the light bulb. */
+    val quota: StateFlow<QuotaState> = _quota
+
+    /** Looks at the clock again: a new day gives the free steps back. Called whenever the feed is shown. */
+    fun refreshQuota() {
+        _quota.value = readQuota()
+    }
+
+    private val _paywallRequests = MutableSharedFlow<PaywallSource>(extraBufferCapacity = 1)
+
+    /** Something wants the purchase screen open (no free guide step left). The shell shows it. */
+    val paywallRequests: SharedFlow<PaywallSource> = _paywallRequests
+
+    /**
+     * The player asks the guide for a step on page [index]. The puzzle is neutral from then on.
+     *
+     * The free steps are counted here and not in the feed: with none left the purchase screen is asked for and nothing is
+     * searched; a step is spent only once one was found (no step found costs nothing); and a second tap while a search runs
+     * is ignored, so one search is one step.
+     */
     fun requestGuide(index: Int) {
+        if (guideSearching) return
         val f = feed ?: return
         val page = f.snapshot().pages.getOrNull(index) ?: return
+        _quota.value = readQuota()
+        if (!_quota.value.canGuide) {
+            _paywallRequests.tryEmit(PaywallSource.Guide)
+            return
+        }
         val task = f.guideTask(index) ?: return
+        guideSearching = true
         viewModelScope.launch {
-            // The search can take a moment on a hard position: not on the thread of the screen.
-            val step = withContext(Dispatchers.Default) { task() }
-            if (step == null) {
-                _guide.value = null
-                _guideNothing.tryEmit(Unit)
-                return@launch
+            try {
+                // The search can take a moment on a hard position: not on the thread of the screen.
+                val step = withContext(Dispatchers.Default) { task() }
+                if (step == null) {
+                    _guide.value = null
+                    _guideNothing.tryEmit(Unit)
+                    return@launch
+                }
+                repository.setGuideUse(GuideQuota.spend(localDayIndex(now()), repository.guideUse(), unlimitedGuide()))
+                _quota.value = readQuota()
+                f.markGuided(index)
+                publish()
+                _guide.value = GuideState(page, step)
+            } finally {
+                guideSearching = false
             }
-            f.markGuided(index)
-            publish()
-            _guide.value = GuideState(page, step)
         }
     }
+
+    /**
+     * The "bring your streak back" offer, if the player should see it now (docs/pro-plan.md section 7.3). Asking does not count
+     * as showing it: call [markRescueShown] when the screen really opens.
+     */
+    fun rescueOffer(): Rescue? = if (!pro.available) null else RescuePolicy.offer(
+        finishedDays = dailyFinishedDays(),
+        today = IstanbulDay.dayIndex(now()),
+        pro = pro.isPro.value,
+        shownBreak = repository.rescueShownFor(),
+        autoPaywallDay = repository.autoPaywallDay(),
+        localToday = localDayIndex(now()),
+    )
+
+    /** The rescue screen was shown: not again for this break, and no other paywall by itself today. */
+    fun markRescueShown() {
+        RescuePolicy.breakOf(dailyFinishedDays())?.let(repository::setRescueShownFor)
+        repository.setAutoPaywallDay(localDayIndex(now()))
+    }
+
+    private fun dailyFinishedDays(): List<Long> = repository.history().filter { it.mode == Mode.DAILY }.map { it.dayIndex }
 
     fun clearGuide() {
         _guide.value = null
@@ -336,6 +416,21 @@ class FeedViewModel(
 
     /** The language the app's texts are in now: the chosen one, or the device's. */
     val resolvedAppLanguage: Language get() = _appLanguage.value?.wordLanguage ?: startLanguage
+
+    private val _look = MutableStateFlow(Look(repository.savedAccent(), repository.savedAmoled()))
+
+    /** The accent color and pure black the player picked. Whether they apply depends on Pro: see [Look.forPro]. */
+    val look: StateFlow<Look> = _look
+
+    fun setAccent(accent: Accent) {
+        repository.saveAccent(accent)
+        _look.value = _look.value.copy(accent = accent)
+    }
+
+    fun setAmoled(on: Boolean) {
+        repository.saveAmoled(on)
+        _look.value = _look.value.copy(amoled = on)
+    }
 
     private val _soundEnabled = MutableStateFlow(repository.soundEnabled())
     val soundEnabled: StateFlow<Boolean> = _soundEnabled
@@ -475,6 +570,10 @@ class FeedViewModel(
                 }
             }
         }
+        // Pro changed (bought, restored, refunded): the free steps, the streak and the look follow.
+        viewModelScope.launch { pro.isPro.drop(1).collect { refreshQuota(); refreshProfile() } }
+        // The purchase follows the player when the account changes (guest to Apple sign-in, a new guest after deleting).
+        viewModelScope.launch { signedInUser.filterNotNull().distinctUntilChanged().collect { pro.identify(it) } }
         viewModelScope.launch { loadFeed() }
         viewModelScope.launch { account.state.collect { handleMerge(it) } }
         viewModelScope.launch { account.start() }
@@ -1022,6 +1121,7 @@ class FeedViewModel(
             dayStreak = DayStreaks.compute(
                 finishedDays = history.filter { it.mode == Mode.DAILY }.map { it.dayIndex },
                 today = today,
+                pro = pro.isPro.value,
             ),
             dailyDoneToday = history.any { it.mode == Mode.DAILY && it.dayIndex == today },
             bestFlow = bestFlow,

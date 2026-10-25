@@ -33,6 +33,9 @@ import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import com.mehmtcan.brainscroll.ui.sound.LocalSoundEffects
 import com.mehmtcan.brainscroll.ui.sound.rememberSoundEffects
+import com.mehmtcan.brainscroll.ui.pro.LocalPro
+import com.mehmtcan.brainscroll.ui.pro.StoreBilling
+import com.mehmtcan.brainscroll.ui.pro.createStoreBilling
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.rememberHighContrast
 import kotlin.time.Clock
@@ -50,17 +53,19 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
     games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups),
     /** The games that offer a level choice. Tests can ask for a set before every game has levels. */
     levelledGames: Set<GameKind> = LEVELLED_GAMES,
+    /** The store behind Pro. Tests pass a fake one; null means free with nothing to buy. */
+    store: () -> StoreBilling? = ::createStoreBilling,
 ) {
     // Tests pass their own haptics to see when the phone would buzz.
     CompositionLocalProvider(
         LocalHaptics provides (haptics ?: rememberPlatformHaptics()),
         LocalReduceMotion provides (reduceMotion ?: rememberReduceMotion()),
     ) {
-    BrainScrollTheme(highContrast = highContrast ?: rememberHighContrast()) {
         // The puzzles start in the device language (Turkish or English) unless the player chose one before.
         val deviceLanguage = AppLanguage.forDevice(Locale.current.language).wordLanguage
         val driverProvider = rememberDriverProvider()
         val platformInfo = rememberPlatformInfo()
+        val storeBilling = remember { store() }
         val feedViewModel = viewModel {
             FeedViewModel(
                 repository = GameRepository(BrainScrollDatabase(driverProvider.create())),
@@ -70,6 +75,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 platformInfo = platformInfo,
                 games = games,
                 levelledGames = levelledGames,
+                billing = storeBilling,
             )
         }
         // The daily puzzle shares the database and the account with the feed, so it is built from what the feed owns.
@@ -82,6 +88,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 now = { Clock.System.now().toEpochMilliseconds() },
                 onLocalChange = feedViewModel::requestSync,
                 telemetry = feedViewModel.telemetry,
+                pro = feedViewModel.pro,
             )
         }
         // The daily puzzle of the days when it is not the word puzzle: played on the device, sent to the server after.
@@ -94,6 +101,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
                 gameOf = dailyGame,
                 language = { feedViewModel.resolvedAppLanguage },
                 onLocalChange = feedViewModel::requestSync,
+                pro = feedViewModel.pro,
             )
         }
         // The ranks tab uses the same account and database, and gets the invite codes the feed receives through links.
@@ -117,9 +125,13 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
         }
         val soundOn by feedViewModel.soundEnabled.collectAsStateWithLifecycle()
         val sounds = rememberSoundEffects(soundOn)
-        CompositionLocalProvider(LocalSoundEffects provides sounds) {
+        val isPro by feedViewModel.pro.isPro.collectAsStateWithLifecycle()
+        val look by feedViewModel.look.collectAsStateWithLifecycle()
+        val shown = look.forPro(isPro)
+        BrainScrollTheme(highContrast = highContrast ?: rememberHighContrast(), accent = shown.accent, amoled = shown.amoled) {
+        CompositionLocalProvider(LocalSoundEffects provides sounds, LocalPro provides feedViewModel.pro) {
             AppShell(feedViewModel, dailyViewModel, dailyGameViewModel, socialViewModel, appLanguage)
         }
-    }
+        }
     }
 }

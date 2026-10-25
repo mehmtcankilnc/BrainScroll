@@ -50,6 +50,8 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.sqldelight.nativeDriver)
             implementation(libs.ktor.client.darwin)
+            // In-app purchases. Android and iOS only: the desktop build has no store (see ui/pro/StoreBilling.kt).
+            implementation(libs.purchases.kmp.core)
         }
         jvmMain.dependencies {
             implementation(libs.sqldelight.sqliteDriver)
@@ -57,6 +59,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.sqldelight.androidDriver)
+            implementation(libs.purchases.kmp.core)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)

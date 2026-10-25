@@ -120,6 +120,9 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val winSignal = remember { WinSignal() }
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val bestFlow = maxOf(profile.bestFlow, feed.solvedCount)
+    val quota by viewModel.quota.collectAsStateWithLifecycle()
+    // A new day gives the free guide steps back, also when the app stayed open over midnight.
+    LaunchedEffect(pagerState.currentPage) { viewModel.refreshQuota() }
     var noticeCounter by remember { mutableIntStateOf(0) }
     fun show(text: StringResource) {
         notice = Notice(text, noticeCounter++)
@@ -202,6 +205,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 onHowToPlay = { howTo = current.kind },
                 onStreak = { streakInfo = true },
                 onGuide = if (current.isFinished) null else ({ viewModel.requestGuide(page) }),
+                quota = quota,
             )
             // Is a finger down on the feed? Watched without taking part, so the lock after a winning swipe ends when it is lifted.
             var fingerDown by remember { mutableStateOf(false) }

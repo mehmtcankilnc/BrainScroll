@@ -6,6 +6,9 @@ import com.mehmtcan.brainscroll.db.Game_result
 import com.mehmtcan.brainscroll.db.In_progress_round
 import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.guide.GuideUse
+import com.mehmtcan.brainscroll.ui.pro.ProCache
+import com.mehmtcan.brainscroll.ui.theme.Accent
 import com.mehmtcan.brainscroll.game.wordle.FeedStore
 import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.game.wordle.Language
@@ -30,12 +33,19 @@ private const val SETTING_PENDING_CRASH = "pending_crash"
 private const val SETTING_MERGE_TICKET = "merge_ticket"
 private const val SETTING_DAILY_SENT = "daily_sent:"
 private const val SETTING_BEST_FLOW = "best_flow"
+private const val SETTING_GUIDE_QUOTA_DAY = "guide_quota_day"
+private const val SETTING_GUIDE_QUOTA_USED = "guide_quota_used"
+private const val SETTING_PRO_CACHED = "pro_cached"
+private const val SETTING_RESCUE_SHOWN = "streak_rescue_shown"
+private const val SETTING_AUTO_PAYWALL_DAY = "auto_paywall_day"
+private const val SETTING_THEME_ACCENT = "theme_accent"
+private const val SETTING_THEME_AMOLED = "theme_amoled"
 
 /**
  * Reads and writes everything the app keeps on the device. It is the only place that knows the tables;
  * the rest of the app works with plain Kotlin types ([FinishedRound], [StoredRound]).
  */
-class GameRepository(database: BrainScrollDatabase) : FeedStore {
+class GameRepository(database: BrainScrollDatabase) : FeedStore, ProCache {
     private val db = database
     private val results = database.gameResultQueries
     private val progress = database.inProgressRoundQueries
@@ -205,6 +215,53 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
         settings.put(SETTING_BEST_FLOW, count.toString())
     }
 
+    // --- Pro: free guide steps, the cached Pro answer, the paywall that comes by itself, the look (docs/pro-plan.md) ---
+
+    fun guideUse(): GuideUse {
+        val day = settings.get(SETTING_GUIDE_QUOTA_DAY).executeAsOneOrNull()?.toLongOrNull() ?: return GuideUse.None
+        return GuideUse(day, settings.get(SETTING_GUIDE_QUOTA_USED).executeAsOneOrNull()?.toIntOrNull() ?: 0)
+    }
+
+    fun setGuideUse(use: GuideUse) {
+        db.transaction {
+            settings.put(SETTING_GUIDE_QUOTA_DAY, use.day.toString())
+            settings.put(SETTING_GUIDE_QUOTA_USED, use.used.toString())
+        }
+    }
+
+    override fun cached(): Boolean = settings.get(SETTING_PRO_CACHED).executeAsOneOrNull() == "1"
+
+    override fun setCached(pro: Boolean) {
+        settings.put(SETTING_PRO_CACHED, if (pro) "1" else "0")
+    }
+
+    /** The break (the last day finished before it) the streak rescue paywall was shown for. */
+    fun rescueShownFor(): Long? = settings.get(SETTING_RESCUE_SHOWN).executeAsOneOrNull()?.toLongOrNull()
+
+    fun setRescueShownFor(breakId: Long) {
+        settings.put(SETTING_RESCUE_SHOWN, breakId.toString())
+    }
+
+    /** The local day a paywall last came up by itself, so it is at most one a day. */
+    fun autoPaywallDay(): Long? = settings.get(SETTING_AUTO_PAYWALL_DAY).executeAsOneOrNull()?.toLongOrNull()
+
+    fun setAutoPaywallDay(day: Long) {
+        settings.put(SETTING_AUTO_PAYWALL_DAY, day.toString())
+    }
+
+    /** The accent color and the pure-black choice. Kept even when Pro ends, so they return with it. */
+    fun savedAccent(): Accent = Accent.fromId(settings.get(SETTING_THEME_ACCENT).executeAsOneOrNull())
+
+    fun saveAccent(accent: Accent) {
+        settings.put(SETTING_THEME_ACCENT, accent.id)
+    }
+
+    fun savedAmoled(): Boolean = settings.get(SETTING_THEME_AMOLED).executeAsOneOrNull() == "1"
+
+    fun saveAmoled(on: Boolean) {
+        settings.put(SETTING_THEME_AMOLED, if (on) "1" else "0")
+    }
+
     // --- Account deletion ---
 
     /**
@@ -218,7 +275,14 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore {
             results.deleteAll()
             progress.deleteAll()
             queue.deleteAll()
-            settings.deleteAllExcept(listOf(SETTING_LANGUAGE, SETTING_WORD_LANGUAGES, SETTING_APP_LANGUAGE, SETTING_TELEMETRY, SETTING_SOUND))
+            // The free guide steps and the Pro answer stay: deleting the account must not hand out free steps or take a purchase away
+            // (it belongs to the store account). The look stays with the purchase too.
+            settings.deleteAllExcept(
+                listOf(
+                    SETTING_LANGUAGE, SETTING_WORD_LANGUAGES, SETTING_APP_LANGUAGE, SETTING_TELEMETRY, SETTING_SOUND,
+                    SETTING_GUIDE_QUOTA_DAY, SETTING_GUIDE_QUOTA_USED, SETTING_PRO_CACHED, SETTING_THEME_ACCENT, SETTING_THEME_AMOLED,
+                ),
+            )
         }
     }
 

@@ -43,6 +43,9 @@ import com.mehmtcan.brainscroll.game.wordle.Mode
 import com.mehmtcan.brainscroll.game.wordle.StoredRound
 import com.mehmtcan.brainscroll.stats.DayStreak
 import com.mehmtcan.brainscroll.stats.DayStreaks
+import com.mehmtcan.brainscroll.ui.pro.NoPro
+import com.mehmtcan.brainscroll.ui.pro.ProState
+import kotlinx.coroutines.flow.drop
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.feed.FeedActions
 import kotlinx.coroutines.CancellationException
@@ -96,6 +99,7 @@ class DailyGameViewModel(
     /** The language the results are saved with. The game itself has none. */
     private val language: () -> Language,
     private val onLocalChange: () -> Unit = {},
+    private val pro: ProState = NoPro,
 ) : ViewModel(), FeedActions {
 
     private var feed: EndlessFeed? = null
@@ -112,6 +116,7 @@ class DailyGameViewModel(
     init {
         refresh()
         viewModelScope.launch { signedIn.collect { if (it) sendPending() } }
+        viewModelScope.launch { pro.isPro.drop(1).collect { publish() } }
     }
 
     /** Looks again: a new day brings a new game and a new board. Cheap, called whenever a screen is shown. */
@@ -320,7 +325,7 @@ class DailyGameViewModel(
             phase = if (result != null || page?.isFinished == true) DailyGamePhase.Finished else DailyGamePhase.Playing,
             page = page,
             result = result,
-            dayStreak = DayStreaks.compute(history.filter { it.mode == Mode.DAILY }.map { it.dayIndex }, today),
+            dayStreak = DayStreaks.compute(history.filter { it.mode == Mode.DAILY }.map { it.dayIndex }, today, pro.isPro.value),
             favoriteIds = repository.favoriteResults().map { it.id }.toSet(),
         )
     }

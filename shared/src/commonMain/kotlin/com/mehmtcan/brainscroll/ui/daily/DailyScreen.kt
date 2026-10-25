@@ -86,6 +86,7 @@ import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.stats.DayStreaks
+import com.mehmtcan.brainscroll.ui.pro.LocalPro
 import com.mehmtcan.brainscroll.ui.motion.Confetti
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -253,7 +254,8 @@ private fun Puzzle(ui: DailyUiState, viewModel: DailyViewModel) {
     OutcomeHaptics(round.status)
     val justFinished = rememberJustFinished(round.status)
     // Confetti for a win, and for a streak that reaches a milestone (every 7th day, the days that earn a freeze).
-    val milestone = ui.dayStreak.current > 0 && ui.dayStreak.current % DayStreaks.FREEZE_EVERY == 0
+    val pro by LocalPro.current.isPro.collectAsStateWithLifecycle()
+    val milestone = ui.dayStreak.current > 0 && ui.dayStreak.current % DayStreaks.ruleFor(pro).every == 0
     val celebrate = justFinished && (round.status == WordleStatus.Won || milestone)
 
     Box(Modifier.fillMaxSize()) {
