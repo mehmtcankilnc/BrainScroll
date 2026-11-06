@@ -49,3 +49,8 @@ supabase/.temp/
 supabase/.branches/
 
 pending_changes_*.txt
+
+# Android release signing (never commit)
+keystore.properties
+*.jks
+*.keystore

@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -35,11 +36,28 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // The upload key comes from keystore.properties (local, git-ignored) or from environment variables (CI).
+    // Without either, the release build falls back to the debug key: installable for testing, not for the store.
+    val keystoreProps = Properties().apply {
+        val file = rootProject.file("keystore.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
+    fun signingValue(name: String, env: String): String? = keystoreProps.getProperty(name) ?: System.getenv(env)
+    val uploadStoreFile = signingValue("storeFile", "UPLOAD_STORE_FILE")
+    signingConfigs {
+        if (uploadStoreFile != null) {
+            create("upload") {
+                storeFile = file(uploadStoreFile)
+                storePassword = signingValue("storePassword", "UPLOAD_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "UPLOAD_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Signed with the debug key until a real release key exists: installable for testing, not for the store.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
