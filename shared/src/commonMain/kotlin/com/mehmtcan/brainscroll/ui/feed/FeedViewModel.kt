@@ -270,6 +270,9 @@ class FeedViewModel(
 
     private var guideSearching = false
 
+    /** The last step given, kept after the player closes it: asking again on the same puzzle position costs nothing. */
+    private var lastGuided: GuideState? = null
+
     /** No limit for Pro, and none where nothing can be bought (desktop, no store keys): a limit with no way out would be a wall. */
     private fun unlimitedGuide(): Boolean = pro.isPro.value || !pro.available
 
@@ -301,6 +304,12 @@ class FeedViewModel(
         if (guideSearching) return
         val f = feed ?: return
         val page = f.snapshot().pages.getOrNull(index) ?: return
+        // The same step asked for again on a puzzle that has not changed since is the step already paid for: shown again,
+        // for nothing, and even with no free steps left.
+        lastGuided?.takeIf { it.page == page }?.let {
+            _guide.value = it
+            return
+        }
         _quota.value = readQuota()
         if (!_quota.value.canGuide) {
             _paywallRequests.tryEmit(PaywallSource.Guide)
@@ -321,7 +330,7 @@ class FeedViewModel(
                 _quota.value = readQuota()
                 f.markGuided(index)
                 publish()
-                _guide.value = GuideState(page, step)
+                _guide.value = GuideState(page, step).also { lastGuided = it }
             } finally {
                 guideSearching = false
             }
@@ -512,8 +521,11 @@ class FeedViewModel(
             input = "",
             position = 0,
             game = round.game,
+            // The same level as the favorite: a hard board is played, and counted, as a hard one.
+            difficulty = round.difficulty,
         )
-        feed = buildFeed(listOf(copy))
+        // A puzzle played again is not a new answer of the flow: its win does not raise the number in the bar.
+        feed = buildFeed(listOf(copy)).also { it.markAsReplay(copy.id) }
         page = 0
         _guide.value = null
         publish()

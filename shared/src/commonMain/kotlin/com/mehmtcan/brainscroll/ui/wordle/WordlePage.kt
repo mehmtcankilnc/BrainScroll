@@ -37,12 +37,15 @@ import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
-import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import org.jetbrains.compose.resources.stringResource
 
 /** The flag of a word puzzle: the language it shows, what a screen reader says, and what a tap does. */
@@ -110,7 +113,7 @@ fun WordlePage(
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (status != WordleStatus.Playing) {
-                ResultCard(round, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
+                ResultCard(round, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {
                 WordleKeyboard(
                     language = round.language,
@@ -135,7 +138,7 @@ private fun ResultCard(round: RoundSnapshot, isFavorite: Boolean, onToggleFavori
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.bgSurface, Radius.card)
+            .resultSurface(colors.bgSurface, GameKind.Word.world, Radius.card)
             .padding(Spacing.lg),
     ) {
         Column(
@@ -143,11 +146,7 @@ private fun ResultCard(round: RoundSnapshot, isFavorite: Boolean, onToggleFavori
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            BasicText(
-                text = if (won) stringResource(Res.string.result_won, round.rows.size)
-                else stringResource(Res.string.result_lost, round.answer.orEmpty()),
-                style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
-            )
+            WordResultSummary(won, round.rows.size, round.answer, durationMs = null)
             BasicText(
                 text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),

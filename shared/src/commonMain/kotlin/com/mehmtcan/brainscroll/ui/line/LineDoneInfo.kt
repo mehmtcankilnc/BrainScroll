@@ -23,6 +23,7 @@ import com.mehmtcan.brainscroll.game.wordle.FinishedRound
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.components.Stars
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.textSoft
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
@@ -49,7 +50,7 @@ fun LineDoneInfo(result: FinishedRound, modifier: Modifier = Modifier) {
         }
         BasicText(
             stringResource(Res.string.daily_next, formatCountdown(IstanbulDay.millisUntilNextDay(nowMs))),
-            style = type.caption.copy(color = colors.textSecondary),
+            style = type.caption.copy(color = colors.textSoft),
         )
     }
 }

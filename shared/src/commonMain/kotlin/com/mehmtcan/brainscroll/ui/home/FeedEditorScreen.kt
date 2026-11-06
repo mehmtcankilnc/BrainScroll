@@ -1,5 +1,10 @@
 package com.mehmtcan.brainscroll.ui.home
 
+import androidx.compose.runtime.LaunchedEffect
+import com.mehmtcan.brainscroll.ui.components.NoticePill
+import com.mehmtcan.brainscroll.ui.haptics.HapticKind
+import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -98,6 +103,15 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
     val feedState by feedViewModel.state.collectAsStateWithLifecycle()
     val hasUnfinished = (feedState as? FeedUiState.Ready)?.feed?.hasUnfinished == true
     var confirmNewFeed by remember { mutableStateOf(false) }
+    // A short message over the button when the last game is tapped: it cannot be switched off. The counter makes a second tap show it again.
+    var notice by remember { mutableStateOf<Int?>(null) }
+    val haptics = LocalHaptics.current
+    LaunchedEffect(notice) {
+        if (notice != null) {
+            delay(NOTICE_MILLIS)
+            notice = null
+        }
+    }
     // Step 0 picks the games; step 1 picks the level of the whole feed. Without a game that has levels there is no step 1.
     var step by remember { mutableIntStateOf(0) }
     val hasLevels = enabled.any { it in feedViewModel.levelledGames }
@@ -139,30 +153,32 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
             }
         } else Column(
             modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            // Two games to a row.
-            feedViewModel.availableGames.chunked(2).forEach { pair ->
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth()) {
-                    pair.forEach { game ->
+            // Three games to a row.
+            feedViewModel.availableGames.chunked(GAMES_PER_ROW).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
+                    row.forEach { game ->
                         val on = game in enabled
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                            GameCard(
-                                game = game,
-                                wordLanguage = wordLanguage,
-                                on = on,
-                                // The last game that is on can not be switched off: the feed would be empty.
-                                onClick = if (on && enabled.size == 1) null else ({ feedViewModel.setGameEnabled(game, !on) }),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                        GameCard(
+                            game = game,
+                            wordLanguage = wordLanguage,
+                            on = on,
+                            onClick = {
+                                if (on && enabled.size == 1) {
+                                    // The last game that is on can not be switched off: the feed would be empty. Say so.
+                                    haptics.perform(HapticKind.Warning)
+                                    notice = (notice ?: 0) + 1
+                                } else {
+                                    feedViewModel.setGameEnabled(game, !on)
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
-                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    // A short last row keeps the cards their width.
+                    repeat(GAMES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
                 }
-            }
-
-            if (enabled.size == 1) {
-                BasicText(stringResource(Res.string.personalize_last_game), style = type.caption.copy(color = colors.textSecondary))
             }
             Spacer(Modifier.height(Spacing.sm))
         }
@@ -184,6 +200,13 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
             }
         }
     }
+    if (notice != null) {
+        NoticePill(
+            text = stringResource(Res.string.personalize_last_game),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(start = Spacing.lg, end = Spacing.lg, bottom = NOTICE_BOTTOM).testTag("editorNotice"),
+            onDismiss = { notice = null },
+        )
+    }
     if (confirmNewFeed) {
         ConfirmDialog(
             title = stringResource(Res.string.new_feed_title),
@@ -198,9 +221,9 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
 }
 
 /**
- * One game: its picture and, under it, the round mark and the name together in the middle of the line. A game that is in
- * the feed has a green outline and a green mark with a check; one that is not has a quiet outline, a dimmed picture and
- * an empty ring.
+ * One game, small enough for three to a row: its picture with the round mark in its corner, and the name under it (up to two
+ * lines, never cut). A game that is in the feed has a green outline and a green mark with a check; one that is not has a quiet
+ * outline, a dimmed picture and an empty ring.
  */
 @Composable
 private fun GameCard(game: GameKind, wordLanguage: Language, on: Boolean, onClick: (() -> Unit)?, modifier: Modifier = Modifier) {
@@ -223,24 +246,28 @@ private fun GameCard(game: GameKind, wordLanguage: Language, on: Boolean, onClic
                 else Modifier,
             )
             .padding(Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1.25f).graphicsLayer { alpha = if (on) 1f else 0.5f })
-        // The mark and the name are one group in the middle of the line, under the middle of the picture.
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
-            modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.xs),
-        ) {
-            CheckMark(on)
-            BasicText(
-                text = name,
-                style = type.label.copy(color = if (on) colors.textPrimary else colors.textSecondary, lineHeight = 20.sp),
-                maxLines = 1,
-            )
+        Box {
+            GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1.25f).graphicsLayer { alpha = if (on) 1f else 0.5f })
+            CheckMark(on, Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
         }
+        BasicText(
+            text = name,
+            style = type.caption.copy(color = if (on) colors.textPrimary else colors.textSecondary, textAlign = TextAlign.Center),
+            minLines = 2,
+            maxLines = 2,
+            modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.xs),
+        )
     }
 }
+
+/** How many games the editor puts in a row. */
+private const val GAMES_PER_ROW = 3
+
+/** How long the message about the last game stays, and how far over the bottom it floats (clear of the button). */
+private const val NOTICE_MILLIS = 2_000L
+private val NOTICE_BOTTOM = 88.dp
 
 private val CHECK_SIZE = 18.dp
 

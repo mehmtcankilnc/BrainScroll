@@ -6,13 +6,23 @@ import com.mehmtcan.brainscroll.ui.sound.LocalSoundEffects
 import com.mehmtcan.brainscroll.ui.sound.rememberSoundHaptics
 import com.mehmtcan.brainscroll.ui.motion.LocalWinSignal
 import com.mehmtcan.brainscroll.ui.motion.WinSignal
+import com.mehmtcan.brainscroll.ui.motion.rememberWinPulse
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.ui.theme.worldGlow
+import com.mehmtcan.brainscroll.ui.theme.nextWorldPeek
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import brainscroll.shared.generated.resources.guide_none
+import brainscroll.shared.generated.resources.feed_puzzle_number
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
@@ -174,7 +184,25 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     // The rules panel goes over the whole screen, the bar at the top included, so the scrim darkens and blocks all of it.
-    Box(Modifier.fillMaxSize()) {
+    // The glow of the game on show: it changes color as the feed moves from one game to the next.
+    val world by animateColorAsState(
+        targetValue = current.kind.world,
+        animationSpec = if (LocalReduceMotion.current) snap() else tween(500),
+        label = "world",
+    )
+    // Once this puzzle is done, the light of the next game comes up from the bottom edge: a hint of what the next swipe brings.
+    val nextKind = feed.pages.getOrNull(page + 1)?.kind
+    val peekWorld by animateColorAsState(
+        targetValue = (nextKind ?: current.kind).world,
+        animationSpec = if (LocalReduceMotion.current) snap() else tween(300),
+        label = "peekWorld",
+    )
+    val peekAlpha by animateFloatAsState(
+        targetValue = if (current.isFinished && nextKind != null) 1f else 0f,
+        animationSpec = if (LocalReduceMotion.current) snap() else tween(700),
+        label = "peekAlpha",
+    )
+    Box(Modifier.fillMaxSize().worldGlow(world).nextWorldPeek(peekWorld) { peekAlpha }) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -206,6 +234,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                 onStreak = { streakInfo = true },
                 onGuide = if (current.isFinished) null else ({ viewModel.requestGuide(page) }),
                 quota = quota,
+                position = stringResource(Res.string.feed_puzzle_number, page + 1),
             )
             // Is a finger down on the feed? Watched without taking part, so the lock after a winning swipe ends when it is lifted.
             var fingerDown by remember { mutableStateOf(false) }
@@ -231,7 +260,18 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
                     key = { it },
                 ) { index ->
                     CompositionLocalProvider(LocalWinSignal provides winSignal) {
-                        GamePage(feed.pages[index], index, viewModel, favoriteIds, guide = guide.takeIf { index == page }, languageSwitch = languageSwitch)
+                        val item = feed.pages[index]
+                        val pulse = rememberWinPulse(item.id, item.isFinished, winSignal)
+                        Box(
+                            Modifier.fillMaxSize().graphicsLayer {
+                                scaleX = pulse
+                                scaleY = pulse
+                                // The swell is around the board, where the burst starts.
+                                transformOrigin = TransformOrigin(0.5f, 0.42f)
+                            },
+                        ) {
+                            GamePage(item, index, viewModel, favoriteIds, guide = guide.takeIf { index == page }, languageSwitch = languageSwitch)
+                        }
                     }
                 }
                 notice?.let { NoticePill(stringResource(it.text), Modifier.align(Alignment.TopCenter).padding(top = NOTICE_TOP_OFFSET), onDismiss = { notice = null }) }

@@ -33,12 +33,42 @@ class AccountUiTest {
         openProfile()
         snap("10_account_anonymous")
 
-        assertTrue(hasAnyText("Anonim hesap", "Anonymous account"))
-        clickAny("Google ile giriş yap", "Sign in with Google")
+        assertTrue(hasAnyText("Misafir hesap", "Guest account"))
+        clickAny("Google ile devam et", "Continue with Google")
         // The click starts a coroutine, so wait for it instead of assuming it already ran.
         waitUntil(timeoutMillis = 5_000) { cloud.account.googleRequests == 1 }
         assertEquals(1, cloud.account.googleRequests)
-        assertEquals(false, hasAnyText("Apple ile giriş yap", "Sign in with Apple")) // Android and desktop: no Apple
+        assertEquals(false, hasAnyText("Apple ile devam et", "Continue with Apple")) // Android and desktop: no Apple
+    }
+
+    @Test
+    fun withOnlyGoogleTheProfileSignInGoesStraightToGoogle() = runComposeUiTest {
+        val cloud = TestCloud()
+        start(cloud)
+        openTab("Profil", "Profile")
+        waitForIdle()
+        onNodeWithTag("profileSignIn").performClick()
+        waitUntil(timeoutMillis = 5_000) { cloud.account.googleRequests == 1 }
+        // No sheet and no trip to the settings: there is nothing to choose between.
+        assertEquals(0, onAllNodesWithTag("signInSheet").fetchSemanticsNodes().size)
+        assertEquals(1, cloud.account.googleRequests)
+    }
+
+    @Test
+    fun theProfileSheetOffersAppleFirstAndGoogleUnderIt() = runComposeUiTest {
+        val cloud = TestCloud(account = FakeAccountService(canSignInWithApple = true))
+        start(cloud)
+        openTab("Profil", "Profile")
+        waitForIdle()
+        onNodeWithTag("profileSignIn").performClick()
+        waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("signInSheet").fetchSemanticsNodes().isNotEmpty() }
+        snap("13_profile_sign_in_sheet_apple")
+        val apple = onNodeWithTag("signInApple").fetchSemanticsNode().boundsInRoot
+        val google = onNodeWithTag("signInGoogle").fetchSemanticsNode().boundsInRoot
+        assertTrue(apple.bottom <= google.top, "Apple is first, Google under it")
+        assertEquals(apple.height, google.height, "the two buttons are the same size")
+        onNodeWithTag("signInApple").performClick()
+        waitUntil(timeoutMillis = 5_000) { cloud.account.appleRequests == 1 }
     }
 
     @Test
@@ -47,7 +77,7 @@ class AccountUiTest {
         start(cloud)
         openProfile()
 
-        clickAny("Apple ile giriş yap", "Sign in with Apple")
+        clickAny("Apple ile devam et", "Continue with Apple")
         waitUntil(timeoutMillis = 5_000) { cloud.account.appleRequests == 1 }
         assertEquals(1, cloud.account.appleRequests)
     }
@@ -62,7 +92,7 @@ class AccountUiTest {
 
         assertTrue(hasAnyText("Google ile giriş yapıldı", "Signed in with Google"))
         assertTrue(hasAnyText("player@example.com"))
-        assertEquals(false, hasAnyText("Google ile giriş yap", "Sign in with Google").and(!hasAnyText("yapıldı", "Signed in")))
+        assertEquals(false, hasAnyText("Google ile devam et", "Continue with Google").and(!hasAnyText("yapıldı", "Signed in")))
         clickAny("Çıkış yap", "Sign out")
         // Signing out asks first.
         waitUntil(timeoutMillis = 5_000) { onAllNodesWithTag("confirmYes").fetchSemanticsNodes().isNotEmpty() }

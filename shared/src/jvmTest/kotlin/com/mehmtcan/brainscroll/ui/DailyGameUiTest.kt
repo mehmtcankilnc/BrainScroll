@@ -93,7 +93,7 @@ class DailyGameUiTest {
 
         assertTrue(hasAnyText("31 hamle", "31 moves"), "moves, not guesses")
         assertTrue(hasAnyText("00:42"))
-        assertTrue(hasAnyText("Bugün · Mayın tarlası", "Today · Minesweeper"), "the filter line says whose game it is")
+        assertTrue(hasAnyText("Mayın tarlası · Bugün", "Minesweeper · Today"), "the line over the table says whose game it is")
         assertTrue(cloud.social.calls.any { it == "gameBoard:mines:Today:false" })
         assertFalse(cloud.social.calls.any { it.startsWith("dailyBoard") }, "the word table is not asked for")
     }
@@ -131,7 +131,8 @@ class DailyGameUiTest {
         openTab("Sıralama", "Ranks")
         waitUntil(timeoutMillis = 5_000) { hasAnyText("alice") }
         snap("203_ranks_line_stars")
-        assertEquals(2, onAllNodesWithText("3 yıldız", substring = true).fetchSemanticsNodes().size + onAllNodesWithText("3 stars", substring = true).fetchSemanticsNodes().size)
+        // The rows draw the stars as stars, and a screen reader hears the number: one row for each of the two with three.
+        assertEquals(2, onAllNodes(androidx.compose.ui.test.hasContentDescription("3 yıldız", substring = true).or(androidx.compose.ui.test.hasContentDescription("3 stars", substring = true))).fetchSemanticsNodes().size)
         assertTrue(hasAnyText("1 yıldız", "1 stars"))
         assertFalse(hasAnyText("2 yıldız", "2 stars"))
     }

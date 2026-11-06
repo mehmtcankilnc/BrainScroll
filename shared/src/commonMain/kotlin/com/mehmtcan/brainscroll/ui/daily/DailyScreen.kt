@@ -37,6 +37,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.utf16CodePoint
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
@@ -55,8 +56,6 @@ import brainscroll.shared.generated.resources.notice_daily_offline
 import brainscroll.shared.generated.resources.notice_daily_unavailable
 import brainscroll.shared.generated.resources.notice_not_in_list
 import brainscroll.shared.generated.resources.notice_too_short
-import brainscroll.shared.generated.resources.result_lost
-import brainscroll.shared.generated.resources.result_won
 import com.mehmtcan.brainscroll.daily.DailyState
 import com.mehmtcan.brainscroll.daily.DailyStatus
 import com.mehmtcan.brainscroll.daily.formatCountdown
@@ -83,7 +82,11 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.popOnIncrease
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
-import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.motion.bounceIn
+import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.ui.wordle.WordResultSummary
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import com.mehmtcan.brainscroll.stats.DayStreaks
 import com.mehmtcan.brainscroll.ui.pro.LocalPro
@@ -277,7 +280,7 @@ private fun Puzzle(ui: DailyUiState, viewModel: DailyViewModel) {
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (state.isFinished) {
-                DailyResult(state, ui.isFavorite, viewModel::toggleFavorite, Modifier.slideFadeIn(justFinished))
+                DailyResult(state, ui.isFavorite, viewModel::toggleFavorite, Modifier.bounceIn(justFinished))
             } else {
                 WordleKeyboard(
                     language = round.language,
@@ -319,20 +322,13 @@ private fun DailyResult(state: DailyState, isFavorite: Boolean, onToggleFavorite
     val type = BrainScrollTheme.typography
     val won = state.status == DailyStatus.Won
 
-    Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
+    Box(modifier = modifier.fillMaxWidth().resultSurface(colors.bgSurface, GameKind.Word.world, Radius.card).padding(Spacing.lg)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
-            BasicText(
-                text = if (won) stringResource(Res.string.result_won, state.guesses.size)
-                else stringResource(Res.string.result_lost, state.answer.orEmpty()),
-                style = type.title.copy(color = if (won) colors.correctFill else colors.textPrimary, textAlign = TextAlign.Center),
-            )
-            state.durationMs?.let {
-                BasicText(stringResource(Res.string.daily_time, formatDuration(it)), style = type.body.copy(color = colors.textPrimary))
-            }
+            WordResultSummary(won, state.guesses.size, state.answer, state.durationMs)
             NextPuzzleCountdown(state)
         }
         HeartButton(filled = isFavorite, onClick = onToggleFavorite, modifier = Modifier.align(Alignment.TopEnd))
@@ -359,19 +355,28 @@ private fun NextPuzzleCountdown(state: DailyState) {
 
 /** Small flame for the day streak, drawn as a path so it follows the token color. */
 @Composable
-internal fun FlameIcon(color: Color) {
-    Canvas(Modifier.size(14.dp)) {
+internal fun FlameIcon(color: Color, iconSize: Dp = 14.dp) {
+    Canvas(Modifier.size(iconSize)) {
         val w = size.width
         val h = size.height
+        // A flame with a tongue on its left side, and a lighter heart, so it does not read as a drop of water.
         val flame = Path().apply {
             moveTo(0.50f * w, 0f)
-            cubicTo(0.90f * w, 0.30f * h, 0.95f * w, 0.55f * h, 0.85f * w, 0.75f * h)
-            cubicTo(0.78f * w, 0.92f * h, 0.62f * w, h, 0.50f * w, h)
-            cubicTo(0.30f * w, h, 0.12f * w, 0.88f * h, 0.15f * w, 0.62f * h)
-            cubicTo(0.17f * w, 0.45f * h, 0.30f * w, 0.40f * h, 0.38f * w, 0.25f * h)
-            cubicTo(0.42f * w, 0.15f * h, 0.45f * w, 0.08f * h, 0.50f * w, 0f)
+            cubicTo(0.55f * w, 0.22f * h, 0.82f * w, 0.32f * h, 0.84f * w, 0.62f * h)
+            cubicTo(0.86f * w, 0.85f * h, 0.70f * w, h, 0.50f * w, h)
+            cubicTo(0.30f * w, h, 0.14f * w, 0.85f * h, 0.16f * w, 0.62f * h)
+            cubicTo(0.17f * w, 0.48f * h, 0.26f * w, 0.40f * h, 0.32f * w, 0.30f * h)
+            cubicTo(0.36f * w, 0.38f * h, 0.40f * w, 0.42f * h, 0.42f * w, 0.44f * h)
+            cubicTo(0.40f * w, 0.28f * h, 0.44f * w, 0.12f * h, 0.50f * w, 0f)
+            close()
+        }
+        val heart = Path().apply {
+            moveTo(0.50f * w, 0.54f * h)
+            cubicTo(0.68f * w, 0.68f * h, 0.70f * w, 0.82f * h, 0.50f * w, 0.93f * h)
+            cubicTo(0.30f * w, 0.82f * h, 0.32f * w, 0.68f * h, 0.50f * w, 0.54f * h)
             close()
         }
         drawPath(flame, color)
+        drawPath(heart, Color.White.copy(alpha = 0.35f))
     }
 }

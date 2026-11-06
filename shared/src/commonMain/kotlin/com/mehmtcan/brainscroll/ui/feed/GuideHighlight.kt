@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.game.guide.GuideStep
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 
 /** The step the guide gave for the page on screen, or null. The game pages read it to point at their cells. */
 val LocalGuide = compositionLocalOf<GuideStep?> { null }
@@ -35,7 +36,7 @@ val LocalGuide = compositionLocalOf<GuideStep?> { null }
 fun isGuided(index: Int): Boolean = LocalGuide.current?.cells?.contains(index) == true
 
 /**
- * Points at a thing with a thick white ring that runs along its own edge, on the inside: the outer edge of the ring is the
+ * Points at a thing with a thick magenta ring and a soft glow that runs along its own edge, on the inside: the outer edge of the ring is the
  * edge of the thing, with the same corners, so nothing is left between the two and nothing lies over the things around it.
  * The ring breathes (its strength rises and falls); it does not move or change the size of the thing, and it stays at full
  * strength when motion is reduced. Without [on] the modifier does nothing.
@@ -43,7 +44,7 @@ fun isGuided(index: Int): Boolean = LocalGuide.current?.cells?.contains(index) =
 @Composable
 fun Modifier.guideHighlight(on: Boolean, shape: Shape): Modifier {
     if (!on) return this
-    val ring = BrainScrollTheme.colors.textPrimary
+    val ring = GuideColor
     val reduce = LocalReduceMotion.current
     val pulse by rememberInfiniteTransition().animateFloat(
         initialValue = 0f,
@@ -58,12 +59,14 @@ fun Modifier.guideHighlight(on: Boolean, shape: Shape): Modifier {
         // A stroke twice as wide as the ring, along the edge, cut to the inside of the edge: what is left is a band of
         // the ring's width whose outer side has exactly the corners of the thing.
         clipPath(edge) {
-            drawOutline(outline, ring.copy(alpha = 0.55f + 0.45f * beat), style = Stroke(width = 2 * RING_WIDTH.toPx()))
+            // A soft glow of the same color fills the thing and breathes with the ring: a ring alone is easy to miss.
+            drawOutline(outline, ring.copy(alpha = 0.10f + 0.22f * beat))
+            drawOutline(outline, ring.copy(alpha = 0.8f + 0.2f * beat), style = Stroke(width = 2 * RING_WIDTH.toPx()))
         }
     }
 }
 
-private val RING_WIDTH = 3.5.dp
+private val RING_WIDTH = 5.dp
 
 /**
  * Wraps one cell so the guide can ring it without the cell knowing. The wrapper is always there, so the cell keeps its

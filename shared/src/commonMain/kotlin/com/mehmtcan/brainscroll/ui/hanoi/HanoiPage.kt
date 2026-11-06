@@ -93,10 +93,17 @@ import com.mehmtcan.brainscroll.ui.memory.symbolColor
 import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
-import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.motion.bounceIn
+import com.mehmtcan.brainscroll.ui.components.ResultStat
+import brainscroll.shared.generated.resources.result_stat_moves
+import brainscroll.shared.generated.resources.result_stat_time
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.theme.raised
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import com.mehmtcan.brainscroll.ui.tubes.drawRestart
 import org.jetbrains.compose.resources.stringResource
@@ -257,7 +264,7 @@ fun HanoiPage(
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (won) {
-                HanoiResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
+                HanoiResultCard(page, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     BasicText(
@@ -318,7 +325,7 @@ private fun Tower(
                     // A screen reader says "selected" for the tower whose top disk is picked up.
                     this.selected = isSelected
                 }
-                .background(colors.bgSurface, shape)
+                .raised(colors.bgSurface, shape)
                 // The goal is told apart by a green tint and a flag on its peg, so the border is left to the choice of the
                 // player: a thick yellow one on the tower that is picked up, a faint one on every other.
                 .then(if (isGoal) Modifier.background(colors.correctFill.copy(alpha = GOAL_TINT), shape) else Modifier)
@@ -433,7 +440,7 @@ private fun HanoiResultCard(page: HanoiSnapshot, isFavorite: Boolean, onToggleFa
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
 
-    Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
+    Box(modifier = modifier.fillMaxWidth().resultSurface(colors.bgSurface, GameKind.Hanoi.world, Radius.card).padding(Spacing.lg)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -444,10 +451,23 @@ private fun HanoiResultCard(page: HanoiSnapshot, isFavorite: Boolean, onToggleFa
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
-            BasicText(
-                text = stringResource(Res.string.hanoi_result, page.state.moves, formatDuration(page.durationMs)),
-                style = type.body.copy(color = colors.textPrimary),
-            )
+            val summary = stringResource(Res.string.hanoi_result, page.state.moves, formatDuration(page.durationMs))
+            // The two numbers are what the player came for: big, each in its own color. Moves are green when they match the fewest.
+            Row(
+                modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = summary },
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
+            ) {
+                ResultStat(
+                    value = page.state.moves.toString(),
+                    label = stringResource(Res.string.result_stat_moves),
+                    color = if (page.state.moves <= page.state.par) colors.correctFill else colors.pendingFill,
+                )
+                ResultStat(
+                    value = formatDuration(page.durationMs),
+                    label = stringResource(Res.string.result_stat_time),
+                    color = colors.streakAnswer,
+                )
+            }
             BasicText(
                 text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),

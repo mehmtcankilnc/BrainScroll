@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.ui.components
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -34,10 +35,12 @@ fun HeartButton(
     filled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The color of the filled heart; the error color (red) when null. */
+    tint: Color? = null,
 ) {
     val haptics = LocalHaptics.current
     val description = stringResource(if (filled) Res.string.a11y_favorite_remove else Res.string.a11y_favorite_add)
-    val color = if (filled) BrainScrollTheme.colors.error else BrainScrollTheme.colors.textSecondary
+    val color = if (filled) tint ?: BrainScrollTheme.colors.error else BrainScrollTheme.colors.textSecondary
     Box(
         modifier = modifier
             .testTag("favoriteHeart")

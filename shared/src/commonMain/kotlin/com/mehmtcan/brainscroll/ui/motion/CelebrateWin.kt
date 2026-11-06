@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.mehmtcan.brainscroll.game.PageSnapshot
+import com.mehmtcan.brainscroll.ui.theme.world
 import kotlinx.coroutines.delay
 
 private const val CONFETTI_MILLIS = 2_300L
@@ -44,5 +45,5 @@ fun CelebrateWin(current: PageSnapshot, signal: WinSignal? = LocalWinSignal.curr
             confettiFor = null
         }
     }
-    confettiFor?.let { id -> key(id) { Confetti() } }
+    confettiFor?.let { id -> key(id) { Confetti(world = current.kind.world) } }
 }

@@ -102,7 +102,8 @@ class HomeUiTest {
         onAllNodesWithText(word).onLast().performClick()
         waitForIdle()
 
-        assertTrue(hasAnyText("En az bir oyun açık kalır", "At least one game stays on"))
+        // The last game does not switch off: a short message says why (no line of text stays under the cards).
+        assertTrue(hasAnyText("En az bir oyun açık kalmalı", "Keep at least one game on"), "the message")
         assertTrue(hasAnyText("1 oyun seçili", "1 game selected", "1 games selected"))
         snap("21_feed_editor_last_game")
     }
@@ -190,15 +191,14 @@ class HomeUiTest {
     }
 
     @Test
-    fun theStreaksSitInTheTopRightCorner() = runComposeUiTest {
+    fun aStreakOfZeroIsNotShownAndTheNameFillsTheLine() = runComposeUiTest {
         start(games = both, openFeed = false)
         val flame = onAllNodesWithContentDescription("Günlük seri", substring = true).fetchSemanticsNodes().ifEmpty {
             onAllNodesWithContentDescription("Daily streak", substring = true).fetchSemanticsNodes()
         }
-        assertTrue(flame.isNotEmpty())
-        val left = flame.minOf { it.boundsInRoot.left }
-        assertTrue(left > 390f / 2 * 1.0f, "the streaks are in the right half of the screen")
-        assertTrue(hasAnyText("BrainScroll"), "the name of the app fills the left of the line")
+        // Nothing is solved yet, so there is no flame: it appears (top right) with the first finished puzzle.
+        assertTrue(flame.isEmpty(), "a streak of zero says nothing")
+        assertTrue(hasAnyText("BrainScroll"), "the name of the app is the line")
     }
 
     @Test

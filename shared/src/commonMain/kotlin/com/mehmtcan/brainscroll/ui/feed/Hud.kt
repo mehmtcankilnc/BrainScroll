@@ -67,6 +67,8 @@ fun Hud(
     onGuide: (() -> Unit)? = null,
     /** The free guide steps left, shown as a badge on the light bulb. */
     quota: QuotaState? = null,
+    /** Where the page is in the feed ("Puzzle 5"), shown under the title; null for none. */
+    position: String? = null,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
@@ -86,12 +88,23 @@ fun Hud(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.semantics { heading() }.testTag("feedTitle"),
                 )
-                if (badge != null) {
-                    BasicText(
-                        text = badge,
-                        style = type.caption.copy(color = colors.textSecondary),
-                        modifier = Modifier.testTag("languageBadge"),
-                    )
+                // Under the title: the language or level when there is one, and where the player is in the feed.
+                Row {
+                    if (badge != null) {
+                        BasicText(
+                            text = badge,
+                            style = type.caption.copy(color = colors.textSecondary),
+                            modifier = Modifier.testTag("languageBadge"),
+                        )
+                    }
+                    if (position != null) {
+                        BasicText(
+                            text = if (badge != null) " · $position" else position,
+                            style = type.caption.copy(color = colors.textSecondary),
+                            maxLines = 1,
+                            modifier = Modifier.testTag("puzzleNumber"),
+                        )
+                    }
                 }
             }
             HowToIconButton(onHowToPlay)

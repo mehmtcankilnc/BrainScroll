@@ -42,7 +42,7 @@ class HowToPlayUiTest {
     }
 
     private fun ComposeUiTest.close() {
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
     }
@@ -75,7 +75,7 @@ class HowToPlayUiTest {
         snap("113_howto_tubes")
         // The game has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
@@ -89,7 +89,7 @@ class HowToPlayUiTest {
         snap("115_howto_mines")
         // The game has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
@@ -103,7 +103,7 @@ class HowToPlayUiTest {
         // Sudoku has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
         assertTrue(hasAnyText("NASIL OYNANIR", "HOW TO PLAY"))
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
@@ -116,7 +116,7 @@ class HowToPlayUiTest {
         snap("133_howto_lights")
         // The game has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
@@ -129,7 +129,7 @@ class HowToPlayUiTest {
         snap("143_howto_slide")
         // The game has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
@@ -142,7 +142,7 @@ class HowToPlayUiTest {
         snap("154_howto_target")
         // The game has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())
@@ -155,7 +155,7 @@ class HowToPlayUiTest {
         snap("163_howto_pipes")
         // The game has the card of steps now, not the sheet of text.
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isNotEmpty())
-        onNodeWithTag("howToOk").performClick()
+        tapThroughHowTo()
         mainClock.advanceTimeBy(500)
         waitForIdle()
         assertTrue(onAllNodesWithTag("howToCard").fetchSemanticsNodes().isEmpty())

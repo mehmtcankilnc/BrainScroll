@@ -85,10 +85,17 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
-import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.components.ResultStats
+import com.mehmtcan.brainscroll.ui.components.ResultStatData
+import brainscroll.shared.generated.resources.result_stat_time
+import brainscroll.shared.generated.resources.result_stat_moves
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import com.mehmtcan.brainscroll.ui.tubes.drawRestart
 import org.jetbrains.compose.resources.stringResource
@@ -194,7 +201,7 @@ fun PipesPage(
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (status == WordleStatus.Won) {
-                PipesResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
+                PipesResultCard(page, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     BasicText(
@@ -365,7 +372,7 @@ private fun PipesResultCard(page: PipesSnapshot, isFavorite: Boolean, onToggleFa
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
 
-    Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
+    Box(modifier = modifier.fillMaxWidth().resultSurface(colors.bgSurface, GameKind.Pipes.world, Radius.card).padding(Spacing.lg)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -376,10 +383,13 @@ private fun PipesResultCard(page: PipesSnapshot, isFavorite: Boolean, onToggleFa
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
-            BasicText(
-                text = stringResource(Res.string.pipes_result, page.state.moves, formatDuration(page.durationMs)),
-                style = type.body.copy(color = colors.textPrimary),
-            )
+            ResultStats(
+    summary = stringResource(Res.string.pipes_result, page.state.moves, formatDuration(page.durationMs)),
+    stats = listOf(
+        ResultStatData(page.state.moves.toString(), stringResource(Res.string.result_stat_moves), GameKind.Pipes.world),
+        ResultStatData(formatDuration(page.durationMs), stringResource(Res.string.result_stat_time), colors.streakAnswer),
+    ),
+)
             BasicText(
                 text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.runtime.mutableStateOf
 import com.mehmtcan.brainscroll.game.Difficulty
@@ -59,10 +60,9 @@ class DifficultyStatsUiTest {
     fun aFavoriteOfAHardBoardNamesTheLevelAndAMediumOneDoesNot() = runComposeUiTest {
         val medium = hardSudoku().copy(id = "m", difficulty = Difficulty.Medium)
         setContent { BrainScrollTheme { FavoritesPage(profile(favorites = listOf(hardSudoku(), medium))) } }
-        assertTrue(hasAnyText("Sudoku · Zor", "Sudoku · Hard"), "the hard one says so")
-        assertEquals(1, onAllNodesWithText("Sudoku", substring = true).fetchSemanticsNodes().count { node ->
-            node.config.getOrNull(SemanticsProperties.Text)?.joinToString().orEmpty().let { it.contains("·") }
-        })
+        // The level is a small pill beside the name: one card has it (the hard one), the medium one has none.
+        val pills = onAllNodesWithText("Zor").fetchSemanticsNodes().size + onAllNodesWithText("Hard").fetchSemanticsNodes().size
+        assertEquals(1, pills, "only the hard one says its level")
     }
 
     // --- Through the app: a hard Hanoi win lands in the hard statistics ----------------------------------------------
@@ -105,19 +105,26 @@ class DifficultyStatsUiTest {
         // Medium is chosen first: the hard win is not in it.
         assertEquals(1, onAllNodesWithTag("statsLevel").fetchSemanticsNodes().size)
         assertEquals("0", playedOf("statsHanoi"), "nothing at the medium level")
+        // The list scrolled down to the Hanoi card: back up to the choice of level.
+        onNode(androidx.compose.ui.test.hasScrollAction()).performScrollToNode(androidx.compose.ui.test.hasTestTag("statsLevel"))
+        waitForIdle()
         clickAny("Zor", "Hard")
         waitForIdle()
         assertEquals("1", playedOf("statsHanoi"), "the hard win is here")
     }
 
-    /** How many were played, as a statistics group shows it next to its title. */
+    /** How many were played, as a statistics card says it under its title. */
     private fun ComposeUiTest.playedOf(tag: String): String {
         val texts = mutableListOf<String>()
         fun collect(node: androidx.compose.ui.semantics.SemanticsNode) {
             node.config.getOrNull(SemanticsProperties.Text)?.let { texts += it.joinToString() }
             node.children.forEach(::collect)
         }
+        // The list is lazy and the cards are tall: bring the one we want into view first.
+        onNode(androidx.compose.ui.test.hasScrollAction()).performScrollToNode(androidx.compose.ui.test.hasTestTag(tag))
+        waitForIdle()
         collect(onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode())
-        return texts[1]
+        // The line under the name says "3 played" (or "not played yet", which is none).
+        return texts[1].takeWhile { it.isDigit() }.ifEmpty { "0" }
     }
 }

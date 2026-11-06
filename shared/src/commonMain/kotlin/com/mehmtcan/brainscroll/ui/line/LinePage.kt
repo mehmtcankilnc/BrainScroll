@@ -96,10 +96,16 @@ import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
-import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.components.ResultStats
+import com.mehmtcan.brainscroll.ui.components.ResultStatData
+import brainscroll.shared.generated.resources.result_stat_time
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import com.mehmtcan.brainscroll.ui.tubes.drawRestart
 import com.mehmtcan.brainscroll.ui.tubes.drawUndo
@@ -109,7 +115,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** Height reserved for the bottom area, the same as the other games, so the board does not jump between them. */
-private val BottomAreaHeight = 152.dp
+// Taller than the other games (152): the daily result card has the stars, the time and the share button, and must not grow past its area.
+private val BottomAreaHeight = 184.dp
 private val MaxBoard = 420.dp
 
 /** How many squares are filled, for tests (the board node also carries the number of the next number). */
@@ -234,7 +241,7 @@ fun LinePage(
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (status == WordleStatus.Won) {
-                LineResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
+                LineResultCard(page, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     BasicText(
@@ -405,7 +412,7 @@ private fun LineResultCard(page: LineSnapshot, isFavorite: Boolean, onToggleFavo
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
 
-    Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(horizontal = Spacing.lg, vertical = Spacing.sm)) {
+    Box(modifier = modifier.fillMaxWidth().resultSurface(colors.bgSurface, GameKind.Line.world, Radius.card).padding(horizontal = Spacing.lg, vertical = Spacing.sm)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -417,10 +424,12 @@ private fun LineResultCard(page: LineSnapshot, isFavorite: Boolean, onToggleFavo
                 style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
             if (LocalDailyPage.current) Stars(page.stars)
-            BasicText(
-                text = stringResource(Res.string.line_result, formatDuration(page.durationMs)),
-                style = type.body.copy(color = colors.textPrimary),
-            )
+            ResultStats(
+    summary = stringResource(Res.string.line_result, formatDuration(page.durationMs)),
+    stats = listOf(
+        ResultStatData(formatDuration(page.durationMs), stringResource(Res.string.result_stat_time), colors.streakAnswer),
+    ),
+)
             val share = LocalLineShare.current
             if (share != null) {
                 val clipboard = LocalClipboardManager.current

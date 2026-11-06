@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -169,8 +170,12 @@ class MemoryUiTest {
     }
 
     private fun ComposeUiTest.visibleResult(): String {
-        val nodes = onAllNodes(hasText(" · ", substring = true)).fetchSemanticsNodes()
-        return nodes.joinToString { n -> n.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty() }
+        // The card's numbers are one group read as a sentence, so the words are in its description; other rows show them as text.
+        val nodes = onAllNodes(hasText(" · ", substring = true).or(hasContentDescription(" · ", substring = true))).fetchSemanticsNodes()
+        return nodes.joinToString { n ->
+            n.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty() +
+                n.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString().orEmpty()
+        }
     }
 
     @Test

@@ -46,7 +46,8 @@ class HowToCardUiTest {
         assertTrue(hasAnyText("Bir oka dokun, tahtadan dışarı kaysın.", "Tap an arrow to slide it off the board."))
         assertTrue(dots().contains("1") && dots().contains("3"), dots())
         assertTrue(disabled("howToPrevious"))
-        assertFalse(disabled("howToNext"))
+        assertTrue(hasAnyText("Sonraki", "Next"), "the main button says Next on the first step")
+        assertFalse(hasAnyText("TAMAM", "OK"))
         snap("350_howto_card_step1_start")
         mainClock.advanceTimeBy(1_500)
         snap("351_howto_card_step1_hand")
@@ -55,19 +56,20 @@ class HowToCardUiTest {
     }
 
     @Test
-    fun theButtonsGoThroughTheStepsAndTheLastOneHasNoNext() = runComposeUiTest {
+    fun theButtonsGoThroughTheStepsAndTheLastOneSaysOk() = runComposeUiTest {
         openCard()
-        onNodeWithTag("howToNext").performClick()
+        onNodeWithTag("howToOk").performClick()
         mainClock.advanceTimeBy(1_600)
         waitForIdle()
         assertTrue(dots().contains("2"), dots())
         assertTrue(hasAnyText("Önünün boş olduğundan emin ol. Başka bir oka çarparsa hata sayılır.", "Make sure its way is clear. If it hits another arrow, that is a mistake."))
         snap("353_howto_card_step2")
-        onNodeWithTag("howToNext").performClick()
+        onNodeWithTag("howToOk").performClick()
         mainClock.advanceTimeBy(2_500)
         waitForIdle()
         assertTrue(dots().contains("3"), dots())
-        assertTrue(disabled("howToNext"))
+        assertTrue(hasAnyText("TAMAM", "OK"), "on the last step the button says OK")
+        assertFalse(hasAnyText("Sonraki", "Next"))
         assertFalse(disabled("howToPrevious"))
         snap("354_howto_card_step3")
         mainClock.advanceTimeBy(2_500)
@@ -80,6 +82,13 @@ class HowToCardUiTest {
     @Test
     fun okClosesTheCardAndTheBoardIsThereAgain() = runComposeUiTest {
         openCard()
+        // Two taps of Next bring the card to the last step; there the button says OK and the third tap closes it.
+        repeat(2) {
+            onNodeWithTag("howToOk").performClick()
+            mainClock.advanceTimeBy(1_000)
+            waitForIdle()
+        }
+        assertTrue(cardShown(), "Next does not close the card")
         onNodeWithTag("howToOk").performClick()
         mainClock.advanceTimeBy(500)
         waitForIdle()
@@ -156,7 +165,7 @@ class HowToCardUiTest {
         waitForIdle()
         snap("357_howto_card_small")
         val root = onRoot().fetchSemanticsNode().boundsInRoot
-        for (tag in listOf("howToDemo", "howToOk", "howToPrevious", "howToNext", "howToDots")) {
+        for (tag in listOf("howToDemo", "howToOk", "howToPrevious", "howToDots")) {
             val b = onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
             assertTrue(b.left >= root.left - 1f && b.right <= root.right + 1f && b.top >= root.top - 1f && b.bottom <= root.bottom + 1f, "$tag is inside the screen: $b against $root")
         }

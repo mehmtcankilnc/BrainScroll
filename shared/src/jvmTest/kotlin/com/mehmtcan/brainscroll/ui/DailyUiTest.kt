@@ -137,8 +137,10 @@ class DailyUiTest {
         scrollProfileTo("En iyi süre: 01:23", "Best time: 01:23")
         assertTrue(hasAnyText("En iyi süre: 01:23", "Best time: 01:23"), "the best daily time is shown")
         openProfilePage("Favoriler", "Favorites")
-        scrollProfileTo("Günlük bulmaca · 01:23", "Daily puzzle · 01:23")
-        assertTrue(hasAnyText("Günlük bulmaca · 01:23", "Daily puzzle · 01:23"), "the favorite row is marked as daily")
+        // The card says the result with the daily time, and carries a "daily" pill beside the name.
+        scrollProfileTo("· 01:23", "· 01:23")
+        assertTrue(hasAnyText("· 01:23"), "the favorite card says the daily time")
+        assertTrue(hasAnyText("Günlük", "Daily"), "and is marked as daily")
         assertFalse(hasAnyText("Henüz favori yok", "No favorites yet"))
     }
 

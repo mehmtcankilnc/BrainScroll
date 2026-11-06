@@ -10,7 +10,10 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.assertContentDescriptionContains
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.game.GameKind
@@ -33,12 +36,17 @@ class ProUiTest {
         waitUntil(timeoutMillis = 10_000) { has("lightCell") }
     }
 
-    /** One guide step: ask, wait for the sentence, close it. */
+    /**
+     * One paid guide step: ask, wait for the sentence, close it, then touch the board. The same step asked for on the same board is
+     * free (see [theSameStepAskedForAgainCostsNothing]), so each step needs the board to have changed.
+     */
     private fun ComposeUiTest.useOneGuideStep() {
         onNodeWithTag("guideButton").performClick()
         waitUntil(timeoutMillis = 10_000) { has("guideBanner") }
         onAllNodesWithTag("guideClose")[0].performClick()
         waitUntil(timeoutMillis = 10_000) { !has("guideBanner") }
+        onAllNodesWithTag("lightCell")[0].performClick()
+        waitForIdle()
     }
 
     @Test
@@ -58,6 +66,23 @@ class ProUiTest {
         snap("901_paywall")
         onNodeWithTag("paywallClose").performClick()
         waitUntil(timeoutMillis = 10_000) { !has("paywallSheet") }
+    }
+
+    @Test
+    fun theSameStepAskedForAgainCostsNothing() = runComposeUiTest {
+        // The word puzzle is where it was seen: one step is one free step, however often the player opens it again.
+        start(openFeed = true, store = FakeStoreBilling())
+        onNodeWithTag("guideButton").assertContentDescriptionContains("5", substring = true)
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { has("guideBanner") }
+        onAllNodesWithTag("guideClose")[0].performClick()
+        waitUntil(timeoutMillis = 10_000) { !has("guideBanner") }
+        onNodeWithTag("guideButton").assertContentDescriptionContains("4", substring = true)
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { has("guideBanner") }
+        onAllNodesWithTag("guideClose")[0].performClick()
+        waitUntil(timeoutMillis = 10_000) { !has("guideBanner") }
+        onNodeWithTag("guideButton").assertContentDescriptionContains("4", substring = true)
     }
 
     @Test
@@ -120,6 +145,22 @@ class ProUiTest {
     }
 
     @Test
+    fun theLookOfAFreePlayerIsAPreviewThatLooksLockedAndOffersPro() = runComposeUiTest {
+        start(openFeed = false, store = FakeStoreBilling())
+        // With the Pro card on the page the settings row is below the fold of the small screen: scroll to it.
+        openTab("Profil", "Profile")
+        waitForIdle()
+        onAllNodesWithText(if (hasAnyText("Ayarlar")) "Ayarlar" else "Settings")[0].performScrollTo().performClick()
+        waitForIdle()
+        waitUntil(timeoutMillis = 10_000) { has("accent_blue") }
+        snap("904_look_locked")
+        assertTrue(!has("lookUsePro"))
+        onNodeWithTag("accent_blue", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("lookUsePro") }
+        snap("905_look_preview")
+    }
+
+    @Test
     fun withoutAStoreThereIsNoProCardAndNoLimit() = runComposeUiTest {
         openLightsFeed(store = null)
         repeat(6) { useOneGuideStep() }
@@ -140,7 +181,8 @@ class ProUiTest {
         start(openFeed = false, store = FakeStoreBilling(), screen = 430 to 932)
         openTab("Profil", "Profile")
         waitUntil(timeoutMillis = 10_000) { has("proCard") }
-        onNodeWithTag("proCard", useUnmergedTree = true).performClick()
+        // The card is at the bottom of the profile, below the fold: bring it into view first.
+        onNodeWithTag("proCard", useUnmergedTree = true).performScrollTo().performClick()
         waitUntil(timeoutMillis = 10_000) { has("paywallSheet") }
         mainClock.advanceTimeBy(1_000)
         waitForIdle()

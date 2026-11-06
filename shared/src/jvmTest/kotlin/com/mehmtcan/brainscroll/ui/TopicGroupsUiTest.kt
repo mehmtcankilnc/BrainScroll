@@ -423,10 +423,12 @@ class TopicGroupsUiTest {
                 waitForIdle()
                 snap("338_topicgroups_card_${name}_${step}b")
                 if (step < 2) {
-                    onNodeWithTag("howToNext").performClick()
+                    // The main button says Next here.
+                    onNodeWithTag("howToOk").performClick()
                     waitForIdle()
                 }
             }
+            // On the last step the same button says OK and closes the card.
             onNodeWithTag("howToOk").performClick()
             waitForIdle()
         }

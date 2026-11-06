@@ -34,6 +34,27 @@ class WinSignal {
     var scrollLocked by mutableStateOf(false)
 }
 
+/**
+ * A short swell of the whole page at the moment its win is on show (the board "breathes" with the burst), then it settles back with a
+ * spring. Only for a page that was seen playing, never for one that is shown already won; none with reduced motion.
+ * Returns the scale (1 at rest); apply it to the page with a graphics layer.
+ */
+@Composable
+fun rememberWinPulse(pageId: String, finished: Boolean, signal: WinSignal?): Float {
+    val reduce = LocalReduceMotion.current
+    val seenPlaying = remember(pageId) { booleanArrayOf(false) }
+    if (!finished) seenPlaying[0] = true
+    val shown = signal?.isShown(pageId) ?: false
+    val scale = remember(pageId) { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(pageId, shown) {
+        if (shown && seenPlaying[0] && !reduce) {
+            scale.animateTo(1.018f,androidx.compose.animation.core.tween(110))
+            scale.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.4f, stiffness = 300f))
+        }
+    }
+    return scale.value
+}
+
 /** The signal of the screen the pages are on (the feed, the daily puzzle). Null in a page that stands on its own. */
 val LocalWinSignal = compositionLocalOf<WinSignal?> { null }
 

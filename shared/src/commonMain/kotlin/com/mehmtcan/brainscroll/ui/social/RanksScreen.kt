@@ -2,7 +2,46 @@
 
 package com.mehmtcan.brainscroll.ui.social
 
+import brainscroll.shared.generated.resources.friends_add_title
+import brainscroll.shared.generated.resources.friends_copied_short
+import brainscroll.shared.generated.resources.friends_copy_code
+import brainscroll.shared.generated.resources.friends_empty_title
+import brainscroll.shared.generated.resources.friends_my_code_caption
+import com.mehmtcan.brainscroll.ui.components.LineIcon
+import com.mehmtcan.brainscroll.ui.components.PillSegmented
+import com.mehmtcan.brainscroll.ui.components.PuzzlePair
 import androidx.compose.foundation.background
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
+import brainscroll.shared.generated.resources.ranks_next_puzzle
+import brainscroll.shared.generated.resources.ranks_your_place
+import brainscroll.shared.generated.resources.daily_streak_label
+import brainscroll.shared.generated.resources.ranks_your_streak
+import com.mehmtcan.brainscroll.daily.formatCountdown
+import com.mehmtcan.brainscroll.time.IstanbulDay
+import com.mehmtcan.brainscroll.ui.components.FilterChip
+import com.mehmtcan.brainscroll.ui.motion.Motion
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.graphics.graphicsLayer
+import com.mehmtcan.brainscroll.ui.home.GameThumbnail
+import androidx.compose.foundation.horizontalScroll
+import brainscroll.shared.generated.resources.ranks_today_game
+import com.mehmtcan.brainscroll.ui.theme.world
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.style.TextAlign
+import com.mehmtcan.brainscroll.ui.components.PlayerAvatar
+import com.mehmtcan.brainscroll.ui.components.RankRow
+import com.mehmtcan.brainscroll.ui.daily.FlameIcon
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.testTag
 import brainscroll.shared.generated.resources.howto_done
@@ -24,6 +63,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -51,6 +91,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
@@ -115,6 +157,8 @@ import com.mehmtcan.brainscroll.social.StreakKind
 import com.mehmtcan.brainscroll.social.StreakRow
 import com.mehmtcan.brainscroll.social.inviteLink
 import com.mehmtcan.brainscroll.ui.components.AppButton
+import com.mehmtcan.brainscroll.ui.components.AppleSignInButton
+import com.mehmtcan.brainscroll.ui.components.GoogleSignInButton
 import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.SegmentedControl
 import com.mehmtcan.brainscroll.ui.components.TextAction
@@ -123,6 +167,7 @@ import com.mehmtcan.brainscroll.game.line.LineScoring
 import com.mehmtcan.brainscroll.ui.home.displayName
 import com.mehmtcan.brainscroll.ui.home.nativeName
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.textSoft
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
@@ -150,7 +195,7 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
     ) {
         item { SectionTabs(ui, viewModel) }
         // The choices for the open table are always in view, each with its name above it.
-        if (ui.section != Section.Friends) item { FilterBar(ui, viewModel) }
+        if (ui.section != Section.Friends) item { FilterPanel(ui, viewModel) }
         gateItems(ui, viewModel, signIn)
 
         when (ui.section) {
@@ -172,7 +217,8 @@ fun FriendsScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Mod
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        // More air between the invite card, the add-a-friend part and the list than the tables have.
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         gateItems(ui, viewModel, signIn)
         friendsSection(ui, viewModel)
@@ -206,147 +252,257 @@ private fun SectionTabs(ui: SocialUiState, viewModel: SocialViewModel) {
 }
 
 /**
- * The choices of the open table in one line: what is shown now ("Today · Word puzzle · Türkçe"), and a tap opens the
- * choices in a sheet. The page itself only has the tabs, this line and the table.
+ * The choices of the open table, always on the page, in three layers: the games as a strip of round badges (the chosen one big
+ * and in its color, the others small and dim) with its name and what is shown under it; one line of chips for the rest
+ * (period, language, whose results); and for today's table a box with the time to the next puzzle and my place.
+ * Today's table is of today's game only, so tapping another badge there moves to the table of all time with that game.
  */
 @Composable
-private fun FilterBar(ui: SocialUiState, viewModel: SocialViewModel) {
-    val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
-    var open by remember { mutableStateOf(false) }
-    val everyone = stringResource(Res.string.filter_friends)
-    val parts = buildList {
-        if (ui.section == Section.Speed) {
-            add(stringResource(if (ui.scope == DailyScope.Today) Res.string.scope_today else Res.string.scope_all_time))
-            add((if (ui.scope == DailyScope.Today) ui.todayGame else ui.game).displayName())
-            if (ui.game == GameKind.Word) add(ui.language.nativeName())
-        } else {
-            add(stringResource(if (ui.kind == StreakKind.Current) Res.string.kind_current else Res.string.kind_longest))
-        }
-        if (ui.friendsOnly) add(everyone)
-    }
+private fun FilterPanel(ui: SocialUiState, viewModel: SocialViewModel) {
     val description = stringResource(Res.string.ranks_filters)
-    Row(
-        modifier = Modifier
-            .testTag("ranksFilterBar")
-            .fillMaxWidth()
-            .semantics { contentDescription = description + ": " + parts.joinToString(", ") }
-            .background(colors.bgSurface, Radius.pill)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) { open = true }
-            .heightIn(min = 48.dp)
-            .padding(horizontal = Spacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+    Column(
+        modifier = Modifier.fillMaxWidth().testTag("ranksFilters").semantics { contentDescription = description },
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        BasicText(
-            text = parts.joinToString(" · "),
-            style = type.label.copy(color = colors.textPrimary),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        ForwardChevron(colors.textSecondary, Modifier.rotate(90f))
-    }
-    if (open) {
-        ModalSheet(onDismiss = { open = false }, tag = "ranksFilters") { close ->
-            BasicText(stringResource(Res.string.ranks_filters), style = type.title.copy(color = colors.textPrimary))
-            Column(Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                Filters(ui, viewModel)
-            }
-            AppButton(stringResource(Res.string.howto_done), close, primary = true)
-        }
-    }
-}
-
-/** What the open table shows: a language and a period for speed, a kind for streaks, and whose results. */
-@Composable
-private fun Filters(ui: SocialUiState, viewModel: SocialViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         if (ui.section == Section.Speed) {
-            LabeledControl(stringResource(Res.string.filter_period)) {
-                SegmentedControl(
-                    options = listOf(stringResource(Res.string.scope_today), stringResource(Res.string.scope_all_time)),
-                    selectedIndex = if (ui.scope == DailyScope.Today) 0 else 1,
-                    onSelect = { viewModel.selectScope(if (it == 0) DailyScope.Today else DailyScope.AllTime) },
-                )
-            }
-            if (ui.game == GameKind.Word) {
-                LabeledControl(stringResource(Res.string.filter_language)) {
-                    SegmentedControl(
-                        options = Language.entries.map { it.nativeName() },
-                        selectedIndex = Language.entries.indexOf(ui.language),
-                        onSelect = { viewModel.selectLanguage(Language.entries[it]) },
-                    )
-                }
-            }
-        } else {
-            LabeledControl(stringResource(Res.string.filter_kind)) {
-                SegmentedControl(
-                    options = listOf(stringResource(Res.string.kind_current), stringResource(Res.string.kind_longest)),
-                    selectedIndex = if (ui.kind == StreakKind.Current) 0 else 1,
-                    onSelect = { viewModel.selectKind(if (it == 0) StreakKind.Current else StreakKind.Longest) },
-                )
-            }
+            GameBadges(ui, viewModel)
+            GameHeader(ui)
         }
-        if (ui.access == Access.Ready) {
-            LabeledControl(stringResource(Res.string.filter_who)) {
-                SegmentedControl(
-                    options = listOf(stringResource(Res.string.filter_everyone), stringResource(Res.string.filter_friends)),
-                    selectedIndex = if (ui.friendsOnly) 1 else 0,
-                    onSelect = { viewModel.selectFriendsOnly(it == 1) },
-                )
-            }
-        }
+        if (ui.section == Section.Streak) StreakHero()
+        ChipRow(ui, viewModel)
+        if (ui.section == Section.Speed && ui.scope == DailyScope.Today) PlaceBox(ui)
+        if (ui.section == Section.Streak) StreakBox(ui)
         Caption(stringResource(if (ui.section == Section.Speed) Res.string.ranks_speed_caption else Res.string.ranks_streak_caption))
     }
 }
 
-/** One choice among a few that do not fit in a segmented control (the games): a chip, the chosen one is lifted. */
+/** The games in a row of badges: the picture of the game on a tile with its name under it, the chosen one edged in its color. */
 @Composable
-private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = BrainScrollTheme.colors
-    Chip(
-        text = text,
-        textColor = if (selected) colors.textPrimary else colors.textSecondary,
-        raised = selected,
-        selected = selected,
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun LabeledControl(label: String, control: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Caption(label)
-        control()
+private fun GameBadges(ui: SocialUiState, viewModel: SocialViewModel) {
+    val shown = if (ui.scope == DailyScope.Today) ui.todayGame else ui.game
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        verticalAlignment = Alignment.Top,
+    ) {
+        // Today's game first: it is where the page starts.
+        (listOf(ui.todayGame) + GameKind.entries.filter { it != ui.todayGame }).forEach { game ->
+            GameBadge(game, ui.language, selected = shown == game) {
+                if (!(ui.scope == DailyScope.Today && game == ui.todayGame)) {
+                    viewModel.selectGame(game)
+                    if (ui.scope == DailyScope.Today) viewModel.selectScope(DailyScope.AllTime)
+                }
+            }
+        }
     }
 }
 
+@Composable
+private fun GameBadge(game: GameKind, wordLanguage: Language, selected: Boolean, onClick: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val world = game.world
+    val name = game.displayName()
+    val ring by animateColorAsState(if (selected) world else colors.borderSubtle, tween(Motion.BASE))
+    val shape = Radius.card
+    Column(
+        modifier = Modifier
+            .testTag("rankGameBadge")
+            // As wide as the picture, or as the name when that is longer: a name is never cut.
+            .widthIn(min = BADGE_SIZE)
+            .semantics(mergeDescendants = true) {
+                contentDescription = name
+                this.selected = selected
+                role = Role.RadioButton
+            }
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(BADGE_SIZE)
+                .clip(shape)
+                .background(colors.bgSurface)
+                .then(if (selected) Modifier.background(world.copy(alpha = 0.25f)) else Modifier)
+                .border(if (selected) 3.dp else 1.5.dp, ring, shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            // The picture a little larger than the tile, so the board fills it to the edge.
+            GameThumbnail(game, wordLanguage, Modifier.requiredSize(BADGE_SIZE * 1.1f).graphicsLayer { alpha = if (selected) 1f else 0.8f })
+        }
+        // The name is always written: the chosen one in the main color and bold, with a bar of the game's color under it.
+        BasicText(
+            text = name,
+            maxLines = 1,
+            softWrap = false,
+            style = type.caption.copy(
+                color = if (selected) colors.textPrimary else colors.textSecondary,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                textAlign = TextAlign.Center,
+            ),
+        )
+        Box(Modifier.width(24.dp).height(3.dp).background(if (selected) world else Color.Transparent, Radius.pill))
+    }
+}
+
+/** One line: the game on show and what is shown of it ("Word puzzle · Today · Türkçe"). */
+@Composable
+private fun GameHeader(ui: SocialUiState) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val game = if (ui.scope == DailyScope.Today) ui.todayGame else ui.game
+    val summary = listOfNotNull(
+        stringResource(if (ui.scope == DailyScope.Today) Res.string.scope_today else Res.string.scope_all_time),
+        if (game == GameKind.Word) ui.language.nativeName() else null,
+    ).joinToString(" · ")
+    BasicText(
+        text = "${game.displayName()} · $summary",
+        modifier = Modifier.fillMaxWidth(),
+        style = type.label.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+    )
+}
+
+/** One line of chips that scrolls sideways; the groups are told apart by a thin bar. */
+@Composable
+private fun ChipRow(ui: SocialUiState, viewModel: SocialViewModel) {
+    val colors = BrainScrollTheme.colors
+    @Composable
+    fun Divider() = Box(Modifier.width(1.dp).height(24.dp).background(colors.borderSubtle))
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (ui.section == Section.Speed) {
+            FilterChip(stringResource(Res.string.scope_today), ui.scope == DailyScope.Today, { viewModel.selectScope(DailyScope.Today) })
+            FilterChip(stringResource(Res.string.scope_all_time), ui.scope == DailyScope.AllTime, { viewModel.selectScope(DailyScope.AllTime) })
+            if (ui.game == GameKind.Word) {
+                Divider()
+                Language.entries.forEach { language ->
+                    FilterChip(language.nativeName(), ui.language == language, { viewModel.selectLanguage(language) })
+                }
+            }
+        } else {
+            FilterChip(stringResource(Res.string.kind_current), ui.kind == StreakKind.Current, { viewModel.selectKind(StreakKind.Current) })
+            FilterChip(stringResource(Res.string.kind_longest), ui.kind == StreakKind.Longest, { viewModel.selectKind(StreakKind.Longest) })
+        }
+        if (ui.access == Access.Ready) {
+            Divider()
+            FilterChip(stringResource(Res.string.filter_everyone), !ui.friendsOnly, { viewModel.selectFriendsOnly(false) })
+            FilterChip(stringResource(Res.string.filter_friends), ui.friendsOnly, { viewModel.selectFriendsOnly(true) })
+        }
+    }
+}
+
+/** Two numbers over today's table: the time to the next puzzle (it ticks) and my place on the table, when I am on it. */
+@OptIn(ExperimentalTime::class)
+@Composable
+private fun PlaceBox(ui: SocialUiState) {
+    var nowMs by remember { mutableLongStateOf(Clock.System.now().toEpochMilliseconds()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            nowMs = Clock.System.now().toEpochMilliseconds()
+        }
+    }
+    val board = ui.speed
+    val place = board?.rows?.firstOrNull { it.isMe }?.rank ?: board?.me?.rank
+    StatBox(
+        leftLabel = stringResource(Res.string.ranks_next_puzzle),
+        leftValue = formatCountdown(IstanbulDay.millisUntilNextDay(nowMs)),
+        rightLabel = stringResource(Res.string.ranks_your_place),
+        rightValue = place?.let { "#$it" } ?: "–",
+    )
+}
+
+/** The streak table's two numbers: my streak and my place on the table (a dash when I am not on it). */
+@Composable
+private fun StreakBox(ui: SocialUiState) {
+    val board = ui.streak
+    val me = board?.rows?.firstOrNull { it.isMe } ?: board?.me
+    StatBox(
+        leftLabel = stringResource(Res.string.ranks_your_streak),
+        leftValue = me?.value?.toString() ?: "–",
+        rightLabel = stringResource(Res.string.ranks_your_place),
+        rightValue = me?.rank?.let { "#$it" } ?: "–",
+    )
+}
+
+/** Two labeled numbers in a box, side by side with a thin bar between them. */
+@Composable
+private fun StatBox(leftLabel: String, leftValue: String, rightLabel: String, rightValue: String) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    @Composable
+    fun Cell(label: String, value: String, modifier: Modifier) =
+        Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+            BasicText(label, style = type.caption.copy(color = colors.textSecondary))
+            BasicText(value, style = type.title.copy(color = colors.textPrimary))
+        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.bgSurface, Radius.card)
+            .border(1.dp, colors.borderSubtle, Radius.card)
+            .padding(vertical = Spacing.sm),
+    ) {
+        Cell(leftLabel, leftValue, Modifier.weight(1f))
+        Box(Modifier.width(1.dp).height(40.dp).background(colors.borderSubtle).align(Alignment.CenterVertically))
+        Cell(rightLabel, rightValue, Modifier.weight(1f))
+    }
+}
+
+/** The top of the streak tab: a big flame in the streak's color and the name of the streak. */
+@Composable
+private fun StreakHero() {
+    val colors = BrainScrollTheme.colors
+    Column(
+        modifier = Modifier.fillMaxWidth().testTag("streakHero"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        FlameIcon(colors.streakDay, iconSize = 64.dp)
+        BasicText(stringResource(Res.string.daily_streak_label), style = BrainScrollTheme.typography.title.copy(color = colors.textPrimary))
+    }
+}
+
+private val BADGE_SIZE = 84.dp
+
 // --- Speed and streak tables ---
+
+/** One line of a table, whatever the table: who, which place, the main number and a smaller one under it. */
+private class BoardEntry(val rank: Int, val name: String, val isMe: Boolean, val primary: String, val secondary: String? = null, val flame: Boolean = false, val stars: Int? = null)
 
 private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewModel) {
     boardItems(ui, ui.speed, viewModel) { row ->
-        BoardLine(
+        BoardEntry(
             rank = row.rank,
             name = row.username,
             isMe = row.isMe,
-            value = "${if (ui.game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else if (ui.game == GameKind.Line) stringResource(Res.string.ranks_stars, row.guesses.coerceIn(0, LineScoring.MAX_STARS)) else stringResource(Res.string.ranks_moves, row.guesses)} · ${formatDuration(row.durationMs)}",
+            primary = when (ui.game) {
+                GameKind.Word -> stringResource(Res.string.ranks_guesses, row.guesses)
+                GameKind.Line -> ""
+                else -> stringResource(Res.string.ranks_moves, row.guesses)
+            },
+            secondary = formatDuration(row.durationMs),
+            stars = if (ui.game == GameKind.Line) row.guesses.coerceIn(0, LineScoring.MAX_STARS) else null,
         )
     }
 }
 
 private fun LazyListScope.streakSection(ui: SocialUiState, viewModel: SocialViewModel) {
     boardItems(ui, ui.streak, viewModel) { row ->
-        BoardLine(rank = row.rank, name = row.username, isMe = row.isMe, value = row.value.toString())
+        BoardEntry(rank = row.rank, name = row.username, isMe = row.isMe, primary = row.value.toString(), flame = true)
     }
 }
 
-/** The status line, the top rows, and my own row when I am below the top. */
+/** The status line, the rows, and my own row when I am below the top. */
 private fun <R> LazyListScope.boardItems(
     ui: SocialUiState,
     board: Board<R>?,
     viewModel: SocialViewModel,
-    line: @Composable (R) -> Unit,
+    entry: @Composable (R) -> BoardEntry,
 ) {
     item {
         when {
@@ -363,41 +519,30 @@ private fun <R> LazyListScope.boardItems(
         item { Body(stringResource(if (ui.friendsOnly) Res.string.ranks_empty_friends else Res.string.ranks_empty)) }
         return
     }
-    items(board.rows) { row -> line(row) }
+    items(board.rows) { row -> BoardLine(entry(row)) }
     val me = board.me
     if (me != null && board.rows.none { it == me }) {
         item { Caption("…") }
-        item { line(me) }
+        item { BoardLine(entry(me)) }
     }
 }
 
 @Composable
-private fun BoardLine(rank: Int, name: String, isMe: Boolean, value: String) {
-    val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
-    // No surface: rows sit on the page and are set apart by a hairline. Only my own row is lifted.
-    Column(Modifier.fillMaxWidth()) {
-    Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {}
-            .background(if (isMe) colors.bgRaised else Color.Transparent, Radius.control)
-            .padding(horizontal = Spacing.sm, vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-    ) {
-        BasicText(rank.toString(), modifier = Modifier.width(32.dp), style = type.label.copy(color = colors.textSecondary))
-        BasicText(
-            text = if (isMe) "$name (${stringResource(Res.string.ranks_you)})" else name,
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = type.body.copy(color = colors.textPrimary, fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal),
-        )
-        BasicText(value, style = type.label.copy(color = colors.textPrimary))
-    }
-    }
+private fun displayName(entry: BoardEntry) =
+    if (entry.isMe) "${entry.name} (${stringResource(Res.string.ranks_you)})" else entry.name
+
+@Composable
+private fun BoardLine(entry: BoardEntry) {
+    RankRow(
+        rank = entry.rank,
+        name = entry.name,
+        displayName = displayName(entry),
+        isMe = entry.isMe,
+        primary = entry.primary,
+        secondary = entry.secondary,
+        flame = entry.flame,
+        stars = entry.stars,
+    )
 }
 
 // --- Gates ---
@@ -406,8 +551,8 @@ private fun BoardLine(rank: Int, name: String, isMe: Boolean, value: String) {
 private fun SignInCard(signIn: RanksSignIn) {
     Card {
         Body(stringResource(Res.string.gate_sign_in))
-        AppButton(stringResource(Res.string.sign_in_google), signIn.onSignInWithGoogle, primary = true)
-        if (signIn.canSignInWithApple) AppButton(stringResource(Res.string.sign_in_apple), signIn.onSignInWithApple)
+        if (signIn.canSignInWithApple) AppleSignInButton(stringResource(Res.string.sign_in_apple), signIn.onSignInWithApple)
+        GoogleSignInButton(stringResource(Res.string.sign_in_google), signIn.onSignInWithGoogle)
     }
 }
 
@@ -434,7 +579,7 @@ private fun LazyListScope.friendsSection(ui: SocialUiState, viewModel: SocialVie
         // The gate card above says what to do first; nothing else to show here.
         return
     }
-    item { InviteCard(ui, viewModel) }
+    item { InviteCard(ui) }
     item { AddFriend(viewModel) }
 
     val friends = ui.friends
@@ -453,8 +598,14 @@ private fun LazyListScope.friendsSection(ui: SocialUiState, viewModel: SocialVie
             }
         }
     }
-    item { Heading(stringResource(Res.string.friends_list)) }
-    if (friends.friends.isEmpty()) item { Body(stringResource(Res.string.friends_none)) }
+    // "Your friends", with how many on the right (no number for nobody: the empty picture says it).
+    item {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { Heading(stringResource(Res.string.friends_list)) }
+            if (friends.friends.isNotEmpty()) CountPill(friends.friends.size)
+        }
+    }
+    if (friends.friends.isEmpty()) item { NoFriendsYet() }
     items(friends.friends) { name ->
         PersonLine(name) { SmallAction(stringResource(Res.string.friends_remove)) { viewModel.removeFriend(name) } }
     }
@@ -466,14 +617,54 @@ private fun LazyListScope.friendsSection(ui: SocialUiState, viewModel: SocialVie
     }
 }
 
-/** One way to add a friend at a time: by their code, or by asking their username. One field, one button. */
+/** A small rounded number beside a heading. */
+@Composable
+private fun CountPill(count: Int) {
+    val colors = BrainScrollTheme.colors
+    BasicText(
+        text = count.toString(),
+        style = BrainScrollTheme.typography.label.copy(color = colors.textPrimary),
+        modifier = Modifier
+            .testTag("friendsCount")
+            .background(colors.bgSurface, Radius.pill)
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+    )
+}
+
+/** What the list says when there is nobody: a little picture of two pieces that fit, and what to do. */
+@Composable
+private fun NoFriendsYet() {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.lg).testTag("noFriends"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        PuzzlePair()
+        BasicText(
+            text = stringResource(Res.string.friends_empty_title),
+            style = type.title.copy(color = colors.textPrimary, textAlign = TextAlign.Center),
+        )
+        BasicText(
+            text = stringResource(Res.string.friends_none),
+            style = type.body.copy(color = colors.textSoft, textAlign = TextAlign.Center),
+        )
+    }
+}
+
+/**
+ * One way to add a friend at a time, chosen with the same sliding pill as the levels of the statistics: by their code, or by asking
+ * their username. One field and one button, which waits (dim) until something is typed.
+ */
 @Composable
 private fun AddFriend(viewModel: SocialViewModel) {
     var byCode by remember { mutableStateOf(true) }
     var code by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        SegmentedControl(
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        Heading(stringResource(Res.string.friends_add_title))
+        PillSegmented(
             options = listOf(stringResource(Res.string.friends_add_code), stringResource(Res.string.friends_add_name)),
             selectedIndex = if (byCode) 0 else 1,
             onSelect = { byCode = it == 0 },
@@ -486,6 +677,7 @@ private fun AddFriend(viewModel: SocialViewModel) {
                 actionLabel = stringResource(Res.string.friends_add),
                 onAction = { viewModel.addFriendByCode(code); code = "" },
                 onSurface = false,
+                actionEnabled = code.isNotBlank(),
             )
         } else {
             TextAction(
@@ -495,36 +687,99 @@ private fun AddFriend(viewModel: SocialViewModel) {
                 actionLabel = stringResource(Res.string.friends_ask),
                 onAction = { viewModel.sendRequest(name); name = "" },
                 onSurface = false,
+                actionEnabled = name.isNotBlank(),
             )
         }
     }
 }
 
+/**
+ * My invite code: a link icon and the name, the code big and green with a square button beside it that copies the code, a line
+ * about what it is for, and a button that copies the whole invite message. Each icon turns into a tick for three seconds when it
+ * has copied, and the message button says "Copied!".
+ */
 @Composable
-private fun InviteCard(ui: SocialUiState, viewModel: SocialViewModel) {
+private fun InviteCard(ui: SocialUiState) {
     val code = ui.inviteCode ?: return
     val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
     val clipboard = LocalClipboardManager.current
     val message = stringResource(Res.string.friends_invite_message, code, inviteLink(code))
-    var copied by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Caption(stringResource(Res.string.friends_my_code))
-        BasicText(code, style = BrainScrollTheme.typography.display.copy(color = colors.correctFill, letterSpacing = 4.sp))
-        AppButton(stringResource(Res.string.friends_copy), { clipboard.setText(AnnotatedString(message)); copied = true })
-        if (copied) Caption(stringResource(Res.string.friends_copied))
+    var codeCopied by remember { mutableStateOf(false) }
+    var messageCopied by remember { mutableStateOf(false) }
+    LaunchedEffect(codeCopied) { if (codeCopied) { delay(COPIED_MILLIS); codeCopied = false } }
+    LaunchedEffect(messageCopied) { if (messageCopied) { delay(COPIED_MILLIS); messageCopied = false } }
+    val copyCodeDescription = stringResource(Res.string.friends_copy_code)
+
+    Column(
+        modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            LineIcon(LineIcon.Link, colors.accent, size = 24.dp)
+            BasicText(stringResource(Res.string.friends_my_code), style = type.heading.copy(color = colors.textPrimary))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            BasicText(
+                text = code,
+                modifier = Modifier.weight(1f).testTag("inviteCode"),
+                maxLines = 1,
+                style = type.display.copy(color = colors.correctFill, letterSpacing = 4.sp),
+            )
+            Box(
+                modifier = Modifier
+                    .testTag("copyCode")
+                    .size(48.dp)
+                    .background(colors.bgRaised, Radius.control)
+                    .semantics { contentDescription = copyCodeDescription }
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
+                        clipboard.setText(AnnotatedString(code))
+                        codeCopied = true
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                LineIcon(if (codeCopied) LineIcon.Check else LineIcon.Copy, if (codeCopied) colors.accent else colors.textPrimary, size = 24.dp)
+            }
+        }
+        BasicText(stringResource(Res.string.friends_my_code_caption), style = type.body.copy(color = colors.textSoft))
+        Row(
+            modifier = Modifier
+                .testTag("copyInvite")
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .border(1.5.dp, colors.borderStrong, Radius.control)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
+                    clipboard.setText(AnnotatedString(message))
+                    messageCopied = true
+                },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
+        ) {
+            LineIcon(if (messageCopied) LineIcon.Check else LineIcon.Message, if (messageCopied) colors.accent else colors.textPrimary, size = 24.dp)
+            BasicText(
+                text = stringResource(if (messageCopied) Res.string.friends_copied_short else Res.string.friends_copy),
+                style = type.label.copy(color = colors.textPrimary),
+            )
+        }
     }
 }
 
+/** How long a copy button shows its tick before it goes back. */
+private const val COPIED_MILLIS = 3_000L
+
+/** One person: their avatar and name, and what can be done with them (a card, like a row of a leaderboard). */
 @Composable
 private fun PersonLine(name: String, actions: @Composable () -> Unit) {
     val colors = BrainScrollTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+            .background(colors.bgSurface, Radius.control)
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
+        PlayerAvatar(name, 36.dp)
         BasicText(
             text = name,
             modifier = Modifier.weight(1f),

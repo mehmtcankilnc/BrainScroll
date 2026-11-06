@@ -1,5 +1,9 @@
 package com.mehmtcan.brainscroll.ui.profile
 
+import brainscroll.shared.generated.resources.settings_account_guest
+import brainscroll.shared.generated.resources.settings_account_guest_text
+import com.mehmtcan.brainscroll.ui.components.LineIcon
+import com.mehmtcan.brainscroll.ui.theme.textSoft
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -49,6 +53,8 @@ import brainscroll.shared.generated.resources.username_save
 import brainscroll.shared.generated.resources.username_title
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.ui.components.AppButton
+import com.mehmtcan.brainscroll.ui.components.AppleSignInButton
+import com.mehmtcan.brainscroll.ui.components.GoogleSignInButton
 import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
 import com.mehmtcan.brainscroll.ui.components.TextAction
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -87,28 +93,25 @@ fun AccountSection(account: AccountUi, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.bgSurface, Radius.card)
             .padding(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        BasicText(stringResource(Res.string.account_title), style = type.heading.copy(color = colors.textPrimary))
-
         when (val state = account.state) {
             AccountState.Loading, AccountState.NoSession ->
-                BasicText(stringResource(Res.string.account_offline), style = type.body.copy(color = colors.textSecondary))
+                AccountHeader(stringResource(Res.string.account_title), stringResource(Res.string.account_offline))
 
             is AccountState.SignedIn -> when (state.kind) {
                 AccountState.SignedIn.Kind.Anonymous -> {
-                    BasicText(stringResource(Res.string.account_anonymous), style = type.body.copy(color = colors.textSecondary))
-                    AppButton(stringResource(Res.string.sign_in_google), account.onSignInWithGoogle, primary = true)
+                    AccountHeader(stringResource(Res.string.settings_account_guest), stringResource(Res.string.settings_account_guest_text))
+                    // Apple first and filled, Google under it: the order and weight players know from other apps.
                     if (account.canSignInWithApple) {
-                        AppButton(stringResource(Res.string.sign_in_apple), account.onSignInWithApple)
+                        AppleSignInButton(stringResource(Res.string.sign_in_apple), account.onSignInWithApple)
                     }
+                    GoogleSignInButton(stringResource(Res.string.sign_in_google), account.onSignInWithGoogle)
                 }
                 AccountState.SignedIn.Kind.Google, AccountState.SignedIn.Kind.Apple -> {
                     val provider = if (state.kind == AccountState.SignedIn.Kind.Google) Res.string.account_google else Res.string.account_apple
-                    BasicText(stringResource(provider), style = type.body.copy(color = colors.textPrimary))
-                    state.email?.let { BasicText(it, style = type.caption.copy(color = colors.textSecondary)) }
+                    AccountHeader(stringResource(provider), state.email)
                     account.username?.let { UsernameRow(it, account.onChangeUsername) }
                     AppButton(
                         stringResource(Res.string.sign_out),
@@ -144,6 +147,20 @@ fun AccountSection(account: AccountUi, modifier: Modifier = Modifier) {
     }
 }
 
+/** A person icon, a name and a few words under it: what the account card says about who is here. */
+@Composable
+private fun AccountHeader(title: String, text: String?) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        LineIcon(LineIcon.Person, colors.textPrimary, size = 24.dp)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            BasicText(title, style = type.heading.copy(color = colors.textPrimary))
+            if (text != null) BasicText(text, style = type.body.copy(color = colors.textSoft))
+        }
+    }
+}
+
 /** The username with a "Change" action that opens a field under it. */
 @Composable
 private fun UsernameRow(username: String, onSave: (String) -> Unit) {
@@ -154,7 +171,7 @@ private fun UsernameRow(username: String, onSave: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Column(Modifier.weight(1f)) {
-                BasicText(stringResource(Res.string.username_title), style = type.caption.copy(color = colors.textSecondary))
+                BasicText(stringResource(Res.string.username_title), style = type.caption.copy(color = colors.textSoft))
                 BasicText(username, style = type.heading.copy(color = colors.textPrimary), maxLines = 1, modifier = Modifier.testTag("usernameValue"))
             }
             Box(

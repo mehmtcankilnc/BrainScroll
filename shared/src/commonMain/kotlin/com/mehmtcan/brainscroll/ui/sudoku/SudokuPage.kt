@@ -100,10 +100,16 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
-import com.mehmtcan.brainscroll.ui.motion.slideFadeIn
+import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
+import com.mehmtcan.brainscroll.ui.components.ResultStats
+import com.mehmtcan.brainscroll.ui.components.ResultStatData
+import brainscroll.shared.generated.resources.result_stat_time
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
 
@@ -235,7 +241,7 @@ fun SudokuPage(
         Spacer(Modifier.height(Spacing.md))
         Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (status != WordleStatus.Playing) {
-                SudokuResultCard(page, isFavorite, onToggleFavorite, Modifier.slideFadeIn(justFinished))
+                SudokuResultCard(page, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {
                 NumberPad(state = state, notesMode = notesMode, onDigit = ::digit, onErase = ::erase, onToggleNotes = { notesMode = !notesMode })
             }
@@ -619,7 +625,7 @@ private fun SudokuResultCard(page: SudokuSnapshot, isFavorite: Boolean, onToggle
     // A sudoku is only ever won.
     val time = formatDuration(page.durationMs)
 
-    Box(modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg)) {
+    Box(modifier = modifier.fillMaxWidth().resultSurface(colors.bgSurface, GameKind.Sudoku.world, Radius.card).padding(Spacing.lg)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -630,10 +636,12 @@ private fun SudokuResultCard(page: SudokuSnapshot, isFavorite: Boolean, onToggle
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = type.title.copy(color = colors.correctFill, textAlign = TextAlign.Center),
             )
-            BasicText(
-                text = stringResource(Res.string.sudoku_result_won, time),
-                style = type.body.copy(color = colors.textPrimary),
-            )
+            ResultStats(
+    summary = stringResource(Res.string.sudoku_result_won, time),
+    stats = listOf(
+        ResultStatData(time, stringResource(Res.string.result_stat_time), colors.streakAnswer),
+    ),
+)
             BasicText(
                 text = swipeHintText(),
                 style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),

@@ -2,6 +2,7 @@ package com.mehmtcan.brainscroll.ui.motion
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,6 +88,29 @@ fun Modifier.popOnAppear(appeared: Boolean): Modifier {
     return graphicsLayer {
         scaleX = scale.value
         scaleY = scale.value
+    }
+}
+
+/**
+ * The result card arriving with a bounce: it rises from below and grows from a smaller size on a loose spring, so it
+ * overshoots and settles. Instant when [animate] is false or motion is reduced. The first frame is already the small one.
+ */
+@Composable
+fun Modifier.bounceIn(animate: Boolean): Modifier {
+    val reduce = LocalReduceMotion.current
+    val run = animate && !reduce
+    val progress = remember { Animatable(if (run) 0f else 1f) }
+    val density = LocalDensity.current
+    LaunchedEffect(Unit) {
+        if (run) progress.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 260f))
+    }
+    return graphicsLayer {
+        val p = progress.value
+        alpha = (p * 3f).coerceIn(0f, 1f)
+        val scale = 0.7f + 0.3f * p
+        scaleX = scale
+        scaleY = scale
+        translationY = (1f - p) * with(density) { 28.dp.toPx() }
     }
 }
 

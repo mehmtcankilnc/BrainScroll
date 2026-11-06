@@ -1,5 +1,73 @@
 package com.mehmtcan.brainscroll.ui.profile
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.selected
+import brainscroll.shared.generated.resources.confirm_cancel
+import brainscroll.shared.generated.resources.favorites_none_match
+import brainscroll.shared.generated.resources.favorites_only_records
+import brainscroll.shared.generated.resources.favorites_pill_daily
+import brainscroll.shared.generated.resources.favorites_remove_confirm
+import brainscroll.shared.generated.resources.favorites_remove_text
+import brainscroll.shared.generated.resources.favorites_remove_title
+import brainscroll.shared.generated.resources.favorites_sort_fastest
+import brainscroll.shared.generated.resources.favorites_sort_oldest
+import brainscroll.shared.generated.resources.favorites_sort_recent
+import brainscroll.shared.generated.resources.favorites_sort_title
+import brainscroll.shared.generated.resources.howto_done
+import brainscroll.shared.generated.resources.month_short_1
+import brainscroll.shared.generated.resources.month_short_2
+import brainscroll.shared.generated.resources.month_short_3
+import brainscroll.shared.generated.resources.month_short_4
+import brainscroll.shared.generated.resources.month_short_5
+import brainscroll.shared.generated.resources.month_short_6
+import brainscroll.shared.generated.resources.month_short_7
+import brainscroll.shared.generated.resources.month_short_8
+import brainscroll.shared.generated.resources.month_short_9
+import brainscroll.shared.generated.resources.month_short_10
+import brainscroll.shared.generated.resources.month_short_11
+import brainscroll.shared.generated.resources.month_short_12
+import com.mehmtcan.brainscroll.ui.components.AppSwitch
+import com.mehmtcan.brainscroll.ui.components.ConfirmDialog
+import com.mehmtcan.brainscroll.ui.components.FilterChip
+import com.mehmtcan.brainscroll.ui.components.HeartButton
+import org.jetbrains.compose.resources.StringResource
+import brainscroll.shared.generated.resources.settings_preferences
+import brainscroll.shared.generated.resources.settings_look
+import brainscroll.shared.generated.resources.settings_account
+import brainscroll.shared.generated.resources.settings_privacy
+import androidx.compose.ui.draw.clip
+import brainscroll.shared.generated.resources.stats_all_games
+import brainscroll.shared.generated.resources.stats_not_played
+import brainscroll.shared.generated.resources.stats_played_count
+import brainscroll.shared.generated.resources.stats_your_games
+import com.mehmtcan.brainscroll.ui.components.PillSegmented
+import com.mehmtcan.brainscroll.ui.home.GameThumbnail
+import androidx.compose.foundation.border
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import brainscroll.shared.generated.resources.profile_edit
+import brainscroll.shared.generated.resources.profile_feed_run_hint
+import brainscroll.shared.generated.resources.profile_guest_subtitle
+import brainscroll.shared.generated.resources.profile_guest_title
+import brainscroll.shared.generated.resources.profile_keep_text
+import brainscroll.shared.generated.resources.profile_keep_title
+import brainscroll.shared.generated.resources.profile_section_activity
+import brainscroll.shared.generated.resources.profile_section_social
+import brainscroll.shared.generated.resources.profile_sign_in
+import brainscroll.shared.generated.resources.sign_in_apple
+import brainscroll.shared.generated.resources.sign_in_google
+import brainscroll.shared.generated.resources.tab_profile
+import brainscroll.shared.generated.resources.unit_day
+import brainscroll.shared.generated.resources.unit_days
+import com.mehmtcan.brainscroll.ui.components.AppButton
+import com.mehmtcan.brainscroll.ui.components.AppleSignInButton
+import com.mehmtcan.brainscroll.ui.components.GoogleSignInButton
+import com.mehmtcan.brainscroll.ui.components.LineIcon
+import com.mehmtcan.brainscroll.ui.components.ModalSheet
+import com.mehmtcan.brainscroll.ui.components.PlayerAvatar
+import com.mehmtcan.brainscroll.ui.social.RanksSignIn
+import com.mehmtcan.brainscroll.ui.theme.textSoft
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -201,9 +269,10 @@ import kotlin.math.roundToInt
 enum class ProfileTarget { Stats, Favorites, Settings, Ranks, Friends }
 
 /**
- * The profile tab, top to bottom: who you are and whether your progress is backed up, the two streaks (tap one to see
- * what it means), three numbers that sum you up, and a short list that leads to the pages: statistics, favorites,
- * ranks and settings. Each line of the list says in a few words what is behind it.
+ * The profile tab, top to bottom: the title, who you are (an avatar, the name and a way to edit it; for a guest, a line that
+ * asks to sign in), the two streaks with a few words each (tap one to see what it means), three numbers that sum you up, and
+ * two groups of lines that lead to the pages: "Your activity" (statistics, favorites, leaderboards) and "Social & settings"
+ * (friends, settings). Each line says in a few words what is behind it.
  */
 @Composable
 fun ProfileScreen(
@@ -216,23 +285,43 @@ fun ProfileScreen(
     /** Opens the purchase screen from the Pro card. */
     onPro: (PaywallSource) -> Unit = {},
     telemetry: Telemetry = NoTelemetry,
+    /**
+     * The sign-in choices. The "Sign in" button of a guest opens them in a sheet right on this page where there are two (Google and
+     * Apple, on iOS); where there is only Google (Android) it starts the Google sign-in at once. Null: it opens the settings.
+     */
+    signIn: RanksSignIn? = null,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     // The endless numbers already include memory match, so only the daily puzzle is added.
     val played = profile.stats.played + profile.daily.played
     val won = profile.stats.won + profile.daily.won
-    val winRate = if (played == 0) 0f else won.toFloat() / played
     var streakInfo by remember { mutableStateOf<StreakKind?>(null) }
+    var signInSheet by remember { mutableStateOf(false) }
+    val named = (account as? AccountState.SignedIn)?.let { it.kind != AccountState.SignedIn.Kind.Anonymous } == true
+    // Signing in worked: the sheet has done its job.
+    LaunchedEffect(named) { if (named) signInSheet = false }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg),
         ) {
-            Spacer(Modifier.height(Spacing.md))
-            AccountCard(account, username) { onOpen(ProfileTarget.Settings) }
-            ProCard(onPro, telemetry)
+            Spacer(Modifier.height(Spacing.sm))
+            BasicText(
+                text = stringResource(Res.string.tab_profile),
+                style = type.display.copy(color = colors.textPrimary, fontWeight = FontWeight.Bold),
+                modifier = Modifier.semantics { heading() },
+            )
+            ProfileHeader(account, username)
+            if (!named) SignInCard(offline = account !is AccountState.SignedIn) {
+                when {
+                    // Where Apple is offered too (iOS) there is a choice to make: the sheet. Where only Google is, go straight to it.
+                    signIn == null -> onOpen(ProfileTarget.Settings)
+                    signIn.canSignInWithApple -> signInSheet = true
+                    else -> signIn.onSignInWithGoogle()
+                }
+            }
 
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
                 StreakTile(
@@ -254,26 +343,34 @@ fun ProfileScreen(
                 )
             }
 
+            // Before the first game there is no rate to speak of: a dash, not "0%".
+            val rate = if (played == 0) "–" else "${(won.toFloat() / played * 100).roundToInt()}%"
             Row(
                 modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(vertical = Spacing.lg),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                SummaryNumber(played.toString(), stringResource(Res.string.stat_played))
-                SummaryNumber("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate))
-                SummaryNumber(won.toString(), stringResource(Res.string.stat_won))
+                SummaryNumber(played.toString(), stringResource(Res.string.stat_played), Modifier.weight(1f))
+                SummaryDivider()
+                SummaryNumber(rate, stringResource(Res.string.stat_win_rate), Modifier.weight(1f))
+                SummaryDivider()
+                SummaryNumber(won.toString(), stringResource(Res.string.stat_won), Modifier.weight(1f))
             }
 
-            Column {
-                ProfileRow(stringResource(Res.string.stats_title), stringResource(Res.string.profile_stats_hint)) { onOpen(ProfileTarget.Stats) }
+            ProfileGroup(stringResource(Res.string.profile_section_activity)) {
+                ProfileRow(LineIcon.Bars, stringResource(Res.string.stats_title), stringResource(Res.string.profile_stats_hint)) { onOpen(ProfileTarget.Stats) }
                 ProfileRow(
+                    LineIcon.Heart,
                     stringResource(Res.string.favorites_title),
                     stringResource(Res.string.profile_favorites_hint),
                     value = profile.favorites.size.takeIf { it > 0 }?.toString(),
                 ) { onOpen(ProfileTarget.Favorites) }
-                ProfileRow(stringResource(Res.string.tab_ranks), stringResource(Res.string.profile_ranks_hint)) { onOpen(ProfileTarget.Ranks) }
-                ProfileRow(stringResource(Res.string.ranks_friends), stringResource(Res.string.profile_friends_hint)) { onOpen(ProfileTarget.Friends) }
-                ProfileRow(stringResource(Res.string.profile_settings), stringResource(Res.string.profile_settings_hint), last = true) { onOpen(ProfileTarget.Settings) }
+                ProfileRow(LineIcon.Trophy, stringResource(Res.string.tab_ranks), stringResource(Res.string.profile_ranks_hint), last = true) { onOpen(ProfileTarget.Ranks) }
             }
+            ProfileGroup(stringResource(Res.string.profile_section_social)) {
+                ProfileRow(LineIcon.People, stringResource(Res.string.ranks_friends), stringResource(Res.string.profile_friends_hint)) { onOpen(ProfileTarget.Friends) }
+                ProfileRow(LineIcon.Gear, stringResource(Res.string.profile_settings), stringResource(Res.string.profile_settings_hint), last = true) { onOpen(ProfileTarget.Settings) }
+            }
+            ProCard(onPro, telemetry)
             Spacer(Modifier.height(Spacing.xl))
         }
         when (streakInfo) {
@@ -287,16 +384,17 @@ fun ProfileScreen(
             StreakKind.Win -> StreakInfoSheet(StreakKind.Win, current = null, best = profile.bestFlow, onClose = { streakInfo = null })
             null -> Unit
         }
+        if (signInSheet && signIn != null) SignInSheet(signIn, onDismiss = { signInSheet = false })
     }
 }
 
 /**
- * Who is playing: a round mark with a letter, the name (or what kind of player this is) and how the account was made.
- * With a Google or Apple account it only tells you who you are, since the settings have their own line below. A guest
- * or an offline player gets a row that leads to the sign-in.
+ * Who is playing, the same for a guest and a signed-in player: an avatar on the left, the name and a line under it. A player with a
+ * name gets the avatar made of the first letter of the name and a button to edit the profile at the right edge; a guest gets a
+ * plain person and a line about the progress.
  */
 @Composable
-private fun AccountCard(account: AccountState, username: String?, onSignIn: () -> Unit) {
+private fun ProfileHeader(account: AccountState, username: String?) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val signedIn = account as? AccountState.SignedIn
@@ -307,48 +405,104 @@ private fun AccountCard(account: AccountState, username: String?, onSignIn: () -
         signedIn.kind == AccountState.SignedIn.Kind.Apple -> stringResource(Res.string.account_apple)
         else -> stringResource(Res.string.account_guest)
     }
-    val title = if (named) username ?: provider else provider
-    val detail = when {
-        signedIn == null -> stringResource(Res.string.account_offline)
-        !named -> stringResource(Res.string.account_guest_hint)
-        username != null -> provider
-        else -> null
-    }
-    val initial = ((if (named) username else null) ?: signedIn?.email)?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+    val name = if (named) username ?: signedIn?.email ?: provider else stringResource(Res.string.profile_guest_title)
     Row(
-        modifier = Modifier
-            .testTag("accountCard")
-            .fillMaxWidth()
-            .background(colors.bgSurface, Radius.card)
-            .then(
-                if (named) Modifier
-                else Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onSignIn),
-            )
-            .padding(Spacing.lg),
+        modifier = Modifier.testTag("accountCard").fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        Box(
-            Modifier.size(44.dp).background(if (named) colors.correctFill else colors.bgRaised, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            BasicText(initial, style = type.heading.copy(color = if (named) colors.correctOn else colors.textSecondary))
+        if (named) {
+            PlayerAvatar(name, 64.dp)
+        } else {
+            Box(Modifier.size(64.dp).background(colors.bgRaised, CircleShape), contentAlignment = Alignment.Center) {
+                LineIcon(LineIcon.Person, colors.textSoft, size = 32.dp)
+            }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            BasicText(title, style = type.heading.copy(color = colors.textPrimary), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (detail != null) BasicText(detail, style = type.caption.copy(color = colors.textSecondary))
+            BasicText(name, style = type.title.copy(color = colors.textPrimary), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            BasicText(
+                text = if (named) provider else stringResource(Res.string.profile_guest_subtitle),
+                style = type.body.copy(color = colors.textSoft),
+            )
         }
-        if (!named) ForwardChevron(colors.textSecondary)
     }
 }
 
-/** One streak: its icon and name, the number now and the best so far. The whole tile opens the explanation. */
+/**
+ * The guest's card: what signing in gives (the games are kept) and the button that does it. The button opens the sign-in right
+ * here; offline there is nothing to press, only the words.
+ */
+@Composable
+private fun SignInCard(offline: Boolean, onSignIn: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    Row(
+        modifier = Modifier
+            .testTag("signInCard")
+            .fillMaxWidth()
+            .background(colors.bgSurface, Radius.card)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        LineIcon(LineIcon.Cloud, colors.textPrimary, size = 28.dp)
+        Box(Modifier.width(1.dp).height(40.dp).background(colors.borderSubtle))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            BasicText(stringResource(Res.string.profile_keep_title), style = type.heading.copy(color = colors.textPrimary))
+            BasicText(
+                text = stringResource(if (offline) Res.string.account_offline else Res.string.profile_keep_text),
+                style = type.caption.copy(color = colors.textSoft),
+            )
+        }
+        if (!offline) {
+            Box(
+                modifier = Modifier
+                    .testTag("profileSignIn")
+                    .heightIn(min = 48.dp)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onSignIn),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier.heightIn(min = 36.dp).border(1.5.dp, colors.accent, Radius.pill).padding(horizontal = Spacing.md),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BasicText(stringResource(Res.string.profile_sign_in), style = type.label.copy(color = colors.accent))
+                }
+            }
+        }
+    }
+}
+
+/** The sign-in, in a sheet over the profile: Google, and Apple where the device has it. */
+@Composable
+private fun SignInSheet(signIn: RanksSignIn, onDismiss: () -> Unit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    ModalSheet(onDismiss = onDismiss, tag = "signInSheet") { close ->
+        BasicText(stringResource(Res.string.profile_keep_title), style = type.title.copy(color = colors.textPrimary))
+        BasicText(stringResource(Res.string.profile_keep_text), style = type.body.copy(color = colors.textSoft))
+        // Apple first and filled, Google under it and a step quieter: the order and weight players know from other apps.
+        if (signIn.canSignInWithApple) AppleSignInButton(stringResource(Res.string.sign_in_apple), { close(); signIn.onSignInWithApple() }, Modifier.testTag("signInApple"))
+        GoogleSignInButton(stringResource(Res.string.sign_in_google), { close(); signIn.onSignInWithGoogle() }, Modifier.testTag("signInGoogle"))
+    }
+}
+
+/**
+ * One streak: its icon and name, the number now (with its unit) and a few words under it: the best so far for the day streak, what
+ * the number counts for the feed record. The whole tile opens the explanation.
+ */
 @Composable
 private fun StreakTile(kind: StreakKind, title: String, current: Int, best: Int?, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val accent = if (kind == StreakKind.Daily) colors.streakDay else colors.streakAnswer
     val description = stringResource(if (kind == StreakKind.Daily) Res.string.a11y_day_streak else Res.string.a11y_flow_record, current)
+    val unit = stringResource(if (current == 1) Res.string.unit_day else Res.string.unit_days)
+    val note = if (best != null) {
+        stringResource(Res.string.streak_best, best) + " " + stringResource(if (best == 1) Res.string.unit_day else Res.string.unit_days)
+    } else {
+        stringResource(Res.string.profile_feed_run_hint)
+    }
     Column(
         modifier = modifier
             .testTag(if (kind == StreakKind.Daily) "dayStreakTile" else "winStreakTile")
@@ -360,26 +514,56 @@ private fun StreakTile(kind: StreakKind, title: String, current: Int, best: Int?
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             if (kind == StreakKind.Daily) FlameIcon(accent) else BoltIcon(accent)
-            BasicText(title, style = type.caption.copy(color = colors.textSecondary), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            BasicText(title, style = type.caption.copy(color = colors.textPrimary), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
-        BasicText(current.toString(), style = type.display.copy(color = accent))
-        if (best != null) BasicText(stringResource(Res.string.streak_best, best), style = type.caption.copy(color = colors.textSecondary))
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            BasicText(current.toString(), style = type.display.copy(color = accent))
+            if (kind == StreakKind.Daily) {
+                BasicText(unit, style = type.body.copy(color = colors.textSoft), modifier = Modifier.padding(bottom = 6.dp))
+            }
+        }
+        BasicText(note, style = type.caption.copy(color = colors.textSoft))
     }
 }
 
 @Composable
-private fun SummaryNumber(value: String, label: String) {
+private fun SummaryNumber(value: String, label: String, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         BasicText(value, style = type.display.copy(color = colors.textPrimary), maxLines = 1, softWrap = false)
-        BasicText(label, style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center), maxLines = 2)
+        BasicText(label, style = type.caption.copy(color = colors.textSoft, textAlign = TextAlign.Center), maxLines = 2)
     }
 }
 
-/** A line of the list: a name with a few words under it, an optional small value and a chevron. A hairline below. */
 @Composable
-private fun ProfileRow(title: String, hint: String? = null, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
+private fun SummaryDivider() {
+    Box(Modifier.width(1.dp).height(40.dp).background(BrainScrollTheme.colors.borderSubtle))
+}
+
+/** A small label over a card that holds a few lines of the list. */
+@Composable
+private fun ProfileGroup(label: String, content: @Composable ColumnScope.() -> Unit) {
+    val colors = BrainScrollTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        GroupLabel(label)
+        Column(Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card)) { content() }
+    }
+}
+
+/** The small spaced-out label over a group of a page. */
+@Composable
+private fun GroupLabel(label: String) {
+    BasicText(
+        text = label,
+        style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.textSoft, letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium),
+        modifier = Modifier.padding(horizontal = Spacing.xs),
+    )
+}
+
+/** A line of a group: an icon, a name with a few words under it, an optional small value and a chevron. A hairline below, except the last. */
+@Composable
+private fun ProfileRow(icon: LineIcon, title: String, hint: String? = null, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     Column(Modifier.fillMaxWidth()) {
@@ -387,24 +571,28 @@ private fun ProfileRow(title: String, hint: String? = null, value: String? = nul
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
+                .padding(horizontal = Spacing.lg),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
+            LineIcon(icon, colors.textPrimary, size = 24.dp)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 BasicText(title, style = type.heading.copy(color = colors.textPrimary))
-                if (hint != null) BasicText(hint, style = type.caption.copy(color = colors.textSecondary))
+                if (hint != null) BasicText(hint, style = type.caption.copy(color = colors.textSoft))
             }
-            if (value != null) BasicText(value, style = type.label.copy(color = colors.textSecondary))
-            ForwardChevron(colors.textSecondary)
+            if (value != null) BasicText(value, style = type.label.copy(color = colors.textSoft))
+            ForwardChevron(colors.textSoft)
         }
-        if (!last) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+        if (!last) Box(Modifier.fillMaxWidth().padding(start = Spacing.lg + 24.dp + Spacing.md).height(1.dp).background(colors.borderSubtle))
     }
 }
 
 /**
- * The numbers. At the top the three that sum you up; under them one line per game with how often it was played. A line
- * opens (slides open) to that game's own numbers, so the page is short until you ask for more. Everything is derived from
+ * The numbers. At the top the three that sum you up and, when games have levels, the level the numbers below are for (no "all":
+ * the best time of an easy board does not belong next to a hard one's, so one level is always chosen). Then "Your games": one
+ * card for each game with its own picture, its name and how often it was played; tapping a card opens its numbers. The games that
+ * were played come first, the ones that were not follow in the usual order, marked "not played yet". Everything is derived from
  * the saved results.
  */
 @Composable
@@ -421,28 +609,109 @@ fun StatsPage(
     // The endless numbers already include memory match, so only the daily puzzle is added.
     val played = profile.stats.played + profile.daily.played
     val won = profile.stats.won + profile.daily.won
-    val winRate = if (played == 0) 0f else won.toFloat() / played
+    // Before the first game there is no rate to speak of: a dash, not "0%".
+    val rate = if (played == 0) "–" else "${(won.toFloat() / played * 100).roundToInt()}%"
+
+    val playedLabel = stringResource(Res.string.stat_played)
+    val winLabel = stringResource(Res.string.stat_win_rate)
+    val bestLabel = stringResource(Res.string.stat_best_time)
+    val movesLabel = stringResource(Res.string.stat_fewest_moves)
+    val flawlessLabel = stringResource(Res.string.stat_flawless)
+    fun pct(rate: Float) = "${(rate * 100).roundToInt()}%"
+    fun time(ms: Long?) = ms?.let(::formatDuration) ?: "-"
+    val levelName = if (showLevels) difficultyName(profile.statsLevel) else null
+
+    fun entry(kind: GameKind, title: String, tag: String, played: Int, vararg tiles: Pair<String, String>) =
+        StatEntry(kind, title, tag, played, levelName) { TileGrid(tiles.toList()) }
+    // A game of which every result is a win has no rate: how many, the fastest and the fewest moves.
+    fun moves(kind: GameKind, title: String, tag: String, played: Int, bestTimeMs: Long?, fewestMoves: Int?) =
+        entry(kind, title, tag, played, time(bestTimeMs) to bestLabel, (fewestMoves?.toString() ?: "-") to movesLabel)
+    fun timed(kind: GameKind, title: String, tag: String, played: Int, bestTimeMs: Long?) =
+        entry(kind, title, tag, played, time(bestTimeMs) to bestLabel)
+
+    // The daily puzzle always comes first: its streak counts days, not answers, and it has a time.
+    val dailyEntry = StatEntry(GameKind.Line, stringResource(Res.string.stats_daily), "statsDaily", daily.played, null) {
+        StatTiles(
+            played = daily.played,
+            winRate = daily.winRate,
+            streak = profile.dayStreak.current,
+            best = profile.dayStreak.best,
+            streakLabel = stringResource(Res.string.stat_day_streak),
+        )
+        daily.bestTimeMs?.let { best ->
+            BasicText(
+                text = stringResource(Res.string.stat_best_time) + ": " + formatDuration(best),
+                style = type.body.copy(color = colors.textPrimary),
+            )
+        }
+        if (profile.dayStreak.freezesAvailable > 0) {
+            BasicText(
+                text = stringResource(Res.string.daily_freeze, profile.dayStreak.freezesAvailable),
+                style = type.caption.copy(color = colors.textSoft),
+            )
+        }
+    }
+    val games = listOf(
+        entry(GameKind.Word, stringResource(Res.string.stats_endless), "statsWord", profile.endless.played,
+            pct(profile.endless.winRate) to winLabel),
+        entry(GameKind.Memory, stringResource(Res.string.stats_memory), "statsMemory", profile.memory.played,
+            pct(profile.memory.winRate) to winLabel,
+            time(profile.memory.bestTimeMs) to bestLabel, (profile.memory.fewestMoves?.toString() ?: "-") to movesLabel),
+        moves(GameKind.Tubes, stringResource(Res.string.stats_tubes), "statsTubes", profile.tubes.played, profile.tubes.bestTimeMs, profile.tubes.fewestMoves),
+        moves(GameKind.Lights, stringResource(Res.string.stats_lights), "statsLights", profile.lights.played, profile.lights.bestTimeMs, profile.lights.fewestMoves),
+        moves(GameKind.Slide, stringResource(Res.string.stats_slide), "statsSlide", profile.slide.played, profile.slide.bestTimeMs, profile.slide.fewestMoves),
+        moves(GameKind.Target, stringResource(Res.string.stats_target), "statsTarget", profile.target.played, profile.target.bestTimeMs, profile.target.fewestMoves),
+        moves(GameKind.Hanoi, stringResource(Res.string.stats_hanoi), "statsHanoi", profile.hanoi.played, profile.hanoi.bestTimeMs, profile.hanoi.fewestMoves),
+        timed(GameKind.Jigsaw, stringResource(Res.string.stats_jigsaw), "statsJigsaw", profile.jigsaw.played, profile.jigsaw.bestTimeMs),
+        timed(GameKind.Tents, stringResource(Res.string.stats_tents), "statsTents", profile.tents.played, profile.tents.bestTimeMs),
+        entry(GameKind.Arrows, stringResource(Res.string.stats_arrows), "statsArrows", profile.arrows.played,
+            time(profile.arrows.bestTimeMs) to bestLabel, profile.arrows.flawless.toString() to flawlessLabel),
+        entry(GameKind.TopicGroups, stringResource(Res.string.stats_topicgroups), "statsTopicGroups", profile.topicGroups.played,
+            time(profile.topicGroups.bestTimeMs) to bestLabel, profile.topicGroups.flawless.toString() to flawlessLabel),
+        timed(GameKind.AxisSum, stringResource(Res.string.stats_axissum), "statsAxisSum", profile.axisSum.played, profile.axisSum.bestTimeMs),
+        timed(GameKind.BallSlide, stringResource(Res.string.stats_ballslide), "statsBallSlide", profile.ballSlide.played, profile.ballSlide.bestTimeMs),
+        timed(GameKind.ColorFlow, stringResource(Res.string.stats_colorflow), "statsColorFlow", profile.colorFlow.played, profile.colorFlow.bestTimeMs),
+        timed(GameKind.Nonogram, stringResource(Res.string.stats_nonogram), "statsNonogram", profile.nonogram.played, profile.nonogram.bestTimeMs),
+        moves(GameKind.BlockOut, stringResource(Res.string.stats_blockout), "statsBlockOut", profile.blockOut.played, profile.blockOut.bestTimeMs, profile.blockOut.fewestMoves),
+        moves(GameKind.Queens, stringResource(Res.string.stats_queens), "statsQueens", profile.queens.played, profile.queens.bestTimeMs, profile.queens.fewestMoves),
+        moves(GameKind.Pipes, stringResource(Res.string.stats_pipes), "statsPipes", profile.pipes.played, profile.pipes.bestTimeMs, profile.pipes.fewestMoves),
+        // Minesweeper: played, win rate and the fastest win.
+        entry(GameKind.Mines, stringResource(Res.string.stats_mines), "statsMines", profile.mines.played,
+            pct(profile.mines.winRate) to winLabel, time(profile.mines.bestTimeMs) to bestLabel),
+        // A sudoku cannot be lost any more, so it has no win rate: played and the fastest win.
+        timed(GameKind.Sudoku, stringResource(Res.string.stats_sudoku), "statsSudoku", profile.sudoku.played, profile.sudoku.bestTimeMs),
+    )
+    // The ones that were played first (the most played at the top); the rest keep their usual order (the sort is stable).
+    val ordered = listOf(dailyEntry) + games.sortedByDescending { it.played }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         item {
+            BasicText(
+                text = stringResource(Res.string.stats_all_games),
+                style = type.caption.copy(color = colors.textSoft, letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium),
+                modifier = Modifier.padding(horizontal = Spacing.xs),
+            )
+        }
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(vertical = Spacing.lg),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                SummaryNumber(played.toString(), stringResource(Res.string.stat_played))
-                SummaryNumber("${(winRate * 100).roundToInt()}%", stringResource(Res.string.stat_win_rate))
-                SummaryNumber(won.toString(), stringResource(Res.string.stat_won))
+                SummaryNumber(played.toString(), playedLabel, Modifier.weight(1f))
+                SummaryDivider()
+                SummaryNumber(rate, winLabel, Modifier.weight(1f))
+                SummaryDivider()
+                SummaryNumber(won.toString(), stringResource(Res.string.stat_won), Modifier.weight(1f))
             }
         }
-        item { Spacer(Modifier.height(Spacing.xs)) }
 
         // The numbers of each game below are for one level: the best time of an easy board does not belong next to a hard one's.
         if (showLevels) {
             item {
-                SegmentedControl(
+                PillSegmented(
                     options = Difficulty.entries.map { difficultyName(it) },
                     selectedIndex = Difficulty.entries.indexOf(profile.statsLevel),
                     onSelect = { onLevel(Difficulty.entries[it]) },
@@ -451,248 +720,123 @@ fun StatsPage(
             }
         }
 
-        // The daily puzzle: its streak counts days, not answers, and it has a time.
         item {
-            StatGroup(stringResource(Res.string.stats_daily), profile.daily.played, "statsDaily") {
-                StatTiles(
-                    played = daily.played,
-                    winRate = daily.winRate,
-                    streak = profile.dayStreak.current,
-                    best = profile.dayStreak.best,
-                    streakLabel = stringResource(Res.string.stat_day_streak),
-                )
-                daily.bestTimeMs?.let { best ->
-                    BasicText(
-                        text = stringResource(Res.string.stat_best_time) + ": " + formatDuration(best),
-                        style = type.body.copy(color = colors.textPrimary),
-                    )
-                }
-                if (profile.dayStreak.freezesAvailable > 0) {
-                    BasicText(
-                        text = stringResource(Res.string.daily_freeze, profile.dayStreak.freezesAvailable),
-                        style = type.caption.copy(color = colors.textSecondary),
-                    )
-                }
-            }
+            BasicText(
+                text = stringResource(Res.string.stats_your_games),
+                style = type.title.copy(color = colors.textPrimary),
+                modifier = Modifier.padding(top = Spacing.sm).semantics { heading() },
+            )
         }
-
-        // The endless feed: word puzzles, with how many guesses they took.
-        item {
-            StatGroup(stringResource(Res.string.stats_endless), profile.endless.played, "statsWord") {
-                TileGrid(
-                    listOf(
-                        profile.endless.played.toString() to stringResource(Res.string.stat_played),
-                        "${(profile.endless.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
-                    ),
-                )
-            }
-        }
-        // Memory match has no guesses: results, the fastest win and the fewest moves.
-        item {
-            StatGroup(stringResource(Res.string.stats_memory), profile.memory.played, "statsMemory") {
-                TileGrid(
-                    listOf(
-                        profile.memory.played.toString() to stringResource(Res.string.stat_played),
-                        "${(profile.memory.winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
-                        (profile.memory.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                        (profile.memory.fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
-                    ),
-                )
-            }
-        }
-        // Every game of these is a win, so there is no win rate, only the fastest game and the fewest moves.
-        item { MovesGroup(stringResource(Res.string.stats_tubes), profile.tubes.played, profile.tubes.bestTimeMs, profile.tubes.fewestMoves, "statsTubes") }
-        item { MovesGroup(stringResource(Res.string.stats_lights), profile.lights.played, profile.lights.bestTimeMs, profile.lights.fewestMoves, "statsLights") }
-        item { MovesGroup(stringResource(Res.string.stats_slide), profile.slide.played, profile.slide.bestTimeMs, profile.slide.fewestMoves, "statsSlide") }
-        item { MovesGroup(stringResource(Res.string.stats_target), profile.target.played, profile.target.bestTimeMs, profile.target.fewestMoves, "statsTarget") }
-        item { MovesGroup(stringResource(Res.string.stats_hanoi), profile.hanoi.played, profile.hanoi.bestTimeMs, profile.hanoi.fewestMoves, "statsHanoi") }
-        item {
-            StatGroup(stringResource(Res.string.stats_jigsaw), profile.jigsaw.played, "statsJigsaw") {
-                TileGrid(
-                    listOf(
-                        profile.jigsaw.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.jigsaw.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_tents), profile.tents.played, "statsTents") {
-                TileGrid(
-                    listOf(
-                        profile.tents.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.tents.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_arrows), profile.arrows.played, "statsArrows") {
-                TileGrid(
-                    listOf(
-                        profile.arrows.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.arrows.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                        profile.arrows.flawless.toString() to stringResource(Res.string.stat_flawless),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_topicgroups), profile.topicGroups.played, "statsTopicGroups") {
-                TileGrid(
-                    listOf(
-                        profile.topicGroups.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.topicGroups.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                        profile.topicGroups.flawless.toString() to stringResource(Res.string.stat_flawless),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_axissum), profile.axisSum.played, "statsAxisSum") {
-                TileGrid(
-                    listOf(
-                        profile.axisSum.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.axisSum.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_ballslide), profile.ballSlide.played, "statsBallSlide") {
-                TileGrid(
-                    listOf(
-                        profile.ballSlide.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.ballSlide.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_colorflow), profile.colorFlow.played, "statsColorFlow") {
-                TileGrid(
-                    listOf(
-                        profile.colorFlow.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.colorFlow.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
-        item {
-            StatGroup(stringResource(Res.string.stats_nonogram), profile.nonogram.played, "statsNonogram") {
-                TileGrid(
-                    listOf(
-                        profile.nonogram.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.nonogram.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
-        item { MovesGroup(stringResource(Res.string.stats_blockout), profile.blockOut.played, profile.blockOut.bestTimeMs, profile.blockOut.fewestMoves, "statsBlockOut") }
-        item { MovesGroup(stringResource(Res.string.stats_queens), profile.queens.played, profile.queens.bestTimeMs, profile.queens.fewestMoves, "statsQueens") }
-        item { MovesGroup(stringResource(Res.string.stats_pipes), profile.pipes.played, profile.pipes.bestTimeMs, profile.pipes.fewestMoves, "statsPipes") }
-        // Minesweeper: played, win rate and the fastest win.
-        item { WinRateGroup(stringResource(Res.string.stats_mines), profile.mines.played, profile.mines.winRate, profile.mines.bestTimeMs, "statsMines") }
-        // A sudoku cannot be lost any more, so it has no win rate: played and the fastest win.
-        item {
-            StatGroup(stringResource(Res.string.stats_sudoku), profile.sudoku.played, "statsSudoku") {
-                TileGrid(
-                    listOf(
-                        profile.sudoku.played.toString() to stringResource(Res.string.stat_played),
-                        (profile.sudoku.bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                    ),
-                )
-            }
-        }
+        items(ordered, key = { it.tag }) { entry -> StatGroup(entry) }
         item { Spacer(Modifier.height(Spacing.xl)) }
     }
 }
 
-@Composable
-private fun MovesGroup(title: String, played: Int, bestTimeMs: Long?, fewestMoves: Int?, tag: String) {
-    StatGroup(title, played, tag) {
-        TileGrid(
-            listOf(
-                played.toString() to stringResource(Res.string.stat_played),
-                (bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-                (fewestMoves?.toString() ?: "-") to stringResource(Res.string.stat_fewest_moves),
-            ),
-        )
-    }
-}
-
-@Composable
-private fun WinRateGroup(title: String, played: Int, winRate: Float, bestTimeMs: Long?, tag: String) {
-    StatGroup(title, played, tag) {
-        TileGrid(
-            listOf(
-                played.toString() to stringResource(Res.string.stat_played),
-                "${(winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
-                (bestTimeMs?.let(::formatDuration) ?: "-") to stringResource(Res.string.stat_best_time),
-            ),
-        )
-    }
-}
+/** One game of the statistics page: its picture and name, how often it was played, a note, and the numbers [content] shows when opened. */
+private class StatEntry(
+    val kind: GameKind,
+    val title: String,
+    val tag: String,
+    val played: Int,
+    /** The level the numbers are for, when games have levels (shown under the name). */
+    val note: String?,
+    val content: @Composable ColumnScope.() -> Unit,
+)
 
 /**
- * One game on the statistics page: its name and how often it was played, always in view; tapping the line slides open
- * the numbers under it ([content]) and turns the arrow.
+ * One game on the statistics page, a card of its own: the picture of the game, its name, "12 played" (or "not played yet") and
+ * the level, always in view; tapping the card slides open the numbers under a hairline and turns the arrow.
  */
 @Composable
-private fun StatGroup(title: String, played: Int, tag: String, content: @Composable ColumnScope.() -> Unit) {
+private fun StatGroup(entry: StatEntry) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     var open by remember { mutableStateOf(false) }
     val arrow by animateFloatAsState(if (open) -90f else 90f, tween(Motion.BASE, easing = Motion.Standard))
-    Column(Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).testTag(tag)) {
+    Column(Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).testTag(entry.tag)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp)
+                .heightIn(min = 72.dp)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) { open = !open }
-                .padding(horizontal = Spacing.lg),
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            BasicText(title, style = type.heading.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
-            BasicText(played.toString(), style = type.label.copy(color = colors.textSecondary))
-            ForwardChevron(colors.textSecondary, Modifier.rotate(arrow))
+            GameThumbnail(
+                entry.kind,
+                Language.entries.first(),
+                Modifier.size(52.dp).clip(Radius.control).border(1.dp, colors.borderSubtle, Radius.control),
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                BasicText(entry.title, style = type.heading.copy(color = colors.textPrimary))
+                BasicText(
+                    text = if (entry.played > 0) stringResource(Res.string.stats_played_count, entry.played) else stringResource(Res.string.stats_not_played),
+                    style = type.caption.copy(color = colors.textSoft),
+                )
+                entry.note?.let { BasicText(it, style = type.caption.copy(color = colors.textSoft)) }
+            }
+            ForwardChevron(colors.textSoft, Modifier.rotate(arrow))
         }
         AnimatedVisibility(
             visible = open,
             enter = expandVertically(tween(Motion.BASE, easing = Motion.Standard)) + fadeIn(tween(Motion.BASE)),
             exit = shrinkVertically(tween(Motion.BASE, easing = Motion.Standard)) + fadeOut(tween(Motion.FAST)),
         ) {
-            Column(Modifier.padding(start = Spacing.lg, end = Spacing.lg, bottom = Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                content()
+            Column(Modifier.padding(start = Spacing.lg, end = Spacing.lg, bottom = Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+                entry.content(this)
             }
         }
     }
 }
 
+/** How the list of favorites is ordered. The list the player sees starts with the ones added last. */
+private enum class FavoriteSort { Recent, Oldest, Fastest }
+
 /**
- * The finished puzzles the player marked with the heart. A row of chips filters them by game, a puzzle that holds the
- * best time of its game says so, and "Play again" starts a new feed with that very puzzle as its first page.
+ * The finished puzzles the player marked with the heart, one card each: the picture of the game, its name with the level and
+ * "daily" beside it, the result and the date, the heart (tap, and after a question the puzzle leaves the list) and "Play
+ * again", which starts a new feed with that very puzzle as its first page. A row of pills filters by game (the chosen one is
+ * filled green); under it the way the list is ordered, and a button that opens the ordering and the filter for records.
  */
 @Composable
-fun FavoritesPage(profile: ProfileState, onReplay: (FinishedRound) -> Unit = {}, modifier: Modifier = Modifier) {
+fun FavoritesPage(
+    profile: ProfileState,
+    onReplay: (FinishedRound) -> Unit = {},
+    modifier: Modifier = Modifier,
+    /** The heart of a card was confirmed: the puzzle is not a favorite any more. */
+    onRemove: (FinishedRound) -> Unit = {},
+) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     var filter by remember { mutableStateOf<GameKind?>(null) }
+    var sort by remember { mutableStateOf(FavoriteSort.Recent) }
+    var recordsOnly by remember { mutableStateOf(false) }
+    var sheet by remember { mutableStateOf(false) }
+    var removing by remember { mutableStateOf<FinishedRound?>(null) }
     val present = GameKind.entries.filter { game -> profile.favorites.any { it.game == game } }
     // A filter whose games were all un-hearted is gone: show everything again.
     val active = filter?.takeIf { it in present }
-    val shown = if (active == null) profile.favorites else profile.favorites.filter { it.game == active }
+    val ofGame = if (active == null) profile.favorites else profile.favorites.filter { it.game == active }
+    val filtered = if (recordsOnly) ofGame.filter { holdsRecord(profile, it) } else ofGame
+    val shown = when (sort) {
+        FavoriteSort.Recent -> filtered
+        FavoriteSort.Oldest -> filtered.reversed()
+        FavoriteSort.Fastest -> filtered.sortedBy { it.durationMs ?: Long.MAX_VALUE }
+    }
+    val sortName = stringResource(sort.label())
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         if (profile.favorites.isEmpty()) {
             item {
                 BasicText(
                     stringResource(Res.string.favorites_empty),
-                    style = type.body.copy(color = colors.textSecondary),
+                    style = type.body.copy(color = colors.textSoft),
                 )
             }
         } else {
@@ -702,17 +846,82 @@ fun FavoritesPage(profile: ProfileState, onReplay: (FinishedRound) -> Unit = {},
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     ) {
-                        FilterChip(stringResource(Res.string.favorites_all), active == null) { filter = null }
-                        present.forEach { game -> FilterChip(game.displayName(), active == game) { filter = game } }
+                        FilterChip(stringResource(Res.string.favorites_all), active == null, { filter = null }, solid = true)
+                        present.forEach { game -> FilterChip(game.displayName(), active == game, { filter = game }, solid = true) }
+                    }
+                }
+            }
+            item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    BasicText(
+                        text = if (recordsOnly) sortName + " · " + stringResource(Res.string.favorites_only_records) else sortName,
+                        style = type.body.copy(color = colors.textSoft),
+                        modifier = Modifier.weight(1f).testTag("favoritesSortLabel"),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .testTag("favoritesSortButton")
+                            .size(48.dp)
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) { sheet = true },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val description = stringResource(Res.string.favorites_sort_title)
+                        LineIcon(LineIcon.Sort, colors.textPrimary, Modifier.semantics { contentDescription = description }, size = 24.dp)
                     }
                 }
             }
             items(shown, key = { it.id }) { round ->
-                FavoriteRow(round, record = holdsRecord(profile, round), onReplay = { onReplay(round) })
+                FavoriteCard(round, record = holdsRecord(profile, round), onReplay = { onReplay(round) }, onRemove = { removing = round })
+            }
+            if (shown.isEmpty()) {
+                item { BasicText(stringResource(Res.string.favorites_none_match), style = type.body.copy(color = colors.textSoft)) }
             }
         }
         item { Spacer(Modifier.height(Spacing.xl)) }
     }
+
+    removing?.let { round ->
+        ConfirmDialog(
+            title = stringResource(Res.string.favorites_remove_title),
+            message = stringResource(Res.string.favorites_remove_text),
+            confirmText = stringResource(Res.string.favorites_remove_confirm),
+            cancelText = stringResource(Res.string.confirm_cancel),
+            onConfirm = { removing = null; onRemove(round) },
+            onCancel = { removing = null },
+        )
+    }
+    if (sheet) {
+        ModalSheet(onDismiss = { sheet = false }, tag = "favoritesSortSheet") { close ->
+            BasicText(stringResource(Res.string.favorites_sort_title), style = type.title.copy(color = colors.textPrimary))
+            FavoriteSort.entries.forEach { option ->
+                val chosen = option == sort
+                Row(
+                    modifier = Modifier
+                        .testTag("favoritesSort_" + option.name)
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .semantics { selected = chosen }
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton) { sort = option },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BasicText(stringResource(option.label()), style = type.body.copy(color = if (chosen) colors.correctFill else colors.textPrimary), modifier = Modifier.weight(1f))
+                    if (chosen) BasicText("✓", style = type.label.copy(color = colors.correctFill))
+                }
+            }
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                val title = stringResource(Res.string.favorites_only_records)
+                BasicText(title, style = type.body.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+                AppSwitch(recordsOnly, { recordsOnly = it }, title, Modifier.testTag("favoritesRecordsOnly"))
+            }
+            AppButton(stringResource(Res.string.howto_done), close, primary = true)
+        }
+    }
+}
+
+private fun FavoriteSort.label(): StringResource = when (this) {
+    FavoriteSort.Recent -> Res.string.favorites_sort_recent
+    FavoriteSort.Oldest -> Res.string.favorites_sort_oldest
+    FavoriteSort.Fastest -> Res.string.favorites_sort_fastest
 }
 
 /** True when this won, unassisted puzzle is the fastest of its game (the daily word puzzle has its own best time). */
@@ -747,35 +956,38 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
     return best != null && time <= best
 }
 
-@Composable
-private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = BrainScrollTheme.colors
-    Chip(
-        text = text,
-        textColor = if (selected) colors.textPrimary else colors.textSecondary,
-        raised = selected,
-        selected = selected,
-        onClick = onClick,
-    )
-}
 
-/** The account and the privacy choice. */
+/**
+ * The settings, in groups with a small label over each: "Preferences" (the app language and the sound), "Appearance" when there
+ * is something to choose, "Account" (who you are, and signing in or out) and "Privacy" (sharing usage data).
+ */
 @Composable
 fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, sound: PrivacyUi, modifier: Modifier = Modifier, look: LookUi? = null) {
     val colors = BrainScrollTheme.colors
-    val type = BrainScrollTheme.typography
     // Tapping a locked accent color shows it on the whole page for a moment.
     var preview by remember { mutableStateOf<Accent?>(null) }
     CompositionLocalProvider(LocalBrainScrollColors provides (preview?.let { colors.withAccent(it) } ?: colors)) {
         LazyColumn(
             modifier = modifier.fillMaxSize().padding(horizontal = Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg),
         ) {
-            item { LanguageSection(language) }
-            item { SoundSection(sound) }
-            if (look != null) item { LookSection(look, onPreview = { preview = it }) }
-            item { AccountSection(account) }
-            item { PrivacySection(privacy) }
+            item {
+                ProfileGroup(stringResource(Res.string.settings_preferences)) {
+                    LanguageRow(language)
+                    Box(Modifier.fillMaxWidth().padding(start = Spacing.lg + 24.dp + Spacing.md).height(1.dp).background(colors.borderSubtle))
+                    SoundRow(sound)
+                }
+            }
+            if (look != null) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        GroupLabel(stringResource(Res.string.settings_look))
+                        LookSection(look, onPreview = { preview = it })
+                    }
+                }
+            }
+            item { ProfileGroup(stringResource(Res.string.settings_account)) { AccountSection(account) } }
+            item { ProfileGroup(stringResource(Res.string.settings_privacy)) { PrivacyRow(privacy) } }
             item { Spacer(Modifier.height(Spacing.xl)) }
         }
     }
@@ -785,7 +997,6 @@ fun SettingsPage(account: AccountUi, privacy: PrivacyUi, language: LanguageUi, s
 private fun StatTiles(played: Int, winRate: Float, streak: Int, best: Int, streakLabel: String) {
     TileGrid(
         listOf(
-            played.toString() to stringResource(Res.string.stat_played),
             "${(winRate * 100).roundToInt()}%" to stringResource(Res.string.stat_win_rate),
             streak.toString() to streakLabel,
             best.toString() to stringResource(Res.string.stat_best_streak),
@@ -793,16 +1004,19 @@ private fun StatTiles(played: Int, winRate: Float, streak: Int, best: Int, strea
     )
 }
 
-/** Value and label pairs as tiles: four in a row, two by two when the player chose big text. */
+/** Value and label pairs in a row with thin bars between them: four in a row, two by two when the player chose big text. */
 @Composable
 private fun TileGrid(tiles: List<Pair<String, String>>) {
-    // Four tiles side by side do not fit when the player chose big text: then two rows of two.
+    // Four numbers side by side do not fit when the player chose big text: then two rows of two.
     val perRow = if (LocalDensity.current.fontScale > LARGE_TEXT_SCALE) 2 else 4
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         tiles.chunked(perRow).forEach { row ->
-            // IntrinsicSize.Max makes the tiles as tall as the tallest one, even if one uses a smaller number size.
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
-                row.forEach { (value, label) -> StatTile(value, label, Modifier.weight(1f)) }
+            // IntrinsicSize.Max makes the cells as tall as the tallest one, so the bars between them are as tall as the row.
+            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max), verticalAlignment = Alignment.CenterVertically) {
+                row.forEachIndexed { index, (value, label) ->
+                    if (index > 0) Box(Modifier.width(1.dp).fillMaxHeight().padding(vertical = Spacing.sm).background(BrainScrollTheme.colors.borderSubtle))
+                    StatTile(value, label, Modifier.weight(1f))
+                }
             }
         }
     }
@@ -824,75 +1038,111 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
         val valueStyle = if (value.length <= 3) type.display else type.title
         BasicText(value, style = valueStyle.copy(color = colors.textPrimary), maxLines = 1, softWrap = false)
         // The label wraps (up to two lines) so big text is never cut off.
-        BasicText(label, style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center), maxLines = 2, modifier = Modifier.padding(horizontal = Spacing.xs))
+        BasicText(label, style = type.caption.copy(color = colors.textSoft, textAlign = TextAlign.Center), maxLines = 2, modifier = Modifier.padding(horizontal = Spacing.xs))
     }
 }
 
+/**
+ * One favorite as a card: the picture of its game on the left; the name (the word, for a word puzzle) with the level and "daily" as
+ * small pills beside it, the result and the date in the middle; at the right the heart at the top and "Play again" at the bottom.
+ */
 @Composable
-private fun FavoriteRow(round: FinishedRound, record: Boolean, onReplay: () -> Unit) {
+private fun FavoriteCard(round: FinishedRound, record: Boolean, onReplay: () -> Unit, onRemove: () -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    Column(Modifier.fillMaxWidth()) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
+            .height(IntrinsicSize.Min)
+            .background(colors.bgSurface, Radius.card)
+            .padding(Spacing.md),
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        // Memory and tubes results have no word (their board is a list of numbers), so the game's name is shown instead.
-        BasicText(
-            text = favoriteTag(round) + (if (round.difficulty != Difficulty.Medium) " · " + difficultyName(round.difficulty) else ""),
-            style = type.heading.copy(color = colors.textPrimary),
-            modifier = Modifier.weight(1f),
-        )
-        Column(horizontalAlignment = Alignment.End) {
-            BasicText(
-                text = when {
-                    round.outcome != Outcome.WON -> stringResource(Res.string.favorite_lost)
-                    round.game == GameKind.Memory -> stringResource(Res.string.favorite_memory_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Tubes -> stringResource(Res.string.favorite_tubes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Mines -> stringResource(Res.string.favorite_mines_result, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_result, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Lights -> stringResource(Res.string.favorite_lights_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Slide -> stringResource(Res.string.favorite_slide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Target -> stringResource(Res.string.favorite_target_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Pipes -> stringResource(Res.string.favorite_pipes_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Queens -> stringResource(Res.string.favorite_queens_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Tents -> stringResource(Res.string.favorite_tents_result, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_result, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Nonogram -> stringResource(Res.string.favorite_nonogram_result, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.TopicGroups -> stringResource(Res.string.favorite_topicgroups_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Arrows -> stringResource(Res.string.favorite_arrows_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Line && round.mode == Mode.DAILY -> stringResource(Res.string.favorite_line_stars, round.lineStars, formatDuration(round.durationMs ?: 0L))
-                    round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.moveCount, formatDuration(round.durationMs ?: 0L))
-                    else -> stringResource(Res.string.favorite_won, round.guesses.size)
-                },
-                style = type.label.copy(color = if (round.outcome == Outcome.WON) colors.correctFill else colors.textSecondary),
-            )
-            val date = IstanbulDay.format(round.dayIndex)
-            val detail = if (round.mode == Mode.DAILY) {
-                listOfNotNull(stringResource(Res.string.favorite_daily_tag), round.durationMs?.let(::formatDuration), date).joinToString(" · ")
-            } else {
-                date
+        GameThumbnail(round.game, round.language, Modifier.size(64.dp).clip(Radius.control).border(1.dp, colors.borderSubtle, Radius.control))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                BasicText(
+                    text = favoriteTag(round),
+                    style = type.heading.copy(color = colors.textPrimary),
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (round.difficulty != Difficulty.Medium) Pill(difficultyName(round.difficulty))
+                if (round.mode == Mode.DAILY) Pill(stringResource(Res.string.favorites_pill_daily))
             }
-            BasicText(detail, style = type.caption.copy(color = colors.textSecondary))
-        }
-    }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            if (round.game == GameKind.Word) {
+                BasicText(GameKind.Word.displayName(), style = type.caption.copy(color = colors.textSoft))
+            }
+            BasicText(favoriteResult(round), style = type.body.copy(color = colors.textSoft))
+            BasicText(favoriteDate(round.dayIndex), style = type.caption.copy(color = colors.textSoft))
             if (record) {
                 BasicText(stringResource(Res.string.favorites_record), style = type.label.copy(color = colors.pendingFill), modifier = Modifier.testTag("favoriteRecord"))
             }
-            Spacer(Modifier.weight(1f))
+        }
+        Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
+            HeartButton(filled = true, onClick = onRemove, tint = colors.accent, modifier = Modifier.offset(x = 12.dp, y = (-12).dp))
             AppTextButton(stringResource(Res.string.favorites_replay), onReplay, Modifier.testTag("favoriteReplay"))
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
     }
+}
+
+/** A small rounded tag beside a name: the level, or "daily". */
+@Composable
+private fun Pill(text: String) {
+    val colors = BrainScrollTheme.colors
+    BasicText(
+        text = text,
+        style = BrainScrollTheme.typography.caption.copy(color = colors.textSoft),
+        maxLines = 1,
+        modifier = Modifier
+            .background(colors.bgRaised, Radius.pill)
+            .border(1.dp, colors.borderSubtle, Radius.pill)
+            .padding(horizontal = Spacing.sm, vertical = 2.dp),
+    )
+}
+
+/** The result line of a favorite: "5 guesses", "9 moves · 00:12", or that it was not solved. */
+@Composable
+private fun favoriteResult(round: FinishedRound): String {
+    val time = formatDuration(round.durationMs ?: 0L)
+    return when {
+        round.outcome != Outcome.WON -> stringResource(Res.string.favorite_lost)
+        round.game == GameKind.Memory -> stringResource(Res.string.favorite_memory_result, round.moveCount, time)
+        round.game == GameKind.Tubes -> stringResource(Res.string.favorite_tubes_result, round.moveCount, time)
+        round.game == GameKind.Mines -> stringResource(Res.string.favorite_mines_result, time)
+        round.game == GameKind.Sudoku -> stringResource(Res.string.favorite_sudoku_result, time)
+        round.game == GameKind.Lights -> stringResource(Res.string.favorite_lights_result, round.moveCount, time)
+        round.game == GameKind.Slide -> stringResource(Res.string.favorite_slide_result, round.moveCount, time)
+        round.game == GameKind.Target -> stringResource(Res.string.favorite_target_result, round.moveCount, time)
+        round.game == GameKind.Pipes -> stringResource(Res.string.favorite_pipes_result, round.moveCount, time)
+        round.game == GameKind.Hanoi -> stringResource(Res.string.favorite_hanoi_result, round.moveCount, time)
+        round.game == GameKind.Queens -> stringResource(Res.string.favorite_queens_result, round.moveCount, time)
+        round.game == GameKind.Tents -> stringResource(Res.string.favorite_tents_result, time)
+        round.game == GameKind.Jigsaw -> stringResource(Res.string.favorite_jigsaw_result, time)
+        round.game == GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_result, round.moveCount, time)
+        round.game == GameKind.Nonogram -> stringResource(Res.string.favorite_nonogram_result, time)
+        round.game == GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_result, round.moveCount, time)
+        round.game == GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_result, round.moveCount, time)
+        round.game == GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_result, round.moveCount, time)
+        round.game == GameKind.TopicGroups -> stringResource(Res.string.favorite_topicgroups_result, round.moveCount, time)
+        round.game == GameKind.Arrows -> stringResource(Res.string.favorite_arrows_result, round.moveCount, time)
+        round.game == GameKind.Line && round.mode == Mode.DAILY -> stringResource(Res.string.favorite_line_stars, round.lineStars, time)
+        round.game == GameKind.Line -> stringResource(Res.string.favorite_line_result, round.moveCount, time)
+        // A daily word puzzle is timed by the server: its time is said too.
+        else -> stringResource(Res.string.favorite_won, round.guesses.size) + (round.durationMs?.takeIf { round.mode == Mode.DAILY }?.let { " · " + formatDuration(it) } ?: "")
+    }
+}
+
+private val MonthNames = listOf(
+    Res.string.month_short_1, Res.string.month_short_2, Res.string.month_short_3, Res.string.month_short_4,
+    Res.string.month_short_5, Res.string.month_short_6, Res.string.month_short_7, Res.string.month_short_8,
+    Res.string.month_short_9, Res.string.month_short_10, Res.string.month_short_11, Res.string.month_short_12,
+)
+
+/** The day as "20 Oct 2026" (or "20 Eki 2026"): the day, the short month in the app language, the year. */
+@Composable
+private fun favoriteDate(dayIndex: Long): String {
+    val (year, month, day) = IstanbulDay.date(dayIndex)
+    return "$day ${stringResource(MonthNames[month - 1])} $year"
 }
 
 /** The line a favorite starts with: the word of a word puzzle, the name of the game for the others. */

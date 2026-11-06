@@ -2,6 +2,16 @@
 
 package com.mehmtcan.brainscroll.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.lerp
+import com.mehmtcan.brainscroll.ui.components.AppOutlinedButton
+import com.mehmtcan.brainscroll.ui.components.StarCount
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -103,6 +113,7 @@ import com.mehmtcan.brainscroll.ui.motion.popOnIncrease
 import com.mehmtcan.brainscroll.ui.social.Access
 import com.mehmtcan.brainscroll.ui.social.SocialViewModel
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.textSoft
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
 import org.jetbrains.compose.resources.stringResource
@@ -171,7 +182,14 @@ fun HomeScreen(
 
         DailyCard(daily.phase, daily.language, dailyGame, onOpenDaily)
 
+        // One main button on the page: today's puzzle until it is done (or cannot be played), then the feed.
+        val dailyDone = if (dailyGame.game == GameKind.Word) {
+            daily.phase == DailyPhase.Finished || daily.phase == DailyPhase.Offline || daily.phase == DailyPhase.Unavailable
+        } else {
+            dailyGame.phase == DailyGamePhase.Finished
+        }
         FeedCard(
+            emphasized = dailyDone,
             enabled = feedViewModel.availableGames.filter { it in enabled },
             wordLanguage = wordLanguage,
             onEdit = onOpenFeedEditor,
@@ -191,13 +209,14 @@ fun HomeScreen(
                 )
                 Chip(text = stringResource(Res.string.home_fastest_all), textColor = colors.textPrimary, onClick = onOpenRanks)
             }
-            FastestPreview(preview.rows.take(PREVIEW_ROWS), preview.loading, preview.failed, dailyGame.game)
+            // The call to sign in comes before the rows, high on the page, not as the last line against the tab bar.
             if (social.access == Access.Anonymous) {
                 BasicText(
                     text = stringResource(Res.string.home_fastest_sign_in),
-                    style = type.caption.copy(color = colors.textSecondary),
+                    style = type.caption.copy(color = colors.textSoft),
                 )
             }
+            FastestPreview(preview.rows.take(PREVIEW_ROWS), preview.loading, preview.failed, dailyGame.game)
         }
         Spacer(Modifier.height(Spacing.xl))
     }
@@ -233,7 +252,7 @@ private fun StreakStrip(dayStreak: Int, waitingToday: Boolean, freezeReady: Bool
     val waiting = stringResource(Res.string.home_waiting_today)
     val dayDescription = stringResource(Res.string.a11y_day_streak, dayStreak) + if (waitingToday) ", $waiting" else ""
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
@@ -243,23 +262,31 @@ private fun StreakStrip(dayStreak: Int, waitingToday: Boolean, freezeReady: Bool
             style = type.title.copy(color = colors.textPrimary),
             modifier = Modifier.weight(1f).semantics { heading() },
         )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier
-                .testTag("dayStreak")
-                .semantics(mergeDescendants = true) { contentDescription = dayDescription }
-                .heightIn(min = 48.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onDayStreak),
+        // A streak of zero says nothing: the flame appears with the first puzzle that is done.
+        val reduce = LocalReduceMotion.current
+        AnimatedVisibility(
+            visible = dayStreak > 0,
+            enter = if (reduce) EnterTransition.None else fadeIn() + scaleIn(initialScale = 0.6f),
+            exit = ExitTransition.None,
         ) {
-            FlameIcon(colors.streakDay)
-            Box(Modifier.popOnIncrease(dayStreak)) {
-                BasicText(dayStreak.toString(), style = type.heading.copy(color = colors.streakDay))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier
+                    .testTag("dayStreak")
+                    .semantics(mergeDescendants = true) { contentDescription = dayDescription }
+                    .heightIn(min = 48.dp)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onDayStreak),
+            ) {
+                FlameIcon(colors.streakDay)
+                Box(Modifier.popOnIncrease(dayStreak)) {
+                    BasicText(dayStreak.toString(), style = type.heading.copy(color = colors.streakDay))
+                }
+                if (waitingToday) Box(Modifier.size(6.dp).background(colors.streakDay, CircleShape))
             }
-            if (waitingToday) Box(Modifier.size(6.dp).background(colors.streakDay, CircleShape))
         }
         if (freezeReady) {
-            BasicText(stringResource(Res.string.home_freeze_badge), style = type.caption.copy(color = colors.textSecondary))
+            BasicText(stringResource(Res.string.home_freeze_badge), style = type.caption.copy(color = colors.textSoft))
         }
     }
 }
@@ -272,6 +299,7 @@ private fun StreakStrip(dayStreak: Int, waitingToday: Boolean, freezeReady: Bool
  */
 @Composable
 private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi, onOpen: () -> Unit) {
+    val doneToday = if (gameUi.game == GameKind.Word) phase == DailyPhase.Finished else gameUi.phase == DailyGamePhase.Finished
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val game = gameUi.game
@@ -279,7 +307,9 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
         modifier = Modifier
             .testTag("dailyCard")
             .fillMaxWidth()
-            .background(colors.bgSurface, Radius.card)
+            // Once today's puzzle is done the card calms down, so the feed button below is the one thing that stands out.
+            .background(lerp(colors.bgSurface, colors.correctFill, if (doneToday) 0.07f else 0.16f), Radius.card)
+            .border(1.dp, colors.correctFill.copy(alpha = if (doneToday) 0.2f else 0.45f), Radius.card)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onOpen)
             .padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -290,7 +320,7 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
                 style = type.title.copy(color = colors.textPrimary),
                 modifier = Modifier.weight(1f),
             )
-            if (game == GameKind.Word) Chip(text = language.nativeName(), textColor = colors.textSecondary)
+            if (game == GameKind.Word) Chip(text = language.nativeName(), textColor = colors.textSoft)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
             GameThumbnail(game, language, Modifier.size(DAILY_THUMBNAIL))
@@ -299,40 +329,43 @@ private fun DailyCard(phase: DailyPhase, language: Language, gameUi: DailyGameUi
                 if (game == GameKind.Word) {
                     when (phase) {
                         DailyPhase.Intro -> {
-                            BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
-                            AppTextButton(stringResource(Res.string.home_daily_solve), onOpen)
+                            BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSoft))
                         }
                         DailyPhase.Playing -> {
-                            BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSecondary))
-                            AppTextButton(stringResource(Res.string.home_daily_continue), onOpen)
+                            BasicText(stringResource(Res.string.home_daily_description), style = type.body.copy(color = colors.textSoft))
                         }
                         DailyPhase.Finished -> {
-                            BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                            BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSoft))
                             AppTextButton(stringResource(Res.string.home_daily_result), onOpen)
                         }
                         DailyPhase.Offline, DailyPhase.Unavailable ->
-                            BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSecondary))
+                            BasicText(stringResource(Res.string.home_daily_offline), style = type.body.copy(color = colors.textSoft))
                         DailyPhase.Loading ->
-                            BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
+                            BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSoft))
                     }
                 } else if (gameUi.phase == DailyGamePhase.Finished) {
                     val result = gameUi.result
                     if (game == GameKind.Line && result != null) {
                         LineDoneInfo(result)
                     } else {
-                        BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSecondary))
+                        BasicText(stringResource(Res.string.home_daily_done), style = type.body.copy(color = colors.textSoft))
                     }
                     AppTextButton(stringResource(Res.string.home_daily_result), onOpen)
                 } else {
-                    BasicText(stringResource(Res.string.home_daily_description_board), style = type.body.copy(color = colors.textSecondary))
-                    AppTextButton(stringResource(Res.string.home_daily_solve), onOpen)
+                    BasicText(stringResource(Res.string.home_daily_description_board), style = type.body.copy(color = colors.textSoft))
                 }
             }
+        }
+        // The one filled button of the page while today's puzzle is open.
+        val open = if (game == GameKind.Word) phase == DailyPhase.Intro || phase == DailyPhase.Playing else gameUi.phase != DailyGamePhase.Finished
+        if (open) {
+            val label = if (game == GameKind.Word && phase == DailyPhase.Playing) Res.string.home_daily_continue else Res.string.home_daily_solve
+            AppButton(stringResource(label), onOpen, primary = true, modifier = Modifier.testTag("dailyCardButton"))
         }
     }
 }
 
-private val DAILY_THUMBNAIL = 104.dp
+private val DAILY_THUMBNAIL = 128.dp
 
 /** How many games the feed card shows by name before the rest are counted ("+3 games"). */
 private const val FEED_PREVIEW = 3
@@ -343,6 +376,8 @@ private const val FEED_PREVIEW = 3
  */
 @Composable
 private fun FeedCard(
+    /** True once today's puzzle is done: the feed button is then the main one. */
+    emphasized: Boolean,
     enabled: List<GameKind>,
     wordLanguage: Language,
     onEdit: () -> Unit,
@@ -364,9 +399,7 @@ private fun FeedCard(
     Box(
         modifier = Modifier
             .testTag("feedCard")
-            .fillMaxWidth()
-            .clip(Radius.card)
-            .background(colors.bgSurface),
+            .fillMaxWidth(),
     ) {
     Box(
         Modifier
@@ -376,7 +409,7 @@ private fun FeedCard(
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onEdit),
     )
     Column(
-        modifier = Modifier.fillMaxWidth().padding(Spacing.lg),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         // The title and, at its right, the way to change what is in the feed.
@@ -389,7 +422,7 @@ private fun FeedCard(
             shown.forEach { game ->
                 Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1f).testTag("feedThumbnail"))
-                    BasicText(text = game.displayName(), style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center), maxLines = 1, modifier = Modifier.fillMaxWidth())
+                    BasicText(text = game.displayName(), style = type.caption.copy(color = colors.textSoft, textAlign = TextAlign.Center), maxLines = 1, modifier = Modifier.fillMaxWidth())
                 }
             }
             if (tileText != null) {
@@ -405,10 +438,10 @@ private fun FeedCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        BasicText("+", style = type.display.copy(color = colors.textSecondary))
+                        BasicText("+", style = type.display.copy(color = colors.textSoft))
                         BasicText(
                             text = tileText,
-                            style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+                            style = type.caption.copy(color = colors.textSoft, textAlign = TextAlign.Center),
                             maxLines = 1,
                         )
                     }
@@ -419,12 +452,18 @@ private fun FeedCard(
         }
         if (onContinue != null) {
             // The feed that was left is the main button. A new one is started from the editor, which asks first.
-            AppButton(stringResource(Res.string.home_continue_feed), onContinue, modifier = Modifier.testTag("continueFeed"), primary = true)
+            FeedButton(stringResource(Res.string.home_continue_feed), onContinue, emphasized, Modifier.testTag("continueFeed"))
         } else {
-            AppButton(stringResource(Res.string.home_start_feed), onStart, modifier = Modifier.testTag("startFeedHome"), primary = true)
+            FeedButton(stringResource(Res.string.home_start_feed), onStart, emphasized, Modifier.testTag("startFeedHome"))
         }
     }
     }
+}
+
+/** The feed's button: filled when it is the main thing on the page, only an outline while today's puzzle still is. */
+@Composable
+private fun FeedButton(text: String, onClick: () -> Unit, emphasized: Boolean, modifier: Modifier = Modifier) {
+    if (emphasized) AppButton(text, onClick, modifier, primary = true) else AppOutlinedButton(text, onClick, modifier)
 }
 
 /** The first few rows of today's speed table. No surface: the rows sit on the page, set apart by hairlines. */
@@ -441,27 +480,27 @@ private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boole
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm),
                 ) {
-                    BasicText(row.rank.toString(), style = type.label.copy(color = colors.textSecondary))
+                    BasicText(row.rank.toString(), style = type.label.copy(color = colors.textSoft))
                     BasicText(
                         text = if (row.isMe) row.username + " (" + stringResource(Res.string.ranks_you) + ")" else row.username,
                         style = type.body.copy(color = colors.textPrimary),
                         modifier = Modifier.weight(1f),
                         maxLines = 1,
                     )
-                    BasicText(
-                        text = when (game) {
-                            GameKind.Word -> stringResource(Res.string.ranks_guesses, row.guesses)
-                            GameKind.Line -> stringResource(Res.string.ranks_stars, row.guesses.coerceIn(0, LineScoring.MAX_STARS))
-                            else -> stringResource(Res.string.ranks_moves, row.guesses)
-                        },
-                        style = type.label.copy(color = colors.textSecondary),
-                    )
+                    if (game == GameKind.Line) {
+                        StarCount(row.guesses.coerceIn(0, LineScoring.MAX_STARS))
+                    } else {
+                        BasicText(
+                            text = if (game == GameKind.Word) stringResource(Res.string.ranks_guesses, row.guesses) else stringResource(Res.string.ranks_moves, row.guesses),
+                            style = type.label.copy(color = colors.textSoft),
+                        )
+                    }
                     BasicText(formatDuration(row.durationMs), style = type.label.copy(color = colors.textPrimary))
                 }
             }
         }
-        loading -> BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSecondary))
-        failed -> BasicText(stringResource(Res.string.home_fastest_failed), style = type.body.copy(color = colors.textSecondary))
-        else -> BasicText(stringResource(Res.string.home_fastest_empty), style = type.body.copy(color = colors.textSecondary))
+        loading -> BasicText(stringResource(Res.string.ranks_loading), style = type.body.copy(color = colors.textSoft))
+        failed -> BasicText(stringResource(Res.string.home_fastest_failed), style = type.body.copy(color = colors.textSoft))
+        else -> BasicText(stringResource(Res.string.home_fastest_empty), style = type.body.copy(color = colors.textSoft))
     }
 }

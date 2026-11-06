@@ -18,11 +18,11 @@ class AccountMergeUiTest {
 
     private fun google(userId: String, email: String = "a@b.c") = AccountState.SignedIn(userId, AccountState.SignedIn.Kind.Google, email)
 
-    /** The profile of an anonymous account, then "Sign in with Google" is tapped. */
+    /** The profile of an anonymous account, then "Continue with Google" is tapped. */
     private fun ComposeUiTest.tapSignIn(cloud: TestCloud) {
         start(cloud)
         openProfilePage("Ayarlar", "Settings")
-        clickAny("Google ile giriş yap", "Sign in with Google")
+        clickAny("Google ile devam et", "Continue with Google")
         waitUntil(timeoutMillis = 5_000) { cloud.account.googleRequests == 1 }
     }
 

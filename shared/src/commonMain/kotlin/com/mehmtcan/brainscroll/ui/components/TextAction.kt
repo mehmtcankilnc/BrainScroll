@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.ui.components
 
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,8 @@ fun TextAction(
     onAction: () -> Unit,
     /** True inside a card (the field is darker than the card), false on the page (the field is a surface). */
     onSurface: Boolean = true,
+    /** False dims the button and makes it do nothing (nothing is typed yet). */
+    actionEnabled: Boolean = true,
 ) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
@@ -57,6 +60,15 @@ fun TextAction(
                 },
             )
         }
-        Box(modifier = Modifier.width(96.dp)) { AppButton(actionLabel, onAction, primary = true) }
+        Box(modifier = Modifier.width(96.dp)) {
+            if (actionEnabled) {
+                AppButton(actionLabel, onAction, primary = true)
+            } else {
+                // Same size, no color and no touch: it only says what will be possible.
+                Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).background(colors.bgRaised, Radius.control), contentAlignment = Alignment.Center) {
+                    BasicText(actionLabel, style = type.label.copy(color = colors.textDisabled))
+                }
+            }
+        }
     }
 }

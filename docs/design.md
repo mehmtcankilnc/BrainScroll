@@ -6,11 +6,11 @@ Kararlar için bkz. [decisions.md](decisions.md), fazlar için [plan.md](plan.md
 
 ## 1. İlkeler
 
-- **Karakter:** Cesur, neşeli, ama sakin. Nötr koyu zemin üzerinde canlı renkler. Mor-mavi gradyan, cam efekti ve zemine renk basma yok.
+- **Karakter:** Cesur, neşeli, ama sakin. Nötr koyu zemin üzerinde canlı renkler. Mor-mavi marka gradyanı ve cam efekti yok; zemine renk basma yalnızca oyun dünyası ışığıyla (aşağıda).
 - **Koyu tema öncelikli.** Açık tema sonra eklenir. Bu yüzden bileşenler **yalnızca anlamsal token** kullanır, hiçbir bileşende ham hex olmaz.
 - **Tek tasarım sistemi, iki platform.** Material 3'ün hazır görünümü veya iOS taklidi yok. Düğme, kart, karo, klavye gibi bileşenler kendi sistemimizde tanımlı.
 - **Renk tek başına anlam taşımaz.** Her durumun bir şekil/doku karşılığı vardır (bkz. Erişilebilirlik).
-- **Düz yüzeyler.** Gölge ve gradyan yok. Derinlik yalnızca yüzey tonu farkıyla verilir.
+- **Düz yüzeyler, tek istisnayla: oyun dünyası.** Gölge yok, cam efekti yok. Derinlik yüzey tonu farkıyla verilir. İstisna `ui/theme/GameWorld.kt`: her oyunun kendi rengi (`GameKind.world`) vardır ve (1) sayfanın ortasında tek bir yumuşak radyal ışık (`worldGlow`), (2) sonuç kartında o renkte gradyan ve çerçeve (`resultSurface`), (3) Hanoi kulelerinde hafif yükselti (`raised`), (4) bulmaca bitince alt kenarda sıradaki oyunun ışığı (`nextWorldPeek`) olarak görünür. Anlam renkleri (doğru yeşil, bekleyen sarı, hata kırmızı) hiçbir oyunda değişmez; dünya rengi yalnızca ışıktır, durum değildir. Işık HUD'u ve alt kartı okunaksız yapmayacak kadar düşük tutulur (alfa ≈ 0,26, merkez yaklaşık %42 yükseklikte).
 - **İsimlendirme:** "Wordle" The New York Times'ın tescilli markasıdır. Uygulama içinde ve mağaza metinlerinde kullanılmaz.
 
 | Oyun | TR adı | EN adı |
@@ -131,7 +131,7 @@ Yazı boyutu sistem ayarına uyar. Izgara içeriği (karo, hücre) sabit kalıp 
 
 ## 5. Yükselti ve çizgi
 
-Gölge yok. Katmanlar `bg.page` -> `bg.surface` -> `bg.raised` ile ayrılır. Çizgi kalınlıkları: ince 0,5 dp, orta 1,5 dp, vurgu çerçevesi 2,5 dp (seçili/yakın durumlar).
+Gölge yok (oyun dünyası ışığı için bkz. bölüm 1). Katmanlar `bg.page` -> `bg.surface` -> `bg.raised` ile ayrılır. Çizgi kalınlıkları: ince 0,5 dp, orta 1,5 dp, vurgu çerçevesi 2,5 dp (seçili/yakın durumlar).
 
 ## 6. Hareket ve haptik
 

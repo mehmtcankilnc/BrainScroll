@@ -1,5 +1,11 @@
 package com.mehmtcan.brainscroll.ui
 
+import com.mehmtcan.brainscroll.ui.line.LineReplay
+import com.mehmtcan.brainscroll.ui.line.LineReplayScreen
+import brainscroll.shared.generated.resources.favorites_count_one
+import brainscroll.shared.generated.resources.favorites_count_other
+import com.mehmtcan.brainscroll.ui.theme.textSoft
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.background
 import com.mehmtcan.brainscroll.stats.Rescue
 import com.mehmtcan.brainscroll.ui.pro.LocalOpenPaywall
@@ -128,7 +134,7 @@ private enum class Tab(val label: StringResource) {
 }
 
 /** Pages that open over the tabs with a back button (docs/decisions.md, Sadeleştirme). They are not tabs. */
-private enum class SubPage { Daily, Ranks, Friends, Stats, Favorites, Settings, FeedEditor }
+private enum class SubPage { Daily, Ranks, Friends, Stats, Favorites, Settings, FeedEditor, LineReplay }
 
 /** The screen frame: the current tab on top and the bottom tab bar (docs/design.md section 7). */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -210,6 +216,14 @@ fun AppShell(
         }
     }
     var replaying by remember { mutableStateOf<FinishedRound?>(null) }
+    // One Line is not in the feed, so a favorite of it is played again on a page of its own.
+    val lineReplay = remember {
+        LineReplay(
+            repository = viewModel.repository,
+            now = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
+            onFinished = { viewModel.refreshProfile(); viewModel.requestSync() },
+        )
+    }
     val playAgain = { round: FinishedRound ->
         subPage = null
         viewModel.playAgain(round)
@@ -242,10 +256,14 @@ fun AppShell(
             if (subPage != null) {
                 Column(Modifier.fillMaxSize()) {
                     // The daily page has a header row of its own, so its back button lives there.
-                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor) {
+                    if (subPage != SubPage.Daily && subPage != SubPage.FeedEditor && subPage != SubPage.LineReplay) {
                         // The title sits next to the back arrow, the same on every page.
                         BackBar(
                             onBack = { subPage = null },
+                            subtitle = if (subPage == SubPage.Favorites) {
+                                val count = profileState.favorites.size
+                                if (count == 1) stringResource(Res.string.favorites_count_one) else stringResource(Res.string.favorites_count_other, count)
+                            } else null,
                             title = when (subPage) {
                                 SubPage.Ranks -> stringResource(Res.string.tab_ranks)
                                 SubPage.Friends -> stringResource(Res.string.ranks_friends)
@@ -295,10 +313,20 @@ fun AppShell(
                                 showLevels = viewModel.levelledGames.isNotEmpty(),
                                 onLevel = viewModel::setStatsLevel,
                             )
+                            SubPage.LineReplay -> LineReplayScreen(lineReplay, onBack = { subPage = SubPage.Favorites })
                             SubPage.Favorites -> FavoritesPage(
                                 profileState,
                                 // A feed left half done is lost by this, so ask first, but only when there is one.
-                                onReplay = { round -> if ((feedState as? FeedUiState.Ready)?.feed?.hasUnfinished == true) replaying = round else playAgain(round) },
+                                onReplay = { round ->
+                                    when {
+                                        // The line game plays on a page of its own: it does not touch the feed, so nothing is asked.
+                                        round.game == GameKind.Line -> { lineReplay.start(round); subPage = SubPage.LineReplay }
+                                        (feedState as? FeedUiState.Ready)?.feed?.hasUnfinished == true -> replaying = round
+                                        else -> playAgain(round)
+                                    }
+                                },
+                                // The heart was confirmed: the puzzle is not a favorite any more (the list refreshes with the profile).
+                                onRemove = { round -> viewModel.toggleFavorite(round.id) },
                             )
                             SubPage.Settings -> SettingsPage(
                                 account = AccountUi(
@@ -356,6 +384,11 @@ fun AppShell(
                         username = social.username,
                         onPro = openPaywall,
                         telemetry = viewModel.telemetry,
+                        signIn = RanksSignIn(
+                            canSignInWithApple = viewModel.canSignInWithApple,
+                            onSignInWithGoogle = viewModel::signInWithGoogle,
+                            onSignInWithApple = viewModel::signInWithApple,
+                        ),
                         onOpen = { target ->
                             subPage = when (target) {
                                 ProfileTarget.Stats -> SubPage.Stats
@@ -498,10 +531,10 @@ private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit) {
 
 /** The strip above a sub page: a back chevron and, when the page has no title of its own, its name beside it. */
 @Composable
-private fun BackBar(onBack: () -> Unit, title: String? = null) {
+private fun BackBar(onBack: () -> Unit, title: String? = null, subtitle: String? = null) {
     val colors = BrainScrollTheme.colors
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = Spacing.sm, end = Spacing.lg),
+        modifier = Modifier.fillMaxWidth().padding(start = Spacing.sm, end = Spacing.lg, bottom = if (subtitle != null) Spacing.md else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ChevronButton(
@@ -511,11 +544,16 @@ private fun BackBar(onBack: () -> Unit, title: String? = null) {
             touch = 48.dp,
         )
         if (title != null) {
-            BasicText(
-                text = title,
-                style = BrainScrollTheme.typography.title.copy(color = colors.textPrimary),
-                modifier = Modifier.padding(start = Spacing.xs).semantics { heading() },
-            )
+            Column(Modifier.padding(start = Spacing.xs)) {
+                BasicText(
+                    text = title,
+                    style = BrainScrollTheme.typography.title.copy(color = colors.textPrimary),
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (subtitle != null) {
+                    BasicText(subtitle, style = BrainScrollTheme.typography.caption.copy(color = colors.textSoft), modifier = Modifier.testTag("favoritesCount"))
+                }
+            }
         }
     }
 }

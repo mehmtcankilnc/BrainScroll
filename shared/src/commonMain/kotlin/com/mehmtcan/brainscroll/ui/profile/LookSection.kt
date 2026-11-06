@@ -1,6 +1,16 @@
 package com.mehmtcan.brainscroll.ui.profile
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import brainscroll.shared.generated.resources.look_pro_hint
+import brainscroll.shared.generated.resources.pro_badge
+import com.mehmtcan.brainscroll.ui.theme.on
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -50,6 +60,19 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+/** A small padlock. */
+@Composable
+private fun LockIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(14.dp)) {
+        val w = size.width
+        val h = size.height
+        val stroke = 1.6.dp.toPx()
+        // The shackle, then the body over its feet.
+        drawArc(color, 180f, 180f, false, Offset(0.25f * w, 0.05f * h), Size(0.5f * w, 0.7f * h), style = Stroke(stroke))
+        drawRoundRect(color, Offset(0.12f * w, 0.42f * h), Size(0.76f * w, 0.52f * h), CornerRadius(2.dp.toPx()))
+    }
+}
+
 /** The look settings: the pick, whether Pro is on, and what the controls do. */
 data class LookUi(val look: Look, val pro: Boolean, val onAccent: (Accent) -> Unit, val onAmoled: (Boolean) -> Unit, val onPro: () -> Unit)
 
@@ -86,7 +109,18 @@ fun LookSection(ui: LookUi, onPreview: (Accent?) -> Unit, modifier: Modifier = M
         modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        BasicText(stringResource(Res.string.look_title), style = type.heading.copy(color = colors.textPrimary))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            BasicText(stringResource(Res.string.look_title), style = type.heading.copy(color = colors.textPrimary))
+            // Without Pro the section is a preview, and it says so at the top.
+            if (!ui.pro) {
+                BasicText(
+                    text = stringResource(Res.string.pro_badge),
+                    style = type.caption.copy(color = colors.accentOn),
+                    modifier = Modifier.background(colors.accent, Radius.pill).padding(horizontal = Spacing.sm, vertical = 2.dp),
+                )
+            }
+        }
+        if (!ui.pro) BasicText(stringResource(Res.string.look_pro_hint), style = type.label.copy(color = colors.textSecondary))
         BasicText(stringResource(Res.string.look_accent), style = type.label.copy(color = colors.textSecondary))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Accent.entries.forEach { accent ->
@@ -108,13 +142,19 @@ fun LookSection(ui: LookUi, onPreview: (Accent?) -> Unit, modifier: Modifier = M
                         .testTag("accent_${accent.id}"),
                     contentAlignment = Alignment.Center,
                 ) {
+                    val locked = !ui.pro && accent != Accent.Green
                     Box(
                         Modifier
                             .size(32.dp)
+                            .graphicsLayer { alpha = if (locked) 0.55f else 1f }
                             .background(accent.fill, CircleShape)
                             // The chosen one is shown by a ring and not by color alone.
                             .then(if (chosen) Modifier.border(3.dp, colors.textPrimary, CircleShape) else Modifier),
-                    )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        // A padlock on what needs Pro, so a color that only previews does not look usable.
+                        if (locked) LockIcon(accent.on)
+                    }
                 }
             }
         }
@@ -123,12 +163,13 @@ fun LookSection(ui: LookUi, onPreview: (Accent?) -> Unit, modifier: Modifier = M
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            BasicText(title, style = type.body.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
+            BasicText(title, style = type.body.copy(color = if (ui.pro) colors.textPrimary else colors.textSecondary), modifier = Modifier.weight(1f))
+            if (!ui.pro) LockIcon(colors.textSecondary)
             AppSwitch(
                 checked = ui.pro && ui.look.amoled,
                 onCheckedChange = { if (ui.pro) ui.onAmoled(it) else offerPro = true },
                 description = title,
-                modifier = Modifier.testTag("amoledSwitch"),
+                modifier = Modifier.graphicsLayer { alpha = if (ui.pro) 1f else 0.5f }.testTag("amoledSwitch"),
             )
         }
         if (!ui.pro && offerPro) {

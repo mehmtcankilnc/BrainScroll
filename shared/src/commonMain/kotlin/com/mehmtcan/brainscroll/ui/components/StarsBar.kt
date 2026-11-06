@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.ui.components
 
+import brainscroll.shared.generated.resources.ranks_stars
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -165,6 +166,22 @@ internal fun Stars(earned: Int, modifier: Modifier = Modifier, size: Dp = 32.dp)
         repeat(MAX_STARS) { i ->
             Canvas(Modifier.size(size)) { drawStar(if (i < earned) colors.streakDay else colors.borderStrong, filled = i < earned) }
         }
+    }
+}
+
+/**
+ * As many small stars as were earned, no more: for a row of a table, where "3 stars" is shown as three stars. A screen reader
+ * still hears the number ("3 stars").
+ */
+@Composable
+internal fun StarCount(count: Int, modifier: Modifier = Modifier, size: Dp = 16.dp) {
+    val colors = BrainScrollTheme.colors
+    val description = stringResource(Res.string.ranks_stars, count)
+    Row(
+        modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        repeat(count) { Canvas(Modifier.size(size)) { drawStar(colors.streakDay, filled = true) } }
     }
 }
 

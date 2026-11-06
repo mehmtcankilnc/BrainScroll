@@ -47,9 +47,10 @@ fun LetterTile(
     val borderWidth: Float
     when (state) {
         TileState.Empty -> {
-            fill = Color.Transparent
+            // A faint fill and a stronger edge than before: on the tinted page the empty grid has to be seen at a glance.
+            fill = colors.bgSurface.copy(alpha = 0.75f)
             content = colors.textPrimary
-            border = colors.borderSubtle
+            border = colors.borderStrong.copy(alpha = 0.4f)
             borderWidth = 2f
         }
         TileState.Filled -> {

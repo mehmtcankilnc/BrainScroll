@@ -38,6 +38,12 @@ import brainscroll.shared.generated.resources.daily_game_won
 import brainscroll.shared.generated.resources.daily_next
 import brainscroll.shared.generated.resources.daily_title
 import brainscroll.shared.generated.resources.ranks_loading
+import brainscroll.shared.generated.resources.result_stat_moves
+import brainscroll.shared.generated.resources.result_stat_time
+import com.mehmtcan.brainscroll.ui.components.ResultStatData
+import com.mehmtcan.brainscroll.ui.components.ResultStats
+import com.mehmtcan.brainscroll.ui.theme.resultSurface
+import com.mehmtcan.brainscroll.ui.theme.world
 import com.mehmtcan.brainscroll.daily.formatCountdown
 import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.GameKind
@@ -181,7 +187,7 @@ private fun FinishedSummary(result: FinishedRound) {
     val won = result.outcome == Outcome.WON
     Box(Modifier.fillMaxSize().padding(Spacing.lg), contentAlignment = Alignment.Center) {
         Column(
-            modifier = Modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.xl).testTag("dailyGameSummary"),
+            modifier = Modifier.fillMaxWidth().resultSurface(colors.bgSurface, result.game.world, Radius.card).padding(Spacing.xl).testTag("dailyGameSummary"),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
@@ -196,9 +202,13 @@ private fun FinishedSummary(result: FinishedRound) {
             if (result.game == GameKind.Line) {
                 LineDoneInfo(result)
             } else {
-                BasicText(
-                    stringResource(Res.string.daily_game_result, result.moveCount, formatDuration(result.durationMs ?: 0L)),
-                    style = type.body.copy(color = colors.textPrimary),
+                val time = formatDuration(result.durationMs ?: 0L)
+                ResultStats(
+                    summary = stringResource(Res.string.daily_game_result, result.moveCount, time),
+                    stats = listOf(
+                        ResultStatData(result.moveCount.toString(), stringResource(Res.string.result_stat_moves), result.game.world),
+                        ResultStatData(time, stringResource(Res.string.result_stat_time), colors.streakAnswer),
+                    ),
                 )
                 BasicText(
                     stringResource(Res.string.daily_next, formatCountdown(IstanbulDay.millisUntilNextDay(nowMs))),

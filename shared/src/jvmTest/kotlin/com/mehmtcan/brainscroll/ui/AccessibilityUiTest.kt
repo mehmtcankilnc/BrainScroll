@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onNodeWithTag
@@ -85,7 +86,8 @@ class AccessibilityUiTest {
         openTab("Profil", "Profile")
         waitForIdle()
         val profile = if (onAllNodesWithText("Profil").fetchSemanticsNodes().isNotEmpty()) "Profil" else "Profile"
-        onNodeWithText(profile).assertIsSelected()
+        // The profile page also has a heading with this word; the tab is the last node (the tab bar is at the bottom).
+        onAllNodesWithText(profile).onLast().assertIsSelected()
     }
 
     @Test

@@ -7,8 +7,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,23 +34,24 @@ import brainscroll.shared.generated.resources.app_language_device
 import brainscroll.shared.generated.resources.app_language_text
 import brainscroll.shared.generated.resources.app_language_title
 import com.mehmtcan.brainscroll.ui.components.ForwardChevron
+import com.mehmtcan.brainscroll.ui.components.LineIcon
 import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
 import com.mehmtcan.brainscroll.ui.motion.Motion
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
-import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
+import com.mehmtcan.brainscroll.ui.theme.textSoft
 import org.jetbrains.compose.resources.stringResource
 
 /** The language of the app's texts the player chose (null: follow the device) and the callback to change it. */
 data class LanguageUi(val selected: AppLanguage?, val onSelect: (AppLanguage?) -> Unit)
 
 /**
- * The app language as an accordion: the closed field shows the current choice, and opening it slides the list of
- * "Device language" and every language of [AppLanguage] out underneath while the arrow turns. A new language shows up
- * here by itself.
+ * The app language as a line of the preferences card: a globe, the name with a few words under it and, at the right, the current
+ * choice with an arrow. Tapping the line slides the list of "Device language" and every language of [AppLanguage] out under it
+ * while the arrow turns. A new language shows up here by itself.
  */
 @Composable
-fun LanguageSection(language: LanguageUi, modifier: Modifier = Modifier) {
+fun LanguageRow(language: LanguageUi, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     var open by remember { mutableStateOf(false) }
@@ -62,49 +61,47 @@ fun LanguageSection(language: LanguageUi, modifier: Modifier = Modifier) {
     val current = options.first { it.first == language.selected }.second
     val arrow by animateFloatAsState(if (open) -90f else 90f, tween(Motion.BASE, easing = Motion.Standard))
 
-    Column(
-        modifier = modifier.fillMaxWidth().background(colors.bgSurface, Radius.card).padding(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        BasicText(stringResource(Res.string.app_language_title), style = type.heading.copy(color = colors.textPrimary))
-        BasicText(stringResource(Res.string.app_language_text), style = type.body.copy(color = colors.textSecondary))
-        Column(Modifier.fillMaxWidth().background(colors.bgPage, Radius.control).border(1.dp, colors.borderSubtle, Radius.control)) {
-            Row(
-                modifier = Modifier
-                    .testTag("appLanguageField")
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.DropdownList) { open = !open }
-                    .padding(horizontal = Spacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                BasicText(current, style = type.label.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))
-                ForwardChevron(colors.textSecondary, Modifier.rotate(arrow))
+    Column(modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .testTag("appLanguageField")
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.DropdownList) { open = !open }
+                .padding(horizontal = Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            LineIcon(LineIcon.Globe, colors.textPrimary, size = 24.dp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                BasicText(stringResource(Res.string.app_language_title), style = type.heading.copy(color = colors.textPrimary))
+                BasicText(stringResource(Res.string.app_language_text), style = type.caption.copy(color = colors.textSoft))
             }
-            AnimatedVisibility(
-                visible = open,
-                enter = expandVertically(tween(Motion.BASE, easing = Motion.Standard)) + fadeIn(tween(Motion.BASE)),
-                exit = shrinkVertically(tween(Motion.BASE, easing = Motion.Standard)) + fadeOut(tween(Motion.FAST)),
-            ) {
-                Column {
-                    options.forEach { (option, name) ->
-                        val chosen = option == language.selected
-                        Row(
-                            modifier = Modifier
-                                .testTag("appLanguage_" + (option?.name ?: "DEVICE"))
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .semantics { selected = chosen }
-                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton) {
-                                    open = false
-                                    if (!chosen) language.onSelect(option)
-                                }
-                                .padding(horizontal = Spacing.md),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            BasicText(name, style = type.body.copy(color = if (chosen) colors.correctFill else colors.textPrimary), modifier = Modifier.weight(1f))
-                            if (chosen) BasicText("✓", style = type.label.copy(color = colors.correctFill))
-                        }
+            BasicText(current, style = type.label.copy(color = colors.textSoft))
+            ForwardChevron(colors.textSoft, Modifier.rotate(arrow))
+        }
+        AnimatedVisibility(
+            visible = open,
+            enter = expandVertically(tween(Motion.BASE, easing = Motion.Standard)) + fadeIn(tween(Motion.BASE)),
+            exit = shrinkVertically(tween(Motion.BASE, easing = Motion.Standard)) + fadeOut(tween(Motion.FAST)),
+        ) {
+            Column(Modifier.padding(start = Spacing.lg + 24.dp + Spacing.md, end = Spacing.lg, bottom = Spacing.sm)) {
+                options.forEach { (option, name) ->
+                    val chosen = option == language.selected
+                    Row(
+                        modifier = Modifier
+                            .testTag("appLanguage_" + (option?.name ?: "DEVICE"))
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .semantics { selected = chosen }
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton) {
+                                open = false
+                                if (!chosen) language.onSelect(option)
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        BasicText(name, style = type.body.copy(color = if (chosen) colors.correctFill else colors.textPrimary), modifier = Modifier.weight(1f))
+                        if (chosen) BasicText("✓", style = type.label.copy(color = colors.correctFill))
                     }
                 }
             }

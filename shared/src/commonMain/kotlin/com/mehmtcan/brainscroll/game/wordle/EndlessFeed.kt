@@ -126,6 +126,9 @@ class EndlessFeed(
 
     private val rounds = mutableListOf<FeedRound>()
     private val counted = mutableSetOf<Int>()
+
+    /** Rounds that were played again from the history: their result is kept, but a win does not raise [solvedCount]. */
+    private val replays = mutableSetOf<String>()
     private val bags = mutableMapOf<Language, ArrayDeque<String>>()
 
     var wordLanguages: List<Language> = startLanguages.ifEmpty { listOf(startLanguage) }
@@ -188,6 +191,11 @@ class EndlessFeed(
         if (previous == null) return games.first()
         val at = games.indexOf(previous)
         return if (at < 0) games.first() else games[(at + 1) % games.size]
+    }
+
+    /** Marks the round [id] as played again from the history (a favorite): its win leaves the solved count as it is. */
+    fun markAsReplay(id: String) {
+        replays += id
     }
 
     /** The level of the new boards of [kind]. */
@@ -645,7 +653,7 @@ class EndlessFeed(
         if (round.isFinished && counted.add(index)) {
             val result = round.toFinished(finishedAt = now()).copy(difficulty = levelOf(round))
             // Only a win without the guide counts; a loss or a guided puzzle leaves the number as it is.
-            if (!result.assisted && result.outcome == Outcome.WON) solvedCount++
+            if (!result.assisted && result.outcome == Outcome.WON && round.id !in replays) solvedCount++
             store.finish(result)
         } else {
             persist(round)

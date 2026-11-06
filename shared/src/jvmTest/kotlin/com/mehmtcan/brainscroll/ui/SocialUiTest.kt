@@ -5,6 +5,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -65,7 +66,7 @@ class SocialUiTest {
         assertTrue(hasAnyText("alice") && hasAnyText("bob"))
         assertTrue(hasAnyText("2/6"), "the guesses are shown")
         assertTrue(hasAnyText("00:30"), "and the time")
-        assertTrue(hasAnyText("Google ile giriş yap", "Sign in with Google"))
+        assertTrue(hasAnyText("Google ile devam et", "Continue with Google"))
         assertFalse(hasAnyText("Herkes", "Everyone"), "no everyone/friends filter for anonymous players")
     }
 
@@ -110,8 +111,7 @@ class SocialUiTest {
         snap("23_ranks_streaks")
         assertTrue(hasAnyText("12") && hasAnyText("carol (sen)", "carol (you)"))
 
-        // The choices are in a sheet that the filter line opens.
-        onNodeWithTag("ranksFilterBar").performClick()
+        // The choices are on the page itself.
         waitForIdle()
         snap("27_ranks_filters")
         clickAny("En uzun", "Longest")
@@ -126,7 +126,8 @@ class SocialUiTest {
     fun theRanksPageHasNoFriendsTab() = runComposeUiTest {
         openRanks(cloud(member = true, username = "carol"))
         assertFalse(hasAnyText("Davet kodun", "Your invite code"))
-        assertEquals(0, onAllNodesWithText("Arkadaşlar").fetchSemanticsNodes().size + onAllNodesWithText("Friends").fetchSemanticsNodes().size, "the tab is gone")
+        // The only "Friends" on the ranks page is the choice of whose results (a chip); there is no friends tab.
+        assertEquals(1, onAllNodesWithText("Arkadaşlar").fetchSemanticsNodes().size + onAllNodesWithText("Friends").fetchSemanticsNodes().size, "only the filter chip")
     }
 
     @Test
@@ -145,12 +146,43 @@ class SocialUiTest {
         scrollTo("erin") // the list is lazy: only what is on screen exists
         assertTrue(hasAnyText("erin"), "the request I sent")
 
-        scrollTo("Kodla ekle", "Add by code")
+        scrollTo("Davet koduyla", "With invite code")
         onAllNodes(hasSetTextAction())[0].performTextInput("zzzz9999")
         clickAny("Ekle", "Add")
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.contains("addFriendByCode:ZZZZ9999") }
         waitForText("mert")
         assertEquals(listOf("bob", "mert"), cloud.social.friendsState.friends)
+    }
+
+    @Test
+    fun withNobodyThereIsNoCountAndAPictureTellsWhatToDo() = runComposeUiTest {
+        val cloud = cloud(member = true, username = "carol") { friendsState = FriendsState() }
+        start(cloud)
+        openProfilePage("Arkadaşlar", "Friends")
+        waitForText("ABCD2345")
+        scrollTo("Birlikte oynamak daha keyifli", "Playing together is more fun")
+        snap("240_friends_empty")
+        assertTrue(hasAnyText("Birlikte oynamak daha keyifli", "Playing together is more fun"))
+        assertTrue(hasAnyText("Davet kodunu paylaş veya bir arkadaşını ekle.", "Share your invite code or add a friend."))
+        assertEquals(0, onAllNodesWithTag("friendsCount").fetchSemanticsNodes().size, "no \"0\" beside the title")
+    }
+
+    @Test
+    fun withFriendsTheirNumberIsShownAndTheCopyButtonsTurnIntoTicksForAWhile() = runComposeUiTest {
+        val cloud = cloud(member = true, username = "carol") { friendsState = FriendsState(friends = listOf("bob", "dora")) }
+        start(cloud)
+        openProfilePage("Arkadaşlar", "Friends")
+        waitForText("ABCD2345")
+        snap("241_friends_invite_card")
+        scrollTo("Arkadaşların", "Your friends")
+        assertEquals("2", onNodeWithTag("friendsCount").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString())
+
+        onNodeWithTag("copyInvite").performClick()
+        waitForIdle()
+        assertTrue(hasAnyText("Kopyalandı!", "Copied!"), "the message button says it copied")
+        mainClock.advanceTimeBy(3_500)
+        waitForIdle()
+        assertTrue(hasAnyText("Davet mesajını kopyala", "Copy invite message"), "and goes back after a few seconds")
     }
 
     @Test

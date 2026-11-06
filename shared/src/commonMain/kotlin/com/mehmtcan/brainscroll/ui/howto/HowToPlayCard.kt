@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.ui.howto
 
+import brainscroll.shared.generated.resources.howto_next
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -110,8 +111,8 @@ const val REDUCED_DEMO_TIME = 0.62f
 
 /**
  * The How to Play card: a card in the middle of the screen over the dark page, with the name of the card on top, the picture of
- * the step with a hand that shows what to do, the sentence, the dots of the steps and the buttons: back, OK, next. Swiping
- * the card, the back and next buttons change the step; OK, the dark area and the system back button close it.
+ * the step with a hand that shows what to do, the sentence, the dots of the steps and the buttons: back, and Next (OK on the last step). Swiping
+ * the card, the back and Next buttons change the step; OK (the last step), the dark area and the system back button close it.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -189,8 +190,16 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
                     Dots(count = steps.size, selected = step)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         StepButton(left = true, enabled = step > 0, description = stringResource(Res.string.a11y_howto_previous), tag = "howToPrevious") { step-- }
-                        Box(Modifier.weight(1f)) { AppButton(text = stringResource(Res.string.howto_ok), onClick = { close() }, primary = true, modifier = Modifier.testTag("howToOk")) }
-                        StepButton(left = false, enabled = step < steps.lastIndex, description = stringResource(Res.string.a11y_howto_next), tag = "howToNext") { step++ }
+                        // One main button: "Next" on every step but the last, where it says "OK" and closes the card.
+                        val last = step >= steps.lastIndex
+                        Box(Modifier.weight(1f)) {
+                            AppButton(
+                                text = stringResource(if (last) Res.string.howto_ok else Res.string.howto_next),
+                                onClick = { if (last) close() else step++ },
+                                primary = true,
+                                modifier = Modifier.testTag("howToOk"),
+                            )
+                        }
                     }
                 }
             }

@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -206,7 +207,8 @@ internal fun ComposeUiTest.openTab(turkish: String, english: String) {
     // The feed and the pages have no tab bar: first go back to where it is.
     if (onAllNodesWithText(turkish).fetchSemanticsNodes().isEmpty() && onAllNodesWithText(english).fetchSemanticsNodes().isEmpty()) goHome()
     val label = if (onAllNodesWithText(turkish).fetchSemanticsNodes().isNotEmpty()) turkish else english
-    onNodeWithText(label).performClick()
+    // The profile page has a heading with the same word as its tab: the tab bar is the last of them.
+    onAllNodesWithText(label).onLast().performClick()
 }
 
 /** Opens the profile tab and then one of its pages by the name of its row (Turkish and English). */
@@ -214,6 +216,12 @@ internal fun ComposeUiTest.openTab(turkish: String, english: String) {
 internal fun ComposeUiTest.openProfilePage(turkish: String, english: String) {
     openTab("Profil", "Profile")
     waitForIdle()
+    // The page is longer than the screen: bring the line into view before tapping it.
+    val label = if (onAllNodesWithText(turkish).fetchSemanticsNodes().isNotEmpty()) turkish else english
+    if (onAllNodes(hasScrollAction()).fetchSemanticsNodes().isNotEmpty()) {
+        onAllNodes(hasScrollAction())[0].performScrollToNode(hasText(label))
+        waitForIdle()
+    }
     clickAny(turkish, english)
     waitForIdle()
 }
@@ -245,10 +253,15 @@ internal fun ComposeUiTest.goHome() {
     }
 }
 
-/** True if any of the texts is on screen. Texts follow the device language, so callers give Turkish and English. */
+/**
+ * True if any of the texts is on screen, as text or as the spoken description of a group (the big numbers of a result card are
+ * read as one sentence). Texts follow the device language, so callers give Turkish and English.
+ */
 @OptIn(ExperimentalTestApi::class)
-internal fun ComposeUiTest.hasAnyText(vararg texts: String) =
-    texts.any { onAllNodesWithText(it, substring = true).fetchSemanticsNodes().isNotEmpty() }
+internal fun ComposeUiTest.hasAnyText(vararg texts: String) = texts.any {
+    onAllNodesWithText(it, substring = true).fetchSemanticsNodes().isNotEmpty() ||
+        onAllNodes(androidx.compose.ui.test.hasContentDescription(it, substring = true)).fetchSemanticsNodes().isNotEmpty()
+}
 
 /** Clicks the first of the texts that is on screen (exact match). */
 @OptIn(ExperimentalTestApi::class)
@@ -261,4 +274,15 @@ internal fun ComposeUiTest.clickAny(vararg texts: String) {
 internal class RecordingHaptics : Haptics {
     val kinds = mutableListOf<HapticKind>()
     override fun perform(kind: HapticKind) { kinds += kind }
+}
+
+/** Closes the How to Play card: its main button says Next on every step but the last and OK on the last, so tap until it is gone. */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.tapThroughHowTo() {
+    repeat(8) {
+        if (onAllNodesWithTag("howToOk").fetchSemanticsNodes().isEmpty()) return
+        onNodeWithTag("howToOk").performClick()
+        mainClock.advanceTimeBy(300)
+        waitForIdle()
+    }
 }
