@@ -18,7 +18,7 @@ class BlockOutRoundTest {
 
     private val board = BlockOutGenerator.generate(4)
 
-    private fun round() = BlockOutRound(0, "b1", board.puzzle, Language.EN, { clock }, board.par)
+    private fun round() = BlockOutRound(0, "b1", board.puzzle, Language.EN, { clock }, board.par).also { it.onShown() }
 
     private val way get() = assertNotNull(BlockOutSolver.shortest(board.puzzle.size, board.puzzle.shapes, board.puzzle.start))
 
@@ -53,16 +53,16 @@ class BlockOutRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.move(way[0].piece, way[0].to)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.move(way[1].piece, way[1].to)
         clock += 10 * 60_000
         r.move(way[2].piece, way[2].to)
-        assertEquals(2_500 + BlockOutRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -97,8 +97,8 @@ class BlockOutRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.finish()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)
@@ -108,7 +108,7 @@ class BlockOutRoundTest {
         assertEquals(listOf(board.par.toString()), finished.guesses)
         assertEquals(board.par, finished.moveCount)
         assertTrue(finished.answer.length <= 32)
-        assertEquals((board.par - 1) * 1_000L, finished.durationMs)
+        assertEquals(board.par * 1_000L, finished.durationMs)
     }
 
     @Test

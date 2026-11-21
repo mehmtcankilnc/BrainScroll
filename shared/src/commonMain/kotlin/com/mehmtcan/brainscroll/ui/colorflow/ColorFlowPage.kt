@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
@@ -201,8 +202,10 @@ fun ColorFlowPage(
                         boardSize = n
                         dotCells = state.pairs.flatMap { listOf(it.first, it.second) }
                     }
-                    .pointerInput(won, n, cellPx) {
-                        if (won) return@pointerInput
+                    // Not keyed on `won`: the stroke that finishes the board flips it while the finger is still down, and
+                    // restarting the handler then would cancel the stroke before `onEnd` saves the win. A finished board
+                    // refuses new strokes by itself (`onStart` returns false).
+                    .pointerInput(n, cellPx) {
                         awaitEachGesture {
                             fun cellOf(p: Offset): Int? {
                                 val c = (p.x / cellPx).toInt()
@@ -287,7 +290,7 @@ fun ColorFlowPage(
         }
 
         Spacer(Modifier.height(Spacing.md))
-        Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxWidth().heightIn(min = BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (status == WordleStatus.Won) {
                 ColorFlowResultCard(page, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {

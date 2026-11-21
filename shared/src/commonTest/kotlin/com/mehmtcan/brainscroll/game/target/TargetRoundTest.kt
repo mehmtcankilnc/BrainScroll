@@ -17,7 +17,7 @@ class TargetRoundTest {
     private var clock = 1_000L
 
     /** The example: 2, 3, 6, 7 and the target 48. */
-    private fun round() = TargetRound(0, "t1", listOf(2, 3, 6, 7), 48, Language.EN, { clock })
+    private fun round() = TargetRound(0, "t1", listOf(2, 3, 6, 7), 48, Language.EN, { clock }).also { it.onShown() }
 
     @Test
     fun aRoundIsUntouchedUntilTheFirstMove() {
@@ -46,16 +46,16 @@ class TargetRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.combine(0, Op.Add, 1)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.undo()
         clock += 10 * 60_000
         r.combine(0, Op.Add, 2)
-        assertEquals(2_500 + TargetRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -108,8 +108,8 @@ class TargetRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
-        val r = round()
         clock = 5_000
+        val r = round()
         for (move in TargetSolver.solve(listOf(2, 3, 6, 7), 48)!!) {
             clock += 1_000
             r.combine(move.first, move.op, move.second)
@@ -122,6 +122,6 @@ class TargetRoundTest {
         assertEquals(listOf("3"), finished.guesses)
         assertEquals(3, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals(2_000L, finished.durationMs)
+        assertEquals(3_000L, finished.durationMs)
     }
 }

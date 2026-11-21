@@ -1,5 +1,7 @@
 # Ses efektleri planı: Ball Slide ve Mini Nonogram
 
+**Yeni oyun eklerken dokunulacak her yerin listesi: [yeni-oyun-ekleme-rehberi.md](yeni-oyun-ekleme-rehberi.md)** (dosyalar, arama kelimeleri, PNG resim üretimi, kontrol listesi, açık işler).
+
 Amaç: reel videolarındaki ses efektlerinin (müzik hariç) uygulamada da çalması. Bu dosya ayrı bir oturumda uygulanmak üzere yazıldı. Uygulamada şu an hiç ses altyapısı yok; yalnızca titreşim (`Haptics`) var.
 
 ## 1. Ses dosyaları
@@ -73,3 +75,8 @@ Bugünkü titreşim sistemi örnek alınacak: `ui/haptics/Haptics.kt` içinde `H
 ## 6. Sonraki oyunlar
 
 Aynı paket yapısı diğer oyunlara kolayca eklenir (`<oyun>_*.wav`). Yeni ses lazımsa `sfx-pack.json`'a eklenip `synth.py` ile üretilir; böylece tüm sesler aynı "marimba + çıngırak" ailesinde kalır. Reel ses tasarımı da aynı kaynaktan çıktığı için videolardaki ve uygulamadaki sesler hep eşleşir.
+
+## Yeni dört oyunun sesleri (2026-11-21)
+- Kibrit: çöp alma `matchsticks_pick`, bırakma `matchsticks_place`. Lazer: ayna çevirme `lasers_turn`, her yeni yanan hedef `lasers_lit` (ışın yarı yoldayken). Untangle: tutma `matchsticks_pick`, bırakma `untangle_drop`, kesişim azalınca `untangle_fewer`. Meyve Denklemi: ortak sesler (tuş tık, yanlış uyarı, kazanma akoru).
+- Titreşim aynı kaldı (Light/Warning + kazanma); bu sayfalar ortak sesleri `withoutSound()` ile kapatıp kendi sesini çalar. Geri yüklenen tahta sessiz kalır.
+- TalkBack: Lazer'de her ayna için "çevir" eylemi; Untangle'da "sonraki nokta" + dört yönde adım; Kibrit'te yer imleci (sonraki/önceki yer, "çöpü al/koy") ve okunan yer; Meyve'de her satır sesli okunur ("… eşittir …").

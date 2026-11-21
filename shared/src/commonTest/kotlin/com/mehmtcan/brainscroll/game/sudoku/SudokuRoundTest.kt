@@ -15,7 +15,7 @@ class SudokuRoundTest {
 
     private var clock = 1_000L
 
-    private fun round(seed: Int = 4) = SudokuRound(0, "s1", seed, Language.EN, { clock })
+    private fun round(seed: Int = 4) = SudokuRound(0, "s1", seed, Language.EN, { clock }).also { it.onShown() }
 
     private fun solution(seed: Int = 4) = SudokuGenerator.generate(seed).solution
 
@@ -43,17 +43,17 @@ class SudokuRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
+        clock = 10_000
         val r = round()
         val cell = r.emptyCells().first()
-        clock = 10_000
         r.toggleNote(cell, 1)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.toggleNote(cell, 2)
         clock += 10 * 60_000
         r.toggleNote(cell, 3)
-        assertEquals(2_500 + SudokuRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test

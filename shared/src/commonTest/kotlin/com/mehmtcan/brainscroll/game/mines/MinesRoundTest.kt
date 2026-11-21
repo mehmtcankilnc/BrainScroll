@@ -15,7 +15,7 @@ class MinesRoundTest {
 
     private var clock = 1_000L
 
-    private fun round(seed: Int = 4) = MinesRound(0, "m1", seed, Language.EN, { clock })
+    private fun round(seed: Int = 4) = MinesRound(0, "m1", seed, Language.EN, { clock }).also { it.onShown() }
 
     @Test
     fun aRoundIsUntouchedUntilTheFirstActionAndAFlagIsAnAction() {
@@ -38,16 +38,16 @@ class MinesRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.open(27)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.flag(1)
         clock += 10 * 60_000
         r.flag(1)
-        assertEquals(2_500 + MinesRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -89,8 +89,8 @@ class MinesRoundTest {
 
     @Test
     fun aWonRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
-        val r = round(8)
         clock = 5_000
+        val r = round(8)
         r.open(27)
         clock += 7_000
         // Play on by logic: the game inside the round is reached through its actions.

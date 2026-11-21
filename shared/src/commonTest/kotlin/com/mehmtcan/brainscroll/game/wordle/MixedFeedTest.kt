@@ -203,6 +203,7 @@ class MixedFeedTest {
         val store = FakeStore()
         val first = feed(store)
         first.ensureSize(2)
+        first.pageShown(1) // the player looks at the board: the clock runs
         first.flip(1, 0)
         clock += 4_000
         first.flip(1, 1)
@@ -217,6 +218,7 @@ class MixedFeedTest {
         f.ensureSize(2)
         val layout = f.memory(1).state.layout
         val groups = layout.indices.groupBy { layout[it] }.values.toList()
+        f.pageShown(1) // the player looks at the board: the clock runs
         for (pair in groups) {
             f.flip(1, pair[0])
             clock += 1_000

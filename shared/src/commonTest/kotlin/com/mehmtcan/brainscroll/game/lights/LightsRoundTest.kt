@@ -15,7 +15,7 @@ class LightsRoundTest {
 
     private var clock = 1_000L
 
-    private fun round(seed: Int = 4) = LightsRound(0, "l1", seed, Language.EN, { clock })
+    private fun round(seed: Int = 4) = LightsRound(0, "l1", seed, Language.EN, { clock }).also { it.onShown() }
 
     private fun taps(seed: Int = 4) = LightsGame.solutionTaps(seed, 5, 7)
 
@@ -40,16 +40,16 @@ class LightsRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.tap(1)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.tap(2)
         clock += 10 * 60_000
         r.tap(3)
-        assertEquals(2_500 + LightsRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -85,8 +85,8 @@ class LightsRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
-        val r = round()
         clock = 5_000
+        val r = round()
         for (cell in taps()) {
             clock += 1_000
             r.tap(cell)
@@ -99,6 +99,6 @@ class LightsRoundTest {
         assertEquals(listOf("7"), finished.guesses)
         assertEquals(7, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals(6_000L, finished.durationMs)
+        assertEquals(7_000L, finished.durationMs)
     }
 }

@@ -163,6 +163,28 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.stats_matchsticks
+import brainscroll.shared.generated.resources.stats_lasers
+import brainscroll.shared.generated.resources.stats_untangle
+import brainscroll.shared.generated.resources.stats_codebreaker
+import brainscroll.shared.generated.resources.stats_rectangles
+import brainscroll.shared.generated.resources.stats_flashgrid
+import brainscroll.shared.generated.resources.stat_best_rounds
+import brainscroll.shared.generated.resources.favorite_flashgrid_result
+import brainscroll.shared.generated.resources.favorite_flashgrid_tag
+import brainscroll.shared.generated.resources.favorite_rectangles_result
+import brainscroll.shared.generated.resources.favorite_rectangles_tag
+import brainscroll.shared.generated.resources.favorite_codebreaker_result
+import brainscroll.shared.generated.resources.favorite_codebreaker_tag
+import brainscroll.shared.generated.resources.stats_fruitmath
+import brainscroll.shared.generated.resources.favorite_fruitmath_result
+import brainscroll.shared.generated.resources.favorite_fruitmath_tag
+import brainscroll.shared.generated.resources.favorite_untangle_result
+import brainscroll.shared.generated.resources.favorite_untangle_tag
+import brainscroll.shared.generated.resources.favorite_lasers_result
+import brainscroll.shared.generated.resources.favorite_lasers_tag
+import brainscroll.shared.generated.resources.favorite_matchsticks_result
+import brainscroll.shared.generated.resources.favorite_matchsticks_tag
 import brainscroll.shared.generated.resources.daily_freeze
 import brainscroll.shared.generated.resources.favorite_daily_tag
 import brainscroll.shared.generated.resources.favorite_lost
@@ -671,6 +693,15 @@ fun StatsPage(
         timed(GameKind.AxisSum, stringResource(Res.string.stats_axissum), "statsAxisSum", profile.axisSum.played, profile.axisSum.bestTimeMs),
         timed(GameKind.BallSlide, stringResource(Res.string.stats_ballslide), "statsBallSlide", profile.ballSlide.played, profile.ballSlide.bestTimeMs),
         timed(GameKind.ColorFlow, stringResource(Res.string.stats_colorflow), "statsColorFlow", profile.colorFlow.played, profile.colorFlow.bestTimeMs),
+        entry(GameKind.FruitMath, stringResource(Res.string.stats_fruitmath), "statsFruitMath", profile.fruitMath.played,
+            time(profile.fruitMath.bestTimeMs) to bestLabel, profile.fruitMath.flawless.toString() to flawlessLabel),
+        entry(GameKind.FlashGrid, stringResource(Res.string.stats_flashgrid), "statsFlashGrid", profile.flashGrid.played,
+            (profile.flashGrid.bestRounds?.toString() ?: "-") to stringResource(Res.string.stat_best_rounds)),
+        timed(GameKind.Rectangles, stringResource(Res.string.stats_rectangles), "statsRectangles", profile.rectangles.played, profile.rectangles.bestTimeMs),
+        moves(GameKind.CodeBreaker, stringResource(Res.string.stats_codebreaker), "statsCodeBreaker", profile.codeBreaker.played, profile.codeBreaker.bestTimeMs, profile.codeBreaker.fewestMoves),
+        timed(GameKind.Untangle, stringResource(Res.string.stats_untangle), "statsUntangle", profile.untangle.played, profile.untangle.bestTimeMs),
+        timed(GameKind.Lasers, stringResource(Res.string.stats_lasers), "statsLasers", profile.lasers.played, profile.lasers.bestTimeMs),
+        timed(GameKind.Matchsticks, stringResource(Res.string.stats_matchsticks), "statsMatchsticks", profile.matchsticks.played, profile.matchsticks.bestTimeMs),
         timed(GameKind.Nonogram, stringResource(Res.string.stats_nonogram), "statsNonogram", profile.nonogram.played, profile.nonogram.bestTimeMs),
         moves(GameKind.BlockOut, stringResource(Res.string.stats_blockout), "statsBlockOut", profile.blockOut.played, profile.blockOut.bestTimeMs, profile.blockOut.fewestMoves),
         moves(GameKind.Queens, stringResource(Res.string.stats_queens), "statsQueens", profile.queens.played, profile.queens.bestTimeMs, profile.queens.fewestMoves),
@@ -951,6 +982,13 @@ private fun holdsRecord(profile: ProfileState, round: FinishedRound): Boolean {
         GameKind.BallSlide -> profile.ballSlide.bestTimeMs
         GameKind.ColorFlow -> profile.colorFlow.bestTimeMs
         GameKind.TopicGroups -> profile.topicGroups.bestTimeMs
+        GameKind.Matchsticks -> profile.matchsticks.bestTimeMs
+        GameKind.Lasers -> profile.lasers.bestTimeMs
+        GameKind.Untangle -> profile.untangle.bestTimeMs
+        GameKind.FruitMath -> profile.fruitMath.bestTimeMs
+        GameKind.CodeBreaker -> profile.codeBreaker.bestTimeMs
+        GameKind.Rectangles -> profile.rectangles.bestTimeMs
+        GameKind.FlashGrid -> null
         GameKind.Line -> profile.line.bestTimeMs
     }
     return best != null && time <= best
@@ -1121,6 +1159,13 @@ private fun favoriteResult(round: FinishedRound): String {
         round.game == GameKind.BlockOut -> stringResource(Res.string.favorite_blockout_result, round.moveCount, time)
         round.game == GameKind.Nonogram -> stringResource(Res.string.favorite_nonogram_result, time)
         round.game == GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_result, round.moveCount, time)
+        round.game == GameKind.FruitMath -> stringResource(Res.string.favorite_fruitmath_result, time)
+        round.game == GameKind.FlashGrid -> stringResource(Res.string.favorite_flashgrid_result, round.moveCount)
+        round.game == GameKind.Rectangles -> stringResource(Res.string.favorite_rectangles_result, time)
+        round.game == GameKind.CodeBreaker -> stringResource(Res.string.favorite_codebreaker_result, round.moveCount, time)
+        round.game == GameKind.Untangle -> stringResource(Res.string.favorite_untangle_result, time)
+        round.game == GameKind.Lasers -> stringResource(Res.string.favorite_lasers_result, time)
+        round.game == GameKind.Matchsticks -> stringResource(Res.string.favorite_matchsticks_result, time)
         round.game == GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_result, round.moveCount, time)
         round.game == GameKind.AxisSum -> stringResource(Res.string.favorite_axissum_result, round.moveCount, time)
         round.game == GameKind.TopicGroups -> stringResource(Res.string.favorite_topicgroups_result, round.moveCount, time)
@@ -1168,5 +1213,12 @@ private fun favoriteTag(round: FinishedRound): String = when (round.game) {
     GameKind.BallSlide -> stringResource(Res.string.favorite_ballslide_tag)
     GameKind.ColorFlow -> stringResource(Res.string.favorite_colorflow_tag)
     GameKind.TopicGroups -> stringResource(Res.string.favorite_topicgroups_tag)
+    GameKind.Matchsticks -> stringResource(Res.string.favorite_matchsticks_tag)
+    GameKind.Lasers -> stringResource(Res.string.favorite_lasers_tag)
+    GameKind.Untangle -> stringResource(Res.string.favorite_untangle_tag)
+    GameKind.FruitMath -> stringResource(Res.string.favorite_fruitmath_tag)
+    GameKind.CodeBreaker -> stringResource(Res.string.favorite_codebreaker_tag)
+    GameKind.Rectangles -> stringResource(Res.string.favorite_rectangles_tag)
+    GameKind.FlashGrid -> stringResource(Res.string.favorite_flashgrid_tag)
     GameKind.Line -> stringResource(Res.string.favorite_line_tag)
 }

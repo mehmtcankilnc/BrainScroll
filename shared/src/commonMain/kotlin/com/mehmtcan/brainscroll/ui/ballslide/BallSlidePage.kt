@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
@@ -75,6 +76,7 @@ import com.mehmtcan.brainscroll.daily.formatDuration
 import com.mehmtcan.brainscroll.game.ballslide.BallDir
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideSnapshot
+import com.mehmtcan.brainscroll.game.ballslide.BallSlideState
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideStatus
 import com.mehmtcan.brainscroll.game.guide.GuideReason
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
@@ -329,16 +331,8 @@ fun BallSlidePage(
                         }
                         // Painted: the cells of the slide that is going on wait until the ball has passed them; the cells of the
                         // slide that is being taken back stay painted until the ball has left them.
-                        var isPainted = state.painted[c]
-                        if (sliding) {
-                            val onPath = path.indexOf(c)
-                            if (onPath >= 0 && passed <= onPath) isPainted = false
-                        } else if (undoing) {
-                            val back = state.undone.lastIndex - state.undone.indexOf(c)
-                            if (state.undone.contains(c) && cleared <= back) isPainted = true
-                        }
                         drawRoundRect(tile, topLeft, box, corner)
-                        if (isPainted) drawRoundRect(paint, topLeft, box, corner)
+                        if (shownPainted(state, c, sliding, passed, undoing, cleared)) drawRoundRect(paint, topLeft, box, corner)
                         drawRoundRect(edge, topLeft, box, corner, style = Stroke(width = 1.5.dp.toPx() + extraBorder))
                     }
                     // The guide: arrows run along the way the ball would go, one cell after the other.
@@ -384,7 +378,7 @@ fun BallSlidePage(
         }
 
         Spacer(Modifier.height(Spacing.md))
-        Box(modifier = Modifier.fillMaxWidth().height(BottomAreaHeight), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxWidth().heightIn(min = BottomAreaHeight), contentAlignment = Alignment.Center) {
             if (status == WordleStatus.Won) {
                 BallSlideResultCard(page, isFavorite, onToggleFavorite, Modifier.bounceIn(justFinished))
             } else {
@@ -413,6 +407,23 @@ fun BallSlidePage(
         }
         Spacer(Modifier.height(Spacing.md))
     }
+}
+
+/**
+ * Whether [cell] is drawn painted right now. A cell the slide that is going on paints for the first time waits until the ball has
+ * passed it ([passed] cells so far); a cell that was painted before the slide stays painted all the time, so the ball going over it
+ * again never makes it look unpainted. A cell of the slide that is being taken back stays painted until the ball has left it
+ * ([cleared] cells so far).
+ */
+internal fun shownPainted(state: BallSlideState, cell: Int, sliding: Boolean, passed: Float, undoing: Boolean, cleared: Float): Boolean {
+    if (sliding) {
+        val onPath = state.lastPath.indexOf(cell)
+        if (onPath >= 0 && passed <= onPath && !state.paintedBefore[cell]) return false
+    } else if (undoing) {
+        val back = state.undone.lastIndex - state.undone.indexOf(cell)
+        if (state.undone.contains(cell) && cleared <= back) return true
+    }
+    return state.painted[cell]
 }
 
 /** The color of a wall: an orange that is on no cell of the board (the cells are dark or the green of the paint, the ball is yellow). */

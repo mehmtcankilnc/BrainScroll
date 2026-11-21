@@ -2,6 +2,7 @@ package com.mehmtcan.brainscroll.ui.sound
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SoundPlanTest {
     @Test
@@ -24,7 +25,27 @@ class SoundPlanTest {
 
     @Test
     fun everyFileOfThePackIsListed() {
-        assertEquals(10 + 19, Sfx.All.size)
-        assertEquals(10 + 19, Sfx.All.toSet().size)
+        assertEquals(10 + 25, Sfx.All.size)
+        assertEquals(10 + 25, Sfx.All.toSet().size)
+    }
+
+    @Test
+    fun lasersChimeOnlyWhenAnotherTargetIsLit() {
+        assertEquals(Sfx.LasersLit, lasersLitSound(1, 2))
+        assertEquals(null, lasersLitSound(2, 2))
+        assertEquals(null, lasersLitSound(3, 1))
+    }
+
+    @Test
+    fun untangleChimesOnlyWhenThereAreFewerCrossings() {
+        assertEquals(Sfx.UntangleFewer, untangleFewerSound(4, 2))
+        assertEquals(null, untangleFewerSound(2, 2))
+        assertEquals(null, untangleFewerSound(2, 5))
+    }
+
+    @Test
+    fun theNewGamesSoundsAreInThePack() {
+        val mine = listOf(Sfx.MatchsticksPick, Sfx.MatchsticksPlace, Sfx.LasersTurn, Sfx.LasersLit, Sfx.UntangleDrop, Sfx.UntangleFewer)
+        assertTrue(Sfx.All.containsAll(mine))
     }
 }

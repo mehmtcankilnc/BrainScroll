@@ -18,7 +18,7 @@ class PipesRoundTest {
 
     private val puzzle = PipesGenerator.generate(4)
 
-    private fun round() = PipesRound(0, "p1", puzzle.start.toList(), Language.EN, { clock }, puzzle.par)
+    private fun round() = PipesRound(0, "p1", puzzle.start.toList(), Language.EN, { clock }, puzzle.par).also { it.onShown() }
 
     @Test
     fun aRoundIsUntouchedUntilTheFirstTap() {
@@ -47,16 +47,16 @@ class PipesRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.tap(1)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.tap(2)
         clock += 10 * 60_000
         r.tap(3)
-        assertEquals(2_500 + PipesRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -93,9 +93,9 @@ class PipesRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
+        clock = 5_000
         val r = round()
         val turns = PipesGenerator.solve(puzzle.start, 5)!!
-        clock = 5_000
         var taps = 0
         for (cell in turns.indices) repeat(turns[cell]) {
             clock += 1_000
@@ -110,6 +110,6 @@ class PipesRoundTest {
         assertEquals(listOf(puzzle.par.toString()), finished.guesses)
         assertEquals(puzzle.par, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals((taps - 1) * 1_000L, finished.durationMs)
+        assertEquals(taps * 1_000L, finished.durationMs)
     }
 }

@@ -18,7 +18,7 @@ class TentsRoundTest {
 
     private val puzzle = TentsGenerator.generate(4)
 
-    private fun round() = TentsRound(0, "t1", puzzle, Language.EN, { clock })
+    private fun round() = TentsRound(0, "t1", puzzle, Language.EN, { clock }).also { it.onShown() }
 
     private fun TentsRound.finish(stepMillis: Long = 1_000) {
         for (cell in puzzle.tents.sorted()) {
@@ -50,17 +50,17 @@ class TentsRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
+        clock = 10_000
         val r = round()
         val cells = puzzle.tents.sorted()
-        clock = 10_000
         r.tap(cells[0])
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.tap(cells[1])
         clock += 10 * 60_000
         r.tap(cells[2])
-        assertEquals(2_500 + TentsRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -97,8 +97,8 @@ class TentsRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfTaps() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.finish()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)
@@ -108,7 +108,7 @@ class TentsRoundTest {
         assertEquals(listOf("8"), finished.guesses)
         assertEquals(8, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters: ${finished.answer.length}")
-        assertEquals(7_000L, finished.durationMs)
+        assertEquals(8_000L, finished.durationMs)
     }
 
     @Test

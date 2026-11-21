@@ -37,6 +37,8 @@ import com.mehmtcan.brainscroll.ui.home.GameThumbnail
 import androidx.compose.foundation.horizontalScroll
 import brainscroll.shared.generated.resources.ranks_today_game
 import com.mehmtcan.brainscroll.ui.theme.world
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.border
 import androidx.compose.ui.text.style.TextAlign
 import com.mehmtcan.brainscroll.ui.components.PlayerAvatar
@@ -129,8 +131,10 @@ import brainscroll.shared.generated.resources.gate_username_text
 import brainscroll.shared.generated.resources.gate_username_title
 import brainscroll.shared.generated.resources.kind_current
 import brainscroll.shared.generated.resources.kind_longest
-import brainscroll.shared.generated.resources.ranks_empty
-import brainscroll.shared.generated.resources.ranks_empty_friends
+import brainscroll.shared.generated.resources.ranks_empty_body
+import brainscroll.shared.generated.resources.ranks_empty_friends_body
+import brainscroll.shared.generated.resources.ranks_empty_friends_title
+import brainscroll.shared.generated.resources.ranks_empty_title
 import brainscroll.shared.generated.resources.ranks_failed
 import brainscroll.shared.generated.resources.ranks_friends
 import brainscroll.shared.generated.resources.ranks_guesses
@@ -328,8 +332,8 @@ private fun GameBadge(game: GameKind, wordLanguage: Language, selected: Boolean,
                 .border(if (selected) 3.dp else 1.5.dp, ring, shape),
             contentAlignment = Alignment.Center,
         ) {
-            // The picture a little larger than the tile, so the board fills it to the edge.
-            GameThumbnail(game, wordLanguage, Modifier.requiredSize(BADGE_SIZE * 1.1f).graphicsLayer { alpha = if (selected) 1f else 0.8f })
+            // The picture a little smaller than the tile: it sits clear of the rounded corners and the ring, nothing is cut.
+            GameThumbnail(game, wordLanguage, Modifier.requiredSize(BADGE_SIZE * 0.78f).graphicsLayer { alpha = if (selected) 1f else 0.8f })
         }
         // The name is always written: the chosen one in the main color and bold, with a bar of the game's color under it.
         BasicText(
@@ -516,7 +520,7 @@ private fun <R> LazyListScope.boardItems(
     }
     if (board == null) return
     if (board.rows.isEmpty()) {
-        item { Body(stringResource(if (ui.friendsOnly) Res.string.ranks_empty_friends else Res.string.ranks_empty)) }
+        item { EmptyBoard(ui) }
         return
     }
     items(board.rows) { row -> BoardLine(entry(row)) }
@@ -524,6 +528,57 @@ private fun <R> LazyListScope.boardItems(
     if (me != null && board.rows.none { it == me }) {
         item { Caption("…") }
         item { BoardLine(entry(me)) }
+    }
+}
+
+/**
+ * A table that nobody is on yet: not a dry line but an invitation. The picture of the game (for a speed table), a short title and a line
+ * that says the first place is free, so the player wants to be the one who takes it.
+ */
+@Composable
+private fun EmptyBoard(ui: SocialUiState) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val world = colors.accent
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("ranksEmpty")
+            .background(colors.bgSurface, Radius.card)
+            .border(1.dp, world.copy(alpha = 0.35f), Radius.card)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        // The same sign for every table: an empty podium (dashed bars, the middle one the tallest, a star over it).
+        val ink = colors.textSecondary
+        Canvas(Modifier.requiredSize(64.dp)) {
+            val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))
+            val stroke = Stroke(width = 2.dp.toPx(), pathEffect = dash)
+            val barW = size.width * 0.26f
+            val gap = size.width * 0.05f
+            val x0 = (size.width - (barW * 3 + gap * 2)) / 2f
+            val base = size.height * 0.95f
+            val heights = floatArrayOf(0.42f, 0.62f, 0.3f)
+            for (i in 0 until 3) {
+                val h = size.height * heights[i] * 1.1f
+                drawRoundRect(
+                    ink,
+                    topLeft = androidx.compose.ui.geometry.Offset(x0 + i * (barW + gap), base - h),
+                    size = androidx.compose.ui.geometry.Size(barW, h),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),
+                    style = stroke,
+                )
+            }
+        }
+        BasicText(
+            text = stringResource(if (ui.friendsOnly) Res.string.ranks_empty_friends_title else Res.string.ranks_empty_title),
+            style = type.heading.copy(color = colors.textPrimary, textAlign = TextAlign.Center),
+        )
+        BasicText(
+            text = stringResource(if (ui.friendsOnly) Res.string.ranks_empty_friends_body else Res.string.ranks_empty_body),
+            style = type.body.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+        )
     }
 }
 

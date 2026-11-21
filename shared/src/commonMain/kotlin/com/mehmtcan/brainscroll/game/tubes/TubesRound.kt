@@ -19,16 +19,19 @@ data class TubesSnapshot(
     /** Time spent so far, as the round counts it (see [TubesRound]). */
     val durationMs: Long,
 ) : PageSnapshot {
+    /** The same board with no time on it, to tell whether a page is still as it was (the time of a page that is on show never stops). */
+    override fun withoutClock(): PageSnapshot = copy(durationMs = 0L)
+
     override val isFinished: Boolean get() = state.status == TubesStatus.Won
     override val kind: GameKind get() = GameKind.Tubes
 }
 
 /**
- * One board of color tubes in the feed: a [TubesGame] plus the time and the list of actions, which is all that is
- * needed to save it and to rebuild it exactly as the player left it.
+ * One board of color tubes in the feed: a [TubesGame] plus the time and the list of actions, which is all that is needed to save
+ * it and to rebuild it exactly as the player left it.
  *
- * The time works as in memory match: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS], so
- * leaving the app open in the background does not blow it up. The clock starts with the first pour.
+ * The time is the time the page is on show (see [onShown]): it runs from the moment the page comes to the screen until the board
+ * is won, and stops while the page is left.
  *
  * [language] only fills the language of the saved result (the table needs one); tubes have no language of their own.
  */
@@ -45,7 +48,7 @@ class TubesRound(
     /** What the player did, in order: "3>5" is a pour, "u" an undo, "r" a restart. Saved on the device only. */
     private val actions = mutableListOf<String>()
     private var elapsedMs = 0L
-    private var lastActionAt: Long? = null
+    private var shownSince: Long? = null
 
     override val kind: GameKind get() = GameKind.Tubes
 
@@ -79,12 +82,26 @@ class TubesRound(
 
     private fun record(action: String) {
         actions += action
-        val time = now()
-        lastActionAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-        lastActionAt = time
     }
 
-    override fun snapshot() = TubesSnapshot(id, index, game.state, elapsedMs)
+    /**
+     * The page came to the screen: the clock starts (or goes on). The time of this round is the time its page was on show, so
+     * thinking before the first move counts, and a puzzle solved with one move is not solved "in no time".
+     */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen (swiped away, another tab, the app in the background) or the round is over: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = TubesSnapshot(id, index, game.state, total())
 
     private fun encodedLayout() = layout.joinToString("|") { tube -> tube.joinToString("") }
 
@@ -93,7 +110,7 @@ class TubesRound(
         language = language,
         answer = encodedLayout(),
         guesses = actions.toList(),
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = GameKind.Tubes,
@@ -112,13 +129,11 @@ class TubesRound(
         outcome = Outcome.WON,
         assisted = assisted,
         finishedAt = finishedAt,
-        durationMs = elapsedMs,
+        durationMs = total(),
         game = GameKind.Tubes,
     )
 
     companion object {
-        /** A pause between two actions counts for at most this long. */
-        const val MAX_THINK_MILLIS = 15_000L
         private const val UNDO = "u"
         private const val RESTART = "r"
 

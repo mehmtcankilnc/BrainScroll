@@ -34,13 +34,19 @@ value class Sfx(val file: String) {
         val TubesPour = Sfx("tubes_pour")
         val MinesBoom = Sfx("mines_boom")
         val HanoiThunk = Sfx("hanoi_thunk")
+        val MatchsticksPick = Sfx("matchsticks_pick")
+        val MatchsticksPlace = Sfx("matchsticks_place")
+        val LasersTurn = Sfx("lasers_turn")
+        val LasersLit = Sfx("lasers_lit")
+        val UntangleDrop = Sfx("untangle_drop")
+        val UntangleFewer = Sfx("untangle_fewer")
 
         /** Notes of the pentatonic ladder: 10 for the fills of Nonogram, 8 rattles for finished lines. */
         fun nonogramFill(note: Int) = Sfx("nonogram_fill_" + two(note))
         fun nonogramLine(note: Int) = Sfx("nonogram_line_" + two(note))
 
         /** Every file of the pack, so the platform can load them when the app starts. */
-        val All: List<Sfx> = listOf(BallSlideWhoosh, BallSlideCell, BallSlideWinChord, NonogramWinChord, UiTap, UiGood, UiWarning, UiWinChord, TubesPour, MinesBoom, HanoiThunk) +
+        val All: List<Sfx> = listOf(BallSlideWhoosh, BallSlideCell, BallSlideWinChord, NonogramWinChord, UiTap, UiGood, UiWarning, UiWinChord, TubesPour, MinesBoom, HanoiThunk, MatchsticksPick, MatchsticksPlace, LasersTurn, LasersLit, UntangleDrop, UntangleFewer) +
             (0 until 10).map(::nonogramFill) + (0 until 8).map(::nonogramLine)
 
         private fun two(n: Int) = n.toString().padStart(2, '0')

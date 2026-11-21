@@ -203,6 +203,8 @@ fun AppShell(
     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
     val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
     val soundOn by viewModel.soundEnabled.collectAsStateWithLifecycle()
+    // The boards of the game pictures are made in the background as soon as the app opens, so the feed editor does not have to.
+    LaunchedEffect(Unit) { com.mehmtcan.brainscroll.ui.home.warmUpThumbnailSamples() }
     val isPro by viewModel.pro.isPro.collectAsStateWithLifecycle()
     val look by viewModel.look.collectAsStateWithLifecycle()
     val social by socialViewModel.ui.collectAsStateWithLifecycle()

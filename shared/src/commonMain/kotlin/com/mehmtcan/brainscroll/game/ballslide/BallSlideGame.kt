@@ -42,6 +42,12 @@ data class BallSlideState(
     val canUndo: Boolean,
     /** False while the board is as it was at the start. */
     val canRestart: Boolean,
+    /**
+     * The painted cells as they were before [lastPath] was slid (the same as [painted] when there is no last slide). A cell the ball
+     * goes over again stays painted all the time: a screen that waits to paint the cells of a slide until the ball has passed them
+     * must only wait for the ones that are not in here.
+     */
+    val paintedBefore: List<Boolean> = painted,
 )
 
 /**
@@ -82,6 +88,7 @@ class BallSlideGame(private val puzzle: BallSlidePuzzle, val par: Int = BallSlid
             status = if (isFinished) BallSlideStatus.Won else BallSlideStatus.Playing,
             canUndo = !isFinished && history.isNotEmpty(),
             canRestart = !isFinished && history.isNotEmpty(),
+            paintedBefore = if (lastPath.isNotEmpty() && history.isNotEmpty()) history.last().painted.toList() else painted.toList(),
         )
 
     fun slide(dir: Int): BallSlideResult {

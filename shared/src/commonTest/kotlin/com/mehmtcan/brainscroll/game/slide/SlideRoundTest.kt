@@ -15,7 +15,7 @@ class SlideRoundTest {
 
     private var clock = 1_000L
 
-    private fun round(seed: Int = 4) = SlideRound(0, "s1", seed, Language.EN, { clock })
+    private fun round(seed: Int = 4) = SlideRound(0, "s1", seed, Language.EN, { clock }).also { it.onShown() }
 
     /** A cell next to the empty cell, so a tap on it always slides. */
     private fun SlideRound.movable(): Int {
@@ -45,16 +45,16 @@ class SlideRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.slide(r.movable())
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.slide(r.movable())
         clock += 10 * 60_000
         r.slide(r.movable())
-        assertEquals(2_500 + SlideRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -91,9 +91,9 @@ class SlideRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
+        clock = 5_000
         val r = round()
         val taps = SlideSolver.solve(r.snapshot().state.tiles, 3, 4)
-        clock = 5_000
         for (cell in taps) {
             clock += 1_000
             r.slide(cell)
@@ -106,6 +106,6 @@ class SlideRoundTest {
         assertEquals(listOf(taps.size.toString()), finished.guesses)
         assertEquals(taps.size, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals((taps.size - 1) * 1_000L, finished.durationMs)
+        assertEquals(taps.size * 1_000L, finished.durationMs)
     }
 }

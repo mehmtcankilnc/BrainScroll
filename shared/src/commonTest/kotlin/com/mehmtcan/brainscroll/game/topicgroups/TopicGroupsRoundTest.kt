@@ -19,7 +19,7 @@ class TopicGroupsRoundTest {
 
     private val puzzle = TopicGroupsGenerator.generate(4, Language.TR, Difficulty.Medium)
 
-    private fun round() = TopicGroupsRound(0, "g1", puzzle, { clock })
+    private fun round() = TopicGroupsRound(0, "g1", puzzle, { clock }).also { it.onShown() }
 
     private fun group(g: Int) = (g * 4 until g * 4 + 4).toList()
 
@@ -57,14 +57,14 @@ class TopicGroupsRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         val r = round()
         r.tap(0)
         clock += 5_000
         r.tap(1)
         clock += 100_000
         r.tap(2)
-        assertEquals(5_000 + TopicGroupsRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(5_000 + 100_000L, r.snapshot().durationMs)
     }
 
     @Test

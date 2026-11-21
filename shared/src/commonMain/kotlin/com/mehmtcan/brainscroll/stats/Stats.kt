@@ -354,6 +354,105 @@ fun computeFlowStats(history: List<FinishedRound>): FlowStats {
     )
 }
 
+/** What the statistics screen shows for the fruit equations. Every result is a win (the game cannot be lost). */
+data class FruitStats(
+    val played: Int,
+    /** The fastest game (see FruitRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** Boards answered with no wrong choice before the right one. */
+    val flawless: Int,
+)
+
+fun computeFruitStats(history: List<FinishedRound>): FruitStats {
+    val results = history.filter { it.game == GameKind.FruitMath && it.mode == Mode.ENDLESS && !it.assisted }
+    return FruitStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        flawless = results.count { it.moveCount == 0 },
+    )
+}
+
+/** What the statistics screen shows for the flash grid: a run's result is the number of rounds cleared. */
+data class FlashStats(
+    val played: Int,
+    /** The most rounds cleared in one run. Null until one was played. */
+    val bestRounds: Int?,
+)
+
+fun computeFlashStats(history: List<FinishedRound>): FlashStats {
+    val results = history.filter { it.game == GameKind.FlashGrid && it.mode == Mode.ENDLESS && !it.assisted }
+    return FlashStats(played = results.size, bestRounds = results.maxOfOrNull { it.moveCount })
+}
+
+/** What the statistics screen shows for the rectangles. Every result is a win (the game cannot be lost). */
+data class RectStats(
+    val played: Int,
+    /** The fastest game (see RectRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeRectStats(history: List<FinishedRound>): RectStats {
+    val results = history.filter { it.game == GameKind.Rectangles && it.mode == Mode.ENDLESS && !it.assisted }
+    return RectStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the code breaker. Every result is a win (the game cannot be lost); a result's number is its tries. */
+data class CodeStats(
+    val played: Int,
+    /** The fastest game (see CodeRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+    /** The fewest guesses a code was cracked in. */
+    val fewestMoves: Int?,
+)
+
+fun computeCodeStats(history: List<FinishedRound>): CodeStats {
+    val results = history.filter { it.game == GameKind.CodeBreaker && it.mode == Mode.ENDLESS && !it.assisted }
+    return CodeStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+        fewestMoves = results.minOfOrNull { it.moveCount },
+    )
+}
+
+/** What the statistics screen shows for the tangles. Every result is a win (the game cannot be lost). */
+data class UntangleStats(
+    val played: Int,
+    /** The fastest game (see UntangleRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeUntangleStats(history: List<FinishedRound>): UntangleStats {
+    val results = history.filter { it.game == GameKind.Untangle && it.mode == Mode.ENDLESS && !it.assisted }
+    return UntangleStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the laser mirrors. Every result is a win (the game cannot be lost). */
+data class LaserStats(
+    val played: Int,
+    /** The fastest game (see LaserRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeLaserStats(history: List<FinishedRound>): LaserStats {
+    val results = history.filter { it.game == GameKind.Lasers && it.mode == Mode.ENDLESS && !it.assisted }
+    return LaserStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the matchstick sums. Every result is a win (the game cannot be lost). */
+data class MatchStats(
+    val played: Int,
+    /** The fastest game (see MatchRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeMatchStats(history: List<FinishedRound>): MatchStats {
+    val results = history.filter { it.game == GameKind.Matchsticks && it.mode == Mode.ENDLESS && !it.assisted }
+    return MatchStats(
+        played = results.size,
+        bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull(),
+    )
+}
+
 /** What the statistics screen shows for the word groups game. Every result is a win (the game cannot be lost). */
 data class TopicGroupsStats(
     val played: Int,

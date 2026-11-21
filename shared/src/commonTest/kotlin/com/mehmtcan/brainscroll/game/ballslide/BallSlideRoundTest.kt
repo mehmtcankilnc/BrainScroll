@@ -28,7 +28,7 @@ class BallSlideRoundTest {
     private val puzzle = board.puzzle
     private val way = assertNotNull(BallSlideSolver.shortest(puzzle, puzzle.start, 1L shl puzzle.start))
 
-    private fun round() = BallSlideRound(0, "b1", puzzle, board.par, Language.EN, { clock })
+    private fun round() = BallSlideRound(0, "b1", puzzle, board.par, Language.EN, { clock }).also { it.onShown() }
 
     /** A direction in which the ball can not go, from the start. */
     private fun blockedDir() = (0 until 4).first { puzzle.slide(puzzle.start, it).isEmpty() }
@@ -65,16 +65,16 @@ class BallSlideRoundTest {
     private fun puzzleSlideEmpty(ball: Int, dir: Int) = puzzle.slide(ball, dir).isEmpty()
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.slide(way.first())
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.undo()
         clock += 10 * 60_000
         r.slide(way.first())
-        assertEquals(2_500 + BallSlideRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -110,8 +110,8 @@ class BallSlideRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfSlides() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.solve()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)

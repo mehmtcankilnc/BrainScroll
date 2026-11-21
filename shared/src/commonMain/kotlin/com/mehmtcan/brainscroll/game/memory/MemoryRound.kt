@@ -19,18 +19,20 @@ data class MemorySnapshot(
     /** Time spent so far, as the round counts it (see [MemoryRound]). */
     val durationMs: Long,
 ) : PageSnapshot {
+    /** The same board with no time on it, to tell whether a page is still as it was (the time of a page that is on show never stops). */
+    override fun withoutClock(): PageSnapshot = copy(durationMs = 0L)
+
     override val isFinished: Boolean get() = state.status != MemoryStatus.Playing
     override val isWon: Boolean get() = state.status == MemoryStatus.Won
     override val kind: GameKind get() = GameKind.Memory
 }
 
 /**
- * One memory board in the feed: a [MemoryGame] plus the time and the order of the flips, which is all that is
- * needed to save it and to rebuild it exactly as the player left it.
+ * One memory board in the feed: a [MemoryGame] plus the time and the order of the flips, which is all that is needed to save it
+ * and to rebuild it exactly as the player left it.
  *
- * The time is the sum of the pauses between two flips, each counted for at most [MAX_THINK_MILLIS]. So thinking
- * counts, but leaving the app open in the background (or coming back the next day) does not blow it up. The clock
- * starts with the first flip.
+ * The time is the time the page is on show (see [onShown]): it runs from the moment the page comes to the screen until the board
+ * is won, and stops while the page is left.
  *
  * [language] only fills the language of the saved result (the table needs one); memory has no language of its own.
  */
@@ -44,7 +46,7 @@ class MemoryRound(
     private val game = MemoryGame(layout)
     private val flips = mutableListOf<Int>()
     private var elapsedMs = 0L
-    private var lastFlipAt: Long? = null
+    private var shownSince: Long? = null
 
     override val kind: GameKind get() = GameKind.Memory
 
@@ -71,9 +73,6 @@ class MemoryRound(
         val result = game.flip(card)
         if (result != FlipResult.Ignored) {
             flips += card
-            val time = now()
-            lastFlipAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-            lastFlipAt = time
         }
         return result
     }
@@ -81,14 +80,31 @@ class MemoryRound(
     /** Hides the two cards of a mismatch (the UI calls this when its short pause is over). */
     fun closeMismatch() = game.closeMismatch()
 
-    override fun snapshot() = MemorySnapshot(id, index, game.state, elapsedMs)
+    /**
+     * The page came to the screen: the clock starts (or goes on). The time of this round is the time its page was on show, so
+     * thinking before the first move counts, and a puzzle solved with one move is not solved "in no time".
+     */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen (swiped away, another tab, the app in the background) or the round is over: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = MemorySnapshot(id, index, game.state, total())
 
     override fun toStored() = StoredRound(
         id = id,
         language = language,
         answer = layout.joinToString(",") { it.ordinal.toString() },
         guesses = flips.map { it.toString() },
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = GameKind.Memory,
@@ -103,14 +119,11 @@ class MemoryRound(
         outcome = if (game.state.status == MemoryStatus.Won) Outcome.WON else Outcome.LOST,
         assisted = assisted,
         finishedAt = finishedAt,
-        durationMs = elapsedMs,
+        durationMs = total(),
         game = GameKind.Memory,
     )
 
     companion object {
-        /** A pause between two flips counts for at most this long. */
-        const val MAX_THINK_MILLIS = 10_000L
-
         /**
          * Rebuilds a round from storage by replaying its flips. Returns null if the saved board cannot be read (it was
          * written by something else): the caller then simply starts a new one.

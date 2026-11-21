@@ -167,4 +167,98 @@ object GameLevels {
         Difficulty.Medium -> TubesShape(TubesGame.COLORS, TubesGame.EMPTY_TUBES)
         Difficulty.Hard -> TubesShape(6, 2)
     }
+
+    /**
+     * A matchstick sum: whether the result has two digits (`A + B = CD`), and whether the stick that puts it right only moves inside
+     * one symbol (a 6 into a 9) instead of going to another one.
+     */
+    data class MatchShape(val twoDigitResult: Boolean, val sameSymbol: Boolean)
+
+    fun matchsticks(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> MatchShape(twoDigitResult = false, sameSymbol = true)
+        Difficulty.Medium -> MatchShape(twoDigitResult = false, sameSymbol = false)
+        Difficulty.Hard -> MatchShape(twoDigitResult = true, sameSymbol = false)
+    }
+
+    /**
+     * A board of laser mirrors: the size, how many mirrors stand on the beam's way, how many more mirrors are in the way of nothing,
+     * how many targets there are, and how many mirrors at least have to be turned to win it from the start.
+     */
+    data class LaserShape(val size: Int, val pathMirrors: Int, val decoys: Int, val targets: Int, val minTurns: Int)
+
+    fun lasers(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> LaserShape(5, 3, 1, 2, 2)
+        Difficulty.Medium -> LaserShape(6, 5, 2, 3, 3)
+        Difficulty.Hard -> LaserShape(7, 7, 3, 4, 4)
+    }
+
+    /** The flash grid: the side of the square, the tiles of the first round, and the tiles of the last (clearing it wins the run). */
+    data class FlashShape(val size: Int, val startTiles: Int, val maxTiles: Int)
+
+    fun flashGrid(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> FlashShape(3, 3, 6)
+        Difficulty.Medium -> FlashShape(4, 3, 9)
+        Difficulty.Hard -> FlashShape(5, 4, 13)
+    }
+
+    /** Rectangles: the side of the square, the biggest rectangle, and the fewest rectangles (so no board is cut into a few big ones). */
+    data class RectShape(val size: Int, val maxArea: Int, val minPieces: Int)
+
+    fun rectangles(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> RectShape(6, 8, 8)
+        Difficulty.Medium -> RectShape(7, 10, 10)
+        Difficulty.Hard -> RectShape(8, 12, 12)
+    }
+
+    /** A code: how many places, how many colours, and whether a colour may be in it twice. */
+    data class CodeShape(val length: Int, val colors: Int, val repeats: Boolean)
+
+    fun codeBreaker(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> CodeShape(4, 5, false)
+        Difficulty.Medium -> CodeShape(4, 6, false)
+        Difficulty.Hard -> CodeShape(5, 8, true)
+    }
+
+    /** A tangle: how many dots, how many lines (at least; more are added to join the dots), and how many pairs of lines cross at the start (at least). */
+    data class UntangleShape(val nodes: Int, val edges: Int, val minCrossings: Int)
+
+    fun untangle(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> UntangleShape(7, 11, 4)
+        Difficulty.Medium -> UntangleShape(10, 16, 7)
+        Difficulty.Hard -> UntangleShape(14, 23, 11)
+    }
+
+    /**
+     * A board of fruit equations: how many kinds of fruit, the biggest value of a fruit, which kinds of line there are, how many lines at least
+     * are not plain sums, how many at least are powers, which forms the last line may have, the biggest total of any line (and answer), and the
+     * smallest answer.
+     */
+    data class FruitShape(
+        val fruits: Int,
+        val maxValue: Int,
+        val kinds: Set<com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind>,
+        val special: Int,
+        val minPowers: Int,
+        val questions: Set<com.mehmtcan.brainscroll.game.fruitmath.FruitQuestionKind>,
+        val maxTotal: Int,
+        val minAnswer: Int,
+    )
+
+    fun fruitMath(difficulty: Difficulty): FruitShape {
+        val sum = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.Sum
+        val product = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.Product
+        val quotient = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.Quotient
+        val squarePlus = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.SquarePlus
+        val squareOnly = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.SquareOnly
+        val powerOf = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.PowerOf
+        val powerBase = com.mehmtcan.brainscroll.game.fruitmath.FruitLineKind.PowerBase
+        val sumAll = com.mehmtcan.brainscroll.game.fruitmath.FruitQuestionKind.SumAll
+        val productPlus = com.mehmtcan.brainscroll.game.fruitmath.FruitQuestionKind.ProductPlus
+        val powerOnly = com.mehmtcan.brainscroll.game.fruitmath.FruitQuestionKind.PowerOnly
+        return when (difficulty) {
+            Difficulty.Easy -> FruitShape(3, 7, setOf(sum), 0, 0, setOf(sumAll), 40, 8)
+            Difficulty.Medium -> FruitShape(4, 6, setOf(sum, product), 1, 0, setOf(sumAll), 40, 10)
+            Difficulty.Hard -> FruitShape(4, 9, setOf(sum, product, quotient, squarePlus, squareOnly, powerOf, powerBase), 2, 1, setOf(sumAll, productPlus, powerOnly), 99, 12)
+        }
+    }
 }

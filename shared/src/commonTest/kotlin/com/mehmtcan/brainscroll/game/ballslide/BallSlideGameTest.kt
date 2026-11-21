@@ -85,6 +85,27 @@ class BallSlideGameTest {
     }
 
     @Test
+    fun theStateKeepsWhatWasPaintedBeforeTheLastSlideSoACellPassedAgainNeverLooksUnpainted() {
+        val game = BallSlideGame(puzzle)
+        assertEquals(game.state.painted, game.state.paintedBefore, "no slide yet")
+        game.slide(R)
+        game.slide(D)
+        game.slide(L)
+        game.slide(U) // goes over cell 3 (new) and cell 0 (the start, painted from the beginning)
+        assertEquals(listOf(3, 0), game.state.lastPath)
+        assertTrue(game.state.paintedBefore[0], "the start was painted before the slide")
+        assertFalse(game.state.paintedBefore[3], "cell 3 is painted by this slide for the first time")
+        assertTrue(game.state.painted[3])
+
+        // (This board is won by that slide, so the undo is tried on a game that is still going.)
+        val going = BallSlideGame(puzzle)
+        going.slide(R)
+        going.slide(D)
+        assertTrue(going.undo())
+        assertEquals(going.state.painted, going.state.paintedBefore, "after an undo there is no last slide")
+    }
+
+    @Test
     fun restartPutsTheBallOnItsStartWithOnlyThatCellPainted() {
         val game = BallSlideGame(puzzle)
         assertFalse(game.restart(), "nothing done yet")

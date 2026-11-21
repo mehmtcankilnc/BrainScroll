@@ -50,7 +50,7 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
     /** The games in the feed, in order. Tests can ask for just one. */
     /** Which game is the daily puzzle on a day (by day number). The app always plays One Line; tests fix another game. */
     dailyGame: (Long) -> GameKind = { GameKind.Line },
-    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups),
+    games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid),
     /** The games that offer a level choice. Tests can ask for a set before every game has levels. */
     levelledGames: Set<GameKind> = LEVELLED_GAMES,
     /** The store behind Pro. Tests pass a fake one; null means free with nothing to buy. */

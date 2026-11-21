@@ -111,6 +111,7 @@ class MemoryPersistenceTest {
         val repository = newRepository()
         val first = feed(repository)
         first.ensureSize(2)
+        first.pageShown(1) // the player looks at the board: the clock runs
         first.flip(1, 4)
         clock += 3_000
         first.flip(1, 7)

@@ -26,5 +26,5 @@ val LEVELLED_GAMES: Set<GameKind> = setOf(
     GameKind.Word,
     GameKind.Memory, GameKind.Hanoi, GameKind.Pipes, GameKind.Queens, GameKind.Arrows,
     GameKind.Slide, GameKind.Lights, GameKind.Target, GameKind.Mines, GameKind.Tubes,
-    GameKind.Sudoku, GameKind.Jigsaw, GameKind.Tents, GameKind.BlockOut, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups,
+    GameKind.Sudoku, GameKind.Jigsaw, GameKind.Tents, GameKind.BlockOut, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid,
 )

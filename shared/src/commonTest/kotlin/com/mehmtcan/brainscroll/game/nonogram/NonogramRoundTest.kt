@@ -19,7 +19,7 @@ class NonogramRoundTest {
     private val puzzle = NonogramGenerator.generate(4)
     private val cells = puzzle.solution.sorted()
 
-    private fun round() = NonogramRound(0, "n1", puzzle, Language.EN, { clock })
+    private fun round() = NonogramRound(0, "n1", puzzle, Language.EN, { clock }).also { it.onShown() }
 
     private fun NonogramRound.finish(stepMillis: Long = 1_000) {
         for (cell in cells) {
@@ -51,16 +51,16 @@ class NonogramRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.paint(0, 0, NonogramMark.CROSS)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.paint(1, 1, NonogramMark.CROSS)
         clock += 10 * 60_000
         r.paint(2, 2, NonogramMark.CROSS)
-        assertEquals(2_500 + NonogramRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -95,8 +95,8 @@ class NonogramRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfStrokes() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.finish()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)

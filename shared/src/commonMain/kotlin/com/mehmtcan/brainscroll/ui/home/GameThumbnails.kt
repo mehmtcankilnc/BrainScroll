@@ -19,6 +19,64 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import brainscroll.shared.generated.resources.Res
+import org.jetbrains.compose.resources.painterResource
+import brainscroll.shared.generated.resources.thumb_arrows
+import brainscroll.shared.generated.resources.thumb_axissum
+import brainscroll.shared.generated.resources.thumb_ballslide
+import brainscroll.shared.generated.resources.thumb_blockout
+import brainscroll.shared.generated.resources.thumb_codebreaker
+import brainscroll.shared.generated.resources.thumb_colorflow
+import brainscroll.shared.generated.resources.thumb_flashgrid
+import brainscroll.shared.generated.resources.thumb_fruitmath
+import brainscroll.shared.generated.resources.thumb_hanoi
+import brainscroll.shared.generated.resources.thumb_jigsaw
+import brainscroll.shared.generated.resources.thumb_lasers
+import brainscroll.shared.generated.resources.thumb_lights
+import brainscroll.shared.generated.resources.thumb_line
+import brainscroll.shared.generated.resources.thumb_matchsticks
+import brainscroll.shared.generated.resources.thumb_memory
+import brainscroll.shared.generated.resources.thumb_mines
+import brainscroll.shared.generated.resources.thumb_nonogram
+import brainscroll.shared.generated.resources.thumb_pipes
+import brainscroll.shared.generated.resources.thumb_queens
+import brainscroll.shared.generated.resources.thumb_rectangles
+import brainscroll.shared.generated.resources.thumb_slide
+import brainscroll.shared.generated.resources.thumb_sudoku
+import brainscroll.shared.generated.resources.thumb_target
+import brainscroll.shared.generated.resources.thumb_tents
+import brainscroll.shared.generated.resources.thumb_topicgroups
+import brainscroll.shared.generated.resources.thumb_tubes
+import brainscroll.shared.generated.resources.thumb_untangle
+import brainscroll.shared.generated.resources.thumb_word_tr
+import brainscroll.shared.generated.resources.thumb_word_en
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.mehmtcan.brainscroll.ui.matchsticks.drawMatchBoard
+import com.mehmtcan.brainscroll.ui.lasers.LaserPaint
+import com.mehmtcan.brainscroll.ui.untangle.UntanglePaint
+import com.mehmtcan.brainscroll.ui.untangle.drawUntangle
+import com.mehmtcan.brainscroll.ui.lasers.LaserTargetColor
+import com.mehmtcan.brainscroll.ui.theme.world
+import com.mehmtcan.brainscroll.ui.lasers.drawLaserBoard
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,7 +88,6 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.lights.LightsGame
@@ -62,6 +119,72 @@ import kotlin.random.Random
  * sudoku, the pipes of a generated board, ...), so the pictures are what the player will actually see. They are still
  * pictures: nothing in them reacts, and a screen reader skips them (the card around them has the game's name).
  */
+/** True once the boards that the pictures of some games need (they come from a generator) have been made: see [warmUpThumbnailSamples]. */
+private var samplesReady by mutableStateOf(false)
+
+/** The games whose picture needs one of those boards. Until they are made these show an empty frame: no picture holds the screen up. */
+private val NeedsSamples = setOf(GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Jigsaw)
+
+/**
+ * Makes the boards of the pictures ahead of time, away from the screen's thread (a sudoku or a jigsaw is a search, and making them while
+ * the feed editor was being drawn held the page up). Called when the app starts; the pictures that need a board fill in when it is done.
+ */
+suspend fun warmUpThumbnailSamples() {
+    if (samplesReady) return
+    withContext(Dispatchers.Default) {
+        TubesSample
+        MinesSample
+        SudokuSample
+        LightsSample
+        SlideSample
+        TargetSample
+        PipesSample
+        JigsawSample
+        JigsawShown
+    }
+    samplesReady = true
+}
+
+/**
+ * The picture of a game as the PNG that is part of the app (composeResources/drawable/thumb_*.png, made from [GameThumbnail] by
+ * ThumbnailPngTest, the dark theme only). For the places that show many at once, like the feed editor: drawing the live pictures there
+ * was slow, and a picture that is a file costs next to nothing. After a picture changes, make the files again (see that test).
+ */
+@Composable
+fun GameThumbnailImage(kind: GameKind, wordLanguage: Language, modifier: Modifier = Modifier) {
+    val resource = when (kind) {
+        GameKind.Word -> if (wordLanguage == Language.TR) Res.drawable.thumb_word_tr else Res.drawable.thumb_word_en
+        GameKind.Arrows -> Res.drawable.thumb_arrows
+        GameKind.AxisSum -> Res.drawable.thumb_axissum
+        GameKind.BallSlide -> Res.drawable.thumb_ballslide
+        GameKind.BlockOut -> Res.drawable.thumb_blockout
+        GameKind.CodeBreaker -> Res.drawable.thumb_codebreaker
+        GameKind.ColorFlow -> Res.drawable.thumb_colorflow
+        GameKind.FlashGrid -> Res.drawable.thumb_flashgrid
+        GameKind.FruitMath -> Res.drawable.thumb_fruitmath
+        GameKind.Hanoi -> Res.drawable.thumb_hanoi
+        GameKind.Jigsaw -> Res.drawable.thumb_jigsaw
+        GameKind.Lasers -> Res.drawable.thumb_lasers
+        GameKind.Lights -> Res.drawable.thumb_lights
+        GameKind.Line -> Res.drawable.thumb_line
+        GameKind.Matchsticks -> Res.drawable.thumb_matchsticks
+        GameKind.Memory -> Res.drawable.thumb_memory
+        GameKind.Mines -> Res.drawable.thumb_mines
+        GameKind.Nonogram -> Res.drawable.thumb_nonogram
+        GameKind.Pipes -> Res.drawable.thumb_pipes
+        GameKind.Queens -> Res.drawable.thumb_queens
+        GameKind.Rectangles -> Res.drawable.thumb_rectangles
+        GameKind.Slide -> Res.drawable.thumb_slide
+        GameKind.Sudoku -> Res.drawable.thumb_sudoku
+        GameKind.Target -> Res.drawable.thumb_target
+        GameKind.Tents -> Res.drawable.thumb_tents
+        GameKind.TopicGroups -> Res.drawable.thumb_topicgroups
+        GameKind.Tubes -> Res.drawable.thumb_tubes
+        GameKind.Untangle -> Res.drawable.thumb_untangle
+    }
+    Image(painterResource(resource), contentDescription = null, modifier = modifier.clearAndSetSemantics { }, contentScale = ContentScale.FillBounds)
+}
+
 @Composable
 fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
@@ -75,6 +198,7 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
         contentAlignment = Alignment.Center,
     ) {
         val side = minOf(maxWidth, maxHeight)
+        if (kind in NeedsSamples && !samplesReady) return@BoxWithConstraints
         when (kind) {
             GameKind.Word -> WordThumb(side, wordLanguage)
             GameKind.Memory -> MemoryThumb(side)
@@ -96,6 +220,13 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.BallSlide -> BallSlideThumb(side)
             GameKind.ColorFlow -> ColorFlowThumb(side)
             GameKind.TopicGroups -> TopicGroupsThumb(side)
+            GameKind.Matchsticks -> MatchsticksThumb(side)
+            GameKind.Lasers -> LasersThumb(side)
+            GameKind.Untangle -> UntangleThumb(side)
+            GameKind.FruitMath -> FruitMathThumb(side)
+            GameKind.CodeBreaker -> CodeBreakerThumb(side)
+            GameKind.Rectangles -> RectanglesThumb(side)
+            GameKind.FlashGrid -> FlashGridThumb(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -579,6 +710,89 @@ private fun ColorFlowThumb(side: Dp) {
     }
 }
 
+// --- Fruit equations: two lines and a question ---
+
+@Composable
+private fun FruitMathThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val fruit = { i: Int -> com.mehmtcan.brainscroll.game.fruitmath.FruitToken.Fruit(i) }
+    val plus = com.mehmtcan.brainscroll.game.fruitmath.FruitToken.Op('+')
+    val times = com.mehmtcan.brainscroll.game.fruitmath.FruitToken.Op('×')
+    val first = com.mehmtcan.brainscroll.game.fruitmath.FruitLine(listOf(fruit(1), plus, fruit(1)), 6)
+    val second = com.mehmtcan.brainscroll.game.fruitmath.FruitLine(listOf(fruit(1), times, fruit(0)), 9)
+    val last = com.mehmtcan.brainscroll.game.fruitmath.FruitLine(listOf(fruit(0), plus, fruit(1)), 0)
+    Column(Modifier.size(side * 0.9f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        val row = side * 0.26f
+        val sizes = com.mehmtcan.brainscroll.ui.fruitmath.fruitSizes(listOf(first, second, last), row, side * 0.85f)
+        com.mehmtcan.brainscroll.ui.fruitmath.FruitRow(first, "6", colors.textPrimary, sizes, row)
+        com.mehmtcan.brainscroll.ui.fruitmath.FruitRow(second, "9", colors.textPrimary, sizes, row)
+        com.mehmtcan.brainscroll.ui.fruitmath.FruitRow(last, "?", colors.streakAnswer, sizes, row)
+    }
+}
+
+// --- Untangle: dots and lines, a couple of them crossing ---
+
+@Composable
+private fun UntangleThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val paint = UntanglePaint(GameKind.Untangle.world, colors.error, colors.bgRaised, colors.textPrimary, colors.pendingFill)
+    // Five dots in a ring with a line across: two of the lines cross.
+    val positions = listOf(500, 120, 880, 400, 740, 860, 260, 860, 120, 400)
+    val edges = listOf(0 to 2, 2 to 4, 4 to 1, 1 to 3, 3 to 0, 0 to 4)
+    val crossing = com.mehmtcan.brainscroll.game.untangle.UntangleRules.crossingEdges(positions, edges)
+    Canvas(Modifier.size(side * 0.9f)) {
+        drawUntangle(positions, edges, crossing, Offset.Zero, size.width, paint, size.width * 0.06f, size.width * 0.022f)
+    }
+}
+
+// --- Laser mirrors: a beam that bounces off two mirrors and lights a target ---
+
+@Composable
+private fun LasersThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val world = GameKind.Lasers.world
+    val n = 4
+    val mirrors = List(n * n) { if (it == 6) com.mehmtcan.brainscroll.game.lasers.LaserRules.SLASH else if (it == 2) com.mehmtcan.brainscroll.game.lasers.LaserRules.BACKSLASH else 0 }
+    val beam = com.mehmtcan.brainscroll.game.lasers.LaserRules.trace(n, 1, mirrors)
+    val paint = LaserPaint(
+        tile = colors.bgSurface,
+        mirrorTile = colors.bgRaised,
+        edge = colors.borderStrong.copy(alpha = 0.35f),
+        mirror = Color(0xFFA8DCFF),
+        beam = world,
+        beamCore = Color(0xFFFFE9EC),
+        target = LaserTargetColor,
+        emitter = world,
+        guide = colors.pendingFill,
+    )
+    Canvas(Modifier.size(side * 0.9f)) {
+        val cell = size.width / (n + 1.7f)
+        drawLaserBoard(n, 1, mirrors, setOf(1, 10), beam, Offset(0.85f * cell, (size.height - n * cell) / 2f), cell, paint)
+    }
+}
+
+// --- Matchsticks: a sum made of sticks ---
+
+@Composable
+private fun MatchsticksThumb(side: Dp) {
+    val colors = BrainScrollTheme.colors
+    val cells = com.mehmtcan.brainscroll.game.matchsticks.MatchRules.cellsOf(3, true, 4, 7)
+    val paint = com.mehmtcan.brainscroll.ui.matchsticks.MatchPaint(
+        stick = com.mehmtcan.brainscroll.ui.matchsticks.WoodStick,
+        head = com.mehmtcan.brainscroll.ui.matchsticks.MatchHead,
+        fixed = com.mehmtcan.brainscroll.ui.matchsticks.WoodStick.copy(alpha = 0.45f),
+        held = colors.streakAnswer,
+        heldHead = colors.streakAnswer,
+        ghost = colors.textSecondary,
+    )
+    Canvas(Modifier.size(side * 0.9f)) {
+        val units = com.mehmtcan.brainscroll.ui.matchsticks.matchWidthUnits(cells.size) + 16f
+        val unit = size.width / units
+        val origin = Offset(8f * unit, (size.height - 96f * unit) / 2f)
+        drawMatchBoard(cells, origin, unit, paint)
+    }
+}
+
 // --- Ball slide: a trail of painted cells, two walls and the yellow ball ---
 
 @Composable
@@ -758,4 +972,25 @@ private fun TopicGroupsThumb(side: Dp) {
             lineAt(origin + Offset(tileW / 2f, tileH / 2f), tileW * (0.45f + 0.1f * ((row + column) % 3)), tileH * 0.16f, if (picked) ink else colors.textSecondary)
         }
     }
+}
+
+// --- Code breaker: tries of coloured pegs with their dots ---
+
+@Composable
+private fun CodeBreakerThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.codebreaker.CodeBreakerThumbArt(side)
+}
+
+// --- Rectangles: a small board cut into coloured rectangles with their numbers ---
+
+@Composable
+private fun RectanglesThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.rectangles.RectanglesThumbArt(side)
+}
+
+// --- Flash grid: a grid with a few tiles lit ---
+
+@Composable
+private fun FlashGridThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.flashgrid.FlashGridThumbArt(side)
 }

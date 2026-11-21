@@ -1,0 +1,633 @@
+<title>Oyun Denemeleri</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: one phone-width column, a tab per game, the board first and the explanation under it.
+   Palette and type are taken from the app itself (dark first, green accent, rounded Nunito). */
+:root {
+  --bg: #121212;
+  --surface: #1c1c1c;
+  --surface2: #262626;
+  --line: #343434;
+  --text: #f5f5f5;
+  --muted: #9a9a9a;
+  --green: #7ed957;
+  --green-ink: #10240a;
+  --yellow: #ffc93c;
+  --blue: #4db8ff;
+  --red: #ff5a5a;
+  --wood: #e2a869;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body {
+  margin: 0;
+  color: var(--text);
+  font: 600 15px/1.45 Nunito, system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding-block: 18px 44px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.01em; }
+h2 { margin: 0; font-size: 21px; font-weight: 900; }
+p { margin: 0; }
+.sub { color: var(--muted); }
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  border-radius: 999px; padding: 9px 15px; font: inherit; font-weight: 800; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.tab:focus-visible, .btn:focus-visible, .choice:focus-visible, .seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.goal { color: var(--muted); }
+.stage { background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 10px; }
+.board { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.status { min-height: 1.5em; font-weight: 800; color: var(--muted); }
+.status.ok { color: var(--green); }
+.status.bad { color: var(--red); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  border: 1px solid var(--line); background: var(--surface2); color: var(--text); border-radius: 14px;
+  padding: 10px 14px; font: inherit; font-weight: 800; cursor: pointer;
+}
+.btn.primary { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.btn:active { transform: translateY(1px); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface2); color: var(--muted); padding: 10px 13px; font: inherit; font-weight: 800; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+.meta { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.meta b { display: block; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 800; }
+.meta .hook { color: var(--yellow); font-weight: 800; }
+
+/* Matchsticks */
+.stick { stroke: var(--wood); stroke-width: 8; stroke-linecap: round; }
+.stick.fixed { opacity: 0.5; }
+.stick.held { stroke: var(--yellow); }
+.stick.hint { stroke: var(--blue); }
+.head { fill: #e8553d; }
+.head.held { fill: #ff9f43; }
+.ghost { stroke: var(--muted); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 1 11; opacity: 0.8; }
+.solved .stick { stroke: var(--green); }
+.solved .head { fill: #c9f2b3; }
+.pulse { animation: pulse 0.9s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: 0.45; } to { opacity: 1; } }
+
+/* Untangle */
+.edge { stroke: var(--green); stroke-width: 3.5; stroke-linecap: round; }
+.edge.bad { stroke: var(--red); }
+.node { fill: var(--surface2); stroke: var(--text); stroke-width: 3; cursor: grab; }
+.win .node { fill: var(--yellow); stroke: var(--yellow); }
+.win .edge { stroke: var(--green); }
+
+/* Laser */
+.cell { fill: #1b1b1b; stroke: #2e2e2e; stroke-width: 0.03; }
+.cell.hasMirror { cursor: pointer; fill: #202226; }
+.mirror { stroke: #a8dcff; stroke-width: 0.1; stroke-linecap: round; }
+.beam { fill: none; stroke: var(--green); stroke-width: 0.075; stroke-linecap: round; stroke-linejoin: round; }
+.win .beam { stroke: #d4ffb8; }
+.tgt { fill: none; stroke: var(--yellow); stroke-width: 0.06; }
+.tgt.lit { fill: var(--yellow); }
+.src { fill: var(--green); }
+
+/* Emoji equations */
+.eqs { display: grid; gap: 10px; padding: 6px 4px; }
+.eq { display: flex; align-items: center; gap: 8px; font-size: clamp(22px, 7.2vw, 30px); line-height: 1.1; min-width: 0; }
+.eq .ops { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; min-width: 0; flex: 1 1 auto; }
+.eq .plus { font-size: 0.6em; color: var(--muted); font-weight: 900; }
+.eq .is { font-size: 0.72em; color: var(--muted); font-weight: 900; margin-left: auto; flex: 0 0 auto; }
+.eq .num { min-width: 2.2ch; text-align: right; font-weight: 900; flex: 0 0 auto; }
+.wrap, .card, .stage { min-width: 0; }
+.eq.q { border-top: 1px dashed var(--line); padding-top: 12px; }
+.eq.q .num { color: var(--yellow); }
+.choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.choice { border: 1px solid var(--line); background: var(--surface2); color: var(--text); border-radius: 16px; padding: 14px 0; font: inherit; font-size: 24px; font-weight: 900; cursor: pointer; }
+.choice.right { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.choice.wrong { background: var(--red); border-color: var(--red); color: #2a0808; animation: shake 0.3s; }
+.choice[disabled] { cursor: default; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.clock { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 800; }
+@media (prefers-reduced-motion: reduce) {
+  .pulse, .choice.wrong { animation: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Oyun Denemeleri</h1>
+    <p class="sub">Dört fikir, hepsi oynanabilir. Telefonda da çalışır. Beğenmediğine kısaca "olmadı" de, yeter.</p>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <main id="panels"></main>
+</div>
+
+<script>
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rand = (n) => Math.floor(Math.random() * n);
+  const pick = (a) => a[rand(a.length)];
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  function el(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') e.className = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v);
+    }
+    for (const kid of kids.flat()) if (kid != null) e.append(kid.nodeType ? kid : document.createTextNode(kid));
+    return e;
+  }
+  function sv(tag, attrs, ...kids) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    for (const kid of kids.flat()) if (kid) e.append(kid);
+    return e;
+  }
+
+  /* The frame every game shares: title, goal, the board, a status line, controls and the reel notes. */
+  function mount(root, info) {
+    const stage = el('div', { class: 'stage' });
+    const statusEl = el('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
+    const controls = el('div', { class: 'row' });
+    root.append(el('div', { class: 'card' },
+      el('div', {}, el('h2', {}, info.title), el('p', { class: 'goal' }, info.goal)),
+      stage, statusEl, controls,
+      el('div', { class: 'meta' },
+        el('div', {}, el('b', {}, 'Reel kancası'), el('p', { class: 'hook' }, info.hook)),
+        el('div', {}, el('b', {}, 'Neden işe yarar'), el('p', {}, info.why)))));
+    return {
+      stage, controls,
+      status(text, kind) { statusEl.textContent = text; statusEl.className = 'status' + (kind ? ' ' + kind : ''); },
+    };
+  }
+  function seg(options, value, onChange) {
+    const wrap = el('div', { class: 'seg', role: 'group' });
+    const buttons = options.map(([id, label]) => el('button', { type: 'button', 'aria-pressed': String(id === value), onclick: () => {
+      buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i][0] === id)));
+      onChange(id);
+    } }, label));
+    wrap.append(...buttons);
+    return wrap;
+  }
+  const button = (label, fn, primary) => el('button', { type: 'button', class: 'btn' + (primary ? ' primary' : ''), onclick: fn }, label);
+
+  /* ---------------------------------------------------------------------------------------------
+     1. Kibrit Çöpü: one stick moves, the sum has to be right.
+     --------------------------------------------------------------------------------------------- */
+  function matchGame(root) {
+    const ui = mount(root, {
+      title: 'Kibrit Çöpü',
+      goal: 'Tek bir çöpü başka bir yere taşı, eşitlik doğru olsun. Çöpe dokun, sonra boş yere dokun.',
+      hook: '"Move ONE stick. Fix the math."',
+      why: 'Herkesin tanıdığı bir bilmece türü: kuralı anlatmaya gerek yok, ilk saniyede "ben çözerim" dedirtir. Dilsiz olduğu için her ülkede çalışır. Çözümde çöpün yerine oturması tatmin edici bir son verir.',
+    });
+    const KEYS = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    const SEG = { a: [10, 8, 46, 8], b: [50, 12, 50, 46], c: [50, 50, 50, 84], d: [10, 88, 46, 88], e: [6, 50, 6, 84], f: [6, 12, 6, 46], g: [10, 48, 46, 48] };
+    const MASK = ['abcdef', 'bc', 'abdeg', 'abcdg', 'bcfg', 'acdfg', 'acdefg', 'abc', 'abcdefg', 'abcdfg']
+      .map((s) => [...s].reduce((m, ch) => m | (1 << KEYS.indexOf(ch)), 0));
+    const DIG = new Map(MASK.map((m, i) => [m, i]));
+    const CELLX = [0, 70, 140, 280]; // first number, sign, second number, result (the = sits at 210)
+    const SLOTS = [7, 2, 7, 7];
+    const line = (ci, b) => (ci === 1 ? (b === 0 ? [10, 48, 46, 48] : [28, 26, 28, 70]) : SEG[KEYS[b]]);
+    // A state is four bit masks: [first, sign, second, result]. The sign is 1 (minus) or 3 (plus).
+    const read = (s) => {
+      const A = DIG.get(s[0]), B = DIG.get(s[2]), C = DIG.get(s[3]);
+      if (A == null || B == null || C == null || (s[1] !== 1 && s[1] !== 3)) return null;
+      return { A, B, C, plus: s[1] === 3 };
+    };
+    const isValid = (s) => read(s) !== null;
+    const isTrue = (s) => { const v = read(s); return !!v && (v.plus ? v.A + v.B === v.C : v.A - v.B === v.C); };
+    const moves = (s) => {
+      const out = [];
+      for (let ci = 0; ci < 4; ci++) for (let b = 0; b < SLOTS[ci]; b++) {
+        if (!((s[ci] >> b) & 1)) continue;
+        for (let cj = 0; cj < 4; cj++) for (let d = 0; d < SLOTS[cj]; d++) {
+          if ((s[cj] >> d) & 1 || (ci === cj && b === d)) continue;
+          const n = s.slice(); n[ci] &= ~(1 << b); n[cj] |= 1 << d;
+          out.push({ from: [ci, b], to: [cj, d], state: n });
+        }
+      }
+      return out;
+    };
+    // Every puzzle is a true sum with one stick moved away, kept when it reads as a sum and is wrong.
+    const pool = new Map();
+    for (let A = 0; A < 10; A++) for (let B = 0; B < 10; B++) for (const op of [3, 1]) {
+      const C = op === 3 ? A + B : A - B;
+      if (C < 0 || C > 9) continue;
+      for (const m of moves([MASK[A], op, MASK[B], MASK[C]])) {
+        if (isValid(m.state) && !isTrue(m.state)) pool.set(m.state.join(','), m.state);
+      }
+    }
+    const puzzles = [...pool.values()].map((state) => {
+      const sols = moves(state).filter((m) => isTrue(m.state));
+      return { state, sols, same: sols.every((m) => m.from[0] === m.to[0]), unique: sols.length === 1 };
+    }).filter((p) => p.sols.length > 0);
+    const easy = puzzles.filter((p) => p.unique && p.same);
+    const hard = puzzles.filter((p) => p.unique && !p.same);
+
+    let level = 'easy', puzzle, orig, cur, held, moved, solved, hint;
+    const svg = sv('svg', { viewBox: '-8 -6 352 108', class: 'board' });
+    ui.stage.append(svg);
+
+    function stick(x, ln, cls, headCls) {
+      const g = sv('g', { transform: `translate(${x},0)` });
+      g.append(sv('line', { x1: ln[0], y1: ln[1], x2: ln[2], y2: ln[3], class: cls }));
+      g.append(sv('circle', { cx: ln[0], cy: ln[1], r: 5.5, class: headCls }));
+      return g;
+    }
+    function draw() {
+      svg.replaceChildren();
+      svg.setAttribute('class', 'board' + (solved ? ' solved' : ''));
+      svg.setAttribute('aria-label', 'Kibrit çöpü eşitliği');
+      svg.append(stick(210, [10, 38, 46, 38], 'stick fixed', 'head'), stick(210, [10, 58, 46, 58], 'stick fixed', 'head'));
+      svg.lastChild.querySelector('circle').remove();
+      svg.children[svg.children.length - 2].querySelector('circle').remove();
+      for (let ci = 0; ci < 4; ci++) for (let b = 0; b < SLOTS[ci]; b++) {
+        const ln = line(ci, b), x = CELLX[ci];
+        const occ = (cur[ci] >> b) & 1;
+        const isHeld = held && held[0] === ci && held[1] === b;
+        const isHint = hint && hint[0] === ci && hint[1] === b;
+        if (occ) svg.append(stick(x, ln, 'stick' + (isHeld ? ' held' : '') + (isHint && !isHeld ? ' hint pulse' : ''), 'head' + (isHeld ? ' held' : '')));
+        else if (held) {
+          const g = sv('g', { transform: `translate(${x},0)` });
+          g.append(sv('line', { x1: ln[0], y1: ln[1], x2: ln[2], y2: ln[3], class: 'ghost' }));
+          svg.append(g);
+        }
+        const hit = sv('g', { transform: `translate(${x},0)` });
+        const h = sv('line', { x1: ln[0], y1: ln[1], x2: ln[2], y2: ln[3], stroke: 'transparent', 'stroke-width': 22, 'stroke-linecap': 'round', style: 'cursor:pointer' });
+        h.addEventListener('click', () => tap(ci, b));
+        hit.append(h);
+        svg.append(hit);
+      }
+    }
+    function tap(ci, b) {
+      if (solved) return;
+      const occ = (cur[ci] >> b) & 1;
+      hint = null;
+      if (held) {
+        if (held[0] === ci && held[1] === b) { held = null; ui.status('Çöpü bıraktın. Başka bir çöp seç.', ''); draw(); return; }
+        if (!occ) {
+          cur = cur.slice(); cur[held[0]] &= ~(1 << held[1]); cur[ci] |= 1 << b; held = null; moved = true;
+          if (isTrue(cur)) { solved = true; ui.status('Çözüldü! Tek çöp doğru yere gitti.', 'ok'); }
+          else ui.status(isValid(cur) ? 'Eşitlik hâlâ yanlış. Geri al ve başka bir çöp dene.' : 'Bu hâli okunmuyor. Geri al ve tekrar dene.', 'bad');
+          draw(); return;
+        }
+        if (!moved) { held = [ci, b]; draw(); }
+        return;
+      }
+      if (moved) return;
+      if (occ) { held = [ci, b]; ui.status('Şimdi çöpü koyacağın boş yere dokun.', ''); draw(); }
+    }
+    function fresh() {
+      const list = (level === 'easy' ? easy : hard);
+      puzzle = pick(list.length ? list : puzzles);
+      orig = puzzle.state.slice(); cur = orig.slice(); held = null; moved = false; solved = false; hint = null;
+      ui.status('Eşitlik yanlış. Tek bir çöpü taşıyarak düzelt.', '');
+      draw();
+    }
+    ui.controls.append(
+      seg([['easy', 'Kolay'], ['hard', 'Zor']], level, (v) => { level = v; fresh(); }),
+      button('Geri al', () => { cur = orig.slice(); held = null; moved = false; solved = false; hint = null; ui.status('Başa döndü.', ''); draw(); }),
+      button('İpucu', () => { if (solved || moved) return; hint = puzzle.sols[0].from; held = null; ui.status('Mavi yanıp sönen çöpü taşımak gerekiyor.', ''); draw(); }),
+      button('Yeni bulmaca', fresh, true));
+    fresh();
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+     2. Düğüm Çöz: drag the dots until no line crosses another.
+     --------------------------------------------------------------------------------------------- */
+  function untangleGame(root) {
+    const ui = mount(root, {
+      title: 'Düğüm Çöz',
+      goal: 'Noktaları sürükle. Hiçbir çizgi başka bir çizgiyi kesmesin. Kırmızı çizgiler hâlâ kesişiyor.',
+      hook: '"Untangle it. Can you do it in 20 seconds?"',
+      why: 'Karışık ağın düzene girişi izlemesi çok tatmin edici (sessiz, sakin, "satisfying" içerik). Kural yok, sadece amaç var. Zorluğu nokta sayısıyla ölçeklenir. Reel için: önce karmaşa, sonra tek hamlede çözülen düğüm.',
+    });
+    const W = 360;
+    const LEVELS = { easy: { n: 7, m: 11 }, mid: { n: 10, m: 16 }, hard: { n: 14, m: 23 } };
+    const orient = (p, q, r) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+    const cross = (a, b, c, d) => {
+      const o1 = orient(a, b, c), o2 = orient(a, b, d), o3 = orient(c, d, a), o4 = orient(c, d, b);
+      return o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0 && o1 !== o2 && o3 !== o4;
+    };
+    // A graph that can be untangled for sure: lines are added shortest first, each only if it crosses none yet.
+    function makeGraph(n, m) {
+      for (let attempt = 0; attempt < 300; attempt++) {
+        const pts = [];
+        for (let guard = 0; pts.length < n && guard < 3000; guard++) {
+          const p = { x: 34 + Math.random() * (W - 68), y: 34 + Math.random() * (W - 68) };
+          if (pts.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 56)) pts.push(p);
+        }
+        if (pts.length < n) continue;
+        const cand = [];
+        for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) cand.push([i, j, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y)]);
+        cand.sort((a, b) => a[2] - b[2]);
+        const all = [];
+        for (const [i, j] of cand) if (all.every(([a, b]) => a === i || a === j || b === i || b === j || !cross(pts[i], pts[j], pts[a], pts[b]))) all.push([i, j]);
+        const keep = all.slice(0, m), deg = new Array(n).fill(0);
+        keep.forEach(([a, b]) => { deg[a]++; deg[b]++; });
+        for (const e of all.slice(m)) if (deg[e[0]] < 2 || deg[e[1]] < 2) { keep.push(e); deg[e[0]]++; deg[e[1]]++; }
+        if (keep.length >= n + 2) return keep;
+      }
+      return null;
+    }
+    let level = 'easy', edges, nodes, drag = null, won = false;
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${W}`, class: 'board', style: 'touch-action:none' });
+    ui.stage.append(svg);
+    let edgeEls = [], nodeEls = [];
+
+    const crossingPairs = () => {
+      const bad = new Set(); let pairs = 0;
+      for (let x = 0; x < edges.length; x++) for (let y = x + 1; y < edges.length; y++) {
+        const [a, b] = edges[x], [c, d] = edges[y];
+        if (a === c || a === d || b === c || b === d) continue;
+        if (cross(nodes[a], nodes[b], nodes[c], nodes[d])) { bad.add(x); bad.add(y); pairs++; }
+      }
+      return { bad, pairs };
+    };
+    function refresh() {
+      edgeEls.forEach((ln, i) => {
+        ln.setAttribute('x1', nodes[edges[i][0]].x); ln.setAttribute('y1', nodes[edges[i][0]].y);
+        ln.setAttribute('x2', nodes[edges[i][1]].x); ln.setAttribute('y2', nodes[edges[i][1]].y);
+      });
+      nodeEls.forEach((c, i) => { c.setAttribute('cx', nodes[i].x); c.setAttribute('cy', nodes[i].y); });
+      const { bad, pairs } = crossingPairs();
+      edgeEls.forEach((ln, i) => ln.setAttribute('class', 'edge' + (bad.has(i) ? ' bad' : '')));
+      if (pairs === 0) {
+        if (!won) { won = true; svg.setAttribute('class', 'board win'); ui.status('Çözüldü! Hiçbir çizgi kesişmiyor.', 'ok'); }
+      } else {
+        won = false; svg.setAttribute('class', 'board'); ui.status(`Kesişen çizgi çifti: ${pairs}`, '');
+      }
+    }
+    const toSvg = (e) => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    };
+    function scramble() {
+      const n = nodes.length;
+      for (let t = 0; t < 60; t++) {
+        const order = shuffle([...Array(n).keys()]);
+        order.forEach((idx, k) => {
+          const a = (k / n) * Math.PI * 2 - Math.PI / 2;
+          nodes[idx] = { x: W / 2 + Math.cos(a) * 140, y: W / 2 + Math.sin(a) * 140 };
+        });
+        if (crossingPairs().pairs >= Math.max(4, Math.floor(n / 2))) break;
+      }
+    }
+    function build() {
+      svg.replaceChildren(); edgeEls = []; nodeEls = [];
+      edges.forEach(() => { const ln = sv('line', { class: 'edge' }); edgeEls.push(ln); svg.append(ln); });
+      nodes.forEach((_, i) => {
+        const g = sv('g', { style: 'cursor:grab' });
+        const c = sv('circle', { class: 'node', r: 11 });
+        const hit = sv('circle', { r: 24, fill: 'transparent' });
+        nodeEls.push(c);
+        g.append(c, hit);
+        g.addEventListener('pointerdown', (e) => { drag = i; g.setPointerCapture(e.pointerId); e.preventDefault(); });
+        g.addEventListener('pointermove', (e) => {
+          if (drag !== i) return;
+          const p = toSvg(e);
+          nodes[i] = { x: Math.max(16, Math.min(W - 16, p.x)), y: Math.max(16, Math.min(W - 16, p.y)) };
+          refresh();
+        });
+        const end = () => { if (drag === i) drag = null; };
+        g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+        svg.append(g);
+      });
+      refresh();
+    }
+    function fresh() {
+      const { n, m } = LEVELS[level];
+      edges = makeGraph(n, m);
+      nodes = Array.from({ length: n }, () => ({ x: 0, y: 0 }));
+      scramble(); won = false; build();
+    }
+    ui.controls.append(
+      seg([['easy', 'Kolay'], ['mid', 'Orta'], ['hard', 'Zor']], level, (v) => { level = v; fresh(); }),
+      button('Yeniden karıştır', () => { scramble(); build(); }),
+      button('Yeni bulmaca', fresh, true));
+    fresh();
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+     3. Lazer Aynalar: turn the mirrors so the beam passes through every target.
+     --------------------------------------------------------------------------------------------- */
+  function laserGame(root) {
+    const ui = mount(root, {
+      title: 'Lazer Aynalar',
+      goal: 'Aynalara dokunup çevir. Işık sarı hedeflerin hepsinden geçsin. Bazı aynalar sadece oyalayıcı.',
+      hook: '"Light every target. One mirror is a trap."',
+      why: 'Neon ışın karanlık zeminde en iyi görünen şey: kısa videoda göz alıcı. Ayna çevrildikçe ışının anında yeniden çizilmesi izleyene "ben de çevireyim" dedirtir. Çözüm anında tüm hedefler birden yanar.',
+    });
+    const LEVELS = { easy: { N: 5, k: 3, d: 1, t: 2 }, mid: { N: 6, k: 5, d: 2, t: 3 }, hard: { N: 7, k: 7, d: 3, t: 4 } };
+    const reflect = (dr, dc, m) => (m === '/' ? [-dc, -dr] : [dc, dr]);
+    function trace(g, orient) {
+      const N = g.N; let r = g.row, c = 0, dr = 0, dc = 1;
+      const pts = [[-0.45, r + 0.5]], lit = new Set();
+      for (let step = 0; step < N * N * 4; step++) {
+        lit.add(r * N + c);
+        const m = orient.get(r * N + c);
+        if (m) { pts.push([c + 0.5, r + 0.5]); [dr, dc] = reflect(dr, dc, m); }
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nc < 0 || nr >= N || nc >= N) { pts.push([c + 0.5 + dc * 0.5, r + 0.5 + dr * 0.5]); break; }
+        r = nr; c = nc;
+      }
+      return { pts, lit };
+    }
+    // The way is drawn first (from the emitter, turning at the mirrors), so there is always a solution.
+    function makeLevel(cfg) {
+      const { N, k, d, t } = cfg;
+      const inb = (r, c) => r >= 0 && c >= 0 && r < N && c < N;
+      for (let tries = 0; tries < 600; tries++) {
+        const mir = new Map(), cells = [];
+        let r = rand(N), c = 0, dr = 0, dc = 1, ok = true;
+        const row = r; cells.push(r * N + c);
+        for (let m = 0; m < k && ok; m++) {
+          const len = m === 0 ? rand(N - 1) : 1 + rand(Math.max(1, N - 2));
+          for (let s = 0; s < len; s++) {
+            const nr = r + dr, nc = c + dc;
+            if (!inb(nr, nc) || mir.has(nr * N + nc)) break;
+            r = nr; c = nc; cells.push(r * N + c);
+          }
+          if (cells.filter((x) => x === r * N + c).length > 1) { ok = false; break; }
+          const turns = shuffle([[dc, dr], [-dc, -dr]]).filter(([a, b]) => inb(r + a, c + b) && !mir.has((r + a) * N + c + b));
+          if (!turns.length) { ok = false; break; }
+          const [ndr, ndc] = turns[0];
+          const type = reflect(dr, dc, '/')[0] === ndr && reflect(dr, dc, '/')[1] === ndc ? '/' : '\\';
+          mir.set(r * N + c, type);
+          r += ndr; c += ndc; dr = ndr; dc = ndc; cells.push(r * N + c);
+        }
+        if (!ok) continue;
+        for (;;) { const nr = r + dr, nc = c + dc; if (!inb(nr, nc) || mir.has(nr * N + nc)) break; r = nr; c = nc; cells.push(r * N + c); }
+        const onPath = new Set(cells);
+        const tcand = [...onPath].filter((x) => !mir.has(x) && x !== row * N);
+        const free = [...Array(N * N).keys()].filter((x) => !onPath.has(x));
+        if (tcand.length < t || free.length < d) continue;
+        const targets = new Set(shuffle(tcand).slice(0, t));
+        const solution = new Map(mir);
+        shuffle(free).slice(0, d).forEach((x) => solution.set(x, pick(['/', '\\'])));
+        const g = { N, row, targets, solution };
+        if (![...targets].every((x) => trace(g, solution).lit.has(x))) continue;
+        const orient = new Map();
+        for (let s = 0; s < 40; s++) {
+          solution.forEach((_, key) => orient.set(key, pick(['/', '\\'])));
+          if (![...targets].every((x) => trace(g, orient).lit.has(x))) { g.orient = orient; return g; }
+        }
+      }
+      return null;
+    }
+    let level = 'easy', g;
+    const svg = sv('svg', { class: 'board' });
+    ui.stage.append(svg);
+    function draw(animate) {
+      const N = g.N;
+      svg.setAttribute('viewBox', `-1.1 -0.1 ${N + 1.2} ${N + 0.2}`);
+      svg.replaceChildren();
+      svg.append(sv('defs', {}, sv('filter', { id: 'lg', x: '-50%', y: '-50%', width: '200%', height: '200%' },
+        sv('feGaussianBlur', { stdDeviation: 0.09, result: 'b' }), sv('feMerge', {}, sv('feMergeNode', { in: 'b' }), sv('feMergeNode', { in: 'SourceGraphic' })))));
+      const { pts, lit } = trace(g, g.orient);
+      const hit = [...g.targets].filter((x) => lit.has(x)).length;
+      const won = hit === g.targets.size;
+      svg.setAttribute('class', 'board' + (won ? ' win' : ''));
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        const k = r * N + c;
+        const rect = sv('rect', { x: c + 0.04, y: r + 0.04, width: 0.92, height: 0.92, rx: 0.14, class: 'cell' + (g.orient.has(k) ? ' hasMirror' : '') });
+        if (g.orient.has(k)) rect.addEventListener('click', () => { g.orient.set(k, g.orient.get(k) === '/' ? '\\' : '/'); draw(true); });
+        svg.append(rect);
+      }
+      svg.append(sv('rect', { x: -0.95, y: g.row + 0.3, width: 0.5, height: 0.4, rx: 0.1, class: 'src' }));
+      const beam = sv('polyline', { class: 'beam', points: pts.map((p) => p.join(',')).join(' '), filter: 'url(#lg)', 'pointer-events': 'none' });
+      svg.append(beam);
+      g.targets.forEach((k) => {
+        const c = k % N, r = (k - c) / N;
+        svg.append(sv('circle', { cx: c + 0.5, cy: r + 0.5, r: 0.2, class: 'tgt' + (lit.has(k) ? ' lit' : ''), 'pointer-events': 'none', filter: lit.has(k) ? 'url(#lg)' : '' }));
+      });
+      g.orient.forEach((m, k) => {
+        const c = k % N, r = (k - c) / N;
+        const [x1, y1, x2, y2] = m === '/' ? [c + 0.24, r + 0.76, c + 0.76, r + 0.24] : [c + 0.24, r + 0.24, c + 0.76, r + 0.76];
+        svg.append(sv('line', { x1, y1, x2, y2, class: 'mirror', 'pointer-events': 'none' }));
+      });
+      if (animate && !REDUCE && beam.getTotalLength) {
+        const len = beam.getTotalLength();
+        beam.style.strokeDasharray = len;
+        beam.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 380, easing: 'ease-out' });
+      }
+      ui.status(won ? 'Çözüldü! Işık tüm hedeflerden geçti.' : `Yanan hedef: ${hit} / ${g.targets.size}`, won ? 'ok' : '');
+    }
+    function fresh() { g = makeLevel(LEVELS[level]); draw(false); }
+    ui.controls.append(
+      seg([['easy', 'Kolay'], ['mid', 'Orta'], ['hard', 'Zor']], level, (v) => { level = v; fresh(); }),
+      button('Yeni bulmaca', fresh, true));
+    fresh();
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+     4. Emoji Denklemi: find what each fruit is worth, then answer the last line.
+     --------------------------------------------------------------------------------------------- */
+  function emojiGame(root) {
+    const ui = mount(root, {
+      title: 'Emoji Denklemi',
+      goal: 'Her meyvenin bir değeri var. Üstteki satırlardan değerleri bul, son satırdaki soruyu yanıtla.',
+      hook: '"Can you solve it in 15 seconds?"',
+      why: 'Bu biçim zaten sosyal medyada sürekli dolaşıyor, yani izleyen ne olduğunu 1 saniyede anlıyor. Süre sayacı "kaç saniyede?" rekabetini kendiliğinden getirir ve sonuç kartı paylaşılabilir. Mantık: basit bir denklem sistemi, dil gerekmez.',
+    });
+    const SYMS = ['🍎', '🍌', '🍇', '🍒', '🍍', '🥝', '🍋', '🍉'];
+    let level = 'easy', puz, t0, timer, over;
+    function make(n) {
+      for (;;) {
+        const syms = shuffle(SYMS).slice(0, n), vals = [];
+        while (vals.length < n) { const v = 1 + rand(n === 3 ? 7 : 6); if (!vals.includes(v)) vals.push(v); }
+        const eqs = [];
+        // Every line has at most four fruits so it fits a phone; the last line has one of each, and one of them twice.
+        for (let i = 0; i < n; i++) eqs.push(i === 0 ? [[0, 2 + rand(3)]] : [[i - 1, 1 + rand(2)], [i, 1 + rand(2)]]);
+        const twice = rand(n);
+        const q = syms.map((_, i) => [i, i === twice ? 2 : 1]);
+        const sum = (parts) => parts.reduce((s, [i, c]) => s + vals[i] * c, 0);
+        const total = sum(q);
+        if (eqs.some((e) => sum(e) > 40) || total > 40 || total < 8) continue;
+        return { syms, eqs: eqs.map((e) => ({ parts: e, total: sum(e) })), q: { parts: q, total } };
+      }
+    }
+    const row = (parts, syms, number, cls) => {
+      const ops = el('span', { class: 'ops' });
+      let first = true;
+      parts.forEach(([i, c]) => { for (let k = 0; k < c; k++) { if (!first) ops.append(el('span', { class: 'plus' }, '+')); ops.append(el('span', {}, syms[i])); first = false; } });
+      return el('div', { class: 'eq' + (cls ? ' ' + cls : '') }, ops, el('span', { class: 'is' }, '='), el('span', { class: 'num' }, number));
+    };
+    const clock = el('span', { class: 'clock' }, '0,0 sn');
+    function fresh() {
+      clearInterval(timer);
+      puz = make(level === 'easy' ? 3 : 4); over = false;
+      const ans = puz.q.total;
+      const opts = new Set([ans]);
+      const near = shuffle([-3, -2, -1, 1, 2, 3, 4, -4]);
+      for (const d of near) { if (opts.size >= 4) break; if (ans + d > 0) opts.add(ans + d); }
+      const eqs = el('div', { class: 'eqs' }, puz.eqs.map((e) => row(e.parts, puz.syms, e.total)), row(puz.q.parts, puz.syms, '?', 'q'));
+      const choices = el('div', { class: 'choices' }, shuffle([...opts]).map((v) => {
+        const b = el('button', { type: 'button', class: 'choice' }, String(v));
+        b.addEventListener('click', () => {
+          if (over) return;
+          if (v === ans) {
+            over = true; clearInterval(timer);
+            b.classList.add('right');
+            eqs.querySelector('.q .num').textContent = String(ans);
+            const secs = ((performance.now() - t0) / 1000).toFixed(1).replace('.', ',');
+            ui.status(`Doğru! ${secs} saniyede çözdün.`, 'ok');
+            choices.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+          } else {
+            b.classList.add('wrong'); b.disabled = true;
+            ui.status('Olmadı, tekrar dene.', 'bad');
+          }
+        });
+        return b;
+      }));
+      ui.stage.replaceChildren(eqs, choices);
+      ui.status('', '');
+      t0 = performance.now();
+      timer = setInterval(() => { clock.textContent = ((performance.now() - t0) / 1000).toFixed(1).replace('.', ',') + ' sn'; }, 100);
+    }
+    ui.controls.append(
+      seg([['easy', 'Kolay (3 meyve)'], ['hard', 'Zor (4 meyve)']], level, (v) => { level = v; fresh(); }),
+      clock,
+      button('Yeni bulmaca', fresh, true));
+    fresh();
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+     Tabs. A game is built the first time its tab is opened.
+     --------------------------------------------------------------------------------------------- */
+  const GAMES = [
+    ['match', 'Kibrit Çöpü', matchGame],
+    ['untangle', 'Düğüm Çöz', untangleGame],
+    ['laser', 'Lazer Aynalar', laserGame],
+    ['emoji', 'Emoji Denklemi', emojiGame],
+  ];
+  const tabs = document.getElementById('tabs'), panels = document.getElementById('panels');
+  const built = new Set(), tabEls = [], panelEls = [];
+  function show(id, fromHash) {
+    GAMES.forEach(([gid, , init], i) => {
+      const on = gid === id;
+      tabEls[i].setAttribute('aria-selected', String(on));
+      panelEls[i].hidden = !on;
+      if (on && !built.has(gid)) { built.add(gid); init(panelEls[i]); }
+    });
+    if (!fromHash) { try { history.replaceState(null, '', '#' + id); } catch (e) { /* not allowed in some frames */ } }
+  }
+  GAMES.forEach(([id, label]) => {
+    const t = el('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false', onclick: () => show(id) }, label);
+    const p = el('section', { class: 'panel', role: 'tabpanel', 'aria-label': label });
+    p.hidden = true;
+    tabs.append(t); panels.append(p); tabEls.push(t); panelEls.push(p);
+  });
+  const start = GAMES.find(([id]) => '#' + id === location.hash);
+  show(start ? start[0] : GAMES[0][0], true);
+  window.addEventListener('hashchange', () => { const g = GAMES.find(([id]) => '#' + id === location.hash); if (g) show(g[0], true); });
+})();
+</script>

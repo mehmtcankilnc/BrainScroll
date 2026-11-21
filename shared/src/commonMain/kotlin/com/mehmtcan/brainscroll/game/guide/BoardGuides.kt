@@ -1,6 +1,33 @@
 package com.mehmtcan.brainscroll.game.guide
 
 import com.mehmtcan.brainscroll.game.arrows.ArrowsState
+import com.mehmtcan.brainscroll.game.fruitmath.FruitPuzzle
+import com.mehmtcan.brainscroll.game.codebreaker.CodePuzzle
+import com.mehmtcan.brainscroll.game.rectangles.RectPuzzle
+import com.mehmtcan.brainscroll.game.flashgrid.FlashState
+import com.mehmtcan.brainscroll.game.flashgrid.FlashStatus
+import com.mehmtcan.brainscroll.game.rectangles.RectSolver
+import com.mehmtcan.brainscroll.game.rectangles.RectState
+import com.mehmtcan.brainscroll.game.rectangles.RectStatus
+import com.mehmtcan.brainscroll.game.codebreaker.CodeSolver
+import com.mehmtcan.brainscroll.game.codebreaker.CodeState
+import com.mehmtcan.brainscroll.game.codebreaker.CodeStatus
+import com.mehmtcan.brainscroll.game.fruitmath.FruitState
+import com.mehmtcan.brainscroll.game.fruitmath.FruitStatus
+import com.mehmtcan.brainscroll.game.lasers.LaserPuzzle
+import com.mehmtcan.brainscroll.game.untangle.UNTANGLE_BOARD
+import com.mehmtcan.brainscroll.game.untangle.UNTANGLE_MARGIN
+import com.mehmtcan.brainscroll.game.untangle.UntangleEmbedder
+import com.mehmtcan.brainscroll.game.untangle.UntanglePuzzle
+import com.mehmtcan.brainscroll.game.untangle.UntangleState
+import com.mehmtcan.brainscroll.game.untangle.UntangleStatus
+import com.mehmtcan.brainscroll.game.lasers.LaserRules
+import com.mehmtcan.brainscroll.game.lasers.LaserState
+import com.mehmtcan.brainscroll.game.lasers.LaserStatus
+import com.mehmtcan.brainscroll.game.matchsticks.MatchPuzzle
+import com.mehmtcan.brainscroll.game.matchsticks.MatchRules
+import com.mehmtcan.brainscroll.game.matchsticks.MatchState
+import com.mehmtcan.brainscroll.game.matchsticks.MatchStatus
 import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsState
 import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsStatus
 import com.mehmtcan.brainscroll.game.axissum.AxisSumState
@@ -366,5 +393,160 @@ object FlowGuide {
             return GuideStep(GuideReason.FlowRoute, cells, listOf(color))
         }
         return null
+    }
+}
+
+/**
+ * The guide of the matchstick sum: the one stick that puts it right. [GuideStep.cells] are the place the stick comes from and the place
+ * it goes to, as numbers in [MatchPuzzle.slots]. When a stick is off its place after a wrong try, the guide says to put it back first.
+ */
+object MatchGuide {
+    fun step(puzzle: MatchPuzzle, state: MatchState): GuideStep? {
+        if (state.status != MatchStatus.Playing) return null
+        if (state.moved) return GuideStep(GuideReason.MatchstickUndo)
+        val move = MatchRules.winningMoves(puzzle.cells).firstOrNull() ?: return null
+        return GuideStep(GuideReason.MatchstickMove, listOf(puzzle.slots.indexOf(move.from), puzzle.slots.indexOf(move.to)))
+    }
+}
+
+/**
+ * The guide of the laser mirrors: a mirror that has to be turned on the way to the fewest turns that light every target (the search
+ * tries every way the mirrors can stand). [GuideStep.cells] is the cell of that mirror.
+ */
+object LaserGuide {
+    fun step(puzzle: LaserPuzzle, state: LaserState): GuideStep? {
+        if (state.status != LaserStatus.Playing) return null
+        val turns = LaserRules.fewestTurns(state.size, state.row, state.mirrors, state.targets) ?: return null
+        val cells = state.mirrors.indices.filter { state.mirrors[it] != 0 }
+        val index = turns.indexOfFirst { it }
+        if (index < 0) return null
+        return GuideStep(GuideReason.LaserTurn, listOf(cells[index]))
+    }
+}
+
+/**
+ * The guide of the tangle: one dot to move and where to. A drawing with no crossing is found (see [UntangleEmbedder]) and turned,
+ * scaled and moved (also mirrored if that fits better) to lie as near as it can to where the dots are now; the dot that is furthest from its
+ * place in that drawing is the one to move. [GuideStep.cells] is the dot, [GuideStep.numbers] the place (x then y, in units of the board).
+ */
+object UntangleGuide {
+    /** A dot this near its place (in units) is where it should be: the guide moves a dot that is at least this far, however near the rest are. */
+    private const val NEAR = 2.0
+
+    fun step(puzzle: UntanglePuzzle, state: UntangleState): GuideStep? {
+        if (state.status != UntangleStatus.Playing) return null
+        val drawing = UntangleEmbedder.embed(puzzle) ?: return null
+        val n = puzzle.nodeCount
+        val px = DoubleArray(n) { state.positions[2 * it].toDouble() }
+        val py = DoubleArray(n) { state.positions[2 * it + 1].toDouble() }
+        val cpx = px.average()
+        val cpy = py.average()
+        var best: Pair<DoubleArray, DoubleArray>? = null
+        var bestError = Double.MAX_VALUE
+        for (mirror in listOf(false, true)) {
+            val qx = DoubleArray(n) { drawing[2 * it].toDouble().let { x -> if (mirror) UNTANGLE_BOARD - x else x } }
+            val qy = DoubleArray(n) { drawing[2 * it + 1].toDouble() }
+            val cqx = qx.average()
+            val cqy = qy.average()
+            var qq = 0.0
+            var pp = 0.0
+            var dot = 0.0
+            var cross = 0.0
+            for (i in 0 until n) {
+                val ax = qx[i] - cqx
+                val ay = qy[i] - cqy
+                val bx = px[i] - cpx
+                val by = py[i] - cpy
+                qq += ax * ax + ay * ay
+                pp += bx * bx + by * by
+                dot += ax * bx + ay * by
+                cross += ax * by - ay * bx
+            }
+            if (qq < 1e-9) continue
+            val angle = kotlin.math.atan2(cross, dot)
+            val scale = kotlin.math.sqrt(pp / qq).coerceAtLeast(0.25)
+            val c = kotlin.math.cos(angle)
+            val s = kotlin.math.sin(angle)
+            val tx = DoubleArray(n)
+            val ty = DoubleArray(n)
+            var error = 0.0
+            for (i in 0 until n) {
+                val ax = qx[i] - cqx
+                val ay = qy[i] - cqy
+                tx[i] = (cpx + scale * (c * ax - s * ay)).coerceIn(UNTANGLE_MARGIN.toDouble(), (UNTANGLE_BOARD - UNTANGLE_MARGIN).toDouble())
+                ty[i] = (cpy + scale * (s * ax + c * ay)).coerceIn(UNTANGLE_MARGIN.toDouble(), (UNTANGLE_BOARD - UNTANGLE_MARGIN).toDouble())
+                error += (tx[i] - px[i]) * (tx[i] - px[i]) + (ty[i] - py[i]) * (ty[i] - py[i])
+            }
+            if (error < bestError) {
+                bestError = error
+                best = tx to ty
+            }
+        }
+        val (tx, ty) = best ?: return null
+        var node = -1
+        var far = NEAR
+        for (i in 0 until n) {
+            val d = kotlin.math.hypot(tx[i] - px[i], ty[i] - py[i])
+            if (d > far) {
+                far = d
+                node = i
+            }
+        }
+        if (node < 0) return null
+        return GuideStep(GuideReason.UntangleMove, listOf(node), listOf(Math.round(tx[node]).toInt(), Math.round(ty[node]).toInt()))
+    }
+}
+
+/**
+ * The guide of the fruit equations: what every fruit is worth. [GuideStep.numbers] are the fruits (numbers from 0 to 7) and then their
+ * values; the player works the last line out from them.
+ */
+object FruitGuide {
+    fun step(puzzle: FruitPuzzle, state: FruitState): GuideStep? {
+        if (state.status != FruitStatus.Playing) return null
+        return GuideStep(GuideReason.FruitValues, emptyList(), puzzle.fruits + puzzle.values)
+    }
+}
+
+/**
+ * The guide of the code breaker: a code that still fits everything the guesses told (the first one there is). It is a good next guess,
+ * and it shows how to think: only a code that would have scored the same can be the secret. [GuideStep.numbers] are its colours.
+ */
+object CodeGuide {
+    fun step(puzzle: CodePuzzle, state: CodeState): GuideStep? {
+        if (state.status != CodeStatus.Playing) return null
+        // A game saved with a long list holds only its last guesses; the codes that fit those are still a fair thing to try.
+        val next = CodeSolver.nextGuess(puzzle, state.guesses) ?: return null
+        return GuideStep(GuideReason.CodeNext, emptyList(), next)
+    }
+}
+
+/**
+ * The guide of the rectangles: if a rectangle that was laid is not part of the (one) answer, it says to take that off. Otherwise it points
+ * at a rectangle of the answer that is not there yet, the one whose number had the fewest places to go to begin with (the one that can be
+ * worked out first). [GuideStep.cells] are the rectangle's column, row, width and height, and [GuideStep.numbers] its number.
+ */
+object RectGuide {
+    fun step(puzzle: RectPuzzle, state: RectState): GuideStep? {
+        if (state.status != RectStatus.Playing) return null
+        val answer = RectSolver.uniqueSolution(puzzle) ?: return null
+        val wrong = state.rects.firstOrNull { it !in answer }
+        if (wrong != null) return GuideStep(GuideReason.RectRemove, listOf(wrong.x, wrong.y, wrong.w, wrong.h))
+        val clues = puzzle.clueCells
+        val next = answer.filter { it !in state.rects }.minByOrNull { rect ->
+            val cell = clues[answer.indexOf(rect)]
+            RectSolver.candidates(puzzle, cell).size
+        } ?: return null
+        return GuideStep(GuideReason.RectPlace, listOf(next.x, next.y, next.w, next.h), listOf(next.area))
+    }
+}
+
+/** The guide of the flash grid: the tiles of the round that are not found yet light up again. [GuideStep.cells] are those tiles. */
+object FlashGuide {
+    fun step(state: FlashState): GuideStep? {
+        if (state.status != FlashStatus.Playing) return null
+        val left = state.pattern.filter { it !in state.found }
+        if (left.isEmpty()) return null
+        return GuideStep(GuideReason.FlashPattern, left)
     }
 }

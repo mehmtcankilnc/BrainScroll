@@ -13,6 +13,20 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsSnapshot
 import com.mehmtcan.brainscroll.game.axissum.AxisSumSnapshot
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideSnapshot
 import com.mehmtcan.brainscroll.game.colorflow.FlowSnapshot
+import com.mehmtcan.brainscroll.game.lasers.LaserSnapshot
+import com.mehmtcan.brainscroll.game.fruitmath.FruitSnapshot
+import com.mehmtcan.brainscroll.ui.fruitmath.FruitMathPage
+import com.mehmtcan.brainscroll.game.untangle.UntangleSnapshot
+import com.mehmtcan.brainscroll.game.codebreaker.CodeSnapshot
+import com.mehmtcan.brainscroll.ui.codebreaker.CodeBreakerPage
+import com.mehmtcan.brainscroll.game.rectangles.RectSnapshot
+import com.mehmtcan.brainscroll.ui.rectangles.RectanglesPage
+import com.mehmtcan.brainscroll.game.flashgrid.FlashSnapshot
+import com.mehmtcan.brainscroll.ui.flashgrid.FlashGridPage
+import com.mehmtcan.brainscroll.ui.untangle.UntanglePage
+import com.mehmtcan.brainscroll.ui.lasers.LasersPage
+import com.mehmtcan.brainscroll.game.matchsticks.MatchSnapshot
+import com.mehmtcan.brainscroll.ui.matchsticks.MatchsticksPage
 import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsSnapshot
 import com.mehmtcan.brainscroll.ui.topicgroups.TopicGroupsPage
 import com.mehmtcan.brainscroll.ui.colorflow.ColorFlowPage
@@ -163,6 +177,56 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 onExtend = { cell -> actions.extendFlow(index, cell) },
                 onEnd = { actions.endFlow(index) },
                 onRestart = { actions.restartFlow(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is FruitSnapshot -> FruitMathPage(
+                page = item,
+                onSubmit = { answer -> actions.submitFruit(index, answer) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is FlashSnapshot -> FlashGridPage(
+                page = item,
+                onTap = { tile -> actions.tapFlashTile(index, tile) },
+                onStart = { actions.startFlash(index) },
+                onRestart = { actions.restartFlash(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is RectSnapshot -> RectanglesPage(
+                page = item,
+                onPlace = { rect -> actions.placeRect(index, rect) },
+                onRemove = { column, row -> actions.removeRect(index, column, row) },
+                onRestart = { actions.restartRects(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is CodeSnapshot -> CodeBreakerPage(
+                page = item,
+                onSubmit = { guess -> actions.submitCode(index, guess) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is UntangleSnapshot -> UntanglePage(
+                page = item,
+                onMove = { node, x, y -> actions.moveNode(index, node, x, y) },
+                onDrop = { actions.dropNode(index) },
+                onRestart = { actions.restartUntangle(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is LaserSnapshot -> LasersPage(
+                page = item,
+                onTurn = { cell -> actions.turnMirror(index, cell) },
+                onRestart = { actions.restartLasers(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is MatchSnapshot -> MatchsticksPage(
+                page = item,
+                onMove = { move -> actions.moveStick(index, move) },
+                onUndo = { actions.undoStick(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )

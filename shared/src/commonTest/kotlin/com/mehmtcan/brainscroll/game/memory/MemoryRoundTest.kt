@@ -19,7 +19,7 @@ class MemoryRoundTest {
     private val layout = listOf(Circle, Star, Heart, Circle, Star, Heart)
     private var clock = 1_000L
 
-    private fun round() = MemoryRound(0, "m1", layout, Language.EN, { clock })
+    private fun round() = MemoryRound(0, "m1", layout, Language.EN, { clock }).also { it.onShown() }
 
     @Test
     fun anUntouchedRoundIsUntouchedUntilTheFirstFlip() {
@@ -42,9 +42,9 @@ class MemoryRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesBetweenFlipsAndStartsWithTheFirst() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowBetweenTheFlips() {
         clock = 10_000
+        val r = round()
         r.flip(0) // starts the clock
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
@@ -55,12 +55,11 @@ class MemoryRoundTest {
     }
 
     @Test
-    fun aLongPauseCountsAtMostTenSeconds() {
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         val r = round()
+        clock += 6 * 60_000 // looks at the board for six minutes before the first flip
         r.flip(0)
-        clock += 6 * 60 * 60 * 1000 // left in the background for six hours
-        r.flip(3)
-        assertEquals(MemoryRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(6 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -111,15 +110,15 @@ class MemoryRoundTest {
     }
 
     @Test
-    fun theTimeAfterARestoreOnlyCountsNewPlay() {
+    fun theTimeOfARestoredRoundGoesOnOnlyWhileItsPageIsOnShow() {
         val r = round()
         r.flip(0); clock += 3_000; r.flip(3)
         val restored = assertNotNull(MemoryRound.restore(0, r.toStored(), { clock }))
         clock += 5 * 60 * 1000 // the app was closed for five minutes
-        restored.flip(1)
-        assertEquals(3_000, restored.snapshot().durationMs, "the first flip after the restore starts counting afresh")
+        assertEquals(3_000, restored.snapshot().durationMs, "the time the app was closed does not count")
+        restored.onShown()
         clock += 2_000
-        restored.flip(4)
+        restored.flip(1)
         assertEquals(5_000, restored.snapshot().durationMs)
     }
 

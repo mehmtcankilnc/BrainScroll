@@ -109,6 +109,33 @@ enum class GuideReason {
 
     /** The letter at this place of the word. */
     WordLetter,
+
+    /** Take the stick from the first place (the first number is its slot) and lay it on the second: it is the way to put the sum right. */
+    MatchstickMove,
+
+    /** The stick is on a wrong place: put it back first. */
+    MatchstickUndo,
+
+    /** Turn the mirror on this cell: it is on the way to the fewest turns that light every target. */
+    LaserTurn,
+
+    /** Drag this dot (the first number is the dot) to the place the numbers say (x then y, in units of the board): it is on the way to a drawing with no crossing. */
+    UntangleMove,
+
+    /** The values of the fruits: the first numbers are the fruits and the next ones what each is worth. */
+    FruitValues,
+
+    /** A code that fits every clue so far: the numbers are its colours, the first to the last place. */
+    CodeNext,
+
+    /** Draw this rectangle (the cells are its column, row, width and height; the first number is the number it holds). */
+    RectPlace,
+
+    /** This rectangle is not part of the answer: take it off (the cells are its column, row, width and height). */
+    RectRemove,
+
+    /** The tiles to find in this round (the cells) light up again. */
+    FlashPattern,
 }
 
 /**

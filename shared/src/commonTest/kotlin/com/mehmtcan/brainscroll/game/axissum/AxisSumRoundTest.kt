@@ -28,7 +28,7 @@ class AxisSumRoundTest {
     private val solution = assertNotNull(AxisSumSolver.unique(puzzle))
     private val toErase = solution.indices.filter { !solution[it] }
 
-    private fun round() = AxisSumRound(0, "a1", puzzle, Language.EN, { clock })
+    private fun round() = AxisSumRound(0, "a1", puzzle, Language.EN, { clock }).also { it.onShown() }
 
     private fun AxisSumRound.solve(stepMillis: Long = 1_000) {
         for (cell in toErase) {
@@ -47,16 +47,16 @@ class AxisSumRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.tap(0)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.tap(0)
         clock += 10 * 60_000
         r.tap(0)
-        assertEquals(2_500 + AxisSumRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -104,8 +104,8 @@ class AxisSumRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfTaps() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.solve()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)

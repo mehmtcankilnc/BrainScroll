@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.game.GameKind
 import kotlin.test.Test
@@ -62,8 +62,9 @@ class HomeUiTest {
 
         assertTrue(hasAnyText("Akışını oluştur", "Build your feed"))
         assertTrue(hasAnyText("${feedGames.size} oyun seçili", "${feedGames.size} games selected"))
-        assertEquals(feedGames.size, cards())
-        onAllNodesWithTag("gameCard").onLast().performScrollTo()
+        // Only the rows on the screen are built (the pictures are slow to draw all at once): the rest comes as the list is scrolled.
+        assertTrue(cards() in 3..feedGames.size, "cards: ${cards()}")
+        onNodeWithTag("editorList").performScrollToIndex((feedGames.size + 2) / 3 - 1)
         waitForIdle()
         snap("24_feed_editor_end")
         // The pictures are there for every game, and the way back is the back button.

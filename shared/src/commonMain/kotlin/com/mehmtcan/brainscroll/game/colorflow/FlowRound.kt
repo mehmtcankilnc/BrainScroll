@@ -19,15 +19,18 @@ data class FlowSnapshot(
     /** Time spent so far, as the round counts it (see [FlowRound]). */
     val durationMs: Long,
 ) : PageSnapshot {
+    /** The same board with no time on it, to tell whether a page is still as it was (the time of a page that is on show never stops). */
+    override fun withoutClock(): PageSnapshot = copy(durationMs = 0L)
+
     override val isFinished: Boolean get() = state.status == FlowStatus.Won
     override val kind: GameKind get() = GameKind.ColorFlow
 }
 
 /**
- * One color flow board in the feed: a [FlowGame] plus the time. A board is saved as it stands, not as the list of what the
- * player did (a stroke can be dozens of cells and the table keeps 256 characters): the strokes so far, and the path of every
- * color with one character for a cell. The time works as in the other games: the pauses between two strokes, each counted for at
- * most [MAX_THINK_MILLIS]; the clock starts with the first stroke. A result is always a win, its number the strokes.
+ * One color flow board in the feed: a [FlowGame] plus the time. A board is saved as it stands, not as the list of what the player
+ * did (a stroke can be dozens of cells and the table keeps 256 characters): the strokes so far, and the path of every color with
+ * one character for a cell. The time is the time the page is on show (see [onShown]): it runs from the moment the page comes to
+ * the screen until the board is won, and stops while the page is left. A result is always a win, its number the strokes.
  *
  * [language] only fills the language of the saved result (the table needs one); this game has no language.
  */
@@ -40,7 +43,7 @@ class FlowRound(
 ) : FeedRound {
     private val game = FlowGame(puzzle)
     private var elapsedMs = 0L
-    private var lastStrokeAt: Long? = null
+    private var shownSince: Long? = null
     private var touched = false
 
     override val kind: GameKind get() = GameKind.ColorFlow
@@ -76,12 +79,26 @@ class FlowRound(
 
     private fun record() {
         touched = true
-        val time = now()
-        lastStrokeAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-        lastStrokeAt = time
     }
 
-    override fun snapshot() = FlowSnapshot(id, index, game.state, elapsedMs)
+    /**
+     * The page came to the screen: the clock starts (or goes on). The time of this round is the time its page was on show, so
+     * thinking before the first move counts, and a puzzle solved with one move is not solved "in no time".
+     */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen (swiped away, another tab, the app in the background) or the round is over: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = FlowSnapshot(id, index, game.state, total())
 
     /** The paths, as saved: `n<strokes>`, then `p<color>:<cells>` for each color that has one (a cell is one character, base 36). */
     private fun savedState(): List<String> {
@@ -96,7 +113,7 @@ class FlowRound(
         language = language,
         answer = puzzle.encode(),
         guesses = savedState(),
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = GameKind.ColorFlow,
@@ -112,14 +129,11 @@ class FlowRound(
         outcome = Outcome.WON,
         assisted = assisted,
         finishedAt = finishedAt,
-        durationMs = elapsedMs,
+        durationMs = total(),
         game = GameKind.ColorFlow,
     )
 
     companion object {
-        /** A pause between two strokes counts for at most this long. */
-        const val MAX_THINK_MILLIS = 15_000L
-
         /** Rebuilds a round from storage. Null if what was saved cannot be read: a new one is started then. */
         fun restore(index: Int, stored: StoredRound, now: () -> Long): FlowRound? {
             val puzzle = FlowPuzzle.decode(stored.answer) ?: return null

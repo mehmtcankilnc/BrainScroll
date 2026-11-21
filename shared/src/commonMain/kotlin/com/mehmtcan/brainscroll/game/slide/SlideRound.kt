@@ -19,16 +19,19 @@ data class SlideSnapshot(
     /** Time spent so far, as the round counts it (see [SlideRound]). */
     val durationMs: Long,
 ) : PageSnapshot {
+    /** The same board with no time on it, to tell whether a page is still as it was (the time of a page that is on show never stops). */
+    override fun withoutClock(): PageSnapshot = copy(durationMs = 0L)
+
     override val isFinished: Boolean get() = state.status == SlideStatus.Won
     override val kind: GameKind get() = GameKind.Slide
 }
 
 /**
- * One sliding puzzle board in the feed: a [SlideGame] plus the time and the list of actions, which is all that is needed
- * to save it and to rebuild it exactly as the player left it (the board itself comes from [seed]).
+ * One sliding puzzle board in the feed: a [SlideGame] plus the time and the list of actions, which is all that is needed to save
+ * it and to rebuild it exactly as the player left it (the board itself comes from [seed]).
  *
- * The time works as in the other games: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS].
- * The clock starts with the first slide. The game cannot be lost, so a result is always a win.
+ * The time is the time the page is on show (see [onShown]): it runs from the moment the page comes to the screen until the board
+ * is won, and stops while the page is left. The game cannot be lost, so a result is always a win.
  *
  * [language] only fills the language of the saved result (the table needs one); this game has no language.
  */
@@ -47,7 +50,7 @@ class SlideRound(
     /** What the player did, in order: "m7" slides from cell 7, "r" restarts. */
     private val actions = mutableListOf<String>()
     private var elapsedMs = 0L
-    private var lastActionAt: Long? = null
+    private var shownSince: Long? = null
 
     override val kind: GameKind get() = GameKind.Slide
 
@@ -75,12 +78,26 @@ class SlideRound(
 
     private fun record(action: String) {
         actions += action
-        val time = now()
-        lastActionAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-        lastActionAt = time
     }
 
-    override fun snapshot() = SlideSnapshot(id, index, game.state, elapsedMs)
+    /**
+     * The page came to the screen: the clock starts (or goes on). The time of this round is the time its page was on show, so
+     * thinking before the first move counts, and a puzzle solved with one move is not solved "in no time".
+     */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen (swiped away, another tab, the app in the background) or the round is over: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = SlideSnapshot(id, index, game.state, total())
 
     /** "3x4x80:seed": the columns, the rows, the number of random slides the board was made with, and the seed. */
     private fun encodedBoard() = "${cols}x${rows}x$scramble:$seed"
@@ -90,7 +107,7 @@ class SlideRound(
         language = language,
         answer = encodedBoard(),
         guesses = actions.toList(),
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = GameKind.Slide,
@@ -109,13 +126,11 @@ class SlideRound(
         outcome = Outcome.WON,
         assisted = assisted,
         finishedAt = finishedAt,
-        durationMs = elapsedMs,
+        durationMs = total(),
         game = GameKind.Slide,
     )
 
     companion object {
-        /** A pause between two actions counts for at most this long. */
-        const val MAX_THINK_MILLIS = 15_000L
         private const val RESTART = "r"
 
         /**

@@ -15,6 +15,15 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.fruitmath.FruitResult
+import com.mehmtcan.brainscroll.game.lasers.LaserResult
+import com.mehmtcan.brainscroll.game.untangle.UntangleResult
+import com.mehmtcan.brainscroll.game.codebreaker.CodeResult
+import com.mehmtcan.brainscroll.game.rectangles.Rect
+import com.mehmtcan.brainscroll.game.flashgrid.FlashResult
+import com.mehmtcan.brainscroll.game.rectangles.RectResult
+import com.mehmtcan.brainscroll.game.matchsticks.MatchMove
+import com.mehmtcan.brainscroll.game.matchsticks.MatchResult
 import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
 import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
@@ -287,6 +296,21 @@ class DailyGameViewModel(
     override fun extendFlow(page: Int, cell: Int): Boolean = act(false) { it.extendFlow(0, cell) }
     override fun endFlow(page: Int): FlowResult = act(FlowResult.Ignored) { it.endFlow(0) }
     override fun restartFlow(page: Int): Boolean = act(false) { it.restartFlow(0) }
+    override fun moveStick(page: Int, move: MatchMove): MatchResult = act(MatchResult.Ignored) { it.moveStick(0, move) }
+    override fun undoStick(page: Int): Boolean = act(false) { it.undoStick(0) }
+    override fun turnMirror(page: Int, cell: Int): LaserResult = act(LaserResult.Ignored) { it.turnMirror(0, cell) }
+    override fun restartLasers(page: Int): Boolean = act(false) { it.restartLasers(0) }
+    override fun moveNode(page: Int, node: Int, x: Int, y: Int): Boolean = act(false) { it.moveNode(0, node, x, y) }
+    override fun dropNode(page: Int): UntangleResult = act(UntangleResult.Ignored) { it.dropNode(0) }
+    override fun restartUntangle(page: Int): Boolean = act(false) { it.restartUntangle(0) }
+    override fun submitFruit(page: Int, answer: Int): FruitResult = act(FruitResult.Ignored) { it.submitFruit(0, answer) }
+    override fun submitCode(page: Int, guess: List<Int>): CodeResult = act(CodeResult.Ignored) { it.submitCode(0, guess) }
+    override fun placeRect(page: Int, rect: Rect): RectResult = act(RectResult.Ignored) { it.placeRect(0, rect) }
+    override fun tapFlashTile(page: Int, tile: Int): FlashResult = act(FlashResult.Ignored) { it.tapFlashTile(0, tile) }
+    override fun startFlash(page: Int): Boolean = act(false) { it.startFlash(0) }
+    override fun restartFlash(page: Int): Boolean = act(false) { it.restartFlash(0) }
+    override fun removeRect(page: Int, column: Int, row: Int): Boolean = act(false) { it.removeRect(0, column, row) }
+    override fun restartRects(page: Int): Boolean = act(false) { it.restartRects(0) }
     override fun tapTopicWord(page: Int, word: Int): TopicGroupsResult = act(TopicGroupsResult.Ignored) { it.tapTopicWord(0, word) }
     override fun shuffleTopicWords(page: Int): Boolean = act(false) { it.shuffleTopicWords(0) }
     override fun clearTopicSelection(page: Int): Boolean = act(false) { it.clearTopicSelection(0) }

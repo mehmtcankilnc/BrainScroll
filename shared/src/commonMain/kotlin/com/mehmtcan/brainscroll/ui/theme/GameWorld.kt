@@ -41,6 +41,13 @@ internal val GameKind.world: Color
         GameKind.BallSlide -> Color(0xFF5BC0E0)
         GameKind.ColorFlow -> Color(0xFFE05B9A)
         GameKind.TopicGroups -> Color(0xFFD0A03A)
+        GameKind.Matchsticks -> Color(0xFFB7C93C)
+        GameKind.Lasers -> Color(0xFFFF4F6D)
+        GameKind.Untangle -> Color(0xFF5BD6C9)
+        GameKind.FruitMath -> Color(0xFFFF8A4C)
+        GameKind.CodeBreaker -> Color(0xFFB07CFF)
+        GameKind.Rectangles -> Color(0xFF6FD672)
+        GameKind.FlashGrid -> Color(0xFFFFD84F)
         GameKind.Line -> Color(0xFF4FB3F0)
     }
 

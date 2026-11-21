@@ -26,6 +26,13 @@ enum class GameKind(val id: String) {
     BallSlide("ballslide"),
     ColorFlow("colorflow"),
     TopicGroups("topicgroups"),
+    Matchsticks("matchsticks"),
+    Lasers("lasers"),
+    Untangle("untangle"),
+    FruitMath("fruitmath"),
+    CodeBreaker("codebreaker"),
+    Rectangles("rectangles"),
+    FlashGrid("flashgrid"),
 
     /** "Tek Çizgi": the daily puzzle, and a page of the feed (see docs/tek-cizgi-plan.md). */
     Line("line"),
@@ -45,7 +52,7 @@ val FinishedRound.moveCount: Int
     get() = when (game) {
         GameKind.Word -> guesses.size
         GameKind.Memory -> guesses.size / 2
-        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
+        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
     }
 
 /**
@@ -62,6 +69,9 @@ interface PageSnapshot {
     /** Finished and solved. Differs from [isFinished] in the games that can be lost (word, memory, mines, sudoku). */
     val isWon: Boolean get() = isFinished
     val kind: GameKind
+
+    /** This page with the time of a timed game set to nothing: two pages with the same board are equal whatever the clock says. */
+    fun withoutClock(): PageSnapshot = this
 }
 
 /**
@@ -84,6 +94,12 @@ interface FeedRound {
     val assisted: Boolean
 
     fun markAssisted()
+
+    /** The page came to the screen: a game that times the page starts (or goes on) counting. The others ignore it. */
+    fun onShown() {}
+
+    /** The page left the screen (swiped away, another tab, the app in the background): a game that times the page stops counting. */
+    fun onHidden() {}
 
     /**
      * The next step of the guide, as work that can run anywhere (it only uses what it copied now), or null if this

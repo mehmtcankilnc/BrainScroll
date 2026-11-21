@@ -20,16 +20,20 @@ data class SudokuSnapshot(
     val durationMs: Long,
     override val kind: GameKind = GameKind.Sudoku,
 ) : PageSnapshot {
+    /** The same board with no time on it, to tell whether a page is still as it was (the time of a page that is on show never stops). */
+    override fun withoutClock(): PageSnapshot = copy(durationMs = 0L)
+
     override val isFinished: Boolean get() = state.status != SudokuStatus.Playing
     override val isWon: Boolean get() = state.status == SudokuStatus.Won
 }
 
 /**
- * One sudoku board in the feed (the classic one or the jigsaw one, see [SudokuVariant]): a [SudokuGame] plus the time and the list of actions, which is all that is needed to
- * save it and to rebuild it exactly as the player left it (the board itself comes from [seed] and [clues]).
+ * One sudoku board in the feed (the classic one or the jigsaw one, see [SudokuVariant]): a [SudokuGame] plus the time and the list
+ * of actions, which is all that is needed to save it and to rebuild it exactly as the player left it (the board itself comes from
+ * [seed] and [clues]).
  *
- * The time works as in the other games: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS]
- * (longer than in the other games, a sudoku needs more thinking). The clock starts with the first action, notes included.
+ * The time is the time the page is on show (see [onShown]): it runs from the moment the page comes to the screen until the board
+ * is won, and stops while the page is left.
  *
  * [language] only fills the language of the saved result (the table needs one); sudoku has no language.
  */
@@ -47,7 +51,7 @@ class SudokuRound(
     /** What the player did, in order: "p12:5" places a 5 in cell 12, "n12:5" toggles the note 5, "e12" erases. */
     private val actions = mutableListOf<String>()
     private var elapsedMs = 0L
-    private var lastActionAt: Long? = null
+    private var shownSince: Long? = null
 
     override val kind: GameKind get() = variant.kind
 
@@ -78,12 +82,26 @@ class SudokuRound(
 
     private fun record(action: String) {
         actions += action
-        val time = now()
-        lastActionAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-        lastActionAt = time
     }
 
-    override fun snapshot() = SudokuSnapshot(id, index, game.state, elapsedMs, variant.kind)
+    /**
+     * The page came to the screen: the clock starts (or goes on). The time of this round is the time its page was on show, so
+     * thinking before the first move counts, and a puzzle solved with one move is not solved "in no time".
+     */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen (swiped away, another tab, the app in the background) or the round is over: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = SudokuSnapshot(id, index, game.state, total(), variant.kind)
 
     /** "9x9x36:seed": the size, the number of givens and the seed. */
     private fun encodedBoard() = "9x9x$clues:$seed"
@@ -93,7 +111,7 @@ class SudokuRound(
         language = language,
         answer = encodedBoard(),
         guesses = actions.toList(),
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = variant.kind,
@@ -112,14 +130,11 @@ class SudokuRound(
         outcome = if (game.state.status == SudokuStatus.Won) Outcome.WON else Outcome.LOST,
         assisted = assisted,
         finishedAt = finishedAt,
-        durationMs = elapsedMs,
+        durationMs = total(),
         game = variant.kind,
     )
 
     companion object {
-        /** A pause between two actions counts for at most this long. */
-        const val MAX_THINK_MILLIS = 30_000L
-
         /**
          * Rebuilds a round from storage by replaying its actions. Returns null if what was saved cannot be read: the
          * caller then simply starts a new one.

@@ -18,7 +18,7 @@ class TubesRoundTest {
     private val layout = listOf(listOf(0, 1, 0), listOf(1, 0, 1, 1), listOf(0), emptyList<Int>())
     private var clock = 1_000L
 
-    private fun round() = TubesRound(0, "t1", layout, Language.EN, { clock })
+    private fun round() = TubesRound(0, "t1", layout, Language.EN, { clock }).also { it.onShown() }
 
     @Test
     fun aRoundIsUntouchedUntilTheFirstAction() {
@@ -41,9 +41,9 @@ class TubesRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesBetweenActionsAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.pour(0, 3) // starts the clock
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
@@ -51,7 +51,7 @@ class TubesRoundTest {
         assertEquals(2_500, r.snapshot().durationMs)
         clock += 10 * 60_000 // a long pause (the app was in the background)
         r.pour(0, 3)
-        assertEquals(2_500 + TubesRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test

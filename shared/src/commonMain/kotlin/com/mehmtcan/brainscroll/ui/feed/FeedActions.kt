@@ -6,6 +6,15 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.fruitmath.FruitResult
+import com.mehmtcan.brainscroll.game.lasers.LaserResult
+import com.mehmtcan.brainscroll.game.untangle.UntangleResult
+import com.mehmtcan.brainscroll.game.codebreaker.CodeResult
+import com.mehmtcan.brainscroll.game.rectangles.Rect
+import com.mehmtcan.brainscroll.game.flashgrid.FlashResult
+import com.mehmtcan.brainscroll.game.rectangles.RectResult
+import com.mehmtcan.brainscroll.game.matchsticks.MatchMove
+import com.mehmtcan.brainscroll.game.matchsticks.MatchResult
 import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
 import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
@@ -67,6 +76,21 @@ interface FeedActions {
     fun extendFlow(page: Int, cell: Int): Boolean
     fun endFlow(page: Int): FlowResult
     fun restartFlow(page: Int): Boolean
+    fun moveStick(page: Int, move: MatchMove): MatchResult
+    fun undoStick(page: Int): Boolean
+    fun turnMirror(page: Int, cell: Int): LaserResult
+    fun restartLasers(page: Int): Boolean
+    fun moveNode(page: Int, node: Int, x: Int, y: Int): Boolean
+    fun dropNode(page: Int): UntangleResult
+    fun restartUntangle(page: Int): Boolean
+    fun submitFruit(page: Int, answer: Int): FruitResult
+    fun submitCode(page: Int, guess: List<Int>): CodeResult
+    fun placeRect(page: Int, rect: Rect): RectResult
+    fun tapFlashTile(page: Int, tile: Int): FlashResult
+    fun startFlash(page: Int): Boolean
+    fun restartFlash(page: Int): Boolean
+    fun removeRect(page: Int, column: Int, row: Int): Boolean
+    fun restartRects(page: Int): Boolean
     fun tapTopicWord(page: Int, word: Int): TopicGroupsResult
     fun shuffleTopicWords(page: Int): Boolean
     fun clearTopicSelection(page: Int): Boolean

@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
 class LevelsOfSolverGamesTest {
 
     private val seeds = (1..40).toList()
-    private val games = listOf(GameKind.Sudoku, GameKind.Jigsaw, GameKind.Tents, GameKind.BlockOut, GameKind.Nonogram)
+    private val games = listOf(GameKind.Sudoku, GameKind.Jigsaw, GameKind.Tents, GameKind.BlockOut, GameKind.Nonogram, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath)
 
     private class FakeStore : FeedStore {
         val progress = linkedMapOf<String, StoredRound>()

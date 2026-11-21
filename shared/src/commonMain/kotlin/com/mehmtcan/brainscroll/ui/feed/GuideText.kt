@@ -22,6 +22,17 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.guide_matchsticks_move
+import brainscroll.shared.generated.resources.guide_lasers_turn
+import brainscroll.shared.generated.resources.guide_untangle_move
+import brainscroll.shared.generated.resources.guide_codebreaker_next
+import brainscroll.shared.generated.resources.guide_rectangles_place
+import brainscroll.shared.generated.resources.guide_flashgrid_pattern
+import brainscroll.shared.generated.resources.guide_rectangles_remove
+import com.mehmtcan.brainscroll.ui.codebreaker.codeSymbol
+import brainscroll.shared.generated.resources.guide_fruitmath_values
+import com.mehmtcan.brainscroll.ui.fruitmath.fruitEmoji
+import brainscroll.shared.generated.resources.guide_matchsticks_undo
 import brainscroll.shared.generated.resources.guide_hanoi_move
 import brainscroll.shared.generated.resources.guide_jigsaw_only_digit
 import brainscroll.shared.generated.resources.guide_jigsaw_only_place
@@ -117,6 +128,19 @@ fun guideText(step: GuideStep): String {
             ),
         )
         GuideReason.FlowRoute -> stringResource(Res.string.guide_colorflow_route, stringResource(symbolName(CardSymbol.entries[n[0] % CardSymbol.entries.size])))
+        GuideReason.MatchstickMove -> stringResource(Res.string.guide_matchsticks_move)
+        GuideReason.FruitValues -> {
+            val half = n.size / 2
+            val values = (0 until half).joinToString("  ") { "${fruitEmoji(n[it])} = ${n[half + it]}" }
+            stringResource(Res.string.guide_fruitmath_values, values)
+        }
+        GuideReason.UntangleMove -> stringResource(Res.string.guide_untangle_move)
+        GuideReason.FlashPattern -> stringResource(Res.string.guide_flashgrid_pattern)
+        GuideReason.RectPlace -> stringResource(Res.string.guide_rectangles_place, n[0])
+        GuideReason.RectRemove -> stringResource(Res.string.guide_rectangles_remove)
+        GuideReason.CodeNext -> stringResource(Res.string.guide_codebreaker_next, n.joinToString(" ") { codeSymbol(it).toString() })
+        GuideReason.LaserTurn -> stringResource(Res.string.guide_lasers_turn)
+        GuideReason.MatchstickUndo -> stringResource(Res.string.guide_matchsticks_undo)
         GuideReason.TopicGroupsGroup -> stringResource(Res.string.guide_topicgroups_group, step.text)
         GuideReason.BallSlideStuck -> stringResource(Res.string.guide_ballslide_stuck)
         GuideReason.AxisSumErase -> stringResource(Res.string.guide_axissum_erase, n[0], n[1])

@@ -19,17 +19,20 @@ data class MinesSnapshot(
     /** Time spent so far, as the round counts it (see [MinesRound]). */
     val durationMs: Long,
 ) : PageSnapshot {
+    /** The same board with no time on it, to tell whether a page is still as it was (the time of a page that is on show never stops). */
+    override fun withoutClock(): PageSnapshot = copy(durationMs = 0L)
+
     override val isFinished: Boolean get() = state.status != MinesStatus.Playing
     override val isWon: Boolean get() = state.status == MinesStatus.Won
     override val kind: GameKind get() = GameKind.Mines
 }
 
 /**
- * One minesweeper board in the feed: a [MinesGame] plus the time and the list of actions, which is all that is needed
- * to save it and to rebuild it exactly as the player left it (the board itself comes from [seed] and the first open).
+ * One minesweeper board in the feed: a [MinesGame] plus the time and the list of actions, which is all that is needed to save it
+ * and to rebuild it exactly as the player left it (the board itself comes from [seed] and the first open).
  *
- * The time works as in the other games: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS].
- * The clock starts with the first action, flags included.
+ * The time is the time the page is on show (see [onShown]): it runs from the moment the page comes to the screen until the board
+ * is won, and stops while the page is left.
  *
  * [language] only fills the language of the saved result (the table needs one); minesweeper has no language.
  */
@@ -48,7 +51,7 @@ class MinesRound(
     /** What the player did, in order: "o12" opens cell 12, "f12" flags or unflags it, "c12" chords on it. */
     private val actions = mutableListOf<String>()
     private var elapsedMs = 0L
-    private var lastActionAt: Long? = null
+    private var shownSince: Long? = null
 
     override val kind: GameKind get() = GameKind.Mines
 
@@ -78,12 +81,26 @@ class MinesRound(
 
     private fun record(action: String) {
         actions += action
-        val time = now()
-        lastActionAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-        lastActionAt = time
     }
 
-    override fun snapshot() = MinesSnapshot(id, index, game.state, elapsedMs)
+    /**
+     * The page came to the screen: the clock starts (or goes on). The time of this round is the time its page was on show, so
+     * thinking before the first move counts, and a puzzle solved with one move is not solved "in no time".
+     */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen (swiped away, another tab, the app in the background) or the round is over: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = MinesSnapshot(id, index, game.state, total())
 
     /** "8x8x10:seed:first": the size, the seed and the cell of the first open (-1 before that). */
     private fun encodedBoard() = "${rows}x${cols}x$mineCount:$seed:${game.firstOpen}"
@@ -93,7 +110,7 @@ class MinesRound(
         language = language,
         answer = encodedBoard(),
         guesses = actions.toList(),
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = GameKind.Mines,
@@ -112,14 +129,11 @@ class MinesRound(
         outcome = if (game.state.status == MinesStatus.Won) Outcome.WON else Outcome.LOST,
         assisted = assisted,
         finishedAt = finishedAt,
-        durationMs = elapsedMs,
+        durationMs = total(),
         game = GameKind.Mines,
     )
 
     companion object {
-        /** A pause between two actions counts for at most this long. */
-        const val MAX_THINK_MILLIS = 15_000L
-
         /**
          * Rebuilds a round from storage by replaying its actions. Returns null if what was saved cannot be read: the
          * caller then simply starts a new one.

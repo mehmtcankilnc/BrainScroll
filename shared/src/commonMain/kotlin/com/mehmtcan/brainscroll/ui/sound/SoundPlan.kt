@@ -34,3 +34,16 @@ const val UI_TAP_VOLUME = 0.30f
 const val UI_GOOD_VOLUME = 0.38f
 const val UI_WARNING_VOLUME = 0.70f
 const val UI_WIN_CHORD_VOLUME = 0.55f
+
+const val MATCHSTICKS_PICK_VOLUME = 0.35f
+const val MATCHSTICKS_PLACE_VOLUME = 0.5f
+const val LASERS_TURN_VOLUME = 0.35f
+const val LASERS_LIT_VOLUME = 0.4f
+const val UNTANGLE_DROP_VOLUME = 0.4f
+const val UNTANGLE_FEWER_VOLUME = 0.4f
+
+/** Targets lit now compared with before: the one new chime to play, or none when none more is lit. */
+fun lasersLitSound(before: Int, now: Int): Sfx? = if (now > before) Sfx.LasersLit else null
+
+/** Crossings left now compared with before: a chime when there are fewer, none otherwise. */
+fun untangleFewerSound(before: Int, now: Int): Sfx? = if (now < before) Sfx.UntangleFewer else null

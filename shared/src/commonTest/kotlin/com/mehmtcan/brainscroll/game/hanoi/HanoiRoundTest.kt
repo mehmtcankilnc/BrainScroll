@@ -18,7 +18,7 @@ class HanoiRoundTest {
 
     private val puzzle = HanoiGenerator.generate(4)
 
-    private fun round() = HanoiRound(0, "h1", puzzle.start.toList(), puzzle.goal, Language.EN, { clock }, puzzle.par)
+    private fun round() = HanoiRound(0, "h1", puzzle.start.toList(), puzzle.goal, Language.EN, { clock }, puzzle.par).also { it.onShown() }
 
     /** Plays the shortest way from the position the round is in now. */
     private fun HanoiRound.finish(stepMillis: Long = 1_000) {
@@ -53,17 +53,17 @@ class HanoiRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
+        clock = 10_000
         val r = round()
         val way = HanoiSolver.shortest(puzzle.start, puzzle.goal)
-        clock = 10_000
         r.move(way[0].from, way[0].to)
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.move(way[1].from, way[1].to)
         clock += 10 * 60_000
         r.move(way[2].from, way[2].to)
-        assertEquals(2_500 + HanoiRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -101,8 +101,8 @@ class HanoiRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.finish()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)
@@ -112,7 +112,7 @@ class HanoiRoundTest {
         assertEquals(listOf(puzzle.par.toString()), finished.guesses)
         assertEquals(puzzle.par, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals((puzzle.par - 1) * 1_000L, finished.durationMs)
+        assertEquals(puzzle.par * 1_000L, finished.durationMs)
     }
 
     @Test

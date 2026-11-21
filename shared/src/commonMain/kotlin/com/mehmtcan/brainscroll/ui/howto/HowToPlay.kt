@@ -73,6 +73,13 @@ private fun cardOf(kind: GameKind): HowToCardContent = when (kind) {
     GameKind.BallSlide -> BallSlideHowTo
     GameKind.ColorFlow -> ColorFlowHowTo
     GameKind.TopicGroups -> TopicGroupsHowTo
+    GameKind.Matchsticks -> MatchsticksHowTo
+    GameKind.Lasers -> LasersHowTo
+    GameKind.Untangle -> UntangleHowTo
+    GameKind.FruitMath -> FruitMathHowTo
+    GameKind.CodeBreaker -> CodeBreakerHowTo
+    GameKind.Rectangles -> RectanglesHowTo
+    GameKind.FlashGrid -> FlashGridHowTo
     GameKind.Line -> LineHowTo
 }
 

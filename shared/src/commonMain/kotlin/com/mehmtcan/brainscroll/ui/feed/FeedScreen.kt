@@ -55,6 +55,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.utf16CodePoint
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.a11y_word_language
@@ -145,6 +146,12 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
         LanguageSwitch(wordLanguage, flagDescription) { viewModel.setWordLanguage(otherLanguage) }
     }
 
+    // The clock of the page that is on show runs while the feed is on the screen and the app is in front.
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onFeedResumed()
+        onPauseOrDispose { viewModel.onFeedPaused() }
+    }
+
     // The feed scrolls freely: a puzzle that is left unfinished is simply saved where it is.
     LaunchedEffect(pagerState) {
         viewModel.onPageSettled(pagerState.settledPage)
@@ -155,7 +162,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val current = feed.pages[page]
     // The step of the guide counts while the page looks as it did when it was given; any move makes it old.
     val guideState by viewModel.guide.collectAsStateWithLifecycle()
-    val guide = guideState?.takeIf { it.page == current }?.step
+    val guide = guideState?.takeIf { it.page.withoutClock() == current.withoutClock() }?.step
     LaunchedEffect(viewModel) { viewModel.guideNothing.collect { show(Res.string.guide_none) } }
     val currentWord = current as? RoundSnapshot
 

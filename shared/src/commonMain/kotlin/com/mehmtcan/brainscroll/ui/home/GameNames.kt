@@ -2,6 +2,13 @@ package com.mehmtcan.brainscroll.ui.home
 
 import androidx.compose.runtime.Composable
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.game_matchsticks
+import brainscroll.shared.generated.resources.game_lasers
+import brainscroll.shared.generated.resources.game_untangle
+import brainscroll.shared.generated.resources.game_codebreaker
+import brainscroll.shared.generated.resources.game_rectangles
+import brainscroll.shared.generated.resources.game_flashgrid
+import brainscroll.shared.generated.resources.game_fruitmath
 import brainscroll.shared.generated.resources.game_hanoi
 import brainscroll.shared.generated.resources.game_jigsaw
 import brainscroll.shared.generated.resources.difficulty_easy
@@ -54,6 +61,13 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.BallSlide -> Res.string.game_ballslide
         GameKind.ColorFlow -> Res.string.game_colorflow
         GameKind.TopicGroups -> Res.string.game_topicgroups
+        GameKind.Matchsticks -> Res.string.game_matchsticks
+        GameKind.Lasers -> Res.string.game_lasers
+        GameKind.Untangle -> Res.string.game_untangle
+        GameKind.FruitMath -> Res.string.game_fruitmath
+        GameKind.CodeBreaker -> Res.string.game_codebreaker
+        GameKind.Rectangles -> Res.string.game_rectangles
+        GameKind.FlashGrid -> Res.string.game_flashgrid
         GameKind.Line -> Res.string.game_line
     },
 )

@@ -30,6 +30,21 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsResult
 import com.mehmtcan.brainscroll.game.axissum.AxisSumResult
 import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
+import com.mehmtcan.brainscroll.game.fruitmath.FruitResult
+import com.mehmtcan.brainscroll.game.codebreaker.CodeResult
+import com.mehmtcan.brainscroll.game.rectangles.Rect
+import com.mehmtcan.brainscroll.game.flashgrid.FlashResult
+import com.mehmtcan.brainscroll.stats.FlashStats
+import com.mehmtcan.brainscroll.stats.computeFlashStats
+import com.mehmtcan.brainscroll.game.rectangles.RectResult
+import com.mehmtcan.brainscroll.stats.RectStats
+import com.mehmtcan.brainscroll.stats.computeRectStats
+import com.mehmtcan.brainscroll.stats.CodeStats
+import com.mehmtcan.brainscroll.stats.computeCodeStats
+import com.mehmtcan.brainscroll.game.lasers.LaserResult
+import com.mehmtcan.brainscroll.game.untangle.UntangleResult
+import com.mehmtcan.brainscroll.game.matchsticks.MatchMove
+import com.mehmtcan.brainscroll.game.matchsticks.MatchResult
 import com.mehmtcan.brainscroll.game.topicgroups.TopicGroupsResult
 import com.mehmtcan.brainscroll.game.nonogram.NonogramResult
 import com.mehmtcan.brainscroll.game.blockout.BlockOutResult
@@ -62,6 +77,14 @@ import com.mehmtcan.brainscroll.stats.ArrowsStats
 import com.mehmtcan.brainscroll.stats.AxisSumStats
 import com.mehmtcan.brainscroll.stats.BallSlideStats
 import com.mehmtcan.brainscroll.stats.FlowStats
+import com.mehmtcan.brainscroll.stats.FruitStats
+import com.mehmtcan.brainscroll.stats.computeFruitStats
+import com.mehmtcan.brainscroll.stats.LaserStats
+import com.mehmtcan.brainscroll.stats.UntangleStats
+import com.mehmtcan.brainscroll.stats.computeUntangleStats
+import com.mehmtcan.brainscroll.stats.computeLaserStats
+import com.mehmtcan.brainscroll.stats.MatchStats
+import com.mehmtcan.brainscroll.stats.computeMatchStats
 import com.mehmtcan.brainscroll.stats.TopicGroupsStats
 import com.mehmtcan.brainscroll.stats.computeTopicGroupsStats
 import com.mehmtcan.brainscroll.stats.computeFlowStats
@@ -184,6 +207,13 @@ data class ProfileState(
     val ballSlide: BallSlideStats = computeBallSlideStats(emptyList()),
     /** Color flow, from the endless feed. */
     val colorFlow: FlowStats = computeFlowStats(emptyList()),
+    val matchsticks: MatchStats = computeMatchStats(emptyList()),
+    val lasers: LaserStats = computeLaserStats(emptyList()),
+    val untangle: UntangleStats = computeUntangleStats(emptyList()),
+    val fruitMath: FruitStats = computeFruitStats(emptyList()),
+    val codeBreaker: CodeStats = computeCodeStats(emptyList()),
+    val rectangles: RectStats = computeRectStats(emptyList()),
+    val flashGrid: FlashStats = computeFlashStats(emptyList()),
     /** Tents, from the endless feed. */
     val tents: TentsStats = computeTentsStats(emptyList()),
     /** The same, for each language alone. */
@@ -212,7 +242,7 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid),
     /** The games that offer a level choice. */
     val levelledGames: Set<GameKind> = LEVELLED_GAMES,
     /** The store behind Pro; null means free with nothing to buy (desktop, tests, no keys yet). */
@@ -306,7 +336,7 @@ class FeedViewModel(
         val page = f.snapshot().pages.getOrNull(index) ?: return
         // The same step asked for again on a puzzle that has not changed since is the step already paid for: shown again,
         // for nothing, and even with no free steps left.
-        lastGuided?.takeIf { it.page == page }?.let {
+        lastGuided?.takeIf { it.page.withoutClock() == page.withoutClock() }?.let {
             _guide.value = it
             return
         }
@@ -567,7 +597,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             // The time in seconds (anonymous, like the rest) is what lets the levels be balanced by how long boards really take.
             val seconds = result.durationMs?.let { mapOf("seconds" to (it / 1000).toString()) }.orEmpty()
@@ -869,6 +899,145 @@ class FeedViewModel(
         return result
     }
 
+    /** The answer [answer] is given for the last line of the fruit equations board on [page]. */
+    override fun submitFruit(page: Int, answer: Int): FruitResult {
+        val f = feed ?: return FruitResult.Ignored
+        val result = f.submitFruit(page, answer)
+        publish()
+        // A board that was won is a new result: the statistics and the cloud backup follow.
+        if (result == FruitResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Start is pressed on the flash grid on [page]. */
+    override fun startFlash(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.startFlash(page).also { if (it) publish() }
+    }
+
+    /** The flash grid on [page] is started over with other tiles. */
+    override fun restartFlash(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartFlash(page).also { if (it) publish() }
+    }
+
+    /** Tile [tile] of the flash grid on [page] is touched. */
+    override fun tapFlashTile(page: Int, tile: Int): FlashResult {
+        val f = feed ?: return FlashResult.Ignored
+        val result = f.tapFlashTile(page, tile)
+        publish()
+        // A run that is over (cleared to the end, or lost on a wrong tile) is a new result: the statistics and the cloud backup follow.
+        if (result == FlashResult.Perfect || result == FlashResult.Missed) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** [rect] is laid on the rectangles board on [page]. */
+    override fun placeRect(page: Int, rect: Rect): RectResult {
+        val f = feed ?: return RectResult.Ignored
+        val result = f.placeRect(page, rect)
+        publish()
+        // A board that was covered is a new result: the statistics and the cloud backup follow.
+        if (result == RectResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** The rectangle over the cell ([column], [row]) of the board on [page] is taken off. */
+    override fun removeRect(page: Int, column: Int, row: Int): Boolean {
+        val f = feed ?: return false
+        return f.removeRect(page, column, row).also { if (it) publish() }
+    }
+
+    /** Every rectangle of the board on [page] is taken off. */
+    override fun restartRects(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartRects(page).also { if (it) publish() }
+    }
+
+    /** [guess] is given on the code breaker board on [page]. */
+    override fun submitCode(page: Int, guess: List<Int>): CodeResult {
+        val f = feed ?: return CodeResult.Ignored
+        val result = f.submitCode(page, guess)
+        publish()
+        // A code that was cracked is a new result: the statistics and the cloud backup follow.
+        if (result == CodeResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Dot [node] of the tangle on [page] is dragged to ([x], [y]): the lines follow as it goes. */
+    override fun moveNode(page: Int, node: Int, x: Int, y: Int): Boolean {
+        val f = feed ?: return false
+        return f.moveNode(page, node, x, y).also { if (it) publish() }
+    }
+
+    /** The finger of the drag on [page] is lifted. Returns what the drag did, so the screen can buzz accordingly. */
+    override fun dropNode(page: Int): UntangleResult {
+        val f = feed ?: return UntangleResult.Ignored
+        val result = f.dropNode(page)
+        publish()
+        // A board that was won is a new result: the statistics and the cloud backup follow.
+        if (result == UntangleResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the dots of the tangle on [page] back where it was given. */
+    override fun restartUntangle(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartUntangle(page).also { publish() }
+    }
+
+    /** The mirror on [cell] of the laser board on [page] is turned. */
+    override fun turnMirror(page: Int, cell: Int): LaserResult {
+        val f = feed ?: return LaserResult.Ignored
+        val result = f.turnMirror(page, cell)
+        publish()
+        // A board that was won is a new result: the statistics and the cloud backup follow.
+        if (result == LaserResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts every mirror of the laser board on [page] back as it was given. */
+    override fun restartLasers(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartLasers(page).also { publish() }
+    }
+
+    /** A stick of the matchstick sum on [page] is taken and laid on another place. */
+    override fun moveStick(page: Int, move: MatchMove): MatchResult {
+        val f = feed ?: return MatchResult.Ignored
+        val result = f.moveStick(page, move)
+        publish()
+        // A sum that was put right is a new result: the statistics and the cloud backup follow.
+        if (result == MatchResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Puts the stick of the matchstick sum on [page] back. */
+    override fun undoStick(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.undoStick(page).also { publish() }
+    }
+
     /** Clears the paths of the color flow board on [page]. */
     override fun restartFlow(page: Int): Boolean {
         val f = feed ?: return false
@@ -1016,13 +1185,35 @@ class FeedViewModel(
     /** Called when the pager settles on [page]: keeps the current and the next puzzle ready. */
     fun onPageSettled(page: Int) {
         this.page = page
-        act { it.ensureSize(page + AHEAD) }
+        act {
+            it.ensureSize(page + AHEAD)
+            it.pageShown(page)
+        }
+    }
+
+    /** The feed came back to the screen (the tab was opened again, the app came back): the clock of the page that is on show goes on. */
+    fun onFeedResumed() {
+        act { it.pageShown(page) }
+    }
+
+    /** The feed left the screen (another tab, the app in the background): the clock of the page that was on show stops. */
+    fun onFeedPaused() {
+        act { it.pagesHidden() }
     }
 
     /**
      * Switches a game on or off in the feed. The last game that is on cannot be switched off. Applies to pages that are
      * still to come; puzzles that were started are left alone.
      */
+    /** Switches a whole list of games on at once (the editor's "select all"): one save, one change of the feed. Games that were on stay on. */
+    fun addGames(games: Collection<GameKind>) {
+        val next = _enabledGames.value + games.filter { it in availableGames }
+        if (next == _enabledGames.value) return
+        _enabledGames.value = next
+        repository.saveGames(next)
+        act { it.setEnabledGames(next, fromIndex = page) }
+    }
+
     fun setGameEnabled(game: GameKind, enabled: Boolean) {
         val next = if (enabled) _enabledGames.value + game else _enabledGames.value - game
         if (next.isEmpty() || game !in availableGames || next == _enabledGames.value) return
@@ -1126,6 +1317,13 @@ class FeedViewModel(
             axisSum = computeAxisSumStats(atLevel),
             ballSlide = computeBallSlideStats(atLevel),
             colorFlow = computeFlowStats(atLevel),
+            matchsticks = computeMatchStats(atLevel),
+            lasers = computeLaserStats(atLevel),
+            untangle = computeUntangleStats(atLevel),
+            fruitMath = computeFruitStats(atLevel),
+            codeBreaker = computeCodeStats(atLevel),
+            rectangles = computeRectStats(atLevel),
+            flashGrid = computeFlashStats(atLevel),
             nonogram = computeNonogramStats(atLevel),
             topicGroups = computeTopicGroupsStats(atLevel),
             tents = computeTentsStats(atLevel),

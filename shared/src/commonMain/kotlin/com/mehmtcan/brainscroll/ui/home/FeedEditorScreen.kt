@@ -22,10 +22,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -40,6 +49,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -49,7 +59,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.a11y_difficulty
+import brainscroll.shared.generated.resources.a11y_editor_search
+import brainscroll.shared.generated.resources.a11y_editor_search_close
 import brainscroll.shared.generated.resources.back
+import brainscroll.shared.generated.resources.editor_no_match
+import brainscroll.shared.generated.resources.editor_search_hint
+import brainscroll.shared.generated.resources.editor_select_all
 import brainscroll.shared.generated.resources.confirm_cancel
 import brainscroll.shared.generated.resources.new_feed_confirm
 import brainscroll.shared.generated.resources.new_feed_message
@@ -64,7 +79,6 @@ import brainscroll.shared.generated.resources.editor_difficulty_title
 import brainscroll.shared.generated.resources.editor_difficulty_subtitle
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.backhandler.BackHandler
-import brainscroll.shared.generated.resources.editor_subtitle
 import brainscroll.shared.generated.resources.editor_title
 import brainscroll.shared.generated.resources.home_start_feed
 import brainscroll.shared.generated.resources.personalize_last_game
@@ -112,6 +126,10 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
             notice = null
         }
     }
+    // The search field is always there. What is typed filters the cards by name and by what the game is about (see GameSearch.kt).
+    var query by remember { mutableStateOf("") }
+    val names = feedViewModel.availableGames.associateWith { it.displayName() }
+    val shown = feedViewModel.availableGames.filter { gameMatchesQuery(it, names.getValue(it), query) }
     // Step 0 picks the games; step 1 picks the level of the whole feed. Without a game that has levels there is no step 1.
     var step by remember { mutableIntStateOf(0) }
     val hasLevels = enabled.any { it in feedViewModel.levelledGames }
@@ -141,24 +159,48 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                     modifier = Modifier.padding(start = Spacing.sm).testTag("editorSelectedCount"),
                 )
             }
-            BasicText(
-                text = stringResource(if (step == 1) Res.string.editor_difficulty_subtitle else Res.string.editor_subtitle),
+            if (step == 1) BasicText(
+                text = stringResource(Res.string.editor_difficulty_subtitle),
                 style = type.body.copy(color = colors.textSecondary),
-                modifier = Modifier.padding(start = Spacing.md, bottom = Spacing.md),
+                modifier = Modifier.padding(start = Spacing.md, bottom = Spacing.sm),
+            )
+        }
+        if (step == 0) {
+            EditorTools(
+                query = query,
+                onQuery = { query = it },
+                // "Select all" turns on every game that is shown (the ones the search found, if it is used). It can only turn on:
+                // at least one game has to stay on, and there is no "none".
+                canSelectAll = shown.any { it !in enabled },
+                onSelectAll = {
+                    haptics.perform(HapticKind.Medium)
+                    feedViewModel.addGames(shown)
+                },
+                modifier = Modifier.padding(start = Spacing.lg, end = Spacing.lg, top = Spacing.sm, bottom = Spacing.lg),
             )
         }
         if (step == 1) {
             Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = Spacing.lg), contentAlignment = Alignment.Center) {
                 FeedDifficultyStep(current = level, onSelect = feedViewModel::setFeedDifficulty)
             }
-        } else Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
+        } else LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = Spacing.lg).testTag("editorList"),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            // Three games to a row.
-            feedViewModel.availableGames.chunked(GAMES_PER_ROW).forEach { row ->
+            if (shown.isEmpty()) {
+                item(key = "none") {
+                    BasicText(
+                        text = stringResource(Res.string.editor_no_match),
+                        style = type.body.copy(color = colors.textSecondary, textAlign = TextAlign.Center),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xl).testTag("editorNoMatch"),
+                    )
+                }
+            }
+            // Three games to a row. Only the rows that are on the screen are built: every card has a picture, and drawing all of
+            // them at once made the page slow to open.
+            itemsIndexed(shown.chunked(GAMES_PER_ROW), key = { _, row -> row.first().id }) { rowIndex, row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
-                    row.forEach { game ->
+                    row.forEachIndexed { column, game ->
                         val on = game in enabled
                         GameCard(
                             game = game,
@@ -180,7 +222,7 @@ fun FeedEditorScreen(feedViewModel: FeedViewModel, onBack: () -> Unit, onStartFe
                     repeat(GAMES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
-            Spacer(Modifier.height(Spacing.sm))
+            item(key = "end") { Spacer(Modifier.height(Spacing.sm)) }
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.md)) {
             if (step == 0 && hasLevels) {
@@ -249,7 +291,7 @@ private fun GameCard(game: GameKind, wordLanguage: Language, on: Boolean, onClic
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Box {
-            GameThumbnail(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1.25f).graphicsLayer { alpha = if (on) 1f else 0.5f })
+            GameThumbnailImage(game, wordLanguage, Modifier.fillMaxWidth().aspectRatio(1.25f).graphicsLayer { alpha = if (on) 1f else 0.5f })
             CheckMark(on, Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
         }
         BasicText(
@@ -262,6 +304,7 @@ private fun GameCard(game: GameKind, wordLanguage: Language, on: Boolean, onClic
     }
 }
 
+
 /** How many games the editor puts in a row. */
 private const val GAMES_PER_ROW = 3
 
@@ -271,28 +314,111 @@ private val NOTICE_BOTTOM = 88.dp
 
 private val CHECK_SIZE = 18.dp
 
-/** The round mark in the corner of a card: a ring when the game is not in the feed, a green disc with a check when it is. */
+/** The round mark in the corner of a card: an empty ring when the game is not in the feed, a ring with a solid center when it is. */
 @Composable
 private fun CheckMark(on: Boolean, modifier: Modifier = Modifier) {
     val colors = BrainScrollTheme.colors
     Box(
         modifier = modifier
             .size(CHECK_SIZE)
-            .then(
-                if (on) Modifier.background(colors.accent, CircleShape)
-                else Modifier.border(1.5.dp, colors.borderStrong.copy(alpha = 0.7f), CircleShape),
-            ),
+            .background(if (on) colors.accent.copy(alpha = 0.18f) else Color.Transparent, CircleShape)
+            .border(1.5.dp, if (on) colors.accent else colors.borderStrong.copy(alpha = 0.7f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        if (on) {
-            val color = colors.accentOn
-            Canvas(Modifier.size(10.dp)) {
-                val path = Path().apply {
-                    moveTo(0.12f * size.width, 0.55f * size.height)
-                    lineTo(0.4f * size.width, 0.8f * size.height)
-                    lineTo(0.9f * size.width, 0.2f * size.height)
+        if (on) Box(Modifier.size(CHECK_SIZE / 2).background(colors.accent, CircleShape))
+    }
+}
+
+/**
+ * The row under the title: the search field (always open, a magnifier on its left; the cards are filtered as it is typed) and a "select
+ * all" icon button beside it. Select all is dimmed when every game shown is already on; it never turns anything off.
+ */
+@Composable
+private fun EditorTools(
+    query: String,
+    onQuery: (String) -> Unit,
+    canSelectAll: Boolean,
+    onSelectAll: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val searchLabel = stringResource(Res.string.a11y_editor_search)
+    val clearLabel = stringResource(Res.string.a11y_editor_search_close)
+    val selectAll = stringResource(Res.string.editor_select_all)
+    val hint = stringResource(Res.string.editor_search_hint)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+                .background(colors.bgSurface, Radius.control)
+                .border(1.dp, colors.borderSubtle, Radius.control)
+                .padding(start = Spacing.md),
+        ) {
+            Canvas(Modifier.size(20.dp)) {
+                val ink = colors.textSecondary
+                drawCircle(ink, size.width * 0.32f, androidx.compose.ui.geometry.Offset(size.width * 0.42f, size.height * 0.42f), style = Stroke(2.dp.toPx()))
+                drawLine(ink, androidx.compose.ui.geometry.Offset(size.width * 0.66f, size.height * 0.66f), androidx.compose.ui.geometry.Offset(size.width * 0.92f, size.height * 0.92f), 2.dp.toPx(), StrokeCap.Round)
+            }
+            Box(Modifier.weight(1f).padding(horizontal = Spacing.sm), contentAlignment = Alignment.CenterStart) {
+                BasicTextField(
+                    value = query,
+                    onValueChange = onQuery,
+                    singleLine = true,
+                    textStyle = type.body.copy(color = colors.textPrimary),
+                    cursorBrush = SolidColor(colors.textPrimary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    modifier = Modifier.fillMaxWidth().testTag("editorSearchField").semantics { contentDescription = searchLabel },
+                    decorationBox = { inner ->
+                        if (query.isEmpty()) BasicText(hint, style = type.body.copy(color = colors.textDisabled), maxLines = 1)
+                        inner()
+                    },
+                )
+            }
+            if (query.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .testTag("editorSearchClear")
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button) { onQuery("") }
+                        .semantics { contentDescription = clearLabel },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Canvas(Modifier.size(12.dp)) {
+                        val ink = colors.textSecondary
+                        drawLine(ink, androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, size.height), 2.dp.toPx(), StrokeCap.Round)
+                        drawLine(ink, androidx.compose.ui.geometry.Offset(size.width, 0f), androidx.compose.ui.geometry.Offset(0f, size.height), 2.dp.toPx(), StrokeCap.Round)
+                    }
                 }
-                drawPath(path, color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+        // Select all: a square with a check in it, in the accent colour while it can still turn something on.
+        val ink = if (canSelectAll) colors.accent else colors.textDisabled
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .testTag("editorSelectAll")
+                .clip(Radius.control)
+                .border(1.dp, if (canSelectAll) colors.accent else colors.borderSubtle, Radius.control)
+                .clickable(enabled = canSelectAll, role = Role.Button, onClick = onSelectAll)
+                .semantics { contentDescription = selectAll; if (!canSelectAll) disabled() },
+            contentAlignment = Alignment.Center,
+        ) {
+            // A filled rounded square with one check in it (the accent while it can still turn something on).
+            val fill = if (canSelectAll) colors.accent else colors.borderSubtle
+            val tick = if (canSelectAll) colors.accentOn else colors.textDisabled
+            Box(Modifier.size(24.dp).background(fill, androidx.compose.foundation.shape.RoundedCornerShape(7.dp)), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.size(14.dp)) {
+                    val path = Path().apply {
+                        moveTo(size.width * 0.1f, size.height * 0.55f)
+                        lineTo(size.width * 0.4f, size.height * 0.82f)
+                        lineTo(size.width * 0.92f, size.height * 0.2f)
+                    }
+                    drawPath(path, tick, style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                }
             }
         }
     }

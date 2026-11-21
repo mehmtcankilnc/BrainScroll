@@ -1,5 +1,7 @@
 # Yeni oyunlar planı
 
+**Yeni oyun eklerken dokunulacak her yerin listesi: [yeni-oyun-ekleme-rehberi.md](yeni-oyun-ekleme-rehberi.md)** (dosyalar, arama kelimeleri, PNG resim üretimi, kontrol listesi, açık işler).
+
 Durum: **Hanoi Kuleleri tamam** (cihazda denendi). **Vezirler kodlandı ve testleri geçti** (cihaz denemesi bekliyor). **Çadırlar kodlandı ve testleri geçti** (cihaz denemesi bekliyor). **Jigsaw Sudoku kodlandı ve testleri geçti** (cihaz denemesi bekliyor). **Blok Çıkışı kodlandı ve testleri geçti** (cihaz denemesi bekliyor). Beş oyunun beşi de kodlandı. **Çapraz bulmaca da kodlandı** (aşağıda "Çapraz bulmaca" bölümü; cihaz denemesi bekliyor).
 
 Beş yeni oyun, sırayla ve birer birer: **Hanoi Kuleleri, Vezirler, Çadırlar, Jigsaw Sudoku, Blok Çıkışı**. Çapraz bulmaca bu planın dışında (aşağıda "Ertelenen").

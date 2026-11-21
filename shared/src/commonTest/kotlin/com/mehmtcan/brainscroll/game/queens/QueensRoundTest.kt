@@ -18,7 +18,7 @@ class QueensRoundTest {
 
     private val puzzle = QueensGenerator.generate(4)
 
-    private fun round() = QueensRound(0, "q1", puzzle.size, puzzle.locked, Language.EN, { clock })
+    private fun round() = QueensRound(0, "q1", puzzle.size, puzzle.locked, Language.EN, { clock }).also { it.onShown() }
 
     /** The cells of one full placement that holds the locked queens, without the locked ones. */
     private fun missing() = QueensSolver.solutions(puzzle.size, puzzle.locked).first().filter { it !in puzzle.locked }
@@ -54,17 +54,17 @@ class QueensRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
+        clock = 10_000
         val r = round()
         val cells = missing()
-        clock = 10_000
         r.toggle(cells[0])
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.toggle(cells[1])
         clock += 10 * 60_000
         r.toggle(cells[2])
-        assertEquals(2_500 + QueensRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -105,8 +105,8 @@ class QueensRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMoves() {
-        val r = round()
         clock = 5_000
+        val r = round()
         r.finish()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)
@@ -116,7 +116,7 @@ class QueensRoundTest {
         assertEquals(listOf("3"), finished.guesses)
         assertEquals(3, finished.moveCount)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals(2_000L, finished.durationMs)
+        assertEquals(3_000L, finished.durationMs)
     }
 
     @Test

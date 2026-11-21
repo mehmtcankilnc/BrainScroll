@@ -19,7 +19,7 @@ class ArrowsRoundTest {
 
     private val puzzle = ArrowsGenerator.generate(4, Difficulty.Medium)
 
-    private fun round() = ArrowsRound(0, "a1", puzzle, Language.EN, { clock })
+    private fun round() = ArrowsRound(0, "a1", puzzle, Language.EN, { clock }).also { it.onShown() }
 
     /** A tap on an arrow that is in the way of another one. */
     private fun blockedCell(): Int {
@@ -57,16 +57,16 @@ class ArrowsRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
-        val r = round()
+    fun theTimeIsTheTimeThePageWasOnShowAndThinkingIsNotCapped() {
         clock = 10_000
+        val r = round()
         r.tap(blockedCell())
         assertEquals(0, r.snapshot().durationMs)
         clock += 2_500
         r.tap(blockedCell())
         clock += 10 * 60_000
         r.tap(blockedCell())
-        assertEquals(2_500 + ArrowsRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(2_500 + 10 * 60_000L, r.snapshot().durationMs)
     }
 
     @Test
@@ -104,11 +104,11 @@ class ArrowsRoundTest {
 
     @Test
     fun aSolvedRoundIsAWinWhoseOnlyGuessIsTheNumberOfMistakes() {
+        clock = 5_000
         val r = round()
         r.tap(blockedCell())
         r.tap(blockedCell())
         assertEquals(2, r.snapshot().state.mistakes)
-        clock = 5_000
         r.finish()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)
