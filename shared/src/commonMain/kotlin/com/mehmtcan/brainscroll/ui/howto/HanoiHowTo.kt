@@ -17,6 +17,10 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_hanoi_start
+import brainscroll.shared.generated.resources.howto_hanoi_tech
 import brainscroll.shared.generated.resources.howto_card_hanoi_1
 import brainscroll.shared.generated.resources.howto_card_hanoi_2
 import brainscroll.shared.generated.resources.howto_card_hanoi_3
@@ -31,6 +35,8 @@ internal val HanoiHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_hanoi_1, { t -> HanoiDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_hanoi_2, { t -> HanoiDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_hanoi_3, { t -> HanoiDemo(step = 2, t = t) }, cycleMillis = 6400),
+        HowToStep(Res.string.howto_hanoi_tech, { t -> HanoiDemo(step = 3, t = t) }, cycleMillis = 8000, title = Res.string.howto_title_solve),
+        HowToStep(Res.string.howto_hanoi_start, { t -> HanoiDemo(step = 4, t = t) }, cycleMillis = 4800, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -69,7 +75,7 @@ internal fun HanoiDemo(step: Int, t: Float) {
             total = 3
             moves = listOf(DemoMove(0, 1, 0.12f, 0.4f, refused = true))
         }
-        else -> {
+        2 -> {
             start = listOf(listOf(2, 1), emptyList(), emptyList())
             total = 2
             moves = listOf(
@@ -77,6 +83,23 @@ internal fun HanoiDemo(step: Int, t: Float) {
                 DemoMove(0, 2, 0.34f, 0.45f),
                 DemoMove(1, 2, 0.64f, 0.75f),
             )
+        }
+        // The big disk: the two small ones go to the middle tower first, then the big one crosses to the empty goal.
+        3 -> {
+            start = listOf(listOf(3, 2, 1), emptyList(), emptyList())
+            total = 3
+            moves = listOf(
+                DemoMove(0, 2, 0.03f, 0.1f),
+                DemoMove(0, 1, 0.24f, 0.31f),
+                DemoMove(2, 1, 0.45f, 0.52f),
+                DemoMove(0, 2, 0.66f, 0.73f),
+            )
+        }
+        // The first move: with three disks (an odd number) the smallest goes straight to the goal tower.
+        else -> {
+            start = listOf(listOf(3, 2, 1), emptyList(), emptyList())
+            total = 3
+            moves = listOf(DemoMove(0, 2, 0.15f, 0.4f))
         }
     }
     Canvas(Modifier.fillMaxSize()) {

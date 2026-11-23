@@ -63,6 +63,7 @@ import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuideEvidence
 import com.mehmtcan.brainscroll.ui.feed.isGuided
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
@@ -172,7 +173,7 @@ fun AxisSumPage(
                     for (c in 0 until n) {
                         val index = r * n + c
                         Box(Modifier.offset { IntOffset((c + 1) * step, (r + 1) * step) }) {
-                            GuideMark(isGuided(index), Radius.card) {
+                            GuideMark(isGuided(index), Radius.card, evidence = isGuideEvidence(index)) {
                                 NumberCell(
                                     row = r + 1,
                                     column = c + 1,

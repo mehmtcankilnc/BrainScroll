@@ -40,8 +40,9 @@ class LineRoundTest {
     }
 
     @Test
-    fun anActionThatChangesNothingIsNotRecordedAndDoesNotMoveTheClock() {
+    fun anActionThatChangesNothingIsNotRecorded() {
         val r = round()
+        r.onShown()
         r.drag(puzzle.solution[0])
         clock += 4_000
         assertEquals(LineResult.Ignored, r.drag(99))
@@ -54,16 +55,49 @@ class LineRoundTest {
     }
 
     @Test
-    fun theTimeIsTheSumOfThePausesAndEachPauseIsCapped() {
+    fun theTimeStartsWhenThePageComesToTheScreenNotWithTheFirstTouch() {
         val r = round()
-        clock = 10_000
+        r.onShown()
+        clock += 30_000
         r.drag(puzzle.solution[0])
-        assertEquals(0, r.snapshot().durationMs)
-        clock += 2_500
-        r.drag(puzzle.solution[1])
+        assertEquals(30_000, r.snapshot().durationMs, "looking at the board counts")
+    }
+
+    @Test
+    fun theClockStopsWhenThePageIsLeftAndGoesOnWhenItComesBack() {
+        val r = round()
+        r.onShown()
+        clock += 5_000
+        r.onHidden()
         clock += 10 * 60_000
-        r.drag(puzzle.solution[2])
-        assertEquals(2_500 + LineRound.MAX_THINK_MILLIS, r.snapshot().durationMs)
+        assertEquals(5_000, r.snapshot().durationMs, "a stopped clock does not move")
+        r.onShown()
+        clock += 2_000
+        assertEquals(7_000, r.snapshot().durationMs)
+    }
+
+    @Test
+    fun theClockStopsWhenTheBoardIsDone() {
+        val r = round()
+        r.onShown()
+        r.solve()
+        clock += 10 * 60_000
+        assertEquals(puzzle.cells * 1_000L, r.snapshot().durationMs)
+        assertEquals(puzzle.cells * 1_000L, r.toFinished(1).durationMs)
+    }
+
+    @Test
+    fun aBoardThatWasOnlyLookedAtIsSavedWithItsTimeSoLeavingDoesNotStartItAgain() {
+        val r = round()
+        assertTrue(r.isUntouched)
+        r.onShown()
+        clock += 10_000
+        r.onHidden()
+        assertFalse(r.isUntouched, "the time of looking has to be kept")
+        val stored = r.toStored()
+        assertEquals("10000", stored.input)
+        val back = assertNotNull(LineRound.restore(0, stored) { clock })
+        assertEquals(10_000, back.snapshot().durationMs)
     }
 
     @Test
@@ -125,6 +159,7 @@ class LineRoundTest {
     fun aSolvedRoundIsAWinWhoseGuessesAreTheMovesTheUndosAndTheHints() {
         val r = round()
         clock = 5_000
+        r.onShown()
         r.solve()
         assertTrue(r.isFinished)
         val finished = r.toFinished(finishedAt = 99)
@@ -135,7 +170,7 @@ class LineRoundTest {
         assertEquals(puzzle.cells, finished.moveCount)
         assertEquals("${puzzle.size}x${puzzle.size}", finished.answer)
         assertTrue(finished.answer.length <= 32, "the table limits answer to 32 characters")
-        assertEquals((puzzle.cells - 1) * 1_000L, finished.durationMs)
+        assertEquals(puzzle.cells * 1_000L, finished.durationMs)
         assertFalse(finished.assisted)
     }
 

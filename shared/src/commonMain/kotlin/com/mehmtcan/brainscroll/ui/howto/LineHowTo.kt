@@ -14,10 +14,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_line_start
+import brainscroll.shared.generated.resources.howto_line_tech
 import brainscroll.shared.generated.resources.howto_card_line_1
 import brainscroll.shared.generated.resources.howto_card_line_2
 import brainscroll.shared.generated.resources.howto_card_line_3
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
+import androidx.compose.ui.graphics.PathEffect
 
 /** The three steps of the one line card: draw from 1 through every square, drag or tap to go on, drag back to shorten. */
 internal val LineHowTo = HowToCardContent(
@@ -25,6 +31,8 @@ internal val LineHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_line_1, { t -> LineDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_line_2, { t -> LineDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_line_3, { t -> LineDemo(step = 2, t = t) }),
+        HowToStep(Res.string.howto_line_tech, { t -> LineDemo(step = 3, t = t) }, cycleMillis = 6400, title = Res.string.howto_title_solve),
+        HowToStep(Res.string.howto_line_start, { t -> LineDemo(step = 4, t = t) }, cycleMillis = 4800, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -52,6 +60,10 @@ internal fun LineDemo(step: Int, t: Float) {
         0 -> 1f + 7f * demoEase(demoSegment(t, 0.3f, 0.78f))
         // Taps on the squares next to the end: one square for each tap.
         1 -> 8f + (if (t >= 0.28f) 1f else 0f) + (if (t >= 0.5f) 1f else 0f) + (if (t >= 0.72f) 1f else 0f)
+        // How to solve: the whole line, drawn while the two corner squares that are not the start or the end are ringed.
+        3 -> 1f + 15f * demoEase(demoSegment(t, 0.3f, 0.92f))
+        // The first step: from the 1 to the square of the 2.
+        4 -> 1f + 4f * demoEase(demoSegment(t, 0.3f, 0.7f))
         // The line is long, and a drag back over it takes squares away.
         else -> 11f - 4f * demoEase(demoSegment(t, 0.4f, 0.8f))
     }
@@ -72,6 +84,16 @@ internal fun LineDemo(step: Int, t: Float) {
             val box = Size(cell - 2 * gap, cell - 2 * gap)
             drawRoundRect((if (index in onLine) colors.correctFill.copy(alpha = 0.16f) else colors.bgSurface).copy(alpha = if (index in onLine) 0.16f * fade else fade), o, box, CornerRadius(cell * 0.16f))
             drawRoundRect(colors.borderStrong.copy(alpha = 0.3f * fade), o, box, CornerRadius(cell * 0.16f), style = Stroke(1.dp.toPx()))
+        }
+        // The squares the step is about: the corners that the line has to go round (dashed), or the start (solid).
+        if (step == 3 || step == 4) {
+            for (index in if (step == 3) listOf(3, 15) else listOf(0)) {
+                val o = Offset(left + (index % N) * cell + gap, top + (index / N) * cell + gap)
+                drawRoundRect(
+                    GuideColor.copy(alpha = 0.95f * fade), o, Size(cell - 2 * gap, cell - 2 * gap), CornerRadius(cell * 0.16f),
+                    style = Stroke(2.5.dp.toPx(), pathEffect = if (step == 3) PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 4.dp.toPx())) else null),
+                )
+            }
         }
         // The line: through the centers of the squares, to the head that is between two squares while it moves.
         val points = Way.take(whole).map { center(it) }.toMutableList()
@@ -103,7 +125,7 @@ internal fun LineDemo(step: Int, t: Float) {
         val hand: Offset
         var press = 0f
         when (step) {
-            0 -> {
+            0, 3, 4 -> {
                 val head = points.lastOrNull() ?: center(0)
                 val arrive = demoEase(demoSegment(t, 0.05f, 0.28f))
                 hand = if (t < 0.3f) Offset(offscreen.x + (center(0).x - offscreen.x) * arrive, offscreen.y + (center(0).y - offscreen.y) * arrive) else head

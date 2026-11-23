@@ -6,7 +6,7 @@ import kotlin.random.Random
 class BlockOutBoard(val puzzle: BlockOutPuzzle, val par: Int)
 
 /**
- * Makes the boards of block out (docs/yeni-oyunlar-plan.md): the target piece lies in the middle row on the left, a number of
+ * Makes the boards of block out (docs/decisions.md): the target piece lies in the middle row on the left, a number of
  * other pieces of two or three cells are put on the board at random, and the board is kept only if it can be solved and the
  * shortest way ([BlockOutSolver]) takes at least [DEFAULT_MIN_PAR] moves.
  *

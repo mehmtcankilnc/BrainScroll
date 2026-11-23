@@ -20,6 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_rectangles_start
+import brainscroll.shared.generated.resources.howto_rectangles_tech
 import brainscroll.shared.generated.resources.howto_card_rectangles_1
 import brainscroll.shared.generated.resources.howto_card_rectangles_2
 import brainscroll.shared.generated.resources.howto_card_rectangles_3
@@ -31,6 +35,8 @@ internal val RectanglesHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_rectangles_1, { t -> RectanglesDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_rectangles_2, { t -> RectanglesDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_rectangles_3, { t -> RectanglesDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_rectangles_tech, RectNeighborScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_rectangles_start, RectStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

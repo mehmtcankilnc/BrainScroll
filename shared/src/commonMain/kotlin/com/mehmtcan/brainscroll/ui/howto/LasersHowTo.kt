@@ -7,6 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_lasers_start
+import brainscroll.shared.generated.resources.howto_lasers_tech
 import brainscroll.shared.generated.resources.howto_card_lasers_1
 import brainscroll.shared.generated.resources.howto_card_lasers_2
 import brainscroll.shared.generated.resources.howto_card_lasers_3
@@ -24,6 +28,8 @@ internal val LasersHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_lasers_1, { t -> LasersDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_lasers_2, { t -> LasersDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_lasers_3, { t -> LasersDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_lasers_tech, LaserBounceScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_lasers_start, LaserStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

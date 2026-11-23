@@ -7,14 +7,17 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.DeepLinkInbox
 import com.mehmtcan.brainscroll.account.FakeAccountService
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.social.DailyRow
 import com.mehmtcan.brainscroll.social.FakeSocialApi
 import com.mehmtcan.brainscroll.social.FriendsState
@@ -64,7 +67,7 @@ class SocialUiTest {
         snap("20_ranks_anonymous")
 
         assertTrue(hasAnyText("alice") && hasAnyText("bob"))
-        assertTrue(hasAnyText("2/6"), "the guesses are shown")
+        assertTrue(hasAnyText("2 tahmin", "2 guesses"), "the guesses are shown")
         assertTrue(hasAnyText("00:30"), "and the time")
         assertTrue(hasAnyText("Google ile devam et", "Continue with Google"))
         assertFalse(hasAnyText("Herkes", "Everyone"), "no everyone/friends filter for anonymous players")
@@ -120,6 +123,31 @@ class SocialUiTest {
         val friendsLabel = if (onAllNodesWithText("Arkadaşlar").fetchSemanticsNodes().isNotEmpty()) "Arkadaşlar" else "Friends"
         onAllNodesWithText(friendsLabel)[0].performClick()
         waitUntil(timeoutMillis = 5_000) { cloud.social.calls.any { it == "streakBoard:Longest:true" } }
+    }
+
+    @Test
+    fun theTableOfAFeedGameShowsWhatItIsRankedByAndOneTableForEveryLevel() = runComposeUiTest {
+        val cloud = cloud(member = true, username = "alice") {
+            gameAllTime = listOf(DailyRow(1, "bob", 8, 99_000), DailyRow(2, "alice", 5, 50_000, isMe = true))
+        }
+        openRanks(cloud)
+        // A series: the rounds are the big number, the time the small one; the chips of the levels are there.
+        onAllNodesWithText("Küp Katlama").onFirst().performScrollTo().performClick()
+        waitForText("8 tur", "8 rounds")
+        snap("470_ranks_series_table")
+        assertTrue(hasAnyText("01:39"))
+        assertTrue(hasAnyText("Önce en çok geçilen tur", "Most rounds cleared first"), "the caption says what the table is ranked by")
+        assertTrue(hasAnyText("Orta", "Medium") && hasAnyText("Zor", "Hard") && hasAnyText("Kolay", "Easy"))
+        onAllNodesWithText("Zor").onFirst().performClick()
+        waitUntil(timeoutMillis = 5_000) { cloud.social.lastDifficulty == Difficulty.Hard }
+
+        // A game played for time: the time is the big number, the moves the small one.
+        cloud.social.gameAllTime = listOf(DailyRow(1, "carol", 31, 42_000))
+        onAllNodesWithText("Sudoku").onFirst().performScrollTo().performClick()
+        waitForText("00:42")
+        snap("471_ranks_time_table")
+        assertTrue(hasAnyText("31 hamle", "31 moves"))
+        assertTrue(hasAnyText("Önce en kısa süre", "Shortest time first"))
     }
 
     @Test

@@ -44,7 +44,7 @@ class HowToCardUiTest {
         assertTrue(cardShown())
         assertTrue(hasAnyText("NASIL OYNANIR", "HOW TO PLAY"))
         assertTrue(hasAnyText("Bir oka dokun, tahtadan dışarı kaysın.", "Tap an arrow to slide it off the board."))
-        assertTrue(dots().contains("1") && dots().contains("3"), dots())
+        assertTrue(dots().contains("1") && dots().contains("5"), dots())
         assertTrue(disabled("howToPrevious"))
         assertTrue(hasAnyText("Sonraki", "Next"), "the main button says Next on the first step")
         assertFalse(hasAnyText("TAMAM", "OK"))
@@ -64,26 +64,29 @@ class HowToCardUiTest {
         assertTrue(dots().contains("2"), dots())
         assertTrue(hasAnyText("Önünün boş olduğundan emin ol. Başka bir oka çarparsa hata sayılır.", "Make sure its way is clear. If it hits another arrow, that is a mistake."))
         snap("353_howto_card_step2")
-        onNodeWithTag("howToOk").performClick()
-        mainClock.advanceTimeBy(2_500)
-        waitForIdle()
-        assertTrue(dots().contains("3"), dots())
+        // Steps 3 and 4 are the third control step and the one about how it is solved; the fifth is the last.
+        repeat(3) {
+            onNodeWithTag("howToOk").performClick()
+            mainClock.advanceTimeBy(1_500)
+            waitForIdle()
+        }
+        assertTrue(dots().contains("5"), dots())
         assertTrue(hasAnyText("TAMAM", "OK"), "on the last step the button says OK")
         assertFalse(hasAnyText("Sonraki", "Next"))
         assertFalse(disabled("howToPrevious"))
-        snap("354_howto_card_step3")
+        snap("354_howto_card_step5")
         mainClock.advanceTimeBy(2_500)
-        snap("355_howto_card_step3_later")
+        snap("355_howto_card_step5_later")
         onNodeWithTag("howToPrevious").performClick()
         waitForIdle()
-        assertTrue(dots().contains("2"), dots())
+        assertTrue(dots().contains("4"), dots())
     }
 
     @Test
     fun okClosesTheCardAndTheBoardIsThereAgain() = runComposeUiTest {
         openCard()
-        // Two taps of Next bring the card to the last step; there the button says OK and the third tap closes it.
-        repeat(2) {
+        // Four taps of Next bring the card to the last step; there the button says OK and the fifth tap closes it.
+        repeat(4) {
             onNodeWithTag("howToOk").performClick()
             mainClock.advanceTimeBy(1_000)
             waitForIdle()
@@ -101,7 +104,7 @@ class HowToCardUiTest {
         openCard(reduceMotion = true)
         assertTrue(cardShown())
         snap("356_howto_card_reduced")
-        assertTrue(dots().contains("3"), dots())
+        assertTrue(dots().contains("5"), dots())
     }
 
     /** The pictures at chosen times of their loops, to look at (the loop itself runs on the clock of the screen). */

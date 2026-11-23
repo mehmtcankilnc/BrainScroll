@@ -44,7 +44,7 @@ data class BlockOutState(
 }
 
 /**
- * The rules of block out, free of UI and time (docs/yeni-oyunlar-plan.md).
+ * The rules of block out, free of UI and time (docs/decisions.md).
  *
  * Pieces slide only along their own length, on a board where none may overlap. The game is won when the target piece reaches the
  * exit on the right edge of the middle row. A slide of one or several cells in one go is one move. There is no losing. A restart

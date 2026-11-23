@@ -33,6 +33,16 @@ enum class GameKind(val id: String) {
     CodeBreaker("codebreaker"),
     Rectangles("rectangles"),
     FlashGrid("flashgrid"),
+    LoneNumber("lonenumber"),
+    ZerosOnes("zerosones"),
+    Lamps("lamps"),
+    GreaterLess("greaterless"),
+    Fences("fences"),
+    Mirror("mirror"),
+    OddOne("oddone"),
+    CrossSum("crosssum"),
+    ColorSeq("colorseq"),
+    CubeFold("cubefold"),
 
     /** "Tek Çizgi": the daily puzzle, and a page of the feed (see docs/tek-cizgi-plan.md). */
     Line("line"),
@@ -52,7 +62,7 @@ val FinishedRound.moveCount: Int
     get() = when (game) {
         GameKind.Word -> guesses.size
         GameKind.Memory -> guesses.size / 2
-        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
+        GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.LoneNumber, GameKind.ZerosOnes, GameKind.Lamps, GameKind.GreaterLess, GameKind.Fences, GameKind.Mirror, GameKind.OddOne, GameKind.CrossSum, GameKind.ColorSeq, GameKind.CubeFold, GameKind.Line -> guesses.firstOrNull()?.toIntOrNull() ?: 0
     }
 
 /**

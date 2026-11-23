@@ -13,6 +13,10 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_arrows_start
+import brainscroll.shared.generated.resources.howto_arrows_tech
 import brainscroll.shared.generated.resources.howto_card_arrows_1
 import brainscroll.shared.generated.resources.howto_card_arrows_2
 import brainscroll.shared.generated.resources.howto_card_arrows_3
@@ -30,6 +34,8 @@ internal val ArrowsHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_arrows_1, { t -> ArrowsDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_arrows_2, { t -> ArrowsDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_arrows_3, { t -> ArrowsDemo(step = 2, t = t) }, cycleMillis = 6400),
+        sceneStep(Res.string.howto_arrows_tech, ArrowsChainScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_arrows_start, ArrowsStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

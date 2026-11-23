@@ -75,7 +75,7 @@ class EditorSearchUiTest {
         waitForIdle()
         snap("431_editor_search_renk")
         val expected = feedGames.count { gameMatchesQuery(it, "", "renk") }
-        assertEquals(3, expected, "tubes, colour flow and code breaker")
+        assertEquals(4, expected, "tubes, colour flow, code breaker and color sequence")
         assertEquals(expected, cards())
     }
 

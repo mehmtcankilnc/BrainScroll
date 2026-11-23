@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuideEvidence
 import com.mehmtcan.brainscroll.ui.feed.isGuided
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import com.mehmtcan.brainscroll.ui.motion.popOnAppear
@@ -242,7 +243,7 @@ private fun Board(
                 Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                     for (column in 0 until state.cols) {
                         val index = row * state.cols + column
-                        GuideMark(isGuided(index), Radius.tile) {
+                        GuideMark(isGuided(index), Radius.tile, evidence = isGuideEvidence(index)) {
                             Cell(
                                 row = row + 1,
                                 column = column + 1,

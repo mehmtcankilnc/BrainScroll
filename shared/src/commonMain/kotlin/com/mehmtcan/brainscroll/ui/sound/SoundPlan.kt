@@ -2,7 +2,7 @@ package com.mehmtcan.brainscroll.ui.sound
 
 import kotlin.math.floor
 
-/** What the games play and when: the choices of docs/ses-efektleri-plan.md as plain functions, so tests can check them. */
+/** What the games play and when: the choices of docs/decisions.md as plain functions, so tests can check them. */
 
 const val NOTES = 10
 const val RATTLES = 8

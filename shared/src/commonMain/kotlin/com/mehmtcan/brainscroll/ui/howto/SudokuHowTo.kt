@@ -15,6 +15,14 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_jigsaw_start
+import brainscroll.shared.generated.resources.howto_jigsaw_tech
+import brainscroll.shared.generated.resources.howto_sudoku_goal
+import brainscroll.shared.generated.resources.howto_sudoku_single
+import brainscroll.shared.generated.resources.howto_sudoku_place
+import brainscroll.shared.generated.resources.howto_sudoku_start
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_title_spoiler
 import brainscroll.shared.generated.resources.howto_card_jigsaw_1
 import brainscroll.shared.generated.resources.howto_card_sudoku_1
 import brainscroll.shared.generated.resources.howto_card_sudoku_2
@@ -28,12 +36,18 @@ import com.mehmtcan.brainscroll.ui.sudoku.drawPencil
 import com.mehmtcan.brainscroll.ui.sudoku.drawRegionBorders
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 
-/** The steps of the sudoku card: the rule (a row, a column and a box light up), tap a cell and a number, and the pencil for notes. */
+/**
+ * The steps of the sudoku card: the rule (a row, a column and a box light up), how to put a number and the pencil, then how it is solved
+ * (the digit that is the only one left for a cell, the cell that is the only one left for a digit) and, last, where to start.
+ */
 internal val SudokuHowTo = HowToCardContent(
     listOf(
-        HowToStep(Res.string.howto_card_sudoku_1, { t -> SudokuDemo(jigsaw = false, step = 0, t = t) }, cycleMillis = 4800),
+        sceneStep(Res.string.howto_sudoku_goal, SudokuGoalScene),
         HowToStep(Res.string.howto_card_sudoku_2, { t -> SudokuDemo(jigsaw = false, step = 1, t = t) }),
         HowToStep(Res.string.howto_card_sudoku_3, { t -> SudokuDemo(jigsaw = false, step = 2, t = t) }, cycleMillis = 4800),
+        sceneStep(Res.string.howto_sudoku_single, SudokuSingleScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_sudoku_place, SudokuPlaceScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_sudoku_start, SudokuStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -43,6 +57,8 @@ internal val JigsawHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_jigsaw_1, { t -> SudokuDemo(jigsaw = true, step = 0, t = t) }, cycleMillis = 4800),
         HowToStep(Res.string.howto_card_sudoku_2, { t -> SudokuDemo(jigsaw = true, step = 1, t = t) }),
         HowToStep(Res.string.howto_card_sudoku_3, { t -> SudokuDemo(jigsaw = true, step = 2, t = t) }, cycleMillis = 4800),
+        sceneStep(Res.string.howto_jigsaw_tech, JigsawSingleScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_jigsaw_start, JigsawStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

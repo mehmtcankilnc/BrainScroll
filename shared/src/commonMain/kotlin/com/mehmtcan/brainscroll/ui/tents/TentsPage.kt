@@ -75,6 +75,7 @@ import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuideEvidence
 import com.mehmtcan.brainscroll.ui.feed.isGuided
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
@@ -186,7 +187,7 @@ fun TentsPage(
                     Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                         for (column in 0 until state.size) {
                             val index = row * state.size + column
-                            GuideMark(isGuided(index), Radius.card) {
+                            GuideMark(isGuided(index), Radius.card, evidence = isGuideEvidence(index)) {
                                 Cell(
                                     row = row + 1,
                                     column = column + 1,

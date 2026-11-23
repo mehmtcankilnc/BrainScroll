@@ -13,6 +13,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_blockout_start
+import brainscroll.shared.generated.resources.howto_blockout_tech
 import brainscroll.shared.generated.resources.howto_card_blockout_1
 import brainscroll.shared.generated.resources.howto_card_blockout_2
 import brainscroll.shared.generated.resources.howto_card_blockout_3
@@ -26,6 +30,8 @@ internal val BlockOutHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_blockout_1, { t -> BlockOutDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_blockout_2, { t -> BlockOutDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_blockout_3, { t -> BlockOutDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_blockout_tech, BlockSlideScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_blockout_start, BlockStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

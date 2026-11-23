@@ -29,6 +29,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuideEvidence
 import com.mehmtcan.brainscroll.ui.feed.isGuided
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import androidx.compose.runtime.LaunchedEffect
@@ -306,7 +307,7 @@ private fun BoardGrid(
                 Row(horizontalArrangement = Arrangement.spacedBy(CellGap)) {
                     for (column in 0 until size) {
                         val index = row * size + column
-                        GuideMark(isGuided(index), CellShape) {
+                        GuideMark(isGuided(index), CellShape, evidence = isGuideEvidence(index)) {
                             Cell(
                                 row = row + 1,
                                 column = column + 1,

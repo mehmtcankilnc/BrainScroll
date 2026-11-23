@@ -12,6 +12,10 @@ import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_memory_start
+import brainscroll.shared.generated.resources.howto_memory_tech
 import brainscroll.shared.generated.resources.howto_card_memory_1
 import brainscroll.shared.generated.resources.howto_card_memory_2
 import brainscroll.shared.generated.resources.howto_card_memory_3
@@ -29,6 +33,8 @@ internal val MemoryHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_memory_1, { t -> MemoryDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_memory_2, { t -> MemoryDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_memory_3, { t -> MemoryDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_memory_tech, MemoryRememberScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_memory_start, MemoryStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

@@ -384,6 +384,126 @@ fun computeFlashStats(history: List<FinishedRound>): FlashStats {
     return FlashStats(played = results.size, bestRounds = results.maxOfOrNull { it.moveCount })
 }
 
+/** What the statistics screen shows for cube folding: a run's result is the number of questions answered right. */
+data class CubeStats(
+    val played: Int,
+    /** The most questions answered right in one run. Null until one was played. */
+    val bestRounds: Int?,
+)
+
+fun computeCubeStats(history: List<FinishedRound>): CubeStats {
+    val results = history.filter { it.game == GameKind.CubeFold && it.mode == Mode.ENDLESS && !it.assisted }
+    return CubeStats(played = results.size, bestRounds = results.maxOfOrNull { it.moveCount })
+}
+
+/** What the statistics screen shows for the color sequence: a run's result is the number of rounds cleared. */
+data class ColorSeqStats(
+    val played: Int,
+    /** The most rounds cleared in one run. Null until one was played. */
+    val bestRounds: Int?,
+)
+
+fun computeColorSeqStats(history: List<FinishedRound>): ColorSeqStats {
+    val results = history.filter { it.game == GameKind.ColorSeq && it.mode == Mode.ENDLESS && !it.assisted }
+    return ColorSeqStats(played = results.size, bestRounds = results.maxOfOrNull { it.moveCount })
+}
+
+/** What the statistics screen shows for the fences. Every result is a win (the game cannot be lost). */
+data class FenceStats(
+    val played: Int,
+    /** The fastest game (see FenceRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeFenceStats(history: List<FinishedRound>): FenceStats {
+    val results = history.filter { it.game == GameKind.Fences && it.mode == Mode.ENDLESS && !it.assisted }
+    return FenceStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the mirror. Every result is a win (the game cannot be lost). */
+data class MirrorStats(
+    val played: Int,
+    /** The fastest game (see MirrorRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+/** What the statistics screen shows for the cross sums. Every result is a win (the game cannot be lost). */
+data class CrossStats(
+    val played: Int,
+    /** The fastest game (see CrossRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeCrossStats(history: List<FinishedRound>): CrossStats {
+    val results = history.filter { it.game == GameKind.CrossSum && it.mode == Mode.ENDLESS && !it.assisted }
+    return CrossStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for odd one out: a run's result is the number of questions answered right. */
+data class OddStats(
+    val played: Int,
+    /** The most questions answered right in one run. Null until one was played. */
+    val bestRounds: Int?,
+)
+
+fun computeOddStats(history: List<FinishedRound>): OddStats {
+    val results = history.filter { it.game == GameKind.OddOne && it.mode == Mode.ENDLESS && !it.assisted }
+    return OddStats(played = results.size, bestRounds = results.maxOfOrNull { it.moveCount })
+}
+
+fun computeMirrorStats(history: List<FinishedRound>): MirrorStats {
+    val results = history.filter { it.game == GameKind.Mirror && it.mode == Mode.ENDLESS && !it.assisted }
+    return MirrorStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the greater and less. Every result is a win (the game cannot be lost). */
+data class GlStats(
+    val played: Int,
+    /** The fastest game (see GlRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeGlStats(history: List<FinishedRound>): GlStats {
+    val results = history.filter { it.game == GameKind.GreaterLess && it.mode == Mode.ENDLESS && !it.assisted }
+    return GlStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the lamps. Every result is a win (the game cannot be lost). */
+data class LampStats(
+    val played: Int,
+    /** The fastest game (see LampRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeLampStats(history: List<FinishedRound>): LampStats {
+    val results = history.filter { it.game == GameKind.Lamps && it.mode == Mode.ENDLESS && !it.assisted }
+    return LampStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the zeros and ones. Every result is a win (the game cannot be lost). */
+data class BinStats(
+    val played: Int,
+    /** The fastest game (see BinRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeBinStats(history: List<FinishedRound>): BinStats {
+    val results = history.filter { it.game == GameKind.ZerosOnes && it.mode == Mode.ENDLESS && !it.assisted }
+    return BinStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
+/** What the statistics screen shows for the lone numbers. Every result is a win (the game cannot be lost). */
+data class LoneStats(
+    val played: Int,
+    /** The fastest game (see LoneRound for how the time is counted). Null until one was finished. */
+    val bestTimeMs: Long?,
+)
+
+fun computeLoneStats(history: List<FinishedRound>): LoneStats {
+    val results = history.filter { it.game == GameKind.LoneNumber && it.mode == Mode.ENDLESS && !it.assisted }
+    return LoneStats(played = results.size, bestTimeMs = results.mapNotNull { it.durationMs }.minOrNull())
+}
+
 /** What the statistics screen shows for the rectangles. Every result is a win (the game cannot be lost). */
 data class RectStats(
     val played: Int,

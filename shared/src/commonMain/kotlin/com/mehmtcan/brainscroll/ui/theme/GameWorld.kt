@@ -48,6 +48,16 @@ internal val GameKind.world: Color
         GameKind.CodeBreaker -> Color(0xFFB07CFF)
         GameKind.Rectangles -> Color(0xFF6FD672)
         GameKind.FlashGrid -> Color(0xFFFFD84F)
+        GameKind.ColorSeq -> Color(0xFFB48CF2)
+        GameKind.CubeFold -> Color(0xFFFF9F5A)
+        GameKind.LoneNumber -> Color(0xFF8E9BFF)
+        GameKind.ZerosOnes -> Color(0xFFFF9E80)
+        GameKind.Lamps -> Color(0xFFF5C26B)
+        GameKind.GreaterLess -> Color(0xFF7FD6C2)
+        GameKind.Fences -> Color(0xFFC89F6A)
+        GameKind.Mirror -> Color(0xFF6ACFD8)
+        GameKind.OddOne -> Color(0xFFF28CB5)
+        GameKind.CrossSum -> Color(0xFF9BD36A)
         GameKind.Line -> Color(0xFF4FB3F0)
     }
 

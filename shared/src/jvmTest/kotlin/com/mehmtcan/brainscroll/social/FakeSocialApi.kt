@@ -63,10 +63,24 @@ class FakeSocialApi(
         return Board(rows.take(50), rows.firstOrNull { it.isMe }?.takeIf { it !in rows.take(50) })
     }
 
-    override suspend fun gameBoard(game: com.mehmtcan.brainscroll.game.GameKind, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow> {
-        enter("gameBoard:${game.id}:${scope.name}:$friendsOnly")
+    /** The level and the language of the last table asked for. */
+    var lastDifficulty: com.mehmtcan.brainscroll.game.Difficulty? = null
+    var lastBoardLanguage: Language? = null
+
+    override suspend fun gameBoard(
+        game: com.mehmtcan.brainscroll.game.GameKind,
+        scope: DailyScope,
+        friendsOnly: Boolean,
+        difficulty: com.mehmtcan.brainscroll.game.Difficulty,
+        language: Language?,
+    ): Board<DailyRow> {
+        // The word puzzle keeps the name and the rows of its own table in the tests (the server answers it from the same function now).
+        val word = game == com.mehmtcan.brainscroll.game.GameKind.Word
+        enter(if (word) "dailyBoard:${(language ?: Language.EN).name}:${scope.name}:$friendsOnly" else "gameBoard:${game.id}:${scope.name}:$friendsOnly")
+        lastDifficulty = difficulty
+        lastBoardLanguage = language
         if (friendsOnly) requireReady()
-        val rows = if (scope == DailyScope.Today) gameToday else gameAllTime
+        val rows = if (word) (if (scope == DailyScope.Today) speedToday else speedAllTime) else if (scope == DailyScope.Today) gameToday else gameAllTime
         return Board(rows.take(50), rows.firstOrNull { it.isMe }?.takeIf { it !in rows.take(50) })
     }
 

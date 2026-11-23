@@ -14,6 +14,31 @@ class Deduction(val safe: Set<Int>, val mines: Set<Int>)
  */
 object MinesSolver {
 
+    /** The reason a cell is safe or a mine, in the numbers of its neighbours: [rule] 0 (more steps than one number), see [why]. */
+    class Why(val rule: Int, val number: Int, val evidence: List<Int>)
+
+    const val SAFE_COMPLETE = 1
+    const val MINE_FILLS = 2
+
+    /**
+     * What one number around [cell] says about it, given everything that was [found]: a number that already has all its mines among the
+     * cells known to be mines makes the others around it safe ([SAFE_COMPLETE], evidence: the number and those mines); a number with
+     * exactly as many hidden cells as mines makes all of them mines ([MINE_FILLS], evidence: the number). Rule 0 when no single number
+     * says it (a pair of numbers, or a longer chain).
+     */
+    fun why(rows: Int, cols: Int, numbers: IntArray, found: Deduction, cell: Int): Why {
+        val isMine = cell in found.mines
+        for (c in MinesGame.neighbors(cell, rows, cols)) {
+            if (numbers[c] < 0) continue
+            val hidden = MinesGame.neighbors(c, rows, cols).filter { numbers[it] < 0 }
+            val knownMines = hidden.filter { it in found.mines }
+            if (!isMine && knownMines.size == numbers[c]) return Why(SAFE_COMPLETE, numbers[c], listOf(c) + knownMines)
+            val open = hidden.filter { it !in found.safe }
+            if (isMine && open.size == numbers[c]) return Why(MINE_FILLS, numbers[c], listOf(c))
+        }
+        return Why(0, 0, emptyList())
+    }
+
     /**
      * [numbers] holds, for each cell, the count of mines around it if the cell is open, and -1 if it is not.
      * Returns everything that follows; cells that are open are never in the result.

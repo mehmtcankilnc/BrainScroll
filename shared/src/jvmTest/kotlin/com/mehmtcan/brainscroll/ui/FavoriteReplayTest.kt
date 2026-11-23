@@ -63,6 +63,7 @@ class FavoriteReplayTest {
             now = { now },
             cloudServices = TestCloud().factory,
             games = listOf(GameKind.Sudoku),
+            buildInBackground = false,
         ).also { advanceUntilIdle() }
 
         vm.playAgain(favorite(GameKind.Sudoku, sudoku, Difficulty.Hard))

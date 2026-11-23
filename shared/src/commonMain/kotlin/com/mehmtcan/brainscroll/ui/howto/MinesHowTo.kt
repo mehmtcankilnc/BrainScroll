@@ -13,6 +13,12 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_mines_goal
+import brainscroll.shared.generated.resources.howto_mines_single
+import brainscroll.shared.generated.resources.howto_mines_121
+import brainscroll.shared.generated.resources.howto_mines_start
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_title_spoiler
 import brainscroll.shared.generated.resources.howto_card_mines_1
 import brainscroll.shared.generated.resources.howto_card_mines_2
 import brainscroll.shared.generated.resources.howto_card_mines_3
@@ -22,12 +28,19 @@ import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import kotlin.math.abs
 import kotlin.math.max
 
-/** The three steps of the mines card: tap to open (and the numbers), long-press to flag, double-tap a number to open around it. */
+/**
+ * The steps of the mines card: the aim, tap to open (and the numbers), long-press to flag, then how it is solved (a 1 with one hidden
+ * cell around it, a number that has all its flags, the 1-2-1 row) and, last, where to start.
+ */
 internal val MinesHowTo = HowToCardContent(
     listOf(
+        sceneStep(Res.string.howto_mines_goal, MinesGoalScene),
         HowToStep(Res.string.howto_card_mines_1, { t -> MinesDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_mines_2, { t -> MinesDemo(step = 1, t = t) }),
-        HowToStep(Res.string.howto_card_mines_3, { t -> MinesDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_mines_single, MinesSingleScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_card_mines_3, MinesChordScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_mines_121, MinesPatternScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_mines_start, MinesStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

@@ -36,8 +36,10 @@ val FinishedRound.lineStars: Int
  * One one-line board: a [LineGame] plus the time and the list of actions, which is all that is needed to save it and
  * to rebuild it exactly as the player left it.
  *
- * The time works as in the other games: the pauses between two actions, each counted for at most [MAX_THINK_MILLIS].
- * The clock starts with the first action. The game cannot be lost, so a result is always a win.
+ * The time is the time the page was on show (as in the other timed games): it starts when the board comes to the screen, not with the
+ * first touch, so looking at the board and working the line out in the head counts, and a board solved with a few quick drags is not
+ * solved "in no time". It stops when the page leaves the screen (another tab, the app in the background) and when the board is done.
+ * The game cannot be lost, so a result is always a win.
  *
  * The hint button is the game's own help, and a round in which it was used counts as helped ([assisted]) like a round of
  * another game that the guide helped with: it is left out of the statistics. There is no guide step. The page keeps two
@@ -57,7 +59,7 @@ class LineRound(
     /** What the player did, in order: "d12" drag over cell 12, "t12" tap on it, "u" undo, "r" restart, "h" hint. */
     private val actions = mutableListOf<String>()
     private var elapsedMs = 0L
-    private var lastActionAt: Long? = null
+    private var shownSince: Long? = null
     private var hint: List<Int> = emptyList()
 
     override val kind: GameKind get() = GameKind.Line
@@ -70,7 +72,8 @@ class LineRound(
 
     override val isFinished: Boolean get() = game.isFinished
 
-    override val isUntouched: Boolean get() = actions.isEmpty()
+    // A board that was only looked at is still saved once the page has been left: its time must not start again from nothing.
+    override val isUntouched: Boolean get() = actions.isEmpty() && elapsedMs == 0L
 
     fun drag(cell: Int): LineResult = game.drag(cell).also { if (changes(it)) record("d$cell") }
 
@@ -96,19 +99,32 @@ class LineRound(
     private fun record(action: String) {
         actions += action
         if (action != "h") hint = emptyList()
-        val time = now()
-        lastActionAt?.let { elapsedMs += minOf(time - it, MAX_THINK_MILLIS).coerceAtLeast(0) }
-        lastActionAt = time
+        // The board is done: the clock stops there.
+        if (game.isFinished) onHidden()
     }
 
-    override fun snapshot() = LineSnapshot(id, index, puzzle, game.state, elapsedMs, hint)
+    /** The page came to the screen: the clock starts (or goes on). */
+    override fun onShown() {
+        if (!isFinished && shownSince == null) shownSince = now()
+    }
+
+    /** The page left the screen or the board is done: the clock stops. */
+    override fun onHidden() {
+        shownSince?.let { elapsedMs += (now() - it).coerceAtLeast(0) }
+        shownSince = null
+    }
+
+    /** The time so far: what was counted before, and the time since the page came to the screen if it is on show now. */
+    private fun total(): Long = elapsedMs + (shownSince?.let { (now() - it).coerceAtLeast(0) } ?: 0L)
+
+    override fun snapshot() = LineSnapshot(id, index, puzzle, game.state, total(), hint)
 
     override fun toStored() = StoredRound(
         id = id,
         language = language,
         answer = puzzle.encode(),
         guesses = actions.toList(),
-        input = elapsedMs.toString(),
+        input = total().toString(),
         position = index,
         assisted = assisted,
         game = GameKind.Line,
@@ -130,15 +146,12 @@ class LineRound(
             outcome = Outcome.WON,
             assisted = assisted,
             finishedAt = finishedAt,
-            durationMs = elapsedMs,
+            durationMs = total(),
             game = GameKind.Line,
         )
     }
 
     companion object {
-        /** A pause between two actions counts for at most this long. */
-        const val MAX_THINK_MILLIS = 15_000L
-
         /**
          * Rebuilds a round from storage by replaying its actions. Returns null if what was saved cannot be read (or the
          * board has no line): the caller then simply starts a new one.

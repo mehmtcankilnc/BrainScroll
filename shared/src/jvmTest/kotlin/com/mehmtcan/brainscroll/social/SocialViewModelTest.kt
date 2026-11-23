@@ -5,6 +5,8 @@ import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.data.prepareDatabase
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
+import com.mehmtcan.brainscroll.game.Difficulty
+import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.social.Access
 import com.mehmtcan.brainscroll.ui.social.Section
@@ -138,6 +140,53 @@ class SocialViewModelTest {
     }
 
     @Test
+    fun aGamesTableIsAskedForAtTheChosenLevelAndEachLevelHasItsOwnView() = runTest {
+        api.member = true
+        api.username = "alice"
+        api.gameAllTime = listOf(DailyRow(1, "bob", 8, 90_000))
+        val vm = viewModel()
+        vm.selectScope(DailyScope.AllTime)
+        vm.selectGame(GameKind.CubeFold)
+        advanceUntilIdle()
+        assertTrue("gameBoard:cubefold:AllTime:false" in api.calls, api.calls.toString())
+        assertEquals(Difficulty.Medium, api.lastDifficulty, "medium until another level is chosen")
+        assertEquals(Difficulty.Medium, vm.ui.value.difficulty)
+        assertNull(api.lastBoardLanguage, "only the word puzzle has a language")
+
+        api.gameAllTime = listOf(DailyRow(1, "carol", 10, 80_000))
+        vm.selectDifficulty(Difficulty.Hard)
+        advanceUntilIdle()
+        assertEquals(Difficulty.Hard, api.lastDifficulty)
+        assertEquals("carol", vm.ui.value.speed!!.rows.first().username, "the hard table is shown")
+        vm.selectDifficulty(Difficulty.Medium)
+        advanceUntilIdle()
+        assertEquals(Difficulty.Medium, api.lastDifficulty)
+    }
+
+    @Test
+    fun theWordPuzzleTableAsksForItsLanguageAndEveryOtherGameForNone() = runTest {
+        api.member = true
+        api.username = "alice"
+        val vm = viewModel()
+        vm.selectScope(DailyScope.AllTime)
+        vm.selectGame(GameKind.Word)
+        vm.selectLanguage(Language.TR)
+        advanceUntilIdle()
+        assertEquals(Language.TR, api.lastBoardLanguage)
+        vm.selectGame(GameKind.Sudoku)
+        advanceUntilIdle()
+        assertNull(api.lastBoardLanguage)
+    }
+
+    @Test
+    fun everyGameHasAKindOfTableAndTheSeriesAreRankedByRounds() {
+        assertEquals(setOf(GameKind.FlashGrid, GameKind.OddOne, GameKind.ColorSeq, GameKind.CubeFold), GameKind.entries.filter { it.rankKind() == RankKind.Rounds }.toSet())
+        assertEquals(RankKind.Guesses, GameKind.Word.rankKind())
+        assertEquals(RankKind.Stars, GameKind.Line.rankKind())
+        assertTrue(GameKind.entries.filter { it.rankKind() == RankKind.Time }.size >= 25)
+    }
+
+    @Test
     fun theSelectionsAskTheServerForTheRightTable() = runTest {
         api.member = true
         api.username = "alice"
@@ -149,6 +198,7 @@ class SocialViewModelTest {
         vm.selectFriendsOnly(true)
         advanceUntilIdle()
         assertTrue("dailyBoard:TR:AllTime:true" in api.calls, api.calls.toString())
+        assertEquals(Language.TR, api.lastBoardLanguage)
         vm.selectSection(Section.Streak)
         vm.selectKind(StreakKind.Longest)
         advanceUntilIdle()

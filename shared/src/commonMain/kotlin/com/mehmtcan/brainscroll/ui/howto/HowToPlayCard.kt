@@ -16,6 +16,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -98,7 +100,30 @@ import org.jetbrains.compose.resources.stringResource
  * loop (0 up to 1, then it starts over): it shows the first frame of the step at 0, so it never starts empty. With reduced
  * motion [t] stays at [REDUCED_DEMO_TIME], a frame in which the step has already happened.
  */
-class HowToStep(val caption: StringResource, val demo: @Composable (t: Float) -> Unit, val cycleMillis: Int = 3200)
+class HowToStep(
+    val caption: StringResource,
+    val demo: @Composable (t: Float) -> Unit = {},
+    val cycleMillis: Int = 3200,
+    /**
+     * A picture made of a [DemoScene] instead of a composable: it is drawn without being composed again for every frame, which keeps a card with
+     * many steps light. When it is set, [demo] is not used.
+     */
+    val scene: DemoScene? = null,
+    /** A [scene] that depends on the language (the words of a word game); used when [scene] is null. */
+    val sceneFor: ((com.mehmtcan.brainscroll.game.wordle.Language) -> DemoScene)? = null,
+    /** A small label over the picture ("How to solve", "First step"), or null. */
+    val title: StringResource? = null,
+    /** True for the step that gives the first move away: its label says so and it looks different, so nobody reads it by accident. */
+    val spoiler: Boolean = false,
+)
+
+/** A step whose picture is a [DemoScene]: [title] says what kind of step it is, [spoiler] marks the one that gives the first move away. */
+fun languageSceneStep(caption: StringResource, sceneFor: (com.mehmtcan.brainscroll.game.wordle.Language) -> DemoScene, cycleMillis: Int = 5200, title: StringResource? = null, spoiler: Boolean = false) =
+    HowToStep(caption, sceneFor = sceneFor, cycleMillis = cycleMillis, title = title, spoiler = spoiler)
+
+/** A step whose picture is a [DemoScene] (see above). */
+fun sceneStep(caption: StringResource, scene: DemoScene, cycleMillis: Int = 5200, title: StringResource? = null, spoiler: Boolean = false) =
+    HowToStep(caption, scene = scene, cycleMillis = cycleMillis, title = title, spoiler = spoiler)
 
 /** The three steps of a game. */
 class HowToCardContent(val steps: List<HowToStep>)
@@ -158,6 +183,7 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
                                 },
                             ) { _, amount -> drag += amount }
                         }
+                        .heightIn(max = this@BoxWithConstraints.maxHeight)
                         .padding(Spacing.lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -167,17 +193,37 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
                         style = type.title.copy(color = colors.textPrimary, textAlign = TextAlign.Center),
                         modifier = Modifier.semantics { heading() },
                     )
+                    // The picture and the sentence scroll on a short screen with big text; the title, the dots and the buttons stay where they are.
+                    Column(
+                        Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                     Crossfade(targetState = step, animationSpec = tween(if (reduce) 0 else Motion.BASE), label = "howToStep") { index ->
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                            val current = steps[index]
+                            current.title?.let { StepTitle(stringResource(it), current.spoiler) }
                             // The picture: it plays over and over; a new step starts it again from its first frame.
-                            val t = rememberDemoTime(steps[index].cycleMillis)
-                            Box(
-                                Modifier
-                                    .size(demoSide)
-                                    .clip(Radius.card)
-                                    .background(colors.bgPage)
-                                    .testTag("howToDemo"),
-                            ) { steps[index].demo(t) }
+                            val scene = current.scene ?: current.sceneFor?.invoke(wordLanguage)
+                            if (scene != null) {
+                                // The time is read while drawing, so the picture moves without the card being composed again for every frame.
+                                val time = rememberDemoTimeState(current.cycleMillis)
+                                Box(
+                                    Modifier
+                                        .size(demoSide)
+                                        .clip(Radius.card)
+                                        .background(colors.bgPage)
+                                        .testTag("howToDemo"),
+                                ) { DemoSceneView(scene, time) }
+                            } else {
+                                val t = rememberDemoTime(current.cycleMillis)
+                                Box(
+                                    Modifier
+                                        .size(demoSide)
+                                        .clip(Radius.card)
+                                        .background(colors.bgPage)
+                                        .testTag("howToDemo"),
+                                ) { current.demo(t) }
+                            }
                             Box(Modifier.heightIn(min = 72.dp), contentAlignment = Alignment.Center) {
                                 BasicText(
                                     text = stringResource(steps[index].caption),
@@ -186,6 +232,7 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
                                 )
                             }
                         }
+                    }
                     }
                     Dots(count = steps.size, selected = step)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -206,6 +253,22 @@ fun HowToPlayCard(content: HowToCardContent, onClose: () -> Unit, modifier: Modi
         }
       }
     }
+}
+
+/** The label over a picture: what kind of step this is. The one that gives the first move away is drawn in the warning colour with an outline. */
+@Composable
+private fun StepTitle(text: String, spoiler: Boolean) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    val ink = if (spoiler) colors.pendingFill else colors.textSecondary
+    BasicText(
+        text = text.uppercase(),
+        style = type.caption.copy(color = ink, textAlign = TextAlign.Center),
+        modifier = Modifier
+            .testTag(if (spoiler) "howToSpoilerTitle" else "howToTitle")
+            .border(1.dp, ink.copy(alpha = if (spoiler) 0.9f else 0.35f), RoundedCornerShape(50))
+            .padding(horizontal = Spacing.md, vertical = 4.dp),
+    )
 }
 
 /** The dots of the steps: the one you are on is filled with the color of the game's highlight. */

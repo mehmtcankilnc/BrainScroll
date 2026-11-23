@@ -98,6 +98,7 @@ import com.mehmtcan.brainscroll.ui.components.Chip
 import com.mehmtcan.brainscroll.ui.components.HeartButton
 import com.mehmtcan.brainscroll.ui.components.RoundIconButton
 import com.mehmtcan.brainscroll.ui.feed.GuideMark
+import com.mehmtcan.brainscroll.ui.feed.isGuideEvidence
 import com.mehmtcan.brainscroll.ui.feed.isGuided
 import com.mehmtcan.brainscroll.ui.feed.swipeHintText
 import com.mehmtcan.brainscroll.ui.haptics.HapticKind
@@ -436,7 +437,7 @@ fun NonogramPage(
                                     for (column in 0 until n) {
                                         val index = row * n + column
                                         val live = stroke?.takeIf { s -> inStroke(s, index, n) }?.value
-                                        GuideMark(isGuided(index), Radius.card) {
+                                        GuideMark(isGuided(index), Radius.card, evidence = isGuideEvidence(index)) {
                                             Cell(
                                                 row = row + 1,
                                                 column = column + 1,

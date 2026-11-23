@@ -157,6 +157,18 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.social.Board
 import com.mehmtcan.brainscroll.social.DailyRow
 import com.mehmtcan.brainscroll.social.DailyScope
+import com.mehmtcan.brainscroll.social.RankKind
+import com.mehmtcan.brainscroll.social.rankKind
+import com.mehmtcan.brainscroll.game.Difficulty
+import com.mehmtcan.brainscroll.game.LEVELLED_GAMES
+import brainscroll.shared.generated.resources.difficulty_easy
+import brainscroll.shared.generated.resources.difficulty_medium
+import brainscroll.shared.generated.resources.difficulty_hard
+import brainscroll.shared.generated.resources.ranks_caption_time
+import brainscroll.shared.generated.resources.ranks_caption_rounds
+import brainscroll.shared.generated.resources.ranks_caption_guesses
+import brainscroll.shared.generated.resources.ranks_caption_stars
+import brainscroll.shared.generated.resources.ranks_rounds
 import com.mehmtcan.brainscroll.social.StreakKind
 import com.mehmtcan.brainscroll.social.StreakRow
 import com.mehmtcan.brainscroll.social.inviteLink
@@ -276,7 +288,17 @@ private fun FilterPanel(ui: SocialUiState, viewModel: SocialViewModel) {
         ChipRow(ui, viewModel)
         if (ui.section == Section.Speed && ui.scope == DailyScope.Today) PlaceBox(ui)
         if (ui.section == Section.Streak) StreakBox(ui)
-        Caption(stringResource(if (ui.section == Section.Speed) Res.string.ranks_speed_caption else Res.string.ranks_streak_caption))
+        Caption(
+            stringResource(
+                if (ui.section != Section.Speed) Res.string.ranks_streak_caption
+                else when (ui.game.rankKind()) {
+                    RankKind.Time -> Res.string.ranks_caption_time
+                    RankKind.Rounds -> Res.string.ranks_caption_rounds
+                    RankKind.Guesses -> Res.string.ranks_caption_guesses
+                    RankKind.Stars -> Res.string.ranks_caption_stars
+                },
+            ),
+        )
     }
 }
 
@@ -387,6 +409,23 @@ private fun ChipRow(ui: SocialUiState, viewModel: SocialViewModel) {
                     FilterChip(language.nativeName(), ui.language == language, { viewModel.selectLanguage(language) })
                 }
             }
+            // Every game with levels has one table per level (the daily one-line puzzle has none).
+            if (ui.game in LEVELLED_GAMES && ui.game != GameKind.Line) {
+                Divider()
+                Difficulty.entries.forEach { level ->
+                    FilterChip(
+                        stringResource(
+                            when (level) {
+                                Difficulty.Easy -> Res.string.difficulty_easy
+                                Difficulty.Medium -> Res.string.difficulty_medium
+                                Difficulty.Hard -> Res.string.difficulty_hard
+                            },
+                        ),
+                        ui.difficulty == level,
+                        { viewModel.selectDifficulty(level) },
+                    )
+                }
+            }
         } else {
             FilterChip(stringResource(Res.string.kind_current), ui.kind == StreakKind.Current, { viewModel.selectKind(StreakKind.Current) })
             FilterChip(stringResource(Res.string.kind_longest), ui.kind == StreakKind.Longest, { viewModel.selectKind(StreakKind.Longest) })
@@ -484,13 +523,18 @@ private fun LazyListScope.speedSection(ui: SocialUiState, viewModel: SocialViewM
             rank = row.rank,
             name = row.username,
             isMe = row.isMe,
-            primary = when (ui.game) {
-                GameKind.Word -> stringResource(Res.string.ranks_guesses, row.guesses)
-                GameKind.Line -> ""
-                else -> stringResource(Res.string.ranks_moves, row.guesses)
+            // The big number is what the table is ranked by, the small one what breaks a tie.
+            primary = when (ui.game.rankKind()) {
+                RankKind.Time -> formatDuration(row.durationMs)
+                RankKind.Rounds -> stringResource(Res.string.ranks_rounds, row.guesses)
+                RankKind.Guesses -> stringResource(Res.string.ranks_guesses, row.guesses)
+                RankKind.Stars -> ""
             },
-            secondary = formatDuration(row.durationMs),
-            stars = if (ui.game == GameKind.Line) row.guesses.coerceIn(0, LineScoring.MAX_STARS) else null,
+            secondary = when (ui.game.rankKind()) {
+                RankKind.Time -> if (row.guesses > 0) stringResource(Res.string.ranks_moves, row.guesses) else null
+                else -> formatDuration(row.durationMs)
+            },
+            stars = if (ui.game.rankKind() == RankKind.Stars) row.guesses.coerceIn(0, LineScoring.MAX_STARS) else null,
         )
     }
 }

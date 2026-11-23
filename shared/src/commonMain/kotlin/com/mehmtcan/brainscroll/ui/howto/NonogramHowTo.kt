@@ -13,6 +13,10 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_nonogram_start
+import brainscroll.shared.generated.resources.howto_nonogram_tech
 import brainscroll.shared.generated.resources.howto_card_nonogram_1
 import brainscroll.shared.generated.resources.howto_card_nonogram_2
 import brainscroll.shared.generated.resources.howto_card_nonogram_3
@@ -24,6 +28,8 @@ internal val NonogramHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_nonogram_1, { t -> NonogramDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_nonogram_2, { t -> NonogramDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_nonogram_3, { t -> NonogramDemo(step = 2, t = t) }, cycleMillis = 6400),
+        sceneStep(Res.string.howto_nonogram_tech, NonogramFullScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_nonogram_start, NonogramStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

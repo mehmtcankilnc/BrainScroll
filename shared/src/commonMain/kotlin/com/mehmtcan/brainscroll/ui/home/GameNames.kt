@@ -6,7 +6,17 @@ import brainscroll.shared.generated.resources.game_matchsticks
 import brainscroll.shared.generated.resources.game_lasers
 import brainscroll.shared.generated.resources.game_untangle
 import brainscroll.shared.generated.resources.game_codebreaker
+import brainscroll.shared.generated.resources.game_fences
+import brainscroll.shared.generated.resources.game_greaterless
+import brainscroll.shared.generated.resources.game_lamps
+import brainscroll.shared.generated.resources.game_lonenumber
+import brainscroll.shared.generated.resources.game_crosssum
+import brainscroll.shared.generated.resources.game_mirror
+import brainscroll.shared.generated.resources.game_oddone
+import brainscroll.shared.generated.resources.game_zerosones
 import brainscroll.shared.generated.resources.game_rectangles
+import brainscroll.shared.generated.resources.game_colorseq
+import brainscroll.shared.generated.resources.game_cubefold
 import brainscroll.shared.generated.resources.game_flashgrid
 import brainscroll.shared.generated.resources.game_fruitmath
 import brainscroll.shared.generated.resources.game_hanoi
@@ -68,6 +78,16 @@ fun GameKind.displayName(): String = stringResource(
         GameKind.CodeBreaker -> Res.string.game_codebreaker
         GameKind.Rectangles -> Res.string.game_rectangles
         GameKind.FlashGrid -> Res.string.game_flashgrid
+        GameKind.ColorSeq -> Res.string.game_colorseq
+        GameKind.CubeFold -> Res.string.game_cubefold
+        GameKind.LoneNumber -> Res.string.game_lonenumber
+        GameKind.ZerosOnes -> Res.string.game_zerosones
+        GameKind.Lamps -> Res.string.game_lamps
+        GameKind.GreaterLess -> Res.string.game_greaterless
+        GameKind.Fences -> Res.string.game_fences
+        GameKind.Mirror -> Res.string.game_mirror
+        GameKind.OddOne -> Res.string.game_oddone
+        GameKind.CrossSum -> Res.string.game_crosssum
         GameKind.Line -> Res.string.game_line
     },
 )

@@ -14,6 +14,10 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.ui.topicgroups.fitFontPx
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_topicgroups_start
+import brainscroll.shared.generated.resources.howto_topicgroups_tech
 import brainscroll.shared.generated.resources.howto_card_topicgroups_1
 import brainscroll.shared.generated.resources.howto_card_topicgroups_2
 import brainscroll.shared.generated.resources.howto_card_topicgroups_3
@@ -28,13 +32,15 @@ internal val TopicGroupsHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_topicgroups_1, { t -> TopicGroupsDemo(step = 0, t = t) }, cycleMillis = 5600),
         HowToStep(Res.string.howto_card_topicgroups_2, { t -> TopicGroupsDemo(step = 1, t = t) }, cycleMillis = 4800),
         HowToStep(Res.string.howto_card_topicgroups_3, { t -> TopicGroupsDemo(step = 2, t = t) }, cycleMillis = 4800),
+        languageSceneStep(Res.string.howto_topicgroups_tech, ::TopicLastScene, title = Res.string.howto_title_solve),
+        languageSceneStep(Res.string.howto_topicgroups_start, ::TopicStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
 /** A group of the picture: its topic and its four words. */
-private class DemoGroup(val title: String, val words: List<String>)
+internal class DemoGroup(val title: String, val words: List<String>)
 
-private fun groupsOf(language: Language): List<DemoGroup> = when (language) {
+internal fun groupsOf(language: Language): List<DemoGroup> = when (language) {
     Language.EN -> listOf(
         DemoGroup("Fruits", listOf("APPLE", "PEACH", "GRAPE", "LEMON")),
         DemoGroup("Colors", listOf("RED", "BLUE", "PINK", "GRAY")),
@@ -50,7 +56,7 @@ private fun groupsOf(language: Language): List<DemoGroup> = when (language) {
 }
 
 /** How the sixteen words lie at the start: (group, word of the group), row by row. Group 0 is the one that gets found. */
-private val Layout = listOf(
+internal val TopicLayout = listOf(
     1 to 0, 0 to 0, 2 to 0, 3 to 0,
     0 to 1, 3 to 1, 1 to 1, 2 to 1,
     2 to 2, 1 to 2, 0 to 2, 3 to 2,
@@ -84,7 +90,7 @@ internal fun TopicGroupsDemo(step: Int, t: Float) {
         fun slotOrigin(slot: Int) = Offset(pad + (slot % COLUMNS) * (tileW + gap), top + (slot / COLUMNS) * (tileH + gap))
         val corner = CornerRadius(tileH * 0.2f)
 
-        fun indexOf(group: Int, word: Int) = Layout.indexOf(group to word)
+        fun indexOf(group: Int, word: Int) = TopicLayout.indexOf(group to word)
 
         // How picked each tile is (0 to 1), when the group is found (the time its flight starts), and when the four are rejected.
         val picked = FloatArray(16)
@@ -110,17 +116,17 @@ internal fun TopicGroupsDemo(step: Int, t: Float) {
         }
 
         // Where each tile is: after the group is found, its words are in the first row and the others follow.
-        val others = (0 until 16).filter { Layout[it].first != 0 }
+        val others = (0 until 16).filter { TopicLayout[it].first != 0 }
         val flight = demoEase(demoSegment(t, solveAt, solveAt + 0.2f))
-        fun slotAfterSolve(slot: Int): Int = if (Layout[slot].first == 0) Layout[slot].second else 4 + others.indexOf(slot)
+        fun slotAfterSolve(slot: Int): Int = if (TopicLayout[slot].first == 0) TopicLayout[slot].second else 4 + others.indexOf(slot)
         val bannerAlpha = if (solveAt < 0f) 0f else demoEase(demoSegment(t, solveAt + 0.24f, solveAt + 0.34f))
         val reject = if (rejectAt < 0f) 0f else demoSegment(t, rejectAt, rejectAt + 0.3f)
         val rejected = reject in 0.001f..0.999f
 
         // The tiles that fly are drawn last, so they pass over the others.
-        val order = (0 until 16).sortedBy { if (solveAt >= 0f && Layout[it].first == 0) 1 else 0 }
+        val order = (0 until 16).sortedBy { if (solveAt >= 0f && TopicLayout[it].first == 0) 1 else 0 }
         for (slot in order) {
-            val (group, word) = Layout[slot]
+            val (group, word) = TopicLayout[slot]
             val from = slotOrigin(slot)
             val to = if (solveAt >= 0f) slotOrigin(slotAfterSolve(slot)) else from
             var at = Offset(from.x + (to.x - from.x) * flight, from.y + (to.y - from.y) * flight)

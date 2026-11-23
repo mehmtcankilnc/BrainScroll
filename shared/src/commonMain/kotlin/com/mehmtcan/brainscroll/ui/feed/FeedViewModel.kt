@@ -19,7 +19,9 @@ import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
 import com.mehmtcan.brainscroll.game.Difficulty
+import com.mehmtcan.brainscroll.game.FeedRound
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.game.PagePlan
 import com.mehmtcan.brainscroll.game.GameLevels
 import com.mehmtcan.brainscroll.game.memory.FlipResult
 import com.mehmtcan.brainscroll.game.mines.MinesResult
@@ -32,12 +34,42 @@ import com.mehmtcan.brainscroll.game.ballslide.BallSlideResult
 import com.mehmtcan.brainscroll.game.colorflow.FlowResult
 import com.mehmtcan.brainscroll.game.fruitmath.FruitResult
 import com.mehmtcan.brainscroll.game.codebreaker.CodeResult
+import com.mehmtcan.brainscroll.game.fences.FenceResult
+import com.mehmtcan.brainscroll.game.crosssum.CrossResult
+import com.mehmtcan.brainscroll.game.mirror.MirrorResult
+import com.mehmtcan.brainscroll.game.oddone.OddResult
+import com.mehmtcan.brainscroll.game.greaterless.GlResult
+import com.mehmtcan.brainscroll.game.lamps.LampResult
+import com.mehmtcan.brainscroll.game.lonenumber.LoneResult
+import com.mehmtcan.brainscroll.game.zerosones.BinResult
 import com.mehmtcan.brainscroll.game.rectangles.Rect
+import com.mehmtcan.brainscroll.game.colorseq.ColorSeqResult
+import com.mehmtcan.brainscroll.game.cubefold.CubeResult
 import com.mehmtcan.brainscroll.game.flashgrid.FlashResult
+import com.mehmtcan.brainscroll.stats.ColorSeqStats
+import com.mehmtcan.brainscroll.stats.CubeStats
 import com.mehmtcan.brainscroll.stats.FlashStats
+import com.mehmtcan.brainscroll.stats.computeColorSeqStats
+import com.mehmtcan.brainscroll.stats.computeCubeStats
 import com.mehmtcan.brainscroll.stats.computeFlashStats
 import com.mehmtcan.brainscroll.game.rectangles.RectResult
+import com.mehmtcan.brainscroll.stats.BinStats
+import com.mehmtcan.brainscroll.stats.FenceStats
+import com.mehmtcan.brainscroll.stats.CrossStats
+import com.mehmtcan.brainscroll.stats.MirrorStats
+import com.mehmtcan.brainscroll.stats.OddStats
+import com.mehmtcan.brainscroll.stats.GlStats
+import com.mehmtcan.brainscroll.stats.LampStats
+import com.mehmtcan.brainscroll.stats.LoneStats
 import com.mehmtcan.brainscroll.stats.RectStats
+import com.mehmtcan.brainscroll.stats.computeBinStats
+import com.mehmtcan.brainscroll.stats.computeFenceStats
+import com.mehmtcan.brainscroll.stats.computeCrossStats
+import com.mehmtcan.brainscroll.stats.computeMirrorStats
+import com.mehmtcan.brainscroll.stats.computeOddStats
+import com.mehmtcan.brainscroll.stats.computeGlStats
+import com.mehmtcan.brainscroll.stats.computeLampStats
+import com.mehmtcan.brainscroll.stats.computeLoneStats
 import com.mehmtcan.brainscroll.stats.computeRectStats
 import com.mehmtcan.brainscroll.stats.CodeStats
 import com.mehmtcan.brainscroll.stats.computeCodeStats
@@ -142,7 +174,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.mehmtcan.brainscroll.game.PageSnapshot
@@ -214,6 +248,16 @@ data class ProfileState(
     val codeBreaker: CodeStats = computeCodeStats(emptyList()),
     val rectangles: RectStats = computeRectStats(emptyList()),
     val flashGrid: FlashStats = computeFlashStats(emptyList()),
+    val colorSeq: ColorSeqStats = computeColorSeqStats(emptyList()),
+    val cubeFold: CubeStats = computeCubeStats(emptyList()),
+    val loneNumber: LoneStats = computeLoneStats(emptyList()),
+    val zerosOnes: BinStats = computeBinStats(emptyList()),
+    val lamps: LampStats = computeLampStats(emptyList()),
+    val greaterLess: GlStats = computeGlStats(emptyList()),
+    val fences: FenceStats = computeFenceStats(emptyList()),
+    val mirror: MirrorStats = computeMirrorStats(emptyList()),
+    val oddOne: OddStats = computeOddStats(emptyList()),
+    val crossSum: CrossStats = computeCrossStats(emptyList()),
     /** Tents, from the endless feed. */
     val tents: TentsStats = computeTentsStats(emptyList()),
     /** The same, for each language alone. */
@@ -242,11 +286,16 @@ class FeedViewModel(
     /** Platform and app version for the anonymous reports. */
     platformInfo: PlatformInfo = PlatformInfo("desktop", "dev"),
     /** The games of the feed, in the order they come (docs/decisions.md: one after the other). */
-    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid),
+    private val games: List<GameKind> = listOf(GameKind.Word, GameKind.Memory, GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.LoneNumber, GameKind.ZerosOnes, GameKind.Lamps, GameKind.GreaterLess, GameKind.Fences, GameKind.Mirror, GameKind.OddOne, GameKind.CrossSum, GameKind.ColorSeq, GameKind.CubeFold),
     /** The games that offer a level choice. */
     val levelledGames: Set<GameKind> = LEVELLED_GAMES,
     /** The store behind Pro; null means free with nothing to buy (desktop, tests, no keys yet). */
     billing: StoreBilling? = null,
+    /**
+     * Whether the boards of new pages are made in the background (the app) or on the spot (tests, which look at the screen the moment
+     * something is asked). In the background a page is a skeleton until its board is there, so the screen never waits for a slow board.
+     */
+    private val buildInBackground: Boolean = true,
 ) : ViewModel(), FeedActions {
     /** BrainScroll Pro. The quota, the streak rule and the look all ask it. */
     val pro = ProController(billing, repository, viewModelScope)
@@ -255,6 +304,12 @@ class FeedViewModel(
     val availableGames: List<GameKind> = games
 
     private var feed: EndlessFeed? = null
+
+    /**
+     * The boards that wait to be made, one at a time and in order, on a background thread; the feed they are for goes with each.
+     * Declared here, above the `init` blocks: the builder starts in one of them and must find the queue there.
+     */
+    private val buildQueue = Channel<Pair<EndlessFeed, PagePlan>>(Channel.UNLIMITED)
     private var favoriteIds: Set<String> = emptySet()
 
     private val _syncTick = MutableStateFlow(0)
@@ -504,6 +559,7 @@ class FeedViewModel(
             now = now,
             games = games.filter { it in chosen },
             difficulties = _difficulties.value.filterKeys { it in levelledGames },
+            buildInBackground = buildInBackground,
         ).also { it.ensureSize(maxOf(AHEAD, restored.size + 1)) }
     }
 
@@ -597,7 +653,7 @@ class FeedViewModel(
                 GameKind.Word -> mapOf("outcome" to result.outcome.name, "guesses" to result.guesses.size.toString(), "language" to result.language.name)
                 // Memory has no language; its guesses are card flips, two to a move.
                 GameKind.Memory -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
-                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
+                GameKind.Tubes, GameKind.Mines, GameKind.Sudoku, GameKind.Lights, GameKind.Slide, GameKind.Target, GameKind.Pipes, GameKind.Hanoi, GameKind.Queens, GameKind.Tents, GameKind.Jigsaw, GameKind.BlockOut, GameKind.Arrows, GameKind.Nonogram, GameKind.AxisSum, GameKind.BallSlide, GameKind.ColorFlow, GameKind.TopicGroups, GameKind.Matchsticks, GameKind.Lasers, GameKind.Untangle, GameKind.FruitMath, GameKind.CodeBreaker, GameKind.Rectangles, GameKind.FlashGrid, GameKind.LoneNumber, GameKind.ZerosOnes, GameKind.Lamps, GameKind.GreaterLess, GameKind.Fences, GameKind.Mirror, GameKind.OddOne, GameKind.CrossSum, GameKind.ColorSeq, GameKind.CubeFold, GameKind.Line -> mapOf("outcome" to result.outcome.name, "moves" to result.moveCount.toString())
             }
             // The time in seconds (anonymous, like the rest) is what lets the levels be balanced by how long boards really take.
             val seconds = result.durationMs?.let { mapOf("seconds" to (it / 1000).toString()) }.orEmpty()
@@ -616,6 +672,7 @@ class FeedViewModel(
         viewModelScope.launch { pro.isPro.drop(1).collect { refreshQuota(); refreshProfile() } }
         // The purchase follows the player when the account changes (guest to Apple sign-in, a new guest after deleting).
         viewModelScope.launch { signedInUser.filterNotNull().distinctUntilChanged().collect { pro.identify(it) } }
+        startBuilder()
         viewModelScope.launch { loadFeed() }
         viewModelScope.launch { account.state.collect { handleMerge(it) } }
         viewModelScope.launch { account.start() }
@@ -937,6 +994,44 @@ class FeedViewModel(
         return result
     }
 
+    /** The cube at [pick] of the cube folding question on [page] is picked. */
+    override fun pickCube(page: Int, pick: Int): CubeResult {
+        val f = feed ?: return CubeResult.Ignored
+        val result = f.pickCube(page, pick)
+        publish()
+        // A run that is over (answered to the end, or lost on a wrong pick) is a new result: the statistics and the cloud backup follow.
+        if (result == CubeResult.Perfect || result == CubeResult.Wrong) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Start is pressed on the color sequence on [page]. */
+    override fun startColorSeq(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.startColorSeq(page).also { if (it) publish() }
+    }
+
+    /** The color sequence on [page] is started over with other lights. */
+    override fun restartColorSeq(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartColorSeq(page).also { if (it) publish() }
+    }
+
+    /** Button [button] of the color sequence on [page] is touched. */
+    override fun tapColorButton(page: Int, button: Int): ColorSeqResult {
+        val f = feed ?: return ColorSeqResult.Ignored
+        val result = f.tapColorButton(page, button)
+        publish()
+        // A run that is over (cleared to the end, or lost on a wrong button) is a new result: the statistics and the cloud backup follow.
+        if (result == ColorSeqResult.Perfect || result == ColorSeqResult.Missed) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
     /** [rect] is laid on the rectangles board on [page]. */
     override fun placeRect(page: Int, rect: Rect): RectResult {
         val f = feed ?: return RectResult.Ignored
@@ -948,6 +1043,152 @@ class FeedViewModel(
             requestSyncIfNeeded()
         }
         return result
+    }
+
+    /** The edge number [edge] of the fences board on [page] is tapped. */
+    override fun tapFenceEdge(page: Int, edge: Int): FenceResult {
+        val f = feed ?: return FenceResult.Ignored
+        val result = f.tapFence(page, edge)
+        if (result != FenceResult.Ignored) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == FenceResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Every mark of the fences board on [page] is taken off. */
+    override fun restartFences(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartFences(page).also { if (it) publish() }
+    }
+
+    /** The cell number [cell] of the mirror board on [page] is tapped. */
+    override fun tapMirrorCell(page: Int, cell: Int): MirrorResult {
+        val f = feed ?: return MirrorResult.Ignored
+        val result = f.tapMirror(page, cell)
+        if (result != MirrorResult.Ignored) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == MirrorResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** The half to fill of the mirror board on [page] is emptied. */
+    override fun restartMirror(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartMirror(page).also { if (it) publish() }
+    }
+
+    /** The digit [digit] (0 empties the cell) is put in the cell number [cell] of the cross sums board on [page]. */
+    override fun putCrossDigit(page: Int, cell: Int, digit: Int): CrossResult {
+        val f = feed ?: return CrossResult.Ignored
+        val result = f.putCross(page, cell, digit)
+        if (result != CrossResult.Ignored) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == CrossResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Every digit the player put on the cross sums board on [page] is taken out. */
+    override fun restartCross(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartCross(page).also { if (it) publish() }
+    }
+
+    /** The number at [pick] of the odd one out question on [page] is picked. */
+    override fun pickOdd(page: Int, pick: Int): OddResult {
+        val f = feed ?: return OddResult.Ignored
+        val result = f.pickOdd(page, pick)
+        publish()
+        // A run that is over (answered to the end, or lost on a wrong pick) is a new result: the statistics and the cloud backup follow.
+        if (result == OddResult.Perfect || result == OddResult.Wrong) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** The number [value] (0 empties the cell) is put in the cell number [cell] of the greater and less board on [page]. */
+    override fun putGlNumber(page: Int, cell: Int, value: Int): GlResult {
+        val f = feed ?: return GlResult.Ignored
+        val result = f.putGl(page, cell, value)
+        if (result != GlResult.Ignored) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == GlResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Every number the player put on the greater and less board on [page] is taken off. */
+    override fun restartGl(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartGl(page).also { if (it) publish() }
+    }
+
+    /** The cell number [cell] of the lamps board on [page] is tapped. */
+    override fun tapLampCell(page: Int, cell: Int): LampResult {
+        val f = feed ?: return LampResult.Ignored
+        val result = f.tapLamp(page, cell)
+        if (result != LampResult.Ignored) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == LampResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Every mark of the lamps board on [page] is taken off. */
+    override fun restartLamps(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartLamps(page).also { if (it) publish() }
+    }
+
+    /** The cell number [cell] of the zeros and ones board on [page] is tapped. */
+    override fun tapBinCell(page: Int, cell: Int): BinResult {
+        val f = feed ?: return BinResult.Ignored
+        val result = f.tapBin(page, cell)
+        if (result != BinResult.Ignored) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == BinResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Every digit the player put on the zeros and ones board on [page] is taken off. */
+    override fun restartBin(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartBin(page).also { if (it) publish() }
+    }
+
+    /** The cell number [cell] of the lone number board on [page] is tapped. */
+    override fun tapLoneCell(page: Int, cell: Int): LoneResult {
+        val f = feed ?: return LoneResult.Ignored
+        val result = f.tapLone(page, cell)
+        if (result != LoneResult.Ignored && result != LoneResult.Rejected) publish()
+        // A board that was solved is a new result: the statistics and the cloud backup follow.
+        if (result == LoneResult.Solved) {
+            refreshProfile()
+            requestSyncIfNeeded()
+        }
+        return result
+    }
+
+    /** Every mark of the lone number board on [page] is taken off. */
+    override fun restartLone(page: Int): Boolean {
+        val f = feed ?: return false
+        return f.restartLone(page).also { if (it) publish() }
     }
 
     /** The rectangle over the cell ([column], [row]) of the board on [page] is taken off. */
@@ -1324,6 +1565,16 @@ class FeedViewModel(
             codeBreaker = computeCodeStats(atLevel),
             rectangles = computeRectStats(atLevel),
             flashGrid = computeFlashStats(atLevel),
+            colorSeq = computeColorSeqStats(atLevel),
+            cubeFold = computeCubeStats(atLevel),
+            loneNumber = computeLoneStats(atLevel),
+            zerosOnes = computeBinStats(atLevel),
+            lamps = computeLampStats(atLevel),
+            greaterLess = computeGlStats(atLevel),
+            fences = computeFenceStats(atLevel),
+            mirror = computeMirrorStats(atLevel),
+            oddOne = computeOddStats(atLevel),
+            crossSum = computeCrossStats(atLevel),
             nonogram = computeNonogramStats(atLevel),
             topicGroups = computeTopicGroupsStats(atLevel),
             tents = computeTentsStats(atLevel),
@@ -1427,7 +1678,38 @@ class FeedViewModel(
         publish()
     }
 
+    private fun startBuilder() {
+        viewModelScope.launch { for ((f, plan) in buildQueue) build(f, plan) }
+    }
+
+    private suspend fun build(f: EndlessFeed, plan: PagePlan) {
+        // The feed was left (a new one was made) while this waited: nobody wants the board.
+        if (feed !== f) return
+        var current = plan
+        var round: FeedRound? = null
+        // A generator that gives up (it has a limit) is asked again with the next seed, so a page does not wait for ever.
+        for (attempt in 0 until BUILD_TRIES) {
+            round = try {
+                withContext(Dispatchers.Default) { f.build(current) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            if (round != null) break
+            current = current.copy(seed = current.seed + 1)
+        }
+        if (round != null && feed === f && f.fill(plan, round)) publish()
+    }
+
+    /** Hands the boards that the feed has still to make to the background builder. */
+    private fun scheduleBuilds() {
+        val f = feed ?: return
+        for (plan in f.takePlans()) buildQueue.trySend(f to plan)
+    }
+
     private fun publish() {
+        scheduleBuilds()
         val snapshot = feed!!.snapshot()
         // A new record is kept at once (on this device only).
         if (snapshot.solvedCount > bestFlow) {
@@ -1440,7 +1722,10 @@ class FeedViewModel(
 
     private companion object {
         /** Current puzzle plus the next one (docs/design.md section 8). */
-        const val AHEAD = 2
+        const val AHEAD = 3
+
+        /** How many seeds are tried for a page whose generator failed before it is given up. */
+        const val BUILD_TRIES = 3
 
         /** How many pages are looked at, at most, for one of a game that is on (only started puzzles of a game that is off are passed). */
         const val MAX_SCAN = 100

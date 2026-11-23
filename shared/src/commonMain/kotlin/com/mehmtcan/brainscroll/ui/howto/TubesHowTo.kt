@@ -15,6 +15,10 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_tubes_start
+import brainscroll.shared.generated.resources.howto_tubes_tech
 import brainscroll.shared.generated.resources.howto_card_tubes_1
 import brainscroll.shared.generated.resources.howto_card_tubes_2
 import brainscroll.shared.generated.resources.howto_card_tubes_3
@@ -29,6 +33,8 @@ internal val TubesHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_tubes_1, { t -> TubesDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_tubes_2, { t -> TubesDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_tubes_3, { t -> TubesDemo(step = 2, t = t) }, cycleMillis = 6400),
+        HowToStep(Res.string.howto_tubes_tech, { t -> TubesDemo(step = 3, t = t) }, cycleMillis = 4800, title = Res.string.howto_title_solve),
+        HowToStep(Res.string.howto_tubes_start, { t -> TubesDemo(step = 4, t = t) }, cycleMillis = 6400, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -54,9 +60,19 @@ internal fun TubesDemo(step: Int, t: Float) {
             start = listOf(listOf(0, 0), listOf(0, 0, 1, 1), listOf(1, 1))
             pours = listOf(DemoPour(1, 2, 0.15f, 0.4f, 2))
         }
-        else -> {
+        2 -> {
             start = listOf(listOf(0, 0, 1, 1), listOf(0, 0, 1, 1), emptyList())
             pours = listOf(DemoPour(0, 2, 0.05f, 0.14f, 2), DemoPour(1, 2, 0.32f, 0.41f, 2), DemoPour(1, 0, 0.59f, 0.68f, 2))
+        }
+        // A finished tube is left alone: the two half tubes of one colour are put together, so one tube fills and one empties.
+        3 -> {
+            start = listOf(listOf(0, 0, 0, 0), listOf(1, 1), listOf(1, 1))
+            pours = listOf(DemoPour(1, 2, 0.2f, 0.45f, 2))
+        }
+        // The first move: the top colour goes into the empty tube, which frees the colour under it for its own colour.
+        else -> {
+            start = listOf(listOf(0, 1, 0), listOf(1, 1), emptyList())
+            pours = listOf(DemoPour(0, 2, 0.08f, 0.18f, 1), DemoPour(0, 1, 0.5f, 0.6f, 1))
         }
     }
     Canvas(Modifier.fillMaxSize()) {

@@ -11,6 +11,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_slide_start
+import brainscroll.shared.generated.resources.howto_slide_tech
 import brainscroll.shared.generated.resources.howto_card_slide_1
 import brainscroll.shared.generated.resources.howto_card_slide_2
 import brainscroll.shared.generated.resources.howto_card_slide_3
@@ -22,6 +26,8 @@ internal val SlideHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_slide_1, { t -> SlideDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_slide_2, { t -> SlideDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_slide_3, { t -> SlideDemo(step = 2, t = t) }, cycleMillis = 4800),
+        sceneStep(Res.string.howto_slide_tech, SlideRowScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_slide_start, SlideStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

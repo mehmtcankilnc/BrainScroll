@@ -7,6 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_matchsticks_start
+import brainscroll.shared.generated.resources.howto_matchsticks_tech
 import brainscroll.shared.generated.resources.howto_card_matchsticks_1
 import brainscroll.shared.generated.resources.howto_card_matchsticks_2
 import brainscroll.shared.generated.resources.howto_card_matchsticks_3
@@ -28,6 +32,8 @@ internal val MatchsticksHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_matchsticks_1, { t -> MatchsticksDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_matchsticks_2, { t -> MatchsticksDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_matchsticks_3, { t -> MatchsticksDemo(step = 2, t = t) }),
+        HowToStep(Res.string.howto_matchsticks_tech, { t -> MatchsticksDemo(step = 3, t = t) }, cycleMillis = 6400, title = Res.string.howto_title_solve),
+        HowToStep(Res.string.howto_matchsticks_start, { t -> MatchsticksDemo(step = 4, t = t) }, cycleMillis = 4800, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -71,7 +77,7 @@ internal fun MatchsticksDemo(step: Int, t: Float) {
                 val start = Offset(size.width * 0.92f, size.height * 0.95f)
                 val tip = middle(from)
                 val hand = Offset(start.x + (tip.x - start.x) * reach, start.y + (tip.y - start.y) * reach)
-                drawHandCursor(handPainter, hand, unit * 9f, press.let { if (it in 0.01f..0.99f) it else 0f }, alpha = fade)
+                drawHandCursor(handPainter, hand, size.width * 0.2f, press.let { if (it in 0.01f..0.99f) it else 0f }, alpha = fade)
             }
             1 -> {
                 // The stick is up; the hand takes it to the empty place and lets go: the stick flies there.
@@ -88,7 +94,40 @@ internal fun MatchsticksDemo(step: Int, t: Float) {
                 val a = middle(from)
                 val b = middle(to)
                 val hand = Offset(a.x + (b.x - a.x) * travel, a.y + (b.y - a.y) * travel)
-                drawHandCursor(handPainter, hand, unit * 9f, press.let { if (it in 0.01f..0.99f) it else 0f }, alpha = fade)
+                drawHandCursor(handPainter, hand, size.width * 0.2f, press.let { if (it in 0.01f..0.99f) it else 0f }, alpha = fade)
+            }
+            // The whole move in one picture: take the stick, carry it to the empty place, the sum is right and the sticks turn green.
+            3 -> {
+                val reach = demoEase(demoSegment(t, 0.04f, 0.2f))
+                val travel = demoEase(demoSegment(t, 0.4f, 0.64f))
+                val land = demoEase(demoSegment(t, 0.66f, 0.8f))
+                val green = demoEase(demoSegment(t, 0.86f, 0.96f))
+                val a = middle(from)
+                val b = middle(to)
+                val start = Offset(size.width * 0.92f, size.height * 0.95f)
+                if (t < 0.28f) {
+                    drawMatchBoard(cells, origin, unit, paint, alpha = fade)
+                } else if (land == 0f) {
+                    drawMatchBoard(cells, origin, unit, paint, lifted = board.solution.from, showGhosts = true, alpha = fade)
+                } else {
+                    drawMatchBoard(fixed, origin, unit, if (green > 0.5f) wonPaint else paint, hidden = if (land < 1f) setOf(board.solution.to) else emptySet(), alpha = fade)
+                    if (land < 1f) {
+                        val line = FloatArray(4) { from[it] + (to[it] - from[it]) * land }
+                        drawMatchStick(line, origin, unit, paint.held.copy(alpha = fade), paint.heldHead.copy(alpha = fade))
+                    }
+                }
+                val hand = if (t < 0.4f) Offset(start.x + (a.x - start.x) * reach, start.y + (a.y - start.y) * reach) else Offset(a.x + (b.x - a.x) * travel, a.y + (b.y - a.y) * travel)
+                val press = if (t in 0.26f..0.4f || t in 0.64f..0.7f) 1f else 0f
+                drawHandCursor(handPainter, hand, size.width * 0.2f, press, alpha = fade)
+            }
+            // The first move: the stick that has to go is lifted and the places that can take it show; the hand shows where it goes.
+            4 -> {
+                val travel = demoEase(demoSegment(t, 0.3f, 0.75f))
+                drawMatchBoard(cells, origin, unit, paint, lifted = board.solution.from, showGhosts = true, alpha = fade)
+                val a = middle(from)
+                val b = middle(to)
+                val hand = Offset(a.x + (b.x - a.x) * travel, a.y + (b.y - a.y) * travel)
+                drawHandCursor(handPainter, hand, size.width * 0.2f, if (t in 0.1f..0.3f) 1f else 0f, alpha = fade)
             }
             else -> {
                 // The sum is right: the sticks turn green.

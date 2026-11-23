@@ -16,6 +16,33 @@ enum class DailyScope { Today, AllTime }
 
 enum class StreakKind { Current, Longest }
 
+/** What a table of a game ranks. */
+enum class RankKind {
+    /** The shortest time first, then the fewest moves. Won puzzles only. Most games. */
+    Time,
+
+    /** The most rounds first, then the shortest time. A series of questions or lights: a series that was lost counts for the rounds it cleared. */
+    Rounds,
+
+    /** The fewest guesses first, then the shortest time (the word puzzle). */
+    Guesses,
+
+    /** The most stars first, then the shortest time (the daily one-line puzzle). */
+    Stars,
+}
+
+/** What the table of this game ranks. */
+fun com.mehmtcan.brainscroll.game.GameKind.rankKind(): RankKind = when (this) {
+    com.mehmtcan.brainscroll.game.GameKind.FlashGrid,
+    com.mehmtcan.brainscroll.game.GameKind.OddOne,
+    com.mehmtcan.brainscroll.game.GameKind.ColorSeq,
+    com.mehmtcan.brainscroll.game.GameKind.CubeFold,
+    -> RankKind.Rounds
+    com.mehmtcan.brainscroll.game.GameKind.Word -> RankKind.Guesses
+    com.mehmtcan.brainscroll.game.GameKind.Line -> RankKind.Stars
+    else -> RankKind.Time
+}
+
 /** One line of the daily speed table: fewest guesses first, then the shortest time. */
 @Serializable
 data class DailyRow(
@@ -89,10 +116,16 @@ interface SocialApi {
     suspend fun dailyBoard(language: com.mehmtcan.brainscroll.game.wordle.Language, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow>
 
     /**
-     * The speed table of a game other than the word puzzle: the shortest time first, then the fewest moves. A row is a
-     * [DailyRow] whose `guesses` is the number of moves.
+     * The table of one game at one [difficulty] (the word puzzle in one [language]). What it ranks depends on the game, see [RankKind]:
+     * a row is a [DailyRow] whose `guesses` is the rounds of a series, the guesses of the word puzzle, or else the moves.
      */
-    suspend fun gameBoard(game: com.mehmtcan.brainscroll.game.GameKind, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow>
+    suspend fun gameBoard(
+        game: com.mehmtcan.brainscroll.game.GameKind,
+        scope: DailyScope,
+        friendsOnly: Boolean,
+        difficulty: com.mehmtcan.brainscroll.game.Difficulty = com.mehmtcan.brainscroll.game.Difficulty.DEFAULT,
+        language: com.mehmtcan.brainscroll.game.wordle.Language? = null,
+    ): Board<DailyRow>
 
     suspend fun streakBoard(kind: StreakKind, friendsOnly: Boolean): Board<StreakRow>
 

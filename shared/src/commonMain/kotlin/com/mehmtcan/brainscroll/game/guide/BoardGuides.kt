@@ -4,6 +4,11 @@ import com.mehmtcan.brainscroll.game.arrows.ArrowsState
 import com.mehmtcan.brainscroll.game.fruitmath.FruitPuzzle
 import com.mehmtcan.brainscroll.game.codebreaker.CodePuzzle
 import com.mehmtcan.brainscroll.game.rectangles.RectPuzzle
+import com.mehmtcan.brainscroll.game.colorseq.ColorSeqState
+import com.mehmtcan.brainscroll.game.cubefold.CubeState
+import com.mehmtcan.brainscroll.game.cubefold.CubeStatus
+import com.mehmtcan.brainscroll.game.cubefold.CubeWhy
+import com.mehmtcan.brainscroll.game.colorseq.ColorSeqStatus
 import com.mehmtcan.brainscroll.game.flashgrid.FlashState
 import com.mehmtcan.brainscroll.game.flashgrid.FlashStatus
 import com.mehmtcan.brainscroll.game.rectangles.RectSolver
@@ -14,7 +19,37 @@ import com.mehmtcan.brainscroll.game.codebreaker.CodeState
 import com.mehmtcan.brainscroll.game.codebreaker.CodeStatus
 import com.mehmtcan.brainscroll.game.fruitmath.FruitState
 import com.mehmtcan.brainscroll.game.fruitmath.FruitStatus
+import com.mehmtcan.brainscroll.game.fences.FencePuzzle
+import com.mehmtcan.brainscroll.game.fences.FenceSolver
+import com.mehmtcan.brainscroll.game.fences.FenceState
+import com.mehmtcan.brainscroll.game.fences.FenceStatus
+import com.mehmtcan.brainscroll.game.greaterless.GlPuzzle
+import com.mehmtcan.brainscroll.game.greaterless.GlRules
+import com.mehmtcan.brainscroll.game.greaterless.GlSolver
+import com.mehmtcan.brainscroll.game.greaterless.GlState
+import com.mehmtcan.brainscroll.game.greaterless.GlStatus
+import com.mehmtcan.brainscroll.game.lamps.LampMark
+import com.mehmtcan.brainscroll.game.lamps.LampPuzzle
+import com.mehmtcan.brainscroll.game.lamps.LampSolver
+import com.mehmtcan.brainscroll.game.lamps.LampState
+import com.mehmtcan.brainscroll.game.lamps.LampStatus
 import com.mehmtcan.brainscroll.game.lasers.LaserPuzzle
+import com.mehmtcan.brainscroll.game.zerosones.BinPuzzle
+import com.mehmtcan.brainscroll.game.zerosones.BinSolver
+import com.mehmtcan.brainscroll.game.zerosones.BinState
+import com.mehmtcan.brainscroll.game.zerosones.BinStatus
+import com.mehmtcan.brainscroll.game.lonenumber.LoneMark
+import com.mehmtcan.brainscroll.game.crosssum.CrossSolver
+import com.mehmtcan.brainscroll.game.crosssum.CrossState
+import com.mehmtcan.brainscroll.game.crosssum.CrossStatus
+import com.mehmtcan.brainscroll.game.mirror.MirrorState
+import com.mehmtcan.brainscroll.game.mirror.MirrorStatus
+import com.mehmtcan.brainscroll.game.oddone.OddState
+import com.mehmtcan.brainscroll.game.oddone.OddStatus
+import com.mehmtcan.brainscroll.game.lonenumber.LonePuzzle
+import com.mehmtcan.brainscroll.game.lonenumber.LoneSolver
+import com.mehmtcan.brainscroll.game.lonenumber.LoneState
+import com.mehmtcan.brainscroll.game.lonenumber.LoneStatus
 import com.mehmtcan.brainscroll.game.untangle.UNTANGLE_BOARD
 import com.mehmtcan.brainscroll.game.untangle.UNTANGLE_MARGIN
 import com.mehmtcan.brainscroll.game.untangle.UntangleEmbedder
@@ -86,9 +121,15 @@ object MinesGuide {
         }
         val found = MinesSolver.deduce(state.rows, state.cols, state.numbers.toIntArray())
         val safe = found.safe.filter { state.numbers[it] < 0 && it !in state.flagged }.minOrNull()
-        if (safe != null) return GuideStep(GuideReason.MinesSafe, listOf(safe))
+        if (safe != null) {
+            val why = MinesSolver.why(state.rows, state.cols, state.numbers.toIntArray(), found, safe)
+            return GuideStep(GuideReason.MinesSafe, listOf(safe), listOf(why.number), evidence = why.evidence, rule = why.rule)
+        }
         val mine = found.mines.filter { state.numbers[it] < 0 && it !in state.flagged }.minOrNull()
-        if (mine != null) return GuideStep(GuideReason.MinesMine, listOf(mine))
+        if (mine != null) {
+            val why = MinesSolver.why(state.rows, state.cols, state.numbers.toIntArray(), found, mine)
+            return GuideStep(GuideReason.MinesMine, listOf(mine), listOf(why.number), evidence = why.evidence, rule = why.rule)
+        }
         return GuideStep(GuideReason.MinesNone)
     }
 }
@@ -114,14 +155,23 @@ object SudokuGuide {
         // A cell that can only hold one digit.
         for (cell in 0 until CELLS) {
             if (values[cell] == 0 && candidates[cell].countOneBits() == 1) {
-                return GuideStep(if (jigsaw) GuideReason.JigsawOnlyDigit else GuideReason.SudokuOnlyDigit, listOf(cell), listOf(candidates[cell].countTrailingZeroBits() + 1))
+                // One peer for each of the eight other digits: the cells that take them away.
+                val digit = candidates[cell].countTrailingZeroBits() + 1
+                val holders = (1..SIZE).filter { it != digit }.mapNotNull { other -> layout.peers[cell].firstOrNull { values[it] == other } }
+                return GuideStep(if (jigsaw) GuideReason.JigsawOnlyDigit else GuideReason.SudokuOnlyDigit, listOf(cell), listOf(digit), evidence = holders)
             }
         }
         // A digit that has one place left in a row, a column or a box (a region).
-        for (unit in layout.units) for (digit in 1..SIZE) {
+        for ((at, unit) in layout.units.withIndex()) for (digit in 1..SIZE) {
             if (unit.any { values[it] == digit }) continue
             val places = unit.filter { values[it] == 0 && candidates[it] and (1 shl (digit - 1)) != 0 }
-            if (places.size == 1) return GuideStep(if (jigsaw) GuideReason.JigsawOnlyPlace else GuideReason.SudokuOnlyPlace, places, listOf(digit))
+            if (places.size == 1) {
+                // The cells that already hold the digit and keep it out of the other empty cells of the unit.
+                val blockers = unit.filter { values[it] == 0 && it != places[0] }
+                    .mapNotNull { open -> layout.peers[open].firstOrNull { values[it] == digit } }.distinct()
+                // 1 a row, 2 a column, 3 a box (a region on the jigsaw board).
+                return GuideStep(if (jigsaw) GuideReason.JigsawOnlyPlace else GuideReason.SudokuOnlyPlace, places, listOf(digit), evidence = blockers, rule = at / SIZE + 1)
+            }
         }
         // Not needed for the boards of the game (singles are enough), but never leave the player without a step.
         val cell = (0 until CELLS).firstOrNull { values[it] == 0 } ?: return null
@@ -150,6 +200,22 @@ object LightsGuide {
         if (state.status != LightsStatus.Playing) return null
         val taps = solve(state.size, state.lit) ?: return null
         val cell = taps.firstOrNull() ?: return null
+        // The tap switches the cell and its neighbours: the lit ones among them go out, the dark ones come on.
+        val size = state.size
+        val row = cell / size
+        val column = cell % size
+        val footprint = buildList {
+            add(cell)
+            if (row > 0) add(cell - size)
+            if (row < size - 1) add(cell + size)
+            if (column > 0) add(cell - 1)
+            if (column < size - 1) add(cell + 1)
+        }
+        val lit = footprint.filter { state.lit[it] }
+        // A tap that puts out more lights than it lights is the plain case; the others are needed for what comes later.
+        if (2 * lit.size > footprint.size) {
+            return GuideStep(GuideReason.LightsTap, listOf(cell), listOf(lit.size, footprint.size - lit.size), evidence = lit, rule = 1)
+        }
         return GuideStep(GuideReason.LightsTap, listOf(cell))
     }
 
@@ -234,7 +300,10 @@ object HanoiGuide {
     fun step(state: HanoiState): GuideStep? {
         if (state.status != HanoiStatus.Playing) return null
         val move = HanoiSolver.shortest(state.pegs.toIntArray(), state.goal).firstOrNull() ?: return null
-        return GuideStep(GuideReason.HanoiMove, listOf(move.from, move.to), listOf(move.from, move.to))
+        // The disk that moves is the smallest one on the tower it leaves. The smallest disk of all moves every other turn, always the same
+        // way round; the turns in between are the only other legal move.
+        val disk = state.pegs.indexOfFirst { it == move.from }
+        return GuideStep(GuideReason.HanoiMove, listOf(move.from, move.to), listOf(move.from, move.to, disk + 1), rule = if (disk == 0) 1 else 2)
     }
 }
 
@@ -244,12 +313,38 @@ object HanoiGuide {
  * already, to take away one that is not part of it.
  */
 object QueensGuide {
+    /**
+     * Whether [cell] is the only cell of its row (rule 1) or of its column (rule 2) that no queen of [placed] attacks, with the queens that
+     * attack the other cells of that line; null when it is not.
+     */
+    private fun queenWhy(size: Int, placed: Set<Int>, cell: Int): Triple<Int, List<Int>, Int>? {
+        fun attacks(queen: Int, other: Int): Boolean {
+            val rows = queen / size - other / size
+            val columns = queen % size - other % size
+            return rows == 0 || columns == 0 || abs(rows) == abs(columns)
+        }
+        val row = cell / size
+        val column = cell % size
+        for ((rule, line) in listOf(1 to (0 until size).map { row * size + it }, 2 to (0 until size).map { it * size + column })) {
+            val others = line.filter { it != cell }
+            val attackers = others.map { o -> placed.firstOrNull { attacks(it, o) } }
+            if (attackers.all { it != null } && placed.none { attacks(it, cell) }) return Triple(rule, attackers.filterNotNull().distinct(), 0)
+        }
+        return null
+    }
+
     fun step(state: QueensState): GuideStep? {
         if (state.status != QueensStatus.Playing) return null
         val locked = state.locked.indices.filter { state.locked[it] }.toSet()
         val placed = state.queens.indices.filter { state.queens[it] }.toSet()
         val best = QueensSolver.solutions(state.size, locked).maxByOrNull { solution -> solution.count { it in placed } } ?: return null
-        best.firstOrNull { it !in placed }?.let { return GuideStep(GuideReason.QueensPlace, listOf(it), listOf(it / state.size + 1, it % state.size + 1)) }
+        val missing = best.filter { it !in placed }
+        if (missing.isNotEmpty()) {
+            // A queen that the others leave the only free cell of its row or column says why it is the one: the queens that attack the rest.
+            val withReason = missing.firstNotNullOfOrNull { cell -> queenWhy(state.size, placed, cell)?.let { cell to it } }
+            val (cell, why) = withReason ?: (missing.first() to Triple(0, emptyList<Int>(), 0))
+            return GuideStep(GuideReason.QueensPlace, listOf(cell), listOf(cell / state.size + 1, cell % state.size + 1), evidence = why.second, rule = why.first)
+        }
         val extra = placed.filter { it !in best }.minOrNull() ?: return null
         return GuideStep(GuideReason.QueensRemove, listOf(extra), listOf(extra / state.size + 1, extra % state.size + 1))
     }
@@ -267,8 +362,16 @@ object TentsGuide {
         val placed = state.marks.indices.filter { state.marks[it] == TentsMark.TENT }.toSet()
         placed.filter { it !in solution }.minOrNull()?.let { return step(GuideReason.TentsRemove, it, state.size) }
         val missing = solution - placed
-        val derived = TentsSolver.deduce(state.size, trees, state.rowTargets, state.columnTargets, placed)
-        val cell = derived.firstOrNull { it in missing } ?: missing.minOrNull() ?: return null
+        val why = HashMap<Int, TentsSolver.Why>()
+        val derived = TentsSolver.deduce(state.size, trees, state.rowTargets, state.columnTargets, placed, why)
+        // A tree that has only one place left is the plainest reason: it comes first, then a line that is full of tents.
+        val cell = derived.firstOrNull { it in missing && why[it]?.rule == TentsSolver.TREE_ONLY }
+            ?: derived.firstOrNull { it in missing }
+            ?: missing.minOrNull() ?: return null
+        val reason = why[cell]
+        if (reason != null && cell in derived) {
+            return GuideStep(GuideReason.TentsPlace, listOf(cell), listOf(cell / state.size + 1, cell % state.size + 1), evidence = reason.evidence, rule = reason.rule)
+        }
         return step(GuideReason.TentsPlace, cell, state.size)
     }
 
@@ -290,7 +393,8 @@ object BlockOutGuide {
             piece.horizontal -> if (move.to < piece.pos) 2 else 3
             else -> if (move.to < piece.pos) 0 else 1
         }
-        return GuideStep(GuideReason.BlockOutSlide, listOf(move.piece), listOf(direction, steps))
+        // The block that has to reach the exit (1), or a block that is in its way or in the way of the one that clears it (2).
+        return GuideStep(GuideReason.BlockOutSlide, listOf(move.piece), listOf(direction, steps), rule = if (piece.isTarget) 1 else 2)
     }
 }
 
@@ -329,9 +433,36 @@ object NonogramGuide {
         val picture = order.filter { it.second == NonogramSolver.FILLED }.map { it.first }
         val wrong = state.marks.indices.filter { state.marks[it] == NonogramMark.FILLED && it !in picture }.minOrNull()
         if (wrong != null) return step(GuideReason.NonogramEmpty, wrong, state.size)
-        val next = picture.firstOrNull { state.marks[it] != NonogramMark.FILLED } ?: return null
+        val missing = picture.filter { state.marks[it] != NonogramMark.FILLED }
+        // A cell its own row or column fills by itself comes first: the line is ringed and the block that covers the cell is named.
+        for (next in missing) {
+            val size = state.size
+            val inRow = lineBlock(state.rowClues[next / size], size, next % size)
+            if (inRow != null) return step(GuideReason.NonogramFill, next, size, inRow.first, inRow.second, (0 until size).map { next / size * size + it }.filter { it != next })
+            val inColumn = lineBlock(state.columnClues[next % size], size, next / size)
+            if (inColumn != null) return step(GuideReason.NonogramFill, next, size, inColumn.first + 2, inColumn.second, (0 until size).map { it * size + next % size }.filter { it != next })
+        }
+        val next = missing.firstOrNull() ?: return null
         return step(GuideReason.NonogramFill, next, state.size)
     }
+
+    /**
+     * Whether the numbers of one line fill the cell at [at] whatever way their blocks slide: the first number is the rule (1 when the numbers
+     * leave no room to slide, 2 when a block is longer than the room), the second the length of the block that covers the cell. Null if not.
+     */
+    private fun lineBlock(clue: List<Int>, size: Int, at: Int): Pair<Int, Int>? {
+        if (clue.isEmpty() || clue.all { it == 0 }) return null
+        val slack = size - (clue.sum() + clue.size - 1)
+        var start = 0
+        for (length in clue) {
+            if (length > slack && at >= start + slack && at < start + length) return (if (slack == 0) 1 else 2) to length
+            start += length + 1
+        }
+        return null
+    }
+
+    private fun step(reason: GuideReason, cell: Int, size: Int, rule: Int, block: Int, evidence: List<Int>) =
+        GuideStep(reason, listOf(cell), listOf(cell / size + 1, cell % size + 1, block), evidence = evidence, rule = rule)
 
     private fun step(reason: GuideReason, cell: Int, size: Int) = GuideStep(reason, listOf(cell), listOf(cell / size + 1, cell % size + 1))
 }
@@ -346,7 +477,19 @@ object AxisSumGuide {
         val wrong = state.erased.indices.firstOrNull { state.erased[it] && solution[it] }
         if (wrong != null) return step(GuideReason.AxisSumKeep, wrong, state.size)
         val missing = state.erased.indices.firstOrNull { !state.erased[it] && !solution[it] } ?: return null
-        return step(GuideReason.AxisSumErase, missing, state.size)
+        // A number that is exactly what its row (or column) has too much: erasing it makes that line right.
+        val size = state.size
+        val value = state.digits[missing]
+        val row = missing / size
+        val column = missing % size
+        val rowExcess = state.rowSums[row] - state.rowTargets[row]
+        val columnExcess = state.columnSums[column] - state.columnTargets[column]
+        val numbers = listOf(row + 1, column + 1, value)
+        return when {
+            rowExcess == value -> GuideStep(GuideReason.AxisSumErase, listOf(missing), numbers, evidence = (0 until size).map { row * size + it }, rule = 1)
+            columnExcess == value -> GuideStep(GuideReason.AxisSumErase, listOf(missing), numbers, evidence = (0 until size).map { it * size + column }, rule = 2)
+            else -> step(GuideReason.AxisSumErase, missing, size)
+        }
     }
 
     private fun step(reason: GuideReason, cell: Int, size: Int) = GuideStep(reason, listOf(cell), listOf(cell / size + 1, cell % size + 1))
@@ -548,5 +691,298 @@ object FlashGuide {
         val left = state.pattern.filter { it !in state.found }
         if (left.isEmpty()) return null
         return GuideStep(GuideReason.FlashPattern, left)
+    }
+}
+
+/**
+ * The guide of the lone numbers: a cell that is marked wrong (shaded or circled when the answer has it the other way) is the first thing
+ * to put right; otherwise it points at a cell of the answer that is not shaded yet, the one whose number repeats most in its row and
+ * column (the one that is easiest to see). [GuideStep.cells] is the cell (row * size + column).
+ */
+object LoneGuide {
+    fun step(puzzle: LonePuzzle, state: LoneState): GuideStep? {
+        if (state.status != LoneStatus.Playing) return null
+        val answer = LoneSolver.uniqueSolution(puzzle) ?: return null
+        val n = puzzle.size
+        val marks = state.marks
+        val wrong = marks.indices.firstOrNull { cell ->
+            val mark = marks[cell]
+            (mark == LoneMark.Shaded && cell !in answer) ||
+                (mark == LoneMark.Circled && cell in answer)
+        }
+        if (wrong != null) return GuideStep(GuideReason.LoneClear, listOf(wrong))
+        val next = answer.filter { marks[it] != LoneMark.Shaded }.maxByOrNull { cell ->
+            val number = puzzle.numbers[cell]
+            (0 until n).count { k ->
+                (k != cell % n && puzzle.numbers[cell / n * n + k] == number) || (k != cell / n && puzzle.numbers[k * n + cell % n] == number)
+            }
+        } ?: return null
+        // The same number in the row or column of the cell: the cells that say why this one is the one to go.
+        val number = puzzle.numbers[next]
+        val same = (0 until n).flatMap { k -> listOf(next / n * n + k, k * n + next % n) }
+            .filter { it != next && puzzle.numbers[it] == number && marks[it] != LoneMark.Shaded }
+            .distinct()
+        return GuideStep(GuideReason.LoneShade, listOf(next), listOf(number), evidence = same, rule = if (same.isEmpty()) 0 else 1)
+    }
+}
+
+/**
+ * The guide of the zeros and ones: a digit the player put that is not the answer's is the first thing to put right. Otherwise it points
+ * at a cell that the rules force right now (a pair of the same digit, a line that has all its 0s or 1s); if the rules force nothing
+ * yet it takes the first cell where the other digit would lead to a broken rule once the rules are followed through; if there is no
+ * such cell it takes the first empty one. [GuideStep.cells] is the cell (row * size + column) and [GuideStep.numbers] its digit.
+ */
+object BinGuide {
+    fun step(puzzle: BinPuzzle, state: BinState): GuideStep? {
+        if (state.status != BinStatus.Playing) return null
+        val answer = BinSolver.uniqueSolution(puzzle) ?: return null
+        val n = puzzle.size
+        val cells = state.cells.toIntArray()
+        val wrong = cells.indices.firstOrNull { !puzzle.isGiven(it) && cells[it] >= 0 && cells[it] != answer[it] }
+        if (wrong != null) return GuideStep(GuideReason.BinClear, listOf(wrong))
+        BinSolver.forcedWhy(n, cells).firstOrNull { cells[it.cell] < 0 }?.let {
+            return GuideStep(GuideReason.BinFill, listOf(it.cell), listOf(it.digit, 1 - it.digit), evidence = it.evidence, rule = it.rule)
+        }
+        val cornered = cells.indices.firstOrNull { cell ->
+            cells[cell] < 0 && cells.copyOf().also { it[cell] = 1 - answer[cell] }.let { !BinSolver.propagate(n, it) }
+        }
+        val pick = cornered ?: cells.indices.firstOrNull { cells[it] < 0 } ?: return null
+        return GuideStep(GuideReason.BinFill, listOf(pick), listOf(answer[pick], 1 - answer[pick]))
+    }
+}
+
+/**
+ * The guide of the lamps: a mark the player put that is not the answer's (a lamp where the answer has none, a dot where the answer has a
+ * lamp) is the first thing to put right. Otherwise it points at a cell that the rules force to hold a lamp right now (a cell that only one
+ * place can light, a number that needs all its free cells); if the rules force none yet it takes a cell where "no lamp" would break a rule
+ * once the rules are followed through; if there is none it takes the first lamp of the answer that is not there. [GuideStep.cells] is the
+ * cell (row * size + column).
+ */
+object LampGuide {
+    fun step(puzzle: LampPuzzle, state: LampState): GuideStep? {
+        if (state.status != LampStatus.Playing) return null
+        val answer = LampSolver.uniqueSolution(puzzle) ?: return null
+        val marks = state.marks
+        val wrong = marks.indices.firstOrNull { cell ->
+            (marks[cell] == LampMark.Lamp && !answer[cell]) || (marks[cell] == LampMark.Dot && answer[cell])
+        }
+        if (wrong != null) return GuideStep(GuideReason.LampClear, listOf(wrong))
+        // What the player has put, as the solver sees it: lamps are lamps, everything else is still open.
+        val cells = IntArray(marks.size) { if (marks[it] == LampMark.Lamp) LampSolver.LAMP else LampSolver.UNKNOWN }
+        // What the board shows a player: the cells a lamp lights and the cells around a full number cannot hold a lamp.
+        while (true) {
+            val none = LampSolver.forcedWhy(puzzle, cells).filter { it.value == LampSolver.NONE && cells[it.cell] == LampSolver.UNKNOWN }
+            if (none.isEmpty()) break
+            for (f in none) cells[f.cell] = LampSolver.NONE
+        }
+        LampSolver.forcedWhy(puzzle, cells).firstOrNull { it.value == LampSolver.LAMP && marks[it.cell] != LampMark.Lamp }?.let { f ->
+            // A wall number that needs every free cell says its number; a dark cell that only this cell can light is ringed.
+            val numbers = if (f.rule == LampSolver.WALL_NEEDS) listOf(puzzle.numberAt(f.evidence)) else emptyList()
+            return GuideStep(GuideReason.LampPlace, listOf(f.cell), numbers, evidence = listOf(f.evidence), rule = f.rule)
+        }
+        val missing = puzzle.whiteCells.filter { answer[it] && marks[it] != LampMark.Lamp }
+        val cornered = missing.firstOrNull { cell -> cells.copyOf().also { it[cell] = LampSolver.NONE }.let { !LampSolver.propagate(puzzle, it) } }
+        val pick = cornered ?: missing.firstOrNull() ?: return null
+        return GuideStep(GuideReason.LampPlace, listOf(pick))
+    }
+}
+
+/**
+ * The guide of the greater and less: a number the player put that is not the answer's is the first thing to put right. Otherwise it
+ * points at a cell that only one number can fill by the rules right now (a row or column that has the others, a sign next to a number);
+ * if the rules alone leave none it takes one that trying a number shows; if there is none it takes the first empty cell.
+ * [GuideStep.cells] is the cell (row * size + column) and [GuideStep.numbers] its number.
+ */
+object GlGuide {
+    fun step(puzzle: GlPuzzle, state: GlState): GuideStep? {
+        if (state.status != GlStatus.Playing) return null
+        val answer = GlSolver.uniqueSolution(puzzle) ?: return null
+        val cells = state.cells.toIntArray()
+        val wrong = cells.indices.firstOrNull { !puzzle.isGiven(it) && cells[it] > 0 && cells[it] != answer[it] }
+        if (wrong != null) return GuideStep(GuideReason.GlClear, listOf(wrong))
+        for (lookahead in listOf(false, true)) {
+            val sets = GlSolver.sets(puzzle, cells)
+            if (!GlSolver.refine(puzzle, sets, lookahead)) continue
+            val forced = cells.indices.firstOrNull { cells[it] == 0 && GlSolver.valueOf(sets[it]) > 0 }
+            if (forced != null) {
+                val value = GlSolver.valueOf(sets[forced])
+                val (rule, evidence) = glWhy(puzzle, cells, forced, value)
+                return GuideStep(GuideReason.GlFill, listOf(forced), listOf(value), evidence = evidence, rule = rule)
+            }
+        }
+        val pick = cells.indices.firstOrNull { cells[it] == 0 } ?: return null
+        return GuideStep(GuideReason.GlFill, listOf(pick), listOf(answer[pick]))
+    }
+
+    /**
+     * Which of the plain reasons puts [value] in [cell]: the row or column already holds every other number (1), the signs next to filled
+     * cells and the numbers of the row and column leave only this one (2), the number fits no other cell of a line (3); 0 when it takes
+     * more steps than that. With the cells that show it.
+     */
+    private fun glWhy(puzzle: GlPuzzle, cells: IntArray, cell: Int, value: Int): Pair<Int, List<Int>> {
+        val n = puzzle.size
+        val row = cell / n
+        val column = cell % n
+        val rowCells = (0 until n).map { row * n + it }.filter { it != cell }
+        val columnCells = (0 until n).map { it * n + column }.filter { it != cell }
+        for (line in listOf(rowCells, columnCells)) {
+            val filled = line.filter { cells[it] > 0 }
+            if (filled.size == n - 1) return 1 to filled
+        }
+        // What the numbers of the row and column leave, then what the signs to filled neighbours take away.
+        var left = (1..n).filter { v -> (rowCells + columnCells).none { cells[it] == v } }
+        val signed = ArrayList<Int>()
+        for ((a, b, sign) in GlRules.links(puzzle)) {
+            val other = when (cell) {
+                a -> b
+                b -> a
+                else -> continue
+            }
+            if (cells[other] <= 0) continue
+            val smaller = if (sign == GlPuzzle.LESS) a else b
+            val keep = if (cell == smaller) left.filter { it < cells[other] } else left.filter { it > cells[other] }
+            if (keep.size < left.size) signed += other
+            left = keep
+        }
+        if (left == listOf(value) && signed.isNotEmpty()) return 2 to signed
+        // The number fits no other cell of a line: the cells that already hold it block the others.
+        for (line in listOf(rowCells, columnCells)) {
+            val others = line.filter { cells[it] == 0 }
+            if (others.isEmpty()) continue
+            val blockers = others.map { o ->
+                val oRow = o / n
+                val oColumn = o % n
+                (0 until n).flatMap { listOf(oRow * n + it, it * n + oColumn) }.firstOrNull { it != o && cells[it] == value }
+            }
+            if (blockers.all { it != null }) return 3 to blockers.filterNotNull().distinct()
+        }
+        return 0 to emptyList()
+    }
+}
+
+/**
+ * The guide of the fences: a mark the player put that is not the answer's (a line where the answer has none, a cross where it has a
+ * line) is the first thing to put right. Otherwise it always points at a line still to draw, never at a cross: an edge that the rules
+ * force to be a line right now, the one that goes on from the lines drawn so far first (a number that needs all its free sides, a dot
+ * that has one line and one way to go); if the rules alone force none, one that a try and see step forces; if there is none, the
+ * line of the answer that goes on from the drawn ones. [GuideStep.cells] is the edge number (see FenceGeometry).
+ */
+object FenceGuide {
+    fun step(puzzle: FencePuzzle, state: FenceState): GuideStep? {
+        if (state.status != FenceStatus.Playing) return null
+        val answer = FenceSolver.solveByLogic(puzzle, true) ?: return null
+        val g = puzzle.geometry
+        val marks = state.marks
+        val wrong = marks.indices.firstOrNull { e ->
+            (marks[e] == FenceSolver.LINE && answer[e] != FenceSolver.LINE) || (marks[e] == FenceSolver.CROSS && answer[e] == FenceSolver.LINE)
+        }
+        if (wrong != null) return GuideStep(GuideReason.FenceClear, listOf(wrong))
+        // The dots the drawn lines reach: a line that starts from one of them goes on from what the player has.
+        val reached = HashSet<Int>()
+        for (e in marks.indices) if (marks[e] == FenceSolver.LINE) for (d in g.edgeDots[e]) reached += d
+        fun best(edges: List<Int>): Int? = edges.firstOrNull { e -> g.edgeDots[e].any { it in reached } } ?: edges.firstOrNull()
+        for (lookahead in listOf(false, true)) {
+            val refined = marks.toIntArray()
+            if (!FenceSolver.refine(puzzle, refined, lookahead)) continue
+            val pick = best(marks.indices.filter { marks[it] == FenceSolver.UNKNOWN && refined[it] == FenceSolver.LINE })
+            if (pick != null) return fenceStep(puzzle, pick, refined, marks.toIntArray())
+        }
+        val pick = best(marks.indices.filter { answer[it] == FenceSolver.LINE && marks[it] != FenceSolver.LINE }) ?: return null
+        return GuideStep(GuideReason.FenceLine, listOf(pick))
+    }
+
+    /**
+     * The step for the line on edge [pick], with its reason as the rules see the board [state] (the crosses they found included): a numbered
+     * square whose free sides are as many as its number needs all of them (rule 1, the square is ringed: in the numbering of the page it is
+     * the number of edges plus the square), or a dot where a line the player drew has only this way left to go on (rule 2, that line is
+     * ringed); 0 when it takes more.
+     */
+    private fun fenceStep(puzzle: FencePuzzle, pick: Int, state: IntArray, drawn: IntArray): GuideStep {
+        val g = puzzle.geometry
+        val probe = state.copyOf().also { it[pick] = FenceSolver.UNKNOWN }
+        for (cell in g.edgeCells[pick]) {
+            val clue = puzzle.clues[cell]
+            if (clue < 0) continue
+            val lines = g.cellEdges[cell].count { probe[it] == FenceSolver.LINE }
+            val free = g.cellEdges[cell].count { probe[it] == FenceSolver.UNKNOWN }
+            if (lines + free == clue) return GuideStep(GuideReason.FenceLine, listOf(pick), listOf(clue), evidence = listOf(g.edges + cell), rule = 1)
+        }
+        for (dot in g.edgeDots[pick]) {
+            val lines = g.dotEdges[dot].filter { probe[it] == FenceSolver.LINE }
+            val free = g.dotEdges[dot].count { probe[it] == FenceSolver.UNKNOWN }
+            // The line it goes on from has to be one the player drew: a line the rules only found cannot be ringed.
+            if (lines.size == 1 && free == 1 && drawn[lines[0]] == FenceSolver.LINE) return GuideStep(GuideReason.FenceLine, listOf(pick), evidence = lines, rule = 2)
+        }
+        return GuideStep(GuideReason.FenceLine, listOf(pick))
+    }
+}
+
+/**
+ * The guide of the mirror: the first cell of the half to fill that is not like its partner. A cell that has to be painted comes first
+ * (the board is finished by painting), then one that has to be emptied. [GuideStep.cells] is the cell, [GuideStep.evidence] its partner.
+ */
+object MirrorGuide {
+    fun step(state: MirrorState): GuideStep? {
+        if (state.status != MirrorStatus.Playing) return null
+        val puzzle = state.puzzle
+        val wrong = state.mismatched
+        val cell = wrong.firstOrNull { puzzle.target(it) } ?: wrong.firstOrNull() ?: return null
+        val reason = if (puzzle.target(cell)) GuideReason.MirrorPaint else GuideReason.MirrorEmpty
+        return GuideStep(reason, listOf(cell), evidence = listOf(puzzle.partner(cell)))
+    }
+}
+
+/**
+ * The guide of odd one out: it names the rule that four of the five numbers follow and rings two of those numbers, so the player still
+ * has to find which of the other three does not follow it. [GuideStep.cells] is the first of the two numbers, [GuideStep.evidence] the
+ * second, [GuideStep.rule] the index of the rule in the list of the rules.
+ */
+object OddGuide {
+    fun step(state: OddState): GuideStep? {
+        if (state.status != OddStatus.Playing) return null
+        val question = state.question
+        val followers = question.numbers.indices.filter { it != question.oddIndex }
+        return GuideStep(GuideReason.OddRule, listOf(followers[0]), evidence = listOf(followers[1]), rule = question.rule.ordinal)
+    }
+}
+
+/**
+ * The guide of the cross sums: a digit the player put that is not the answer's is the first thing to put right. Otherwise it points at
+ * the cell the sums decide most easily (see [CrossSolver.hint]): [GuideStep.cells] is the cell, [GuideStep.numbers] its digit,
+ * [GuideStep.evidence] the other cells of the block or blocks that say so, [GuideStep.rule] how it follows.
+ */
+object CrossGuide {
+    fun step(state: CrossState): GuideStep? {
+        if (state.status != CrossStatus.Playing) return null
+        val puzzle = state.puzzle
+        val wrong = puzzle.openCells.firstOrNull { state.values[it] > 0 && state.values[it] != puzzle.solution[it] }
+        if (wrong != null) return GuideStep(GuideReason.CrossClear, listOf(wrong))
+        val hint = CrossSolver.hint(puzzle, state.values.toIntArray()) ?: return null
+        return GuideStep(GuideReason.CrossDigit, listOf(hint.cell), listOf(hint.digit), evidence = hint.evidence, rule = hint.rule)
+    }
+}
+
+/** The guide of the color sequence: once the run is started, the lights of the round are played again ([GuideStep.cells] are the buttons, in order). */
+object ColorSeqGuide {
+    fun step(state: ColorSeqState): GuideStep? {
+        if (state.status != ColorSeqStatus.Playing || !state.started) return null
+        return GuideStep(GuideReason.SeqReplay, state.sequence)
+    }
+}
+
+/**
+ * The guide of cube folding: it rules out the first wrong cube and says why. [GuideStep.cells] is the option, [GuideStep.evidence] the
+ * squares of the net that show it (the net squares are numbered from [NET_BASE] so they do not mix with the options).
+ */
+object CubeGuide {
+    const val NET_BASE = 10
+
+    fun step(state: CubeState): GuideStep? {
+        if (state.status != CubeStatus.Playing) return null
+        val question = state.question
+        val wrong = question.whys.indexOfFirst { it != CubeWhy.Right }
+        if (wrong < 0) return null
+        val reason = if (question.whys[wrong] == CubeWhy.Opposite) GuideReason.CubeOpposite else GuideReason.CubeMirror
+        return GuideStep(reason, listOf(wrong), evidence = question.evidence(wrong).map { it + NET_BASE })
     }
 }

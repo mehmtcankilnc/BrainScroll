@@ -12,6 +12,10 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_target_start
+import brainscroll.shared.generated.resources.howto_target_tech
 import brainscroll.shared.generated.resources.howto_card_target_1
 import brainscroll.shared.generated.resources.howto_card_target_2
 import brainscroll.shared.generated.resources.howto_card_target_3
@@ -25,6 +29,8 @@ internal val TargetHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_target_1, { t -> TargetDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_target_2, { t -> TargetDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_target_3, { t -> TargetDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_target_tech, TargetOvershootScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_target_start, TargetStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

@@ -105,6 +105,8 @@ internal fun ComposeUiTest.start(
     store: StoreBilling? = null,
     /** Pixels per dp. 1 unless a test draws a store screenshot at a real phone's size. */
     density: Float? = null,
+    /** Boards are made on the spot unless a test is about the skeleton page: most tests look at the screen the moment something is asked. */
+    buildInBackground: Boolean = false,
 ) {
     // On a phone the Activity owns the ViewModel and clears it when the screen ends. Here nobody does that, so
     // the test does: without it the ViewModel of one test (and its background sync) lives on into the next one.
@@ -118,7 +120,7 @@ internal fun ComposeUiTest.start(
             LocalDensity provides Density(density ?: LocalDensity.current.density, fontScale),
         ) {
             Box(Modifier.requiredSize(screen.first.dp, screen.second.dp)) {
-                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame, levelledGames = levelledGames, store = { store })
+                App(cloudServices = cloud.factory, haptics = haptics, reduceMotion = reduceMotion, highContrast = highContrast, games = games, dailyGame = dailyGame, levelledGames = levelledGames, store = { store }, buildInBackground = buildInBackground)
             }
         }
     }

@@ -11,6 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_ballslide_start
+import brainscroll.shared.generated.resources.howto_ballslide_tech
 import brainscroll.shared.generated.resources.howto_card_ballslide_1
 import brainscroll.shared.generated.resources.howto_card_ballslide_2
 import brainscroll.shared.generated.resources.howto_card_ballslide_3
@@ -29,6 +33,8 @@ internal val BallSlideHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_ballslide_1, { t -> BallSlideDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_ballslide_2, { t -> BallSlideDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_ballslide_3, { t -> BallSlideDemo(step = 2, t = t) }, cycleMillis = 6400),
+        HowToStep(Res.string.howto_ballslide_tech, { t -> BallSlideDemo(step = 3, t = t) }, cycleMillis = 5600, title = Res.string.howto_title_solve),
+        HowToStep(Res.string.howto_ballslide_start, { t -> BallSlideDemo(step = 4, t = t) }, cycleMillis = 4000, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -45,6 +51,10 @@ internal fun BallSlideDemo(step: Int, t: Float) {
     val moves = when (step) {
         0 -> Way.take(1)
         1 -> Way.take(2)
+        // The ball only stops at a wall or the edge: three slides, each ending against something.
+        3 -> Way.take(3)
+        // The first slide: of the four ways the one that paints the most cells.
+        4 -> listOf((0 until 4).maxByOrNull { puzzle.slide(puzzle.start, it).size } ?: 0)
         else -> Way
     }
     // When each slide starts, and how long it takes: the slides follow each other with a pause for the hand.

@@ -27,7 +27,17 @@ import brainscroll.shared.generated.resources.thumb_ballslide
 import brainscroll.shared.generated.resources.thumb_blockout
 import brainscroll.shared.generated.resources.thumb_codebreaker
 import brainscroll.shared.generated.resources.thumb_colorflow
+import brainscroll.shared.generated.resources.thumb_colorseq
+import brainscroll.shared.generated.resources.thumb_cubefold
 import brainscroll.shared.generated.resources.thumb_flashgrid
+import brainscroll.shared.generated.resources.thumb_fences
+import brainscroll.shared.generated.resources.thumb_greaterless
+import brainscroll.shared.generated.resources.thumb_lamps
+import brainscroll.shared.generated.resources.thumb_lonenumber
+import brainscroll.shared.generated.resources.thumb_mirror
+import brainscroll.shared.generated.resources.thumb_crosssum
+import brainscroll.shared.generated.resources.thumb_oddone
+import brainscroll.shared.generated.resources.thumb_zerosones
 import brainscroll.shared.generated.resources.thumb_fruitmath
 import brainscroll.shared.generated.resources.thumb_hanoi
 import brainscroll.shared.generated.resources.thumb_jigsaw
@@ -161,6 +171,16 @@ fun GameThumbnailImage(kind: GameKind, wordLanguage: Language, modifier: Modifie
         GameKind.CodeBreaker -> Res.drawable.thumb_codebreaker
         GameKind.ColorFlow -> Res.drawable.thumb_colorflow
         GameKind.FlashGrid -> Res.drawable.thumb_flashgrid
+        GameKind.ColorSeq -> Res.drawable.thumb_colorseq
+        GameKind.CubeFold -> Res.drawable.thumb_cubefold
+        GameKind.LoneNumber -> Res.drawable.thumb_lonenumber
+        GameKind.ZerosOnes -> Res.drawable.thumb_zerosones
+        GameKind.Lamps -> Res.drawable.thumb_lamps
+        GameKind.GreaterLess -> Res.drawable.thumb_greaterless
+        GameKind.Fences -> Res.drawable.thumb_fences
+        GameKind.Mirror -> Res.drawable.thumb_mirror
+        GameKind.OddOne -> Res.drawable.thumb_oddone
+        GameKind.CrossSum -> Res.drawable.thumb_crosssum
         GameKind.FruitMath -> Res.drawable.thumb_fruitmath
         GameKind.Hanoi -> Res.drawable.thumb_hanoi
         GameKind.Jigsaw -> Res.drawable.thumb_jigsaw
@@ -227,6 +247,16 @@ fun GameThumbnail(kind: GameKind, wordLanguage: Language, modifier: Modifier = M
             GameKind.CodeBreaker -> CodeBreakerThumb(side)
             GameKind.Rectangles -> RectanglesThumb(side)
             GameKind.FlashGrid -> FlashGridThumb(side)
+            GameKind.ColorSeq -> ColorSeqThumb(side)
+            GameKind.CubeFold -> CubeFoldThumb(side)
+            GameKind.LoneNumber -> LoneNumberThumb(side)
+            GameKind.ZerosOnes -> ZerosOnesThumb(side)
+            GameKind.Lamps -> LampsThumb(side)
+            GameKind.GreaterLess -> com.mehmtcan.brainscroll.ui.greaterless.GreaterLessThumbArt(side)
+            GameKind.Fences -> com.mehmtcan.brainscroll.ui.fences.FencesThumbArt(side)
+            GameKind.Mirror -> com.mehmtcan.brainscroll.ui.mirror.MirrorThumbArt(side)
+            GameKind.OddOne -> com.mehmtcan.brainscroll.ui.oddone.OddOneThumbArt(side)
+            GameKind.CrossSum -> com.mehmtcan.brainscroll.ui.crosssum.CrossSumThumbArt(side)
             GameKind.Line -> LineThumb(side)
         }
     }
@@ -986,6 +1016,41 @@ private fun CodeBreakerThumb(side: Dp) {
 @Composable
 private fun RectanglesThumb(side: Dp) {
     com.mehmtcan.brainscroll.ui.rectangles.RectanglesThumbArt(side)
+}
+
+// --- Lamps: a small board with walls, lamps and light ---
+
+@Composable
+private fun LampsThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.lamps.LampsThumbArt(side)
+}
+
+// --- Zeros and ones: a small board of 0 and 1 ---
+
+@Composable
+private fun ZerosOnesThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.zerosones.ZerosOnesThumbArt(side)
+}
+
+// --- Lone number: a solved board with some cells shaded ---
+
+@Composable
+private fun LoneNumberThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.lonenumber.LoneNumberThumbArt(side)
+}
+
+// --- Cube folding: a cube with three marked faces ---
+
+@Composable
+private fun CubeFoldThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.cubefold.CubeFoldThumbArt(side)
+}
+
+// --- Color sequence: four coloured buttons, one of them lit ---
+
+@Composable
+private fun ColorSeqThumb(side: Dp) {
+    com.mehmtcan.brainscroll.ui.colorseq.ColorSeqThumbArt(side)
 }
 
 // --- Flash grid: a grid with a few tiles lit ---

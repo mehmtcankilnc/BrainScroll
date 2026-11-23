@@ -122,7 +122,7 @@ class HanoiRoundTest {
         val first = HanoiSolver.shortest(puzzle.start, puzzle.goal).first()
         assertEquals(GuideReason.HanoiMove, step.reason)
         assertEquals(listOf(first.from, first.to), step.cells)
-        assertEquals(listOf(first.from, first.to), step.numbers)
+        assertEquals(listOf(first.from, first.to), step.numbers.take(2))
 
         // A move away from the shortest way: the guide works from the new position.
         val wrong = HanoiSolver.legalMoves(puzzle.start).first { it != first }

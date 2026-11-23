@@ -14,6 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_flashgrid_start
+import brainscroll.shared.generated.resources.howto_flashgrid_tech
 import brainscroll.shared.generated.resources.howto_card_flashgrid_1
 import brainscroll.shared.generated.resources.howto_card_flashgrid_2
 import brainscroll.shared.generated.resources.howto_card_flashgrid_3
@@ -27,6 +31,8 @@ internal val FlashGridHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_flashgrid_1, { t -> FlashGridDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_flashgrid_2, { t -> FlashGridDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_flashgrid_3, { t -> FlashGridDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_flashgrid_tech, FlashShapeScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_flashgrid_start, FlashStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

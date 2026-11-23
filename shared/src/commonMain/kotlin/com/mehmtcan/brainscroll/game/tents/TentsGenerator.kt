@@ -5,7 +5,7 @@ import com.mehmtcan.brainscroll.game.GameLevels
 import kotlin.random.Random
 
 /**
- * Makes the boards of the tents puzzle (docs/yeni-oyunlar-plan.md): tents are put at random so that none touch, every tent gets a
+ * Makes the boards of the tents puzzle (docs/decisions.md): tents are put at random so that none touch, every tent gets a
  * tree next to it, and the board is kept only if the trees and the numbers leave exactly one way to place the tents (the
  * solver checks). The board only depends on the seed, but it is saved as the board itself, so a later change of this
  * algorithm does not change a saved game.

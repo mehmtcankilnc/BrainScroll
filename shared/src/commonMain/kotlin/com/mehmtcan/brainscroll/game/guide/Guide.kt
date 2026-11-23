@@ -134,8 +134,62 @@ enum class GuideReason {
     /** This rectangle is not part of the answer: take it off (the cells are its column, row, width and height). */
     RectRemove,
 
+    /** Shade this cell (the cells hold its number: row * size + column): the number repeats and the answer has it shaded. */
+    LoneShade,
+
+    /** The mark on this cell (the cells hold its number: row * size + column) is not right: tap it until it is empty. */
+    LoneClear,
+
+    /** Put the digit (the number) in this cell (the cells hold its number: row * size + column): the rules leave no other digit for it. */
+    BinFill,
+
+    /** The digit in this cell (the cells hold its number: row * size + column) is not right: tap it until the cell is empty. */
+    BinClear,
+
+    /** Put a lamp on this cell (the cells hold its number: row * size + column): the rules leave no other way to light what it lights. */
+    LampPlace,
+
+    /** The mark on this cell (the cells hold its number: row * size + column) is not right: tap it until it is empty. */
+    LampClear,
+
+    /** Put the number (the number) in this cell (the cells hold its number: row * size + column): the row, the column and the signs leave no other number for it. */
+    GlFill,
+
+    /** The number in this cell (the cells hold its number: row * size + column) is not right: tap it until the cell is empty. */
+    GlClear,
+
+    /** Draw a line on this edge (the cells hold its number, see FenceGeometry): the numbers and the dots leave no other way. */
+    FenceLine,
+
+    /** The mark on this edge (the cells hold its number) is not right: tap it until it is empty. */
+    FenceClear,
+
+    /** Paint this cell: its partner on the other side of the axis is painted (the partner is in [GuideStep.evidence]). */
+    MirrorPaint,
+
+    /** Empty this cell: its partner on the other side of the axis is empty (the partner is in [GuideStep.evidence]). */
+    MirrorEmpty,
+
+    /** Two of the numbers follow the same rule (the rule is [GuideStep.rule], the index of the rule): the odd one is not one of them. */
+    OddRule,
+
+    /** Put this digit ([GuideStep.numbers]) in this cell: the sums leave no other (the cells of the blocks that say so are in [GuideStep.evidence], [GuideStep.rule] says which way). */
+    CrossDigit,
+
+    /** The digit in this cell is not right: take it out. */
+    CrossClear,
+
     /** The tiles to find in this round (the cells) light up again. */
     FlashPattern,
+
+    /** The lights of this round (the cells are the buttons, in order) are played again. */
+    SeqReplay,
+
+    /** This cube (the cell is the option) cannot be the answer: it shows two faces that are opposite faces of the net (they are in [GuideStep.evidence]). */
+    CubeOpposite,
+
+    /** This cube (the cell is the option) cannot be the answer: its three faces are right but turn the wrong way round (the three are in [GuideStep.evidence]). */
+    CubeMirror,
 }
 
 /**
@@ -147,6 +201,13 @@ data class GuideStep(
     val cells: List<Int> = emptyList(),
     val numbers: List<Int> = emptyList(),
     val text: String = "",
+    /**
+     * The things that make [cells] the answer (the numbers around a mine, the digits in a row, the sign next to a cell), in the same
+     * numbering as [cells]. The page rings them softly, so "because of these" can be seen and not only read.
+     */
+    val evidence: List<Int> = emptyList(),
+    /** Which way the same [reason] was reached (which rule of the game fired), so the sentence can say it. 0 is the plain one. */
+    val rule: Int = 0,
 )
 
 /** The work of finding a step, with everything it needs copied, so it can run anywhere. Null: there is nothing to say. */

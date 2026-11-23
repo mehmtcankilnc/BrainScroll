@@ -36,7 +36,7 @@ data class QueensState(
 )
 
 /**
- * The rules of the queens puzzle, free of UI and time (docs/yeni-oyunlar-plan.md).
+ * The rules of the queens puzzle, free of UI and time (docs/decisions.md).
  *
  * A square board and as many queens as it is wide: no two may share a row, a column or a diagonal. Some queens are [locked]
  * from the start. A tap puts a queen on an empty cell or takes away one the player put there. The game is won when the board

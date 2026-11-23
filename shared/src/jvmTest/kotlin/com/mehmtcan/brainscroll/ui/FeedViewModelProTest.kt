@@ -56,6 +56,7 @@ class FeedViewModelProTest {
             cloudServices = TestCloud().factory,
             games = listOf(GameKind.Word),
             billing = store,
+            buildInBackground = false,
         ).also { advanceUntilIdle() }
 
     /** Daily puzzles finished on each of [days] (Istanbul day indexes). */

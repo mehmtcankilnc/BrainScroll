@@ -19,9 +19,30 @@ import com.mehmtcan.brainscroll.ui.fruitmath.FruitMathPage
 import com.mehmtcan.brainscroll.game.untangle.UntangleSnapshot
 import com.mehmtcan.brainscroll.game.codebreaker.CodeSnapshot
 import com.mehmtcan.brainscroll.ui.codebreaker.CodeBreakerPage
+import com.mehmtcan.brainscroll.game.PendingSnapshot
+import com.mehmtcan.brainscroll.game.fences.FenceSnapshot
+import com.mehmtcan.brainscroll.game.crosssum.CrossSnapshot
+import com.mehmtcan.brainscroll.game.mirror.MirrorSnapshot
+import com.mehmtcan.brainscroll.ui.crosssum.CrossSumPage
+import com.mehmtcan.brainscroll.game.oddone.OddSnapshot
+import com.mehmtcan.brainscroll.ui.oddone.OddOnePage
+import com.mehmtcan.brainscroll.ui.mirror.MirrorPage
+import com.mehmtcan.brainscroll.game.greaterless.GlSnapshot
+import com.mehmtcan.brainscroll.ui.fences.FencesPage
+import com.mehmtcan.brainscroll.game.lamps.LampSnapshot
+import com.mehmtcan.brainscroll.ui.greaterless.GreaterLessPage
+import com.mehmtcan.brainscroll.game.lonenumber.LoneSnapshot
+import com.mehmtcan.brainscroll.ui.lamps.LampsPage
+import com.mehmtcan.brainscroll.game.zerosones.BinSnapshot
+import com.mehmtcan.brainscroll.ui.zerosones.ZerosOnesPage
 import com.mehmtcan.brainscroll.game.rectangles.RectSnapshot
+import com.mehmtcan.brainscroll.ui.lonenumber.LoneNumberPage
 import com.mehmtcan.brainscroll.ui.rectangles.RectanglesPage
 import com.mehmtcan.brainscroll.game.flashgrid.FlashSnapshot
+import com.mehmtcan.brainscroll.game.colorseq.ColorSeqSnapshot
+import com.mehmtcan.brainscroll.game.cubefold.CubeFoldSnapshot
+import com.mehmtcan.brainscroll.ui.cubefold.CubeFoldPage
+import com.mehmtcan.brainscroll.ui.colorseq.ColorSeqPage
 import com.mehmtcan.brainscroll.ui.flashgrid.FlashGridPage
 import com.mehmtcan.brainscroll.ui.untangle.UntanglePage
 import com.mehmtcan.brainscroll.ui.lasers.LasersPage
@@ -73,6 +94,8 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
     val haptics = rememberSoundHaptics(LocalHaptics.current, LocalSoundEffects.current)
     CompositionLocalProvider(LocalGuide provides guide, LocalHaptics provides haptics) {
         when (item) {
+            // The board is still being made in the background: a skeleton takes its place until it is there.
+            is PendingSnapshot -> GeneratingPage(item.kind)
             is RoundSnapshot -> WordlePage(
                 round = item,
                 onLetter = { actions.type(index, it) },
@@ -186,6 +209,20 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )
+            is CubeFoldSnapshot -> CubeFoldPage(
+                page = item,
+                onPick = { pick -> actions.pickCube(index, pick) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is ColorSeqSnapshot -> ColorSeqPage(
+                page = item,
+                onTap = { button -> actions.tapColorButton(index, button) },
+                onStart = { actions.startColorSeq(index) },
+                onRestart = { actions.restartColorSeq(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
             is FlashSnapshot -> FlashGridPage(
                 page = item,
                 onTap = { tile -> actions.tapFlashTile(index, tile) },
@@ -199,6 +236,61 @@ fun GamePage(item: PageSnapshot, index: Int, actions: FeedActions, favoriteIds: 
                 onPlace = { rect -> actions.placeRect(index, rect) },
                 onRemove = { column, row -> actions.removeRect(index, column, row) },
                 onRestart = { actions.restartRects(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is FenceSnapshot -> FencesPage(
+                page = item,
+                onTap = { edge -> actions.tapFenceEdge(index, edge) },
+                onRestart = { actions.restartFences(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is CrossSnapshot -> CrossSumPage(
+                page = item,
+                onPut = { cell, digit -> actions.putCrossDigit(index, cell, digit) },
+                onRestart = { actions.restartCross(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is OddSnapshot -> OddOnePage(
+                page = item,
+                onPick = { pick -> actions.pickOdd(index, pick) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is MirrorSnapshot -> MirrorPage(
+                page = item,
+                onTap = { cell -> actions.tapMirrorCell(index, cell) },
+                onRestart = { actions.restartMirror(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is GlSnapshot -> GreaterLessPage(
+                page = item,
+                onPut = { cell, value -> actions.putGlNumber(index, cell, value) },
+                onRestart = { actions.restartGl(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is LampSnapshot -> LampsPage(
+                page = item,
+                onTap = { cell -> actions.tapLampCell(index, cell) },
+                onRestart = { actions.restartLamps(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is BinSnapshot -> ZerosOnesPage(
+                page = item,
+                onTap = { cell -> actions.tapBinCell(index, cell) },
+                onRestart = { actions.restartBin(index) },
+                isFavorite = item.id in favoriteIds,
+                onToggleFavorite = { actions.toggleFavorite(item.id) },
+            )
+            is LoneSnapshot -> LoneNumberPage(
+                page = item,
+                onTap = { cell -> actions.tapLoneCell(index, cell) },
+                onRestart = { actions.restartLone(index) },
                 isFavorite = item.id in favoriteIds,
                 onToggleFavorite = { actions.toggleFavorite(item.id) },
             )

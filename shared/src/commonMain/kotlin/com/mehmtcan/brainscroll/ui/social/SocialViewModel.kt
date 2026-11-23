@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.data.GameRepository
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.social.Board
@@ -61,6 +62,8 @@ data class SocialUiState(
     /** Today's daily game. The speed table of all time can be switched to any other game. */
     val todayGame: GameKind,
     val scope: DailyScope,
+    /** The level of the table of the chosen game (the tables of the games with levels are one per level). */
+    val difficulty: Difficulty,
     val kind: StreakKind,
     /** Only my friends (and me) on the table instead of everyone. Only for [Access.Ready]. */
     val friendsOnly: Boolean,
@@ -124,6 +127,7 @@ class SocialViewModel(
     private var section = Section.Speed
     private var language = initialLanguage
     private var scope = DailyScope.Today
+    private var difficulty = Difficulty.DEFAULT
     private var chosenGame: GameKind? = null
     private var kind = StreakKind.Current
     private var friendsOnly = false
@@ -221,6 +225,13 @@ class SocialViewModel(
 
     /** Today's table is of today's game; the table of all time is of the chosen game, today's until one is chosen. */
     private fun effectiveGame(): GameKind = if (scope == DailyScope.Today) todayGame() else (chosenGame ?: todayGame())
+
+    /** The level of the table. */
+    fun selectDifficulty(next: Difficulty) {
+        if (next == difficulty) return
+        difficulty = next
+        reload()
+    }
 
     fun selectScope(next: DailyScope) {
         if (next == scope) return
@@ -448,7 +459,7 @@ class SocialViewModel(
         job = viewModelScope.launch {
             try {
                 when (section) {
-                    Section.Speed -> speed = speedBoard(scope, effectiveGame(), friendsOnly).also { cache(key, socialJson.encodeToString(it)) }
+                    Section.Speed -> speed = speedBoard(scope, effectiveGame(), friendsOnly, difficulty = difficulty).also { cache(key, socialJson.encodeToString(it)) }
                     Section.Streak -> streak = api.streakBoard(kind, friendsOnly).also { cache(key, socialJson.encodeToString(it)) }
                     Section.Friends -> friends = api.friends().also { cache(key, socialJson.encodeToString(it)) }
                 }
@@ -470,12 +481,12 @@ class SocialViewModel(
         }
     }
 
-    /** The word puzzle has its own table (guesses first); every other game has the table of times and moves. */
-    private suspend fun speedBoard(scope: DailyScope, game: GameKind, friendsOnly: Boolean, wordLanguage: Language = language): Board<DailyRow> =
-        if (game == GameKind.Word) api.dailyBoard(wordLanguage, scope, friendsOnly) else api.gameBoard(game, scope, friendsOnly)
+    /** The table of a game: what it ranks depends on the game (see [RankKind]); the word puzzle has one table per language. */
+    private suspend fun speedBoard(scope: DailyScope, game: GameKind, friendsOnly: Boolean, wordLanguage: Language = language, difficulty: Difficulty = Difficulty.DEFAULT): Board<DailyRow> =
+        api.gameBoard(game, scope, friendsOnly, difficulty, if (game == GameKind.Word) wordLanguage else null)
 
     private fun cacheKey() = when (section) {
-        Section.Speed -> "board:speed:${effectiveGame().id}:${language.name}:${scope.name}:$friendsOnly"
+        Section.Speed -> "board:speed:${effectiveGame().id}:${language.name}:${difficulty.id}:${scope.name}:$friendsOnly"
         Section.Streak -> "board:streak:${kind.name}:$friendsOnly"
         Section.Friends -> "friends"
     }
@@ -519,6 +530,7 @@ class SocialViewModel(
         game = effectiveGame(),
         todayGame = todayGame(),
         scope = scope,
+        difficulty = difficulty,
         kind = kind,
         friendsOnly = friendsOnly,
         speed = speed,

@@ -1,5 +1,6 @@
 package com.mehmtcan.brainscroll.social
 
+import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.wordle.Language
 import io.github.jan.supabase.SupabaseClient
@@ -28,12 +29,25 @@ class SupabaseSocialApi(private val client: SupabaseClient) : SocialApi {
             put("p_friends", friendsOnly)
         })
 
-    override suspend fun gameBoard(game: GameKind, scope: DailyScope, friendsOnly: Boolean): Board<DailyRow> =
-        parse<Board<GameRowDto>>(call("get_daily_game_leaderboard") {
-            put("p_game", game.id)
-            put("p_scope", if (scope == DailyScope.Today) "TODAY" else "ALL_TIME")
-            put("p_friends", friendsOnly)
-        }).let { board -> Board(board.rows.map { it.toRow() }, board.me?.toRow()) }
+    override suspend fun gameBoard(game: GameKind, scope: DailyScope, friendsOnly: Boolean, difficulty: Difficulty, language: Language?): Board<DailyRow> =
+        // The daily one-line puzzle has its own table (stars), every other game has the table of the feed (see 20261124090000_endless_boards.sql).
+        parse<Board<GameRowDto>>(
+            if (game == GameKind.Line) {
+                call("get_daily_game_leaderboard") {
+                    put("p_game", game.id)
+                    put("p_scope", if (scope == DailyScope.Today) "TODAY" else "ALL_TIME")
+                    put("p_friends", friendsOnly)
+                }
+            } else {
+                call("get_game_leaderboard") {
+                    put("p_game", game.id)
+                    put("p_scope", if (scope == DailyScope.Today) "TODAY" else "ALL_TIME")
+                    put("p_friends", friendsOnly)
+                    put("p_difficulty", difficulty.id)
+                    if (game == GameKind.Word && language != null) put("p_language", language.name)
+                }
+            },
+        ).let { board -> Board(board.rows.map { it.toRow() }, board.me?.toRow()) }
 
     override suspend fun streakBoard(kind: StreakKind, friendsOnly: Boolean): Board<StreakRow> =
         parse(call("get_streak_leaderboard") {

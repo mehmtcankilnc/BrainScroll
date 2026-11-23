@@ -10,7 +10,17 @@ import com.mehmtcan.brainscroll.game.fruitmath.FruitResult
 import com.mehmtcan.brainscroll.game.lasers.LaserResult
 import com.mehmtcan.brainscroll.game.untangle.UntangleResult
 import com.mehmtcan.brainscroll.game.codebreaker.CodeResult
+import com.mehmtcan.brainscroll.game.fences.FenceResult
+import com.mehmtcan.brainscroll.game.crosssum.CrossResult
+import com.mehmtcan.brainscroll.game.mirror.MirrorResult
+import com.mehmtcan.brainscroll.game.oddone.OddResult
+import com.mehmtcan.brainscroll.game.greaterless.GlResult
+import com.mehmtcan.brainscroll.game.lamps.LampResult
+import com.mehmtcan.brainscroll.game.lonenumber.LoneResult
+import com.mehmtcan.brainscroll.game.zerosones.BinResult
 import com.mehmtcan.brainscroll.game.rectangles.Rect
+import com.mehmtcan.brainscroll.game.colorseq.ColorSeqResult
+import com.mehmtcan.brainscroll.game.cubefold.CubeResult
 import com.mehmtcan.brainscroll.game.flashgrid.FlashResult
 import com.mehmtcan.brainscroll.game.rectangles.RectResult
 import com.mehmtcan.brainscroll.game.matchsticks.MatchMove
@@ -87,10 +97,29 @@ interface FeedActions {
     fun submitCode(page: Int, guess: List<Int>): CodeResult
     fun placeRect(page: Int, rect: Rect): RectResult
     fun tapFlashTile(page: Int, tile: Int): FlashResult
+    fun pickCube(page: Int, pick: Int): CubeResult
+    fun startColorSeq(page: Int): Boolean
+    fun restartColorSeq(page: Int): Boolean
+    fun tapColorButton(page: Int, button: Int): ColorSeqResult
     fun startFlash(page: Int): Boolean
     fun restartFlash(page: Int): Boolean
     fun removeRect(page: Int, column: Int, row: Int): Boolean
     fun restartRects(page: Int): Boolean
+    fun tapLoneCell(page: Int, cell: Int): LoneResult
+    fun restartLone(page: Int): Boolean
+    fun tapBinCell(page: Int, cell: Int): BinResult
+    fun restartBin(page: Int): Boolean
+    fun tapLampCell(page: Int, cell: Int): LampResult
+    fun restartLamps(page: Int): Boolean
+    fun putGlNumber(page: Int, cell: Int, value: Int): GlResult
+    fun restartGl(page: Int): Boolean
+    fun tapFenceEdge(page: Int, edge: Int): FenceResult
+    fun restartFences(page: Int): Boolean
+    fun tapMirrorCell(page: Int, cell: Int): MirrorResult
+    fun restartMirror(page: Int): Boolean
+    fun pickOdd(page: Int, pick: Int): OddResult
+    fun putCrossDigit(page: Int, cell: Int, digit: Int): CrossResult
+    fun restartCross(page: Int): Boolean
     fun tapTopicWord(page: Int, word: Int): TopicGroupsResult
     fun shuffleTopicWords(page: Int): Boolean
     fun clearTopicSelection(page: Int): Boolean

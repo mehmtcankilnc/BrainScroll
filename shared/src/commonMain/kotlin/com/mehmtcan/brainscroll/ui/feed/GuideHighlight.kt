@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Shape
@@ -35,6 +36,10 @@ val LocalGuide = compositionLocalOf<GuideStep?> { null }
 @Composable
 fun isGuided(index: Int): Boolean = LocalGuide.current?.cells?.contains(index) == true
 
+/** True if [index] is one of the things that make the guide's answer the answer (and is not the answer itself). */
+@Composable
+fun isGuideEvidence(index: Int): Boolean = LocalGuide.current?.let { index in it.evidence && index !in it.cells } == true
+
 /**
  * Points at a thing with a thick magenta ring and a soft glow that runs along its own edge, on the inside: the outer edge of the ring is the
  * edge of the thing, with the same corners, so nothing is left between the two and nothing lies over the things around it.
@@ -42,7 +47,8 @@ fun isGuided(index: Int): Boolean = LocalGuide.current?.cells?.contains(index) =
  * strength when motion is reduced. Without [on] the modifier does nothing.
  */
 @Composable
-fun Modifier.guideHighlight(on: Boolean, shape: Shape): Modifier {
+fun Modifier.guideHighlight(on: Boolean, shape: Shape, evidence: Boolean = false): Modifier {
+    if (!on && evidence) return softHighlight(shape)
     if (!on) return this
     val ring = GuideColor
     val reduce = LocalReduceMotion.current
@@ -69,10 +75,33 @@ fun Modifier.guideHighlight(on: Boolean, shape: Shape): Modifier {
 private val RING_WIDTH = 5.dp
 
 /**
+ * A thing the answer rests on: the same colour as the ring, but a thin dashed edge and a faint fill that does not breathe, so it reads as
+ * "look at this too" and never competes with the thing the guide points at.
+ */
+@Composable
+private fun Modifier.softHighlight(shape: Shape): Modifier {
+    val ring = GuideColor
+    return this.testTag("guideEvidence").drawWithContent {
+        drawContent()
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val edge = Path().apply { addOutline(outline) }
+        clipPath(edge) {
+            drawOutline(outline, ring.copy(alpha = 0.12f))
+            drawOutline(
+                outline, ring.copy(alpha = 0.75f),
+                style = Stroke(width = 2 * SOFT_WIDTH.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 6.dp.toPx()))),
+            )
+        }
+    }
+}
+
+private val SOFT_WIDTH = 1.5.dp
+
+/**
  * Wraps one cell so the guide can ring it without the cell knowing. The wrapper is always there, so the cell keeps its
  * state (an animation in progress) when the ring appears or goes.
  */
 @Composable
-fun GuideMark(on: Boolean, shape: Shape, content: @Composable () -> Unit) {
-    Box(Modifier.guideHighlight(on, shape)) { content() }
+fun GuideMark(on: Boolean, shape: Shape, evidence: Boolean = false, content: @Composable () -> Unit) {
+    Box(Modifier.guideHighlight(on, shape, evidence)) { content() }
 }

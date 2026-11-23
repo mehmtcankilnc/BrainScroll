@@ -112,7 +112,7 @@ fun FeedScreen(viewModel: FeedViewModel, onHome: () -> Unit, modifier: Modifier 
 
     Box(modifier = modifier.fillMaxSize()) {
         when (val s = state) {
-            FeedUiState.Loading -> Unit
+            FeedUiState.Loading -> GeneratingPage(kind = null)
             is FeedUiState.Ready -> FeedContent(s.feed, s.favoriteIds, viewModel, onHome)
         }
     }

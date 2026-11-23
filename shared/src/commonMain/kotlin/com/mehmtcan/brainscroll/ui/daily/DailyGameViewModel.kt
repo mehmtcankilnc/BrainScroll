@@ -19,7 +19,17 @@ import com.mehmtcan.brainscroll.game.fruitmath.FruitResult
 import com.mehmtcan.brainscroll.game.lasers.LaserResult
 import com.mehmtcan.brainscroll.game.untangle.UntangleResult
 import com.mehmtcan.brainscroll.game.codebreaker.CodeResult
+import com.mehmtcan.brainscroll.game.fences.FenceResult
+import com.mehmtcan.brainscroll.game.crosssum.CrossResult
+import com.mehmtcan.brainscroll.game.mirror.MirrorResult
+import com.mehmtcan.brainscroll.game.oddone.OddResult
+import com.mehmtcan.brainscroll.game.greaterless.GlResult
+import com.mehmtcan.brainscroll.game.lamps.LampResult
+import com.mehmtcan.brainscroll.game.lonenumber.LoneResult
+import com.mehmtcan.brainscroll.game.zerosones.BinResult
 import com.mehmtcan.brainscroll.game.rectangles.Rect
+import com.mehmtcan.brainscroll.game.colorseq.ColorSeqResult
+import com.mehmtcan.brainscroll.game.cubefold.CubeResult
 import com.mehmtcan.brainscroll.game.flashgrid.FlashResult
 import com.mehmtcan.brainscroll.game.rectangles.RectResult
 import com.mehmtcan.brainscroll.game.matchsticks.MatchMove
@@ -116,6 +126,8 @@ class DailyGameViewModel(
 
     /** The finished one-line board of today, drawn again for a puzzle that was solved before the app was opened this time. */
     private var solved: LineSnapshot? = null
+    /** True while the screen of the game is in front: the clock of the board runs only then. */
+    private var resumed = false
     private val handled = mutableSetOf<String>()
     private val sending = mutableSetOf<String>()
 
@@ -146,8 +158,25 @@ class DailyGameViewModel(
                 else -> feed = buildFeed(day, game, id)
             }
         }
+        startClock()
         publish()
         sendPending()
+    }
+
+    /** The screen of the game came to the front: the clock of the board starts (or goes on), so the time of looking at it counts. */
+    fun onResumed() {
+        resumed = true
+        startClock()
+    }
+
+    /** The screen left the front (another screen, the app in the background): the clock stops and what it counted is saved. */
+    fun onPaused() {
+        resumed = false
+        feed?.pagesHidden()
+    }
+
+    private fun startClock() {
+        if (resumed) feed?.pageShown(0)
     }
 
     private fun makeLine(day: Long, id: String) {
@@ -155,6 +184,7 @@ class DailyGameViewModel(
             val puzzle = withContext(Dispatchers.Default) { LineSchedule.puzzleFor(day) }
             if (feedId == id && feed == null) {
                 feed = buildFeed(day, GameKind.Line, id, puzzle)
+                startClock()
                 publish()
             }
         }
@@ -309,8 +339,27 @@ class DailyGameViewModel(
     override fun tapFlashTile(page: Int, tile: Int): FlashResult = act(FlashResult.Ignored) { it.tapFlashTile(0, tile) }
     override fun startFlash(page: Int): Boolean = act(false) { it.startFlash(0) }
     override fun restartFlash(page: Int): Boolean = act(false) { it.restartFlash(0) }
+    override fun pickCube(page: Int, pick: Int): CubeResult = act(CubeResult.Ignored) { it.pickCube(0, pick) }
+    override fun startColorSeq(page: Int): Boolean = act(false) { it.startColorSeq(0) }
+    override fun restartColorSeq(page: Int): Boolean = act(false) { it.restartColorSeq(0) }
+    override fun tapColorButton(page: Int, button: Int): ColorSeqResult = act(ColorSeqResult.Ignored) { it.tapColorButton(0, button) }
     override fun removeRect(page: Int, column: Int, row: Int): Boolean = act(false) { it.removeRect(0, column, row) }
     override fun restartRects(page: Int): Boolean = act(false) { it.restartRects(0) }
+    override fun tapLoneCell(page: Int, cell: Int): LoneResult = act(LoneResult.Ignored) { it.tapLone(0, cell) }
+    override fun restartLone(page: Int): Boolean = act(false) { it.restartLone(0) }
+    override fun tapBinCell(page: Int, cell: Int): BinResult = act(BinResult.Ignored) { it.tapBin(0, cell) }
+    override fun restartBin(page: Int): Boolean = act(false) { it.restartBin(0) }
+    override fun tapLampCell(page: Int, cell: Int): LampResult = act(LampResult.Ignored) { it.tapLamp(0, cell) }
+    override fun restartLamps(page: Int): Boolean = act(false) { it.restartLamps(0) }
+    override fun putGlNumber(page: Int, cell: Int, value: Int): GlResult = act(GlResult.Ignored) { it.putGl(0, cell, value) }
+    override fun restartGl(page: Int): Boolean = act(false) { it.restartGl(0) }
+    override fun tapFenceEdge(page: Int, edge: Int): FenceResult = act(FenceResult.Ignored) { it.tapFence(0, edge) }
+    override fun restartFences(page: Int): Boolean = act(false) { it.restartFences(0) }
+    override fun tapMirrorCell(page: Int, cell: Int): MirrorResult = act(MirrorResult.Ignored) { it.tapMirror(0, cell) }
+    override fun restartMirror(page: Int): Boolean = act(false) { it.restartMirror(0) }
+    override fun pickOdd(page: Int, pick: Int): OddResult = act(OddResult.Ignored) { it.pickOdd(0, pick) }
+    override fun putCrossDigit(page: Int, cell: Int, digit: Int): CrossResult = act(CrossResult.Ignored) { it.putCross(0, cell, digit) }
+    override fun restartCross(page: Int): Boolean = act(false) { it.restartCross(0) }
     override fun tapTopicWord(page: Int, word: Int): TopicGroupsResult = act(TopicGroupsResult.Ignored) { it.tapTopicWord(0, word) }
     override fun shuffleTopicWords(page: Int): Boolean = act(false) { it.shuffleTopicWords(0) }
     override fun clearTopicSelection(page: Int): Boolean = act(false) { it.clearTopicSelection(0) }

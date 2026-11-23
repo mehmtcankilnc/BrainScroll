@@ -12,6 +12,10 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_axissum_start
+import brainscroll.shared.generated.resources.howto_axissum_tech
 import brainscroll.shared.generated.resources.howto_card_axissum_1
 import brainscroll.shared.generated.resources.howto_card_axissum_2
 import brainscroll.shared.generated.resources.howto_card_axissum_3
@@ -23,6 +27,8 @@ internal val AxisSumHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_axissum_1, { t -> AxisSumDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_axissum_2, { t -> AxisSumDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_axissum_3, { t -> AxisSumDemo(step = 2, t = t) }),
+        sceneStep(Res.string.howto_axissum_tech, AxisDifferenceScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_axissum_start, AxisStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

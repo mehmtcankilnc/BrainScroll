@@ -37,7 +37,7 @@ data class HanoiState(
 )
 
 /**
- * The rules of the tower of Hanoi, free of UI and time (docs/yeni-oyunlar-plan.md).
+ * The rules of the tower of Hanoi, free of UI and time (docs/decisions.md).
  *
  * Three towers and a few disks. The top disk of a tower goes onto another tower that is empty or whose top disk is
  * bigger. The game is won when every disk is on the [goal] tower. There is no losing. A restart puts the disks back as

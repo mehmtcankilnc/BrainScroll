@@ -70,6 +70,7 @@ import com.mehmtcan.brainscroll.ui.streak.StreakKind
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
@@ -85,6 +86,11 @@ fun DailyGameScreen(viewModel: DailyGameViewModel, onBack: () -> Unit, modifier:
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     // Opening the screen looks for a new day.
     LaunchedEffect(viewModel) { viewModel.refresh() }
+    // The clock of the board runs while this screen is in front and the app is open.
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onResumed()
+        onPauseOrDispose { viewModel.onPaused() }
+    }
     var howTo by remember { mutableStateOf(false) }
     // The page says when its win is on show; the confetti waits for it.
     val winSignal = remember { WinSignal() }

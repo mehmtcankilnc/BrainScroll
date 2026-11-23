@@ -6,6 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_colorflow_start
+import brainscroll.shared.generated.resources.howto_colorflow_tech
 import brainscroll.shared.generated.resources.howto_card_colorflow_1
 import brainscroll.shared.generated.resources.howto_card_colorflow_2
 import brainscroll.shared.generated.resources.howto_card_colorflow_3
@@ -18,6 +22,8 @@ internal val ColorFlowHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_colorflow_1, { t -> ColorFlowDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_colorflow_2, { t -> ColorFlowDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_colorflow_3, { t -> ColorFlowDemo(step = 2, t = t) }),
+        HowToStep(Res.string.howto_colorflow_tech, { t -> ColorFlowDemo(step = 3, t = t) }, title = Res.string.howto_title_solve),
+        HowToStep(Res.string.howto_colorflow_start, { t -> ColorFlowDemo(step = 4, t = t) }, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 
@@ -42,6 +48,10 @@ private val Steps: List<Pair<List<List<Int>>, Stroke>> = listOf(
     List(4) { if (it == 1) listOf(1, 2, 6, 7) else emptyList<Int>() } to Stroke(2, listOf(9, 10, 6, 5)),
     // 3: all but yellow is done; yellow fills the last cells.
     List(4) { if (it == 3) emptyList<Int>() else Way[it] } to Stroke(3, Way[3]),
+    // 4: the blue dot has other colours on its left and below, so its path can only go right.
+    List(4) { emptyList<Int>() } to Stroke(1, Way[1]),
+    // 5: the yellow dot at the bottom has red on its left and green above, so its path starts to the right.
+    List(4) { emptyList<Int>() } to Stroke(3, Way[3].reversed()),
 )
 
 @Composable

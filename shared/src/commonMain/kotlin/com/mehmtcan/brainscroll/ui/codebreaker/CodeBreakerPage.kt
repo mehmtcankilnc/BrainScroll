@@ -150,10 +150,6 @@ private var SemanticsPropertyReceiver.triesCount by CodeTriesKey
 internal val CodeSecretKey = SemanticsPropertyKey<List<Int>>("CodeSecret")
 private var SemanticsPropertyReceiver.secretColors by CodeSecretKey
 
-/** The ring of a peg that scored (blue and yellow: two colours that people with red-green colour blindness still tell apart). */
-private val ExactRing = Color(0xFF3D9BFF)
-private val PresentRing = Color(0xFFFFD23F)
-
 /** Lays shape [color] (0 to 7) on the point [c], [s] big from the middle to its edge, drawn so that it sits exactly in the middle. */
 private fun DrawScope.drawCodeSymbol(color: Int, c: Offset, s: Float, ink: Color) {
     fun poly(vararg p: Pair<Float, Float>) = Path().apply {
@@ -202,13 +198,18 @@ private fun DrawScope.drawCodeSymbol(color: Int, c: Offset, s: Float, ink: Color
 
 /**
  * A colour with its shape on it (the shape is drawn, not typed, so it is exactly in the middle), or an empty place (a ring). A [mark] puts
- * a ring around the peg, the way a letter of the word puzzle is coloured: blue for the right colour in the right place, a dashed yellow
- * one for the right colour in the wrong place, none for a colour the code has no more of. [size] is the whole thing, ring included.
+ * a ring around the peg, the way a letter of the word puzzle is coloured: a solid green one for the right colour in the right place, a
+ * dashed green one for the right colour in the wrong place, a grey one for a colour the code has no more of. The pattern (solid or dashed)
+ * and the green against the grey tell them apart, so the colour of the ring alone is not what carries it. [size] is the whole thing,
+ * ring included. With [ringHidden] the peg is as small as a scored one but its ring is not drawn yet (the card of the rules shows the
+ * rings arriving).
  */
 @Composable
-internal fun Peg(color: Int?, size: Dp, modifier: Modifier = Modifier, mark: CodeMark? = null) {
+internal fun Peg(color: Int?, size: Dp, modifier: Modifier = Modifier, mark: CodeMark? = null, ringHidden: Boolean = false) {
     val colors = BrainScrollTheme.colors
     val border = colors.borderStrong.copy(alpha = 0.6f)
+    val green = colors.correctFill
+    val grey = colors.textSecondary.copy(alpha = 0.75f)
     Canvas(modifier = modifier.size(size)) {
         val r = this.size.minDimension / 2f
         val inner = r * (if (mark == null) 1f else 0.8f)
@@ -219,13 +220,14 @@ internal fun Peg(color: Int?, size: Dp, modifier: Modifier = Modifier, mark: Cod
             drawCodeSymbol(color, center, inner * 0.5f, Color.White)
         }
         val ring = 3.dp.toPx()
-        when (mark) {
-            CodeMark.Exact -> drawCircle(ExactRing, r - ring / 2f, center, style = Stroke(ring))
+        when (if (ringHidden) null else mark) {
+            CodeMark.Exact -> drawCircle(green, r - ring / 2f, center, style = Stroke(ring))
+            CodeMark.Absent -> drawCircle(grey, r - ring / 2f, center, style = Stroke(ring))
             CodeMark.Present -> {
                 val circumference = (2 * PI * (r - ring / 2f)).toFloat()
                 val dash = circumference / 12f
                 drawCircle(
-                    PresentRing, r - ring / 2f, center,
+                    green, r - ring / 2f, center,
                     style = Stroke(ring, cap = StrokeCap.Butt, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash * 0.62f, dash * 0.38f))),
                 )
             }
@@ -256,7 +258,7 @@ fun CodeBreakerPage(
     val length = puzzle.length
     val won = state.status == CodeStatus.Won
 
-    // The result and the buzz wait a moment so the last guess can be seen with its black dots.
+    // The result and the buzz wait a moment so the last guess can be seen with its rings.
     val status = rememberSettledStatus(if (won) WordleStatus.Won else WordleStatus.Playing, 350L)
     OutcomeHaptics(status, page.id)
     val justFinished = rememberJustFinished(status)

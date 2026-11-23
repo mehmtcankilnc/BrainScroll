@@ -7,7 +7,7 @@ import kotlin.random.Random
 class HanoiPuzzle(val start: IntArray, val goal: Int, val par: Int)
 
 /**
- * Makes the boards of the tower of Hanoi (docs/yeni-oyunlar-plan.md): the disks start spread over the towers at random
+ * Makes the boards of the tower of Hanoi (docs/decisions.md): the disks start spread over the towers at random
  * (every spread is a legal position), the goal tower is random too, and the fewest moves come from [HanoiSolver]. A board
  * that needs fewer than [DEFAULT_MIN_PAR] moves is too easy to be worth a page and is made again. The board only depends
  * on the seed, but it is saved as the position itself, so a later change of this algorithm does not change a saved game.

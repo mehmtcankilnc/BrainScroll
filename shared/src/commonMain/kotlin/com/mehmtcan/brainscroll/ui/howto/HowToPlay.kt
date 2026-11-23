@@ -52,7 +52,7 @@ private fun QuestionMark(color: Color) {
 }
 
 /** The three steps of every game. A new game adds its card here. */
-private fun cardOf(kind: GameKind): HowToCardContent = when (kind) {
+internal fun cardOf(kind: GameKind): HowToCardContent = when (kind) {
     GameKind.Word -> WordHowTo
     GameKind.Memory -> MemoryHowTo
     GameKind.Tubes -> TubesHowTo
@@ -80,6 +80,16 @@ private fun cardOf(kind: GameKind): HowToCardContent = when (kind) {
     GameKind.CodeBreaker -> CodeBreakerHowTo
     GameKind.Rectangles -> RectanglesHowTo
     GameKind.FlashGrid -> FlashGridHowTo
+    GameKind.ColorSeq -> ColorSeqHowTo
+    GameKind.CubeFold -> CubeFoldHowTo
+    GameKind.LoneNumber -> LoneNumberHowTo
+    GameKind.ZerosOnes -> ZerosOnesHowTo
+    GameKind.Lamps -> LampsHowTo
+    GameKind.GreaterLess -> GreaterLessHowTo
+    GameKind.Fences -> FencesHowTo
+    GameKind.Mirror -> MirrorHowTo
+    GameKind.OddOne -> OddOneHowTo
+    GameKind.CrossSum -> CrossSumHowTo
     GameKind.Line -> LineHowTo
 }
 

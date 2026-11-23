@@ -13,6 +13,10 @@ import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_queens_start
+import brainscroll.shared.generated.resources.howto_queens_tech
 import brainscroll.shared.generated.resources.howto_card_queens_1
 import brainscroll.shared.generated.resources.howto_card_queens_2
 import brainscroll.shared.generated.resources.howto_card_queens_3
@@ -26,6 +30,8 @@ internal val QueensHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_queens_1, { t -> QueensDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_queens_2, { t -> QueensDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_queens_3, { t -> QueensDemo(step = 2, t = t) }, cycleMillis = 6400),
+        sceneStep(Res.string.howto_queens_tech, QueensReachScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_queens_start, QueensStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

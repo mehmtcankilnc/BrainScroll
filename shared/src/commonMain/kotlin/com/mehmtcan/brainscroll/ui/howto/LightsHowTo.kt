@@ -11,6 +11,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_lights_start
+import brainscroll.shared.generated.resources.howto_lights_tech
 import brainscroll.shared.generated.resources.howto_card_lights_1
 import brainscroll.shared.generated.resources.howto_card_lights_2
 import brainscroll.shared.generated.resources.howto_card_lights_3
@@ -22,6 +26,8 @@ internal val LightsHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_lights_1, { t -> LightsDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_lights_2, { t -> LightsDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_lights_3, { t -> LightsDemo(step = 2, t = t) }, cycleMillis = 4800),
+        sceneStep(Res.string.howto_lights_tech, LightsFlipScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_lights_start, LightsStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

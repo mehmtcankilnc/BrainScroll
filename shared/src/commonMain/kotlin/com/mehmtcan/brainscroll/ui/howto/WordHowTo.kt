@@ -13,6 +13,10 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_word_start
+import brainscroll.shared.generated.resources.howto_word_tech
 import brainscroll.shared.generated.resources.howto_card_word_1
 import brainscroll.shared.generated.resources.key_enter
 import org.jetbrains.compose.resources.stringResource
@@ -30,6 +34,8 @@ internal val WordHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_word_1, { t -> WordDemo(step = 0, t = t) }, cycleMillis = 6400),
         HowToStep(Res.string.howto_card_word_2, { t -> WordDemo(step = 1, t = t) }, cycleMillis = 4800),
         HowToStep(Res.string.howto_card_word_3, { t -> WordDemo(step = 2, t = t) }, cycleMillis = 6400),
+        sceneStep(Res.string.howto_word_tech, WordFixScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_word_start, WordStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

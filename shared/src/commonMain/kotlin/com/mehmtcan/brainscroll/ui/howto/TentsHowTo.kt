@@ -18,6 +18,10 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import brainscroll.shared.generated.resources.Res
+import brainscroll.shared.generated.resources.howto_title_spoiler
+import brainscroll.shared.generated.resources.howto_title_solve
+import brainscroll.shared.generated.resources.howto_tents_start
+import brainscroll.shared.generated.resources.howto_tents_tech
 import brainscroll.shared.generated.resources.howto_card_tents_1
 import brainscroll.shared.generated.resources.howto_card_tents_2
 import brainscroll.shared.generated.resources.howto_card_tents_3
@@ -32,6 +36,8 @@ internal val TentsHowTo = HowToCardContent(
         HowToStep(Res.string.howto_card_tents_1, { t -> TentsDemo(step = 0, t = t) }),
         HowToStep(Res.string.howto_card_tents_2, { t -> TentsDemo(step = 1, t = t) }),
         HowToStep(Res.string.howto_card_tents_3, { t -> TentsDemo(step = 2, t = t) }, cycleMillis = 6400),
+        sceneStep(Res.string.howto_tents_tech, TentsTouchScene, title = Res.string.howto_title_solve),
+        sceneStep(Res.string.howto_tents_start, TentsStartScene, title = Res.string.howto_title_spoiler, spoiler = true),
     ),
 )
 

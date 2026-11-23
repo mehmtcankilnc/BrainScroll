@@ -52,7 +52,7 @@ data class TentsState(
 )
 
 /**
- * The rules of the tents puzzle, free of UI and time (docs/yeni-oyunlar-plan.md).
+ * The rules of the tents puzzle, free of UI and time (docs/decisions.md).
  *
  * Every tree gets a tent next to it (above, below or beside it), every tent belongs to one tree, no two tents touch, even
  * at a corner, and each row and column holds as many tents as its number says. A tap cycles a cell: empty, tent, grass, empty.

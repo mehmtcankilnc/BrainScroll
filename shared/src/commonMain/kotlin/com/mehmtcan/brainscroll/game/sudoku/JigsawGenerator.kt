@@ -3,7 +3,7 @@ package com.mehmtcan.brainscroll.game.sudoku
 import kotlin.random.Random
 
 /**
- * Makes the boards of the jigsaw sudoku (docs/yeni-oyunlar-plan.md): nine connected regions of nine cells instead of the 3 by 3
+ * Makes the boards of the jigsaw sudoku (docs/decisions.md): nine connected regions of nine cells instead of the 3 by 3
  * boxes, a solved grid for those regions, and givens taken away at random for as long as naked and hidden singles can still
  * finish the board, down to [DEFAULT_CLUES] givens at the fewest. The same promise as the classic sudoku: one solution, no
  * guessing. The board only depends on the seed and the number of givens, so a saved game can be rebuilt exactly.

@@ -115,7 +115,7 @@ class NonogramRoundTest {
         assertEquals(GuideReason.NonogramFill, step.reason)
         val cell = step.cells.single()
         assertTrue(cell in cells)
-        assertEquals(listOf(cell / 8 + 1, cell % 8 + 1), step.numbers)
+        assertEquals(listOf(cell / 8 + 1, cell % 8 + 1), step.numbers.take(2))
 
         val wrong = (0 until 64).first { it !in cells }
         r.paint(wrong, wrong, NonogramMark.FILLED)

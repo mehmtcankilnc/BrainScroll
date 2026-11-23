@@ -24,6 +24,8 @@ class GuideRingUiTest {
         // (On the sliding puzzle the tile has a tag of its own, which hides the tag of the ring: no mark is found there.)
         assertTrue(marks.isNotEmpty() || kind == GameKind.Slide)
         for (b in marks) println("RING $name ${b.left} ${b.top} ${b.width} ${b.height}")
+        // The cells the answer rests on are ringed softly, when the step has a reason of that kind.
+        println("EVIDENCE $name ${onAllNodesWithTag("guideEvidence").fetchSemanticsNodes().size}")
     }
 
     @Test fun tubes() = ring(GameKind.Tubes, "tubes", "tube")
@@ -43,4 +45,12 @@ class GuideRingUiTest {
     @Test fun nonogram() = ring(GameKind.Nonogram, "nonogram", "nonogramCell")
     @Test fun topicgroups() = ring(GameKind.TopicGroups, "topicgroups", "topicTile")
     @Test fun jigsaw() = ring(GameKind.Jigsaw, "jigsaw", "sudokuCell")
+    @Test fun zerosones() = ring(GameKind.ZerosOnes, "zerosones", "binCell")
+    @Test fun lamps() = ring(GameKind.Lamps, "lamps", "lampCell")
+    @Test fun greaterless() = ring(GameKind.GreaterLess, "greaterless", "glCell")
+    @Test fun fences() = ring(GameKind.Fences, "fences", "fenceEdge")
+    @Test fun mirror() = ring(GameKind.Mirror, "mirror", "mirrorCell")
+    @Test fun oddone() = ring(GameKind.OddOne, "oddone", "oddNumber")
+    @Test fun crosssum() = ring(GameKind.CrossSum, "crosssum", "crossCell")
+    @Test fun lonenumber() = ring(GameKind.LoneNumber, "lonenumber", "loneCell")
 }

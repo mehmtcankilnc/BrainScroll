@@ -57,6 +57,13 @@ Her satır: kalıp, kanca, akış, ses. "Sonuç" her zaman uygulamanın gerçek 
 23. **Untangle (kalıp D):** kanca "No lines may cross." Akış: dolaşık düğüm, noktalar sürüklenir, kırmızı çizgiler yeşile döner, son kesişim kalkınca yeşil dalga. Ses: tutma/bırakma (`matchsticks_pick`, `untangle_drop`), çizgi azalınca çan (`untangle_fewer`), kazanma akoru. ~28 sn.
 24. **Fruit Equations için isteğe bağlı ikinci kısa reel:** yalnızca üs satırı ("Wait, powers?"), 15 sn, aynı kalıp.
 
+### Plan 4 oyunları (sahne eklenir)
+26. **Yalnız Sayı (kalıp E):** kanca "Every number must stand alone." Akış: 5x5 tahta, tekrar eden sayılar kırmızı yanar, biri karalanınca kırmızıların bir kısmı söner, karalananlar birbirine değmez, son karalamada tahta sonuç kartına döner. Ses: karalamada hafif dokunuş, kazanma akoru. ~25 sn. 
+27. **Sıfır-Bir (kalıp A):** kanca "Fill it with 0 and 1. Never three alike." Akış: 6x6 tahta, verili rakamlar, yan yana iki 1'in yanına 0 gelir, yarısı dolan satırın kalanı 1 olur, hata yapınca kareler kırmızı yanar, son rakamla tahta sonuç kartına döner. Ses: rakamda hafif dokunuş, kazanma akoru. ~25 sn. 
+28. **Ampuller (kalıp C):** kanca "Light every cell." Akış: 5x5 tahta, ilk ampulle ışık satır ve sütun boyunca yayılır, iki ampul birbirini görünce kırmızı yanıp söner, sayılı duvar tutunca yeşile döner, son ampulde bütün tahta aydınlanır. Ses: ampul koyunca hafif "tık", son ampulde akor. ~25 sn. 
+29. **Büyük-Küçük (kalıp E):** kanca "Which one is bigger?" Akış: 4x4 tahta, iki verili sayı, işaretin ucu küçük kareyi gösterir; "bu kare yanındakinden büyük" diye bir kare 4 olur, satırdaki eksik sayı tamamlanır, kırmızı işaret yeşile döner, son sayıda tahta çözülür. Ses: sayı koyunca hafif "tık", son sayıda akor. ~25 sn. 
+30. **Çitler (kalıp E):** kanca "How many lines?" Akış: 4x4 tahta, noktalar ve birkaç sayı; 3 olan kareye üç çizgi çizilir, 0 olan karenin kenarlarına çarpı konur, çizgiler zincirlenir, son kenarla halka kapanır, içi dolar ve sayılar yeşile döner. Ses: çizgi koyunca hafif "tık", halka kapanınca akor. ~25 sn.
+
 ### Hazır olan üçü (ayrıntı aşağıda)
 25. **Ball Slide** ve **Topic Groups**: hazır, bölüm 6.
 

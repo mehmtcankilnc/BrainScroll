@@ -2,6 +2,15 @@ package com.mehmtcan.brainscroll.game.tents
 
 /** Finds the ways to finish a tents board, and what can be worked out from a board without guessing. */
 object TentsSolver {
+    /** The row (or column) needs as many tents as it has free cells left, so all of them are tents. */
+    const val LINE_ROW = 1
+
+    /** The tree has no tent yet and only one free cell next to it. */
+    const val TREE_ONLY = 2
+    const val LINE_COLUMN = 3
+
+    /** Why a cell is a tent: the [rule] and the cells it rests on (the cells of the line, or the tree). */
+    class Why(val rule: Int, val evidence: List<Int>)
 
     /**
      * Every different set of tents that finishes the board (the trees and the numbers), but it stops looking once it has found
@@ -54,7 +63,15 @@ object TentsSolver {
      * only just enough room left (all of it is tents), and a tree that has no tent yet and only one place left for it. [known]
      * are tents that are certain.
      */
-    fun deduce(size: Int, trees: Set<Int>, rowTargets: List<Int>, columnTargets: List<Int>, known: Set<Int>): List<Int> {
+    fun deduce(
+        size: Int,
+        trees: Set<Int>,
+        rowTargets: List<Int>,
+        columnTargets: List<Int>,
+        known: Set<Int>,
+        /** When given, gets the reason of every tent that is found: [LINE_ROW], [LINE_COLUMN] or [TREE_ONLY], and the cells it rests on. */
+        why: MutableMap<Int, Why>? = null,
+    ): List<Int> {
         // 1 tent, 0 no tent, -1 not known yet
         val state = IntArray(size * size) { -1 }
         for (cell in state.indices) {
@@ -62,10 +79,11 @@ object TentsSolver {
         }
         for (cell in known) state[cell] = 1
         var changed = true
-        fun set(cell: Int, value: Int) {
+        fun set(cell: Int, value: Int, rule: Int = 0, evidence: List<Int> = emptyList()) {
             if (state[cell] == -1) {
                 state[cell] = value
                 changed = true
+                if (value == 1 && why != null) why[cell] = Why(rule, evidence)
             }
         }
         while (changed) {
@@ -80,14 +98,15 @@ object TentsSolver {
                     val target = if (byRow) rowTargets[line] else columnTargets[line]
                     val tents = cells.count { state[it] == 1 }
                     val unknown = cells.filter { state[it] == -1 }
-                    if (tents == target) unknown.forEach { set(it, 0) } else if (tents + unknown.size == target) unknown.forEach { set(it, 1) }
+                    if (tents == target) unknown.forEach { set(it, 0) }
+                    else if (tents + unknown.size == target) unknown.forEach { set(it, 1, if (byRow) LINE_ROW else LINE_COLUMN, cells) }
                 }
             }
             for (tree in trees) {
                 val around = TentsRules.straightNeighbors(size, tree)
                 if (around.any { state[it] == 1 }) continue
                 val open = around.filter { state[it] == -1 }
-                if (open.size == 1) set(open.single(), 1)
+                if (open.size == 1) set(open.single(), 1, TREE_ONLY, listOf(tree))
             }
         }
         return state.indices.filter { state[it] == 1 && it !in known }

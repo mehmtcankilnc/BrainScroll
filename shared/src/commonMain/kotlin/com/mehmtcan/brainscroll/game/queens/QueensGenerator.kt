@@ -6,7 +6,7 @@ import kotlin.random.Random
 class QueensPuzzle(val size: Int, val locked: Set<Int>)
 
 /**
- * Makes the boards of the queens puzzle (docs/yeni-oyunlar-plan.md): one of the full placements, picked at random, and a few
+ * Makes the boards of the queens puzzle (docs/decisions.md): one of the full placements, picked at random, and a few
  * of its queens locked. The player places the rest; the way they find may be another one than the one that was picked, which is
  * as good. The board only depends on the seed, but it is saved as the locked cells themselves, so a later change of this
  * algorithm does not change a saved game.

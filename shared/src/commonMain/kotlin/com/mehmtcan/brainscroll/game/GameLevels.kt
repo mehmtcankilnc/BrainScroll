@@ -192,6 +192,24 @@ object GameLevels {
         Difficulty.Hard -> LaserShape(7, 7, 3, 4, 4)
     }
 
+    /** Cube folding: how many cubes there are to choose from and how many questions a run has (a run is saved as these and a seed). */
+    data class CubeShape(val options: Int, val rounds: Int)
+
+    fun cubeFold(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> CubeShape(3, 6)
+        Difficulty.Medium -> CubeShape(4, 8)
+        Difficulty.Hard -> CubeShape(4, 10)
+    }
+
+    /** The color sequence: how many buttons, the lights of the first round and of the last (clearing it wins the run), and how long a light takes. */
+    data class ColorSeqShape(val buttons: Int, val startLength: Int, val targetLength: Int, val stepMs: Int)
+
+    fun colorSeq(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> ColorSeqShape(4, 1, 6, 800)
+        Difficulty.Medium -> ColorSeqShape(4, 1, 9, 550)
+        Difficulty.Hard -> ColorSeqShape(6, 1, 12, 400)
+    }
+
     /** The flash grid: the side of the square, the tiles of the first round, and the tiles of the last (clearing it wins the run). */
     data class FlashShape(val size: Int, val startTiles: Int, val maxTiles: Int)
 
@@ -208,6 +226,105 @@ object GameLevels {
         Difficulty.Easy -> RectShape(6, 8, 8)
         Difficulty.Medium -> RectShape(7, 10, 10)
         Difficulty.Hard -> RectShape(8, 12, 12)
+    }
+
+    /**
+     * Cross sums: the size of the white board, how many of its cells are white (the rest are black), and how many digits the board may give
+     * the player to start with (a board that needs more is dropped). The biggest board is saved in 32 characters (see CrossPuzzle).
+     */
+    data class CrossShape(val rows: Int, val columns: Int, val density: Double, val maxGivens: Int, val wantGivens: Int, val attempts: Int)
+
+    fun crossSum(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> CrossShape(4, 4, 0.75, 3, 1, 150)
+        Difficulty.Medium -> CrossShape(5, 5, 0.7, 4, 2, 150)
+        Difficulty.Hard -> CrossShape(6, 6, 0.7, 4, 2, 200)
+    }
+
+    /**
+     * Odd one out: the level of the rules and numbers (1 to 3) and how many questions a run has. A run is saved as these two numbers
+     * and a seed, so there is no limit from the saved size.
+     */
+    data class OddShape(val level: Int, val rounds: Int)
+
+    fun oddOne(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> OddShape(1, 8)
+        Difficulty.Medium -> OddShape(2, 10)
+        Difficulty.Hard -> OddShape(3, 12)
+    }
+
+    /**
+     * Mirror: the side of the square and the axes a board of the level may have (one is picked from the seed). The side stops at 8: the
+     * saved board is one bit a given cell, a few bits for the size and the axis.
+     */
+    data class MirrorShape(val size: Int, val axes: List<com.mehmtcan.brainscroll.game.mirror.MirrorAxis>)
+
+    fun mirror(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> MirrorShape(4, listOf(com.mehmtcan.brainscroll.game.mirror.MirrorAxis.Vertical))
+        Difficulty.Medium -> MirrorShape(6, listOf(com.mehmtcan.brainscroll.game.mirror.MirrorAxis.Vertical, com.mehmtcan.brainscroll.game.mirror.MirrorAxis.Horizontal))
+        Difficulty.Hard -> MirrorShape(8, listOf(com.mehmtcan.brainscroll.game.mirror.MirrorAxis.Diagonal, com.mehmtcan.brainscroll.game.mirror.MirrorAxis.Point))
+    }
+
+    /**
+     * Lone numbers: the side of the square and how many cells are shaded in the answer. The side stops at 7: a board is saved at three
+     * bits a cell (see LonePuzzle), and 7 by 7 is the biggest that fits the 32 characters of the saved answer.
+     */
+    data class LoneShape(val size: Int, val shaded: Int)
+
+    fun loneNumber(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> LoneShape(5, 6)
+        Difficulty.Medium -> LoneShape(6, 9)
+        Difficulty.Hard -> LoneShape(7, 13)
+    }
+
+    /**
+     * Zeros and ones: the side of the square, how many cells are given at the most (the generator takes cells away until it gets there) and
+     * whether the board may need a try-and-see step (the easy level is done by the rules alone).
+     */
+    data class BinShape(val size: Int, val given: Int, val lookahead: Boolean = true)
+
+    fun zerosOnes(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> BinShape(6, 18, lookahead = false)
+        Difficulty.Medium -> BinShape(8, 24, lookahead = false)
+        Difficulty.Hard -> BinShape(10, 30)
+    }
+
+    /**
+     * Lamps: the side of the square, how many walls, how many of the walls keep a number at the most (the generator takes numbers away until
+     * it gets there) and whether the board may need a try-and-see step (the easy level is done by the rules alone). The side stops at 10:
+     * a board is saved at one bit a cell and three bits a wall (see LampPuzzle).
+     */
+    data class LampShape(val size: Int, val walls: Int, val numbers: Int, val lookahead: Boolean = true)
+
+    fun lamps(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> LampShape(5, 5, 4, lookahead = false)
+        Difficulty.Medium -> LampShape(7, 10, 6, lookahead = false)
+        Difficulty.Hard -> LampShape(10, 20, 6)
+    }
+
+    /**
+     * Greater and less: the side of the square, how many numbers are given and how many signs there are at the most (the generator takes
+     * them away until it gets there) and whether the board may need a try-and-see step (the easy level is done by the rules alone). The
+     * side stops at 6 for play: a board is saved at three bits a given number and one bit a sign (see GlPuzzle).
+     */
+    data class GlShape(val size: Int, val given: Int, val signs: Int, val lookahead: Boolean = true)
+
+    fun greaterLess(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> GlShape(4, 2, 5, lookahead = false)
+        Difficulty.Medium -> GlShape(5, 3, 8, lookahead = false)
+        Difficulty.Hard -> GlShape(6, 3, 12)
+    }
+
+    /**
+     * Fences: the side of the square, how many squares keep a number at the most (the generator takes numbers away until it gets there)
+     * and whether the board may need a try-and-see step (the easy level is done by the rules alone). A board is saved at one bit a square
+     * and two bits a number (see FencePuzzle), so 8 by 8 holds up to 62 numbers.
+     */
+    data class FenceShape(val size: Int, val clues: Int, val lookahead: Boolean = true)
+
+    fun fences(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.Easy -> FenceShape(4, 8, lookahead = false)
+        Difficulty.Medium -> FenceShape(6, 18, lookahead = false)
+        Difficulty.Hard -> FenceShape(8, 26)
     }
 
     /** A code: how many places, how many colours, and whether a colour may be in it twice. */
