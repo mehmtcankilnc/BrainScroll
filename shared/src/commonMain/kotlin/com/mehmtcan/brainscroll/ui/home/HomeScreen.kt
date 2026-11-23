@@ -105,6 +105,7 @@ import brainscroll.shared.generated.resources.home_fastest_game
 import brainscroll.shared.generated.resources.ranks_moves
 import brainscroll.shared.generated.resources.ranks_stars
 import com.mehmtcan.brainscroll.ui.feed.BoltIcon
+import com.mehmtcan.brainscroll.ui.pro.StoreButton
 import com.mehmtcan.brainscroll.ui.streak.StreakInfoSheet
 import com.mehmtcan.brainscroll.ui.streak.StreakKind
 import com.mehmtcan.brainscroll.ui.feed.FeedUiState
@@ -288,6 +289,8 @@ private fun StreakStrip(dayStreak: Int, waitingToday: Boolean, freezeReady: Bool
         if (freezeReady) {
             BasicText(stringResource(Res.string.home_freeze_badge), style = type.caption.copy(color = colors.textSoft))
         }
+        // The store sits at the far right; the streak moves a little to the left of it.
+        StoreButton()
     }
 }
 

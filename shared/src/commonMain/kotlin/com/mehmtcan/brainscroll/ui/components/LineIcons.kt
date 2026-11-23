@@ -21,7 +21,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** The small outline icons of the profile page (and the sign-in card). They are drawn, so they take the color they are given. */
-enum class LineIcon { Bars, Heart, Trophy, People, Gear, Cloud, Person, Pencil, Globe, Speaker, Sort, Link, Copy, Check, Message }
+enum class LineIcon { Bars, Heart, Trophy, People, Gear, Cloud, Person, Pencil, Globe, Speaker, Sort, Link, Copy, Check, Message, Shop }
 
 /** One [LineIcon] drawn in a square of [size], as thin rounded lines in [color]. The drawing is made on a 24 by 24 grid. */
 @Composable
@@ -145,6 +145,18 @@ fun LineIcon(icon: LineIcon, color: Color, modifier: Modifier = Modifier, size: 
                 }, color, style = stroke)
                 drawLine(color, Offset(7f * u, 8.5f * u), Offset(17f * u, 8.5f * u), strokeWidth = stroke.width, cap = StrokeCap.Round)
                 drawLine(color, Offset(7f * u, 12f * u), Offset(13f * u, 12f * u), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+            LineIcon.Shop -> {
+                // A little shop front: the awning with scalloped edge, the walls and the door.
+                drawPath(path(u) { moveTo(5f, 3.5f); lineTo(19f, 3.5f); lineTo(21.5f, 9.5f); lineTo(2.5f, 9.5f); close() }, color, style = stroke)
+                drawPath(path(u) {
+                    moveTo(2.5f, 9.5f)
+                    cubicTo(2.5f, 12.5f, 8.8f, 12.5f, 8.8f, 9.5f)
+                    cubicTo(8.8f, 12.5f, 15.2f, 12.5f, 15.2f, 9.5f)
+                    cubicTo(15.2f, 12.5f, 21.5f, 12.5f, 21.5f, 9.5f)
+                }, color, style = stroke)
+                drawPath(path(u) { moveTo(4.5f, 12.5f); lineTo(4.5f, 20.5f); lineTo(19.5f, 20.5f); lineTo(19.5f, 12.5f) }, color, style = stroke)
+                drawPath(path(u) { moveTo(10f, 20.5f); lineTo(10f, 15.5f); lineTo(14f, 15.5f); lineTo(14f, 20.5f) }, color, style = stroke)
             }
             LineIcon.Link -> {
                 // Two links of a chain, tilted.

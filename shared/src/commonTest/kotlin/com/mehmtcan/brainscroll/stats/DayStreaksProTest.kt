@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-/** The Pro freeze rule (every 4 days, up to 3) and what Pro would bring back of a broken streak. */
+/** The Pro freeze rule (every 7 days, up to 3) and what Pro would bring back of a broken streak. */
 class DayStreaksProTest {
 
     @Test
@@ -16,38 +16,43 @@ class DayStreaksProTest {
     }
 
     @Test
-    fun proEarnsAFreezeAfterFourDays() {
-        // 1..4 earn a freeze under Pro, so the missed day 5 is bridged and day 6 goes on: five days.
-        val days = listOf(1L, 2L, 3L, 4L, 6L)
-        assertEquals(5, DayStreaks.compute(days, today = 6, pro = true).current)
-        // Without Pro, 4 days earn nothing: the streak starts over at day 6.
-        assertEquals(1, DayStreaks.compute(days, today = 6, pro = false).current)
+    fun theProRuleIsOneFreezeAWeekUpToThree() {
+        assertEquals(FreezeRule(every = 7, max = 3), FreezeRule.PRO)
+    }
+
+    @Test
+    fun proEarnsAFreezeAfterSevenDays() {
+        // 1..7 earn a freeze under Pro, so the missed day 8 is bridged and day 9 goes on: eight days.
+        val days = (1L..7L).toList() + 9L
+        assertEquals(8, DayStreaks.compute(days, today = 9, pro = true).current)
+        // Without Pro, 7 days earn nothing: the streak starts over at day 9.
+        assertEquals(1, DayStreaks.compute(days, today = 9, pro = false).current)
     }
 
     @Test
     fun proKeepsUpToThreeFreezes() {
-        val s = DayStreaks.compute((1L..12L).toList(), today = 12, pro = true)
-        assertEquals(12, s.current)
+        val s = DayStreaks.compute((1L..21L).toList(), today = 21, pro = true)
+        assertEquals(21, s.current)
         assertEquals(3, s.freezesAvailable)
-        // A thirteenth to sixteenth day would earn a fourth: still three.
-        assertEquals(3, DayStreaks.compute((1L..16L).toList(), today = 16, pro = true).freezesAvailable)
+        // A fourth week would earn a fourth: still three.
+        assertEquals(3, DayStreaks.compute((1L..28L).toList(), today = 28, pro = true).freezesAvailable)
     }
 
     @Test
     fun proStillBreaksWhenTooManyDaysAreMissed() {
-        // One freeze after four days cannot bridge three missed days.
-        val s = DayStreaks.compute(listOf(1L, 2L, 3L, 4L), today = 8, pro = true)
+        // One freeze after seven days cannot bridge three missed days.
+        val s = DayStreaks.compute((1L..7L).toList(), today = 11, pro = true)
         assertEquals(0, s.current)
-        assertEquals(4, s.best)
+        assertEquals(7, s.best)
     }
 
     @Test
     fun proBringsBackABrokenStreak() {
-        // Days 1..8 earn two Pro freezes; days 9 and 10 are missed. Pro bridges them, the free rule (one freeze) cannot.
-        val days = (1L..8L).toList()
-        val rescue = DayStreaks.rescue(days, today = 11)
+        // Days 1..14 earn two Pro freezes; days 15 and 16 are missed. Pro bridges them, the free rule (none yet) cannot.
+        val days = (1L..14L).toList()
+        val rescue = DayStreaks.rescue(days, today = 17)
         assertNotNull(rescue)
-        assertEquals(Rescue(freeStreak = 0, proStreak = 8), rescue)
+        assertEquals(Rescue(freeStreak = 0, proStreak = 14), rescue)
     }
 
     @Test

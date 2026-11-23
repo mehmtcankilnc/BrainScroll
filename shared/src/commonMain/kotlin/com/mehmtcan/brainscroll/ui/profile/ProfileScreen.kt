@@ -150,6 +150,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.mehmtcan.brainscroll.telemetry.NoTelemetry
 import com.mehmtcan.brainscroll.telemetry.Telemetry
 import com.mehmtcan.brainscroll.ui.pro.PaywallSource
+import com.mehmtcan.brainscroll.ui.pro.StoreButton
 import com.mehmtcan.brainscroll.ui.theme.Accent
 import com.mehmtcan.brainscroll.ui.theme.LocalBrainScrollColors
 import com.mehmtcan.brainscroll.ui.theme.withAccent
@@ -360,11 +361,14 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.lg),
         ) {
             Spacer(Modifier.height(Spacing.sm))
-            BasicText(
-                text = stringResource(Res.string.tab_profile),
-                style = type.display.copy(color = colors.textPrimary, fontWeight = FontWeight.Bold),
-                modifier = Modifier.semantics { heading() },
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BasicText(
+                    text = stringResource(Res.string.tab_profile),
+                    style = type.display.copy(color = colors.textPrimary, fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                StoreButton()
+            }
             ProfileHeader(account, username)
             if (!named) SignInCard(offline = account !is AccountState.SignedIn) {
                 when {

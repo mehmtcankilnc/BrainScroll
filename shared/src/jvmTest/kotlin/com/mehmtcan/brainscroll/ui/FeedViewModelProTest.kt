@@ -69,8 +69,8 @@ class FeedViewModelProTest {
         )
     }
 
-    /** Eight days in a row that ended three days ago (two days missed, today still open): Pro's two freezes bridge the gap, the free one cannot. */
-    private val brokenStreak get() = (today - 10..today - 3).toList()
+    /** Fourteen days in a row that ended three days ago (two days missed, today still open): Pro's two freezes bridge the gap, the free rule cannot. */
+    private val brokenStreak get() = (today - 16..today - 3).toList()
 
     @Test
     fun theFreePlayerStartsWithFiveStepsAndTheDesktopHasNoLimit() = runTest {
@@ -88,9 +88,9 @@ class FeedViewModelProTest {
     fun aBrokenStreakIsOfferedOnceAndOnlyOnceForThatBreak() = runTest {
         val repo = repository().also { it.finishDaily(brokenStreak) }
         val vm = viewModel(repo)
-        assertEquals(Rescue(freeStreak = 0, proStreak = 8), vm.rescueOffer())
+        assertEquals(Rescue(freeStreak = 0, proStreak = 14), vm.rescueOffer())
         // Asking is not showing.
-        assertEquals(Rescue(0, 8), vm.rescueOffer())
+        assertEquals(Rescue(0, 14), vm.rescueOffer())
         vm.markRescueShown()
         assertNull(vm.rescueOffer(), "closed once, not again for this break")
         // Still the same after a restart: it is kept on the device.
@@ -120,7 +120,7 @@ class FeedViewModelProTest {
         assertEquals(0, vm.profile.value.dayStreak.current, "free rule: broken")
         billing.updates.emit(true) // the purchase went through
         advanceUntilIdle()
-        assertEquals(8, vm.profile.value.dayStreak.current, "Pro rule counts the whole history again")
+        assertEquals(14, vm.profile.value.dayStreak.current, "Pro rule counts the whole history again")
         billing.updates.emit(false) // refunded
         advanceUntilIdle()
         assertEquals(0, vm.profile.value.dayStreak.current)

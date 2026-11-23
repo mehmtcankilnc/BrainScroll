@@ -52,7 +52,7 @@ Son güncelleme: 2026-10-05
 ## Seriler
 - **Gün serisi:** günlük bulmacayı **bitirmek** yeter (kaybetsen de). Kazanma oranı ayrı istatistik.
 - **Seri dondurma** hakkı vardır (kazanma/verilme kuralı Faz 6'da netleşir; öneri: her 7 günlük seride 1 hak, en fazla 1 biriken).
-  - **Pro farkı (2026-10-25):** BrainScroll Pro ile her **4** günlük seride 1 hak, en fazla **3** biriken (`FreezeRule.PRO`). Seri her zaman tüm geçmişten, oyuncunun kuralıyla yeniden hesaplanır; Pro alınınca kopuk bir serinin geri gelmesi bilerek kabul edildi (seri kurtarma). İade olursa ücretsiz kuralla hesaplanır, seri kısalabilir.
+  - **Pro farkı (2026-10-25):** Ücretsizde her **15** günlük seride 1 hak, en fazla **1** biriken (`FreezeRule.FREE`; 23 Kasım 2026'da 7'den 15'e çekildi). BrainScroll Pro ile her **7** günlük seride (haftada 1) hak, en fazla **3** biriken (`FreezeRule.PRO`). Seri her zaman tüm geçmişten, oyuncunun kuralıyla yeniden hesaplanır; Pro alınınca kopuk bir serinin geri gelmesi bilerek kabul edildi (seri kurtarma). İade olursa ücretsiz kuralla hesaplanır, seri kısalabilir.
 - **Doğru cevap serisi (sonsuz akış):** yanlış/kayıp seriyi bozar. **Atlamak bozmaz, ama akış başına yalnızca 1 atlama hakkı** vardır.
   - "Akış" = oturum (karar, 2026-10-10): soğuk başlangıç veya 30 dk hareketsizlik sonrası atlama hakkı yenilenir. Seri ve atlanmış bulmacalar etkilenmez.
 

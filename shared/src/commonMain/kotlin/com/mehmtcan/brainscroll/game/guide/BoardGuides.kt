@@ -110,6 +110,7 @@ import com.mehmtcan.brainscroll.game.sudoku.SudokuStatus
 import com.mehmtcan.brainscroll.game.wordle.LetterResult
 import com.mehmtcan.brainscroll.game.wordle.WordleStatus
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** The guide of minesweeper: what the numbers on the board prove (see [MinesSolver]). */
 object MinesGuide {
@@ -636,7 +637,7 @@ object UntangleGuide {
             }
         }
         if (node < 0) return null
-        return GuideStep(GuideReason.UntangleMove, listOf(node), listOf(Math.round(tx[node]).toInt(), Math.round(ty[node]).toInt()))
+        return GuideStep(GuideReason.UntangleMove, listOf(node), listOf(tx[node].roundToInt(), ty[node].roundToInt()))
     }
 }
 

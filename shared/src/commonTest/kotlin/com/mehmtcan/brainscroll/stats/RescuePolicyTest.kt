@@ -7,9 +7,9 @@ import kotlin.test.assertNull
 
 /** When the "bring your streak back" paywall may come up by itself (docs/pro-plan.md section 7.3). */
 class RescuePolicyTest {
-    /** Days 1..8 finished, then two missed: Pro would bring back 8 days, the free rule leaves 0. */
-    private val days = (1L..8L).toList()
-    private val today = 11L
+    /** Days 1..14 finished, then two missed: Pro (two freezes by then) would bring back 14 days, the free rule leaves 0. */
+    private val days = (1L..14L).toList()
+    private val today = 17L
     private val localToday = 500L
 
     private fun offer(
@@ -21,7 +21,7 @@ class RescuePolicyTest {
 
     @Test
     fun aBrokenStreakThatProWouldBringBackIsOffered() {
-        assertEquals(Rescue(0, 8), offer())
+        assertEquals(Rescue(0, 14), offer())
     }
 
     @Test
@@ -43,12 +43,12 @@ class RescuePolicyTest {
 
     @Test
     fun onlyOnceForTheSameBreak() {
-        assertNull(offer(shownBreak = 8L))
+        assertNull(offer(shownBreak = 14L))
     }
 
     @Test
     fun aNewBreakOffersAgain() {
-        // The offer was shown for an older break (last finished day 3); this break is named by day 8.
+        // The offer was shown for an older break (last finished day 3); this break is named by day 14.
         assertNotNull(offer(shownBreak = 3L))
     }
 
@@ -60,7 +60,7 @@ class RescuePolicyTest {
 
     @Test
     fun aBreakIsNamedByTheLastFinishedDay() {
-        assertEquals(8L, RescuePolicy.breakOf(days))
+        assertEquals(14L, RescuePolicy.breakOf(days))
         assertNull(RescuePolicy.breakOf(emptyList()))
     }
 }

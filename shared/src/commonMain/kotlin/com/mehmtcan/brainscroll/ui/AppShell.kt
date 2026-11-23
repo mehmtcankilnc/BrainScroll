@@ -122,6 +122,7 @@ import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
 import com.mehmtcan.brainscroll.ui.profile.LanguageUi
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
+import com.mehmtcan.brainscroll.ui.theme.COSMETICS_ENABLED
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.StringResource
@@ -345,8 +346,8 @@ fun AppShell(
                                 privacy = PrivacyUi(enabled = sharing, onChange = viewModel.telemetry::setEnabled),
                                 language = LanguageUi(selected = appLanguage, onSelect = viewModel::setAppLanguage),
                                 sound = PrivacyUi(enabled = soundOn, onChange = viewModel::setSoundEnabled),
-                                // Nothing to choose where nothing can be bought.
-                                look = if (viewModel.pro.available) LookUi(
+                                // Cosmetics are on hold (COSMETICS_ENABLED); nothing to choose where nothing can be bought.
+                                look = if (COSMETICS_ENABLED && viewModel.pro.available) LookUi(
                                     look = look,
                                     pro = isPro,
                                     onAccent = viewModel::setAccent,

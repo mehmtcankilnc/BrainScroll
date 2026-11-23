@@ -43,8 +43,8 @@ object CrossGenerator {
                     return@repeat
                 }
                 // The cell with the fewest digits left that is not decided yet.
-                val fewest = open.minOf { Integer.bitCount(cand[it]) }
-                val pick = open.filter { Integer.bitCount(cand[it]) == fewest }.let { it[random.nextInt(it.size)] }
+                val fewest = open.minOf { cand[it].countOneBits() }
+                val pick = open.filter { cand[it].countOneBits() == fewest }.let { it[random.nextInt(it.size)] }
                 start[pick] = solution[pick]
             }
         }

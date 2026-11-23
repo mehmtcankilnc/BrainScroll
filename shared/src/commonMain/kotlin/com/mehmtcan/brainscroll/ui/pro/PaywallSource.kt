@@ -12,4 +12,5 @@ enum class PaywallSource(val wireName: String) {
     Streak("streak"),
     Theme("theme"),
     StreakRescue("streak_rescue"),
+    StoreIcon("store_icon"),
 }

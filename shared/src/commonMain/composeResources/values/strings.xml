@@ -483,7 +483,7 @@
     <string name="streak_daily_title">Daily streak</string>
     <string name="streak_daily_1">Finish today's puzzle every day to keep it going. Winning or losing doesn't matter, finishing does.</string>
     <string name="streak_daily_2">If you miss a day, it starts again from zero.</string>
-    <string name="streak_daily_3">Every 7 days in a row earns a streak freeze. It covers a missed day by itself. You can keep one at a time.</string>
+    <string name="streak_daily_3">Every 15 days in a row earns a streak freeze. It covers a missed day by itself. You can keep one at a time.</string>
     <string name="streak_win_title">Solved in this feed</string>
     <string name="streak_win_1">The number of puzzles you solved in this feed without the guide, in any game.</string>
     <string name="streak_win_2">Losing a puzzle or leaving one unfinished doesn't change it.</string>
@@ -896,7 +896,7 @@
     <string name="pro_badge">PRO</string>
     <string name="pro_tagline">Games are always free. Pro gives you convenience and looks, and supports me while I build the app.</string>
     <string name="pro_benefit_hints">Unlimited guide steps</string>
-    <string name="pro_benefit_freeze">More streak freezes: one every 4 days, keep up to 3</string>
+    <string name="pro_benefit_freeze">More streak freezes: one a week, keep up to 3</string>
     <string name="pro_benefit_look">Accent colors and a pure black theme</string>
     <string name="pro_benefit_badge">A supporter badge on your profile</string>
     <string name="pro_price_caption">One-time payment, yours for good</string>
@@ -912,12 +912,13 @@
     <string name="pro_restore_none">No purchase found for this store account.</string>
     <string name="pro_restore_failed">The store could not be reached. Try again later.</string>
     <string name="pro_thanks">Pro is on. Thank you!</string>
-    <string name="pro_card_hint">Unlimited guide steps, more streak freezes, colors</string>
+    <string name="pro_card_hint">Unlimited guide steps, more streak freezes</string>
     <string name="pro_active_title">Pro is active, thank you</string>
     <string name="pro_active_hint">Restore purchase</string>
     <string name="rescue_title">Your streak broke. You can bring it back.</string>
     <string name="rescue_body">With Pro, your %1$d-day streak comes back.</string>
-    <string name="rescue_rule">Pro gives you 1 streak freeze every 4 days.</string>
+    <string name="rescue_rule">Pro gives you 1 streak freeze a week.</string>
+    <string name="a11y_store">Store</string>
     <string name="rescue_later">Not now</string>
     <string name="rescue_done">Your streak is back: %1$d days.</string>
     <string name="guide_left">%1$d free guide steps left today</string>
@@ -932,8 +933,8 @@
     <string name="accent_blue">Blue</string>
     <string name="accent_orange">Orange</string>
     <string name="accent_yellow">Yellow</string>
-    <string name="streak_daily_3_pro">Every 4 days in a row earns a streak freeze (Pro). It covers a missed day by itself. You can keep up to three.</string>
-    <string name="streak_pro_hint">With BrainScroll Pro: one freeze every 4 days, keep up to 3.</string>
+    <string name="streak_daily_3_pro">Every 7 days in a row earns a streak freeze (Pro). It covers a missed day by itself. You can keep up to three.</string>
+    <string name="streak_pro_hint">With BrainScroll Pro: one freeze a week, keep up to 3.</string>
     <string name="streak_pro_button">See BrainScroll Pro</string>
     <string name="a11y_matchsticks_next">Next place</string>
     <string name="a11y_matchsticks_prev">Previous place</string>

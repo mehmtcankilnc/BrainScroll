@@ -2,6 +2,8 @@
 
 Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/plus-plan.md` (abonelik planı) yerine geçti; o plan bırakıldı, gerekçesi bölüm 1'de. Kodla ilgili tespitler 22 Ekim 2026'daki çalışma ağacına göre. Uygulayan oturum önce bölüm 13'teki "başlamadan kontrol et" listesine baksın.
 
+**Revizyon, 23 Kasım 2026:** Aşama A kodlanmış ve iOS'ta TestFlight'ta denenmiş durumda; bu revizyon hazır kodun üzerine yapılacak değişiklikleri tanımlar (bölüm 18). Özet: (1) Türkiye için kesin olarak ayrı, daha ucuz fiyat. (2) Seri koruma: ücretsizde 15 günde 1 hak (en fazla 1), Pro'da haftada 1 hak (en fazla 3). (3) Ana sayfa, Akış ve Profil'in sağ üstüne mağaza ikonu; ipucu paketleri ve Pro buradan alınır (bölüm 7.4). (4) Kozmetik askıya alındı; ücretsizde de Pro'da da aynı varsayılan görünüm (bölüm 8.5). (5) Arkadaş sınırı fikri değerlendirildi, şimdilik yapılmıyor (bölüm 12).
+
 ## 1. Neden tek seferlik Pro, abonelik değil
 
 - Plus'a konan şeyler (ipucu limiti, seri hakkı, tema) tek seferlik rahatlıklar. Abonelik, her ay yeni değer alınan şeylerde tutar; burada kullanıcı "ipucumu kısıp Plus'a soktular" diye okur.
@@ -15,13 +17,14 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 | Konu | Karar |
 |---|---|
 | Model | Tek seferlik, süresiz "BrainScroll Pro" (non-consumable). Abonelik yok, deneme yok. |
-| Fiyat | $4.99 (kesin). Diğer ülkeler ve Türkiye için mağazanın fiyat basamakları/otomatik dönüşümü kullanılır; TR'de mağazanın önerdiği basamak çok yüksek kalırsa yayından önce elle bir alt basamak seçilir. Kodda sabit fiyat yazılmaz. |
+| Fiyat | $4.99 baz fiyat (kesin). Türkiye için KESİN olarak ayrı, belirgin biçimde daha ucuz bir fiyat uygulanır; mağazanın otomatik dönüşümüne bırakılmaz, iki mağazada da TR fiyatı elle girilir (bölüm 4). Diğer ülkelerde mağazanın otomatik dönüşümü/basamakları kullanılır. Kodda sabit fiyat yazılmaz. |
 | Ad | "BrainScroll Pro" (kesin). |
 | Ücretsiz günlük ipucu | 5 (kesin). |
 | Family Sharing | Açık (kesin). |
 | Seri kurtarma | Seri kopmuşsa ve Pro bunu geri getirecekse, tek seferlik kurtarma paywall'ı gösterilir (bölüm 7.3). Pro alınınca kopuk serinin geri gelmesi kabul edildi (bölüm 6). |
-| Ek ürün | İpucu paketi (consumable), 2. aşamada (bölüm 11, Aşama B). Bakiye sunucuda tutulur. |
-| Pro içeriği | Sınırsız ipucu, seri korumada daha çok hak, kozmetik (renk temaları, saf siyah tema), destekçi rozeti. |
+| Ek ürün | İpucu paketi (consumable), 2. aşamada (bölüm 11, Aşama B). Bakiye sunucuda tutulur. Mağaza ikonundan satılır (bölüm 7.4). |
+| Mağaza | Ana sayfa, Akış ve Profil'in sağ üstünde mağaza ikonu; Pro ve ipucu paketleri tek yerden (bölüm 7.4). |
+| Pro içeriği | Sınırsız ipucu, seri korumada daha çok hak (haftada 1, en fazla 3), destekçi rozeti. Kozmetik askıda (bölüm 8.5). |
 | Reklam | Üçüncü taraf reklam yok. Kendi uygulama içi tanıtım sonraya, yalnızca ücretsiz kullanıcıya ve sadece Pro kartı olarak. |
 | Ana ilke | Hiçbir oyun, günlük bulmaca, sıralama, arkadaş özelliği kilitlenmez. Pro yalnızca kolaylık ve görünüm satar. Rekabeti bozmaz: ipucu kullanılan sonuçlar zaten `assisted` olarak istatistik dışı, kozmetik oyuna etki etmez. |
 | Gelecek özellikler | Mağaza metni ve uygulama yalnızca bugün var olan şeyleri vaat eder. Gelecekteki sunucu maliyetli özellikler (arşiv, ligler) Pro'ya dahil edilecek diye söz verilmez; o karar o zaman verilir (bölüm 12). |
@@ -32,8 +35,8 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 |---|---|---|
 | Oyunlar, günlük bulmaca, favoriler, sıralamalar, arkadaşlar, zorluk seviyeleri | Hepsi | Hepsi |
 | İpucu (guide) | Günde 5 | Sınırsız |
-| Seri koruma | 7 günde 1 hak, en fazla 1 saklanır (şimdiki kural) | 4 günde 1 hak, en fazla 3 saklanır |
-| Kozmetik | Varsayılan görünüm | Vurgu rengi seçenekleri, saf siyah (AMOLED) tema |
+| Seri koruma | 15 günde 1 hak, en fazla 1 saklanır | Haftada (7 günde) 1 hak, en fazla 3 saklanır |
+| Görünüm | Varsayılan görünüm | Aynı varsayılan görünüm (kozmetik askıda) |
 | Rozet | Yok | Profilde "Pro" rozeti |
 
 ## 4. Ürünler ve mağaza tanımları
@@ -47,6 +50,7 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 - Entitlement (hak): tek bir `pro` (RevenueCat kullanılırsa). İpucu paketleri entitlement değildir.
 - Apple: "Aile Paylaşımı" (Family Sharing) AÇIK (karar verildi). Not: App Store Connect'te bir ürün için Family Sharing açıldıktan sonra kapatılamaz; açarak oluştur. Google Play'de aile kitaplığı uygulama/oyun satın alımları için ayrı bir geliştirici ayarıdır, Play Console'da ilgili seçeneği aç. RevenueCat, aile üyesine paylaşılan hakkı otomatik tanır; sandbox'ta test et.
 - Aile paylaşımı yüzünden bir mağaza hesabı birden fazla uygulama hesabında Pro'yu tetikleyebilir; bu istenen davranış, ek önlem yok.
+- Türkiye fiyatı (karar, 23 Kasım 2026): Türkiye'de Pro ve ipucu paketleri için ayrı, daha düşük fiyat kullanılır. App Store Connect'te ürünün fiyat programında Türkiye'yi elle ayarla (baz ülke fiyatından bağımsız); Play Console'da ürünün ülke bazlı fiyatında Türkiye'yi elle gir. Hedef: alım gücüne göre yaklaşık yarı fiyat; tam tutar yayına yakın seçilir (bölüm 16). Paket fiyatları (Aşama B) için de aynı kural. Fiyat kodda sabit değildir, mağazadan gelir, bu yüzden kod değişmez.
 - Çeviriler: İngilizce ve Türkçe başlık ve açıklama. Paywall'daki fiyat mağazadan gelen yerelleştirilmiş fiyattır, elle yazılmaz.
 - Yenileme, deneme, iptal metni YOK; bunlar tek seferlik üründe yanıltıcı olur. Metin açıkça "Tek seferlik ödeme, süresiz" der.
 
@@ -79,22 +83,26 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 ## 6. Seri koruma (Pro kuralı)
 
 - `stats/DayStreaks.kt`: `FREEZE_EVERY = 7`, `MAX_FREEZES = 1`, `compute(finishedDays, today)`; dosya içinde "yerel taslak" notu var, kural `docs/decisions.md` Faz 6 maddesinde.
-- Değişiklik: `compute(finishedDays, today, pro: Boolean = false)`. Pro: `FREEZE_EVERY = 4`, `MAX_FREEZES = 3`. Sabitleri bir `FreezeRule(every, max)` değerine çevir; `FREE`/`PRO` olarak iki sabit; varsayılan ücretsiz.
+- Değişiklik: `compute(finishedDays, today, pro: Boolean = false)`. Sabitler bir `FreezeRule(every, max)` değeri; `FREE`/`PRO` olarak iki sabit; varsayılan ücretsiz.
+- **Revizyon 23 Kasım 2026:** `FreezeRule.FREE = (every 15, max 1)`, `FreezeRule.PRO = (every 7, max 3)`. Önceki değerler 7/1 ve 4/3 idi. Etkileri:
+  - Ücretsiz kural cömertlikten kısılıyor (7 → 15). Seri her zaman tüm geçmişten hesaplandığı için, yeni sürümü alan mevcut kullanıcıların serisi kısalabilir ya da kopabilir. Uygulama henüz yayında değilse (yalnızca TestFlight) sorun değil; yayında kullanıcı varsa serisi geriye dönük kısalmasın diye "eski kuralla hesapla" geçişi düşünülmeli. Yayın öncesi yapılıyorsa ek önlem gerekmez.
+  - Ücretsiz ile Pro arasındaki fark büyüdü (15 gün / 1 hak ile 7 gün / 3 hak). `DayStreaks.rescue` daha sık dolu dönecek, yani seri kurtarma paywall'ı (7.3) daha çok kullanıcıya çıkabilir. Eşikler (en az 3 gün, kopuş başına 1 kez, günde 1 paywall) aynı kalır; bölüm 15'teki "Şimdi değil" ve bırakma oranlarına bak.
+  - Seri bilgi sayfası (`StreakInfoSheet`) ve kilometre taşı (`DailyScreen.kt`, `rule.every`) metinleri/değerleri yeni sayılarla güncellenir; sayılar metinde sabit yazılmaz, kuraldan gelir.
 - Çağıranlar: `DayStreaks.FREEZE_EVERY` doğrudan `DailyScreen.kt:256` içinde kullanılıyor (kilometre taşı). Kural parametre olunca orası da `rule.every` kullanmalı. `DayStreaks.compute` çağrılarının hepsini bul (`grep`) ve `pro` değerini ver.
 - Seri geçmiş günlerden baştan hesaplanıyor. Sonuç:
   - Pro alınınca geçmiş de Pro kuralıyla yeniden hesaplanır. Yan etki: kopmuş bir seri, yeni kuralla "köprülenmiş" sayılıp geri gelebilir. KARAR: bu kabul edildi ve bilerek bir özellik olarak kullanılıyor (bölüm 7.3 "seri kurtarma"). `purchased_day` ya da iki kurallı hesap gerekmez, hesap her zaman tüm geçmiş üzerinden `pro` bayrağıyla yapılır.
   - Kurtarma iddiası sahte olmamalı: paywall'daki "serini geri getir" mesajı yalnızca `compute(..., pro = true).current > compute(..., pro = false).current` olduğunda gösterilir (yani Pro gerçekten seri kazandırıyorsa). Aksi halde kurtarma paywall'ı çıkmaz. Bu karşılaştırma saf fonksiyon olarak yazılır: `DayStreaks.rescue(finishedDays, today): Rescue?` (`Rescue(freeStreak, proStreak)` ya da `null`).
   - Abonelikteki "bitince seri kısalır" sorunu yok, Pro süresiz. Tek istisna iade (refund) ya da ihtilaf: o durumda seri ücretsiz kuralla hesaplanır, kısalabilir; kabul edilir.
-- Testler: mevcut `DayStreaksTest` ücretsiz kuralla aynen geçmeli; Pro için yeni testler (4. günde hak, 3'e kadar birikim, kopma).
-- `docs/decisions.md` Faz 6 maddesine Pro farkı eklenir.
+- Testler: `DayStreaksTest` ve `DayStreaksProTest` yeni sayılara göre güncellenir (ücretsiz: 15. günde hak, en fazla 1; Pro: 7. günde hak, 3'e kadar birikim, kopma). Eski sayıların sabit yazıldığı beklenen değerler değişir; testler kural sabitinden türetilmişse değişmez.
+- `docs/decisions.md` Faz 6 maddesindeki Pro farkı (şu an "4 günde 1 hak") kod değişince yeni sayılarla güncellenir: ücretsiz 15/1, Pro 7/3.
 
 ## 7. Paywall ve deneyim
 
 ### 7.1 Tetikleyiciler (biri hariç hepsi kullanıcının kendi dokunuşuyla)
 1. Ücretsiz ipucu bitince ipucu düğmesi.
 2. Profilde "BrainScroll Pro" kartı.
-3. Seri koruma bilgi sayfası (`StreakInfoSheet`): "Pro ile 4 günde 1 hak, 3'e kadar saklama".
-4. Kozmetik seçicide kilitli seçenekler.
+3. Seri koruma bilgi sayfası (`StreakInfoSheet`): "Pro ile haftada 1 hak, 3'e kadar saklama".
+4. Mağaza ikonu (bölüm 7.4). Ücretsiz ipucu bitince ipucu düğmesi de aynı mağaza ekranını açar.
 5. Seri kurtarma: seri kopmuşsa tek seferlik, kendiliğinden çıkan paywall (tek istisna, bölüm 7.3).
 6. İleride: kendi tanıtım kartı (bölüm 12).
 
@@ -116,7 +124,7 @@ Karar: gün serisi kopmuşken kullanıcı oyuna girerse "serini Pro ile geri get
 - Telemetri kaynağı: `streak_rescue`.
 
 İçerik:
-- Başlık: "Serin koptu, geri getirebilirsin." Altında somut sayı: "Pro ile {n} günlük serin geri gelir." (n = `proStreak`) ve "Pro, 4 günde 1 seri koruma hakkı verir."
+- Başlık: "Serin koptu, geri getirebilirsin." Altında somut sayı: "Pro ile {n} günlük serin geri gelir." (n = `proStreak`) ve "Pro, haftada 1 seri koruma hakkı verir."
 - Ana düğme "Pro'yu al", kolay görünen "Şimdi değil". Sahte aciliyet ve "son şans" dili yok.
 - Satın alınca seri anında yeniden hesaplanır, ana sayfadaki şerit güncellenir, kısa kutlama gösterilir.
 - Mağaza metnine "seri kurtarma" yazılmaz; tek madde "Daha fazla seri koruma hakkı" kalır (yanlış beklenti oluşmasın).
@@ -125,13 +133,28 @@ Tasarım notu: bu paywall kullanıcının kaybettiği şeye dokunduğu için bas
 
 ### 7.2 Ekran
 - Tek ekran, alt sayfa (bottom sheet) ya da tam ekran; mevcut sheet kalıbı (`StreakInfoSheet`, `PersonalizeSheet`) örnek alınsın.
-- Başlık, 3-4 madde (sınırsız ipucu, daha çok seri koruma, temalar, destekçi rozeti), tek büyük fiyat kartı (fiyat mağazadan: "Tek seferlik, süresiz"), ana düğme "Pro'yu al", altında "Satın alımı geri yükle", kullanım koşulları ve gizlilik bağlantıları.
+- Başlık, 3 madde (sınırsız ipucu, daha çok seri koruma, destekçi rozeti), tek büyük fiyat kartı (fiyat mağazadan: "Tek seferlik, süresiz"), ana düğme "Pro'yu al", altında "Satın alımı geri yükle", kullanım koşulları ve gizlilik bağlantıları.
 - Kapatma düğmesi her zaman görünür ve ilk andan erişilebilir.
 - Dürüstlük dili: "Oyunlar her zaman ücretsiz. Pro sana kolaylık ve görünüm verir ve uygulamayı geliştirmeme destek olur." Sahte aciliyet, geri sayım, "son fırsat" yok.
 - Mevcut bileşenler ve `Motion` değerleri kullanılır. Azaltılmış hareket (reduce motion) ayarına saygı.
 - Başarılı satın almada kısa kutlama (`CelebrateWin`/konfeti dili), sesli/haptik geri bildirim (mevcut `LocalHaptics`, `LocalSoundEffects`), Pro rozeti ve ipucu rozetinin "∞" olması anında görünür.
 - Ücretsiz sürümde "Satın alma hatası", "iptal edildi", "bekleniyor" (ebeveyn onayı bekleyen, Apple "Ask to Buy") durumları ayrı ayrı ele alınır; bekleyen durumda mesaj verilir, kilit açılmaz, sonradan geldiğinde açılır.
 - Profilde Pro olan kullanıcıya: "Pro aktif, teşekkürler" satırı ve "Satın alımı yönet" bağlantısı yok (abonelik yok); onun yerine "Satın alımı geri yükle" kalır.
+
+### 7.4 Mağaza ikonu ve mağaza ekranı (revizyon, 23 Kasım 2026)
+Yer:
+- Yalnızca Ana sayfa, Akış ve Profil ekranlarında. İstatistikler, Favoriler, Sıralama, Arkadaşlar, Ayarlar ve oyun ekranlarında görünmez.
+- Üst çubukta sağ üst köşe, seri göstergesinin SAĞINDA. Seri göstergesi bir ikon genişliği kadar sola kayar. Kodda üç ekranın üst çubuğu (`HomeScreen.kt` `StreakStrip`, `FeedScreen.kt`, `ProfileScreen.kt`) ortak bir `StoreButton` bileşenini kullanır; tek yerde tanımlanır, ekran başına kopya yazılmaz.
+- Dar ekran ve büyük yazı tipinde seri göstergesiyle yan yana sığması kontrol edilir (seri sayısı üç haneye çıkınca bile taşmaz). 48dp dokunma alanı, içerik açıklaması "Mağaza".
+- İkon vurgu renginde dolgulu yuvarlak bir düğmedir (soluk çizgi ikon fazla görünmez kalmıştı, 23 Kasım 2026). Bildirim noktası ve "yeni" etiketi YOK. Tek hareket: Ana sayfa ve Profil açıldığında yarım saniye sonra bir kez hafifçe sallanır (yaklaşık 0,5 sn, ±14°), tekrarlanmaz; Akış'ta hiç sallanmaz, azaltılmış hareket açıkken de sallanmaz.
+
+İçerik (mağaza ekranı, `PaywallSheet` kalıbında alt sayfa, her zaman kapatılabilir):
+- Pro olmayan kullanıcı: üstte Pro kartı (paywall içeriği, fiyat mağazadan, "Tek seferlik, süresiz"), altında ipucu paketleri (Aşama B: 20 ve 75). Bugünkü ücretsiz ipucu hakkı ve paket bakiyesi özetlenir. "Satın alımı geri yükle" altta.
+- Pro kullanıcı: ipucu paketi bir işe yaramaz (zaten sınırsız), bu yüzden ikon Pro'da gizlenir; seri göstergesi eski yerine döner. (Karar noktası, bölüm 16.)
+- Aşama A ile B arası: paketler B'de gelir. Yayından önce B de bitiyorsa ikon ve paketler birlikte çıkar. B gecikirse ikon yalnızca Pro kartı ve geri yükleme ile çıkar; paketler gelince aynı ekrana eklenir.
+- Ücretsiz ipucu bitince ipucu düğmesi aynı mağaza ekranını açar (ayrı bir paywall yazılmaz). Paywall'ın "Pro: sınırsız" ve "20 ipucu" iki seçeneği bu ekranın kendisidir.
+- Seri kurtarma paywall'ı (7.3) ayrı kalır; yalnızca Pro'yu anlatır, paket göstermez.
+- Telemetri kaynağı: `store_icon`.
 
 ## 8. Teknik tasarım
 
@@ -162,7 +185,9 @@ Ses ve titreşim katmanlarındaki kalıbı izle (`LocalHaptics`, `LocalSoundEffe
 - RevenueCat'in "restore behavior" ayarını bilinçli seç: "Transfer to new App User ID" tek seferlik ürün için doğru çoğunluk seçimi (kullanıcı cihaz/hesap değiştirince hak taşınır). Bir mağaza hesabını birden fazla uygulama hesabına paylaştırmak istismara açık, ama bu uygulamada Pro'nun istismar değeri düşük; kabul edilir.
 - Sunucu tarafı (isteğe bağlı, v1'de yok): RevenueCat webhook'u → Supabase edge function → `entitlements(user_id, pro, source, updated_at)`. Ancak sunucu tarafı özellik (arşiv, lig) çıkarsa gerekir; ekleme maliyeti 1-2 gün.
 
-### 8.5 Kozmetik
+### 8.5 Kozmetik (ASKIDA, 23 Kasım 2026)
+**Karar:** Şimdilik kozmetik yok. Ücretsizde de Pro'da da aynı, bugünkü varsayılan görünüm kullanılır. Pro'nun içeriği: sınırsız ipucu, daha çok seri koruma, rozet. Kodda bu iş zaten yapılmış durumda (`ui/theme/Look.kt`, `ui/profile/LookSection.kt`, `theme_accent` / `theme_amoled` ayarları, `LookTest`). Uygulayan oturum: seçiciyi (`LookSection`) profilden kaldırır/gizler, `Look` her koşulda varsayılan görünümü uygular; mantık ve testler silinmez, geri açmak ucuz kalsın (yeniden açılmayacağı netleşirse silinir). Saklı `theme_*` ayarları yok sayılır. Aşağıdaki metin askıdaki tasarımın arşividir; bölüm 7.1, 10 ve 14'te kozmetik artık geçerli değil.
+
 - Tema şu an yalnızca koyu (`BrainScrollTheme(highContrast)`; `DarkColors` ve `highContrast()`). Renk ham değerleri `Color.kt` içindeki `Palette` nesnesinde, ekranlar yalnızca `Tokens.kt` içindeki anlamsal jetonları kullanıyor (bu kuralı bozma). Ekranlarda sabit renk kullanma.
 - v1 kapsamı:
   1. **Saf siyah (AMOLED) tema**: arka plan jetonlarının (`Neutral900`'dan türeyenler) `0xFF000000` yapılması. Yüksek kontrast modu (HighContrast) ile birlikte çalışmalı; ikisi birden açıksa yüksek kontrast kazanır. Kontrast oranlarını kontrol et.
@@ -173,7 +198,7 @@ Ses ve titreşim katmanlarındaki kalıbı izle (`LocalHaptics`, `LocalSoundEffe
 - Kilitli seçeneklerin önizlemesi: dokununca renk 2 sn önizlenir ve altta "Pro ile kullan" düğmesi çıkar; zorla paywall açılmaz.
 
 ## 9. Gizlilik ve telemetri
-- Uygulamada `telemetry` paketi ve `PrivacySection` var. Olaylar: paywall açıldı (kaynak: ipucu / profil / seri / tema), satın alma başladı, başarılı, iptal, hata, geri yükleme. Yalnızca kullanıcı analitiği açmışsa gönderilir.
+- Uygulamada `telemetry` paketi ve `PrivacySection` var. Olaylar: paywall açıldı (kaynak: ipucu / profil / seri / mağaza ikonu / seri kurtarma), satın alma başladı, başarılı, iptal, hata, geri yükleme. Yalnızca kullanıcı analitiği açmışsa gönderilir.
 - Satın alma bilgisini başka verilerle birleştirip kişisel veri üretme; RevenueCat'e giden tek kimlik Supabase kullanıcı kimliği (anonim olabilir).
 - Mağaza gizlilik beyanları: App Store gizlilik etiketleri ve Play veri güvenliği formu "satın alımlar" verisini içerecek şekilde güncellenir. `site/privacy.html` içindeki politikaya RevenueCat'in (üçüncü taraf işleyici) satın alma işlemesi ve iade/geri yükleme açıklaması eklenir.
 
@@ -181,14 +206,14 @@ Ses ve titreşim katmanlarındaki kalıbı izle (`LocalHaptics`, `LocalSoundEffe
 
 ### 10.1 Birim testleri (`commonTest`)
 - `GuideQuota`: gün değişimi, 0/1/5 kullanım (5. kullanımdan sonra 6. engellenir), Pro sınırsız, `guideNothing` hak düşürmez, arama sürerken çift dokunuş tek düşüş, bonus bakiyesi (Aşama B) sırası (önce ücretsiz sonra bakiye).
-- `DayStreaks`: mevcut testler ücretsiz kuralla aynı sonuç; Pro kuralı yeni testler; Pro ile kopuk serinin geri gelmesi; `rescue(...)` gerçekten seri kazandırdığında dolu, kazandırmadığında ve seri kopuk değilken `null` döner.
+- `DayStreaks`: testler yeni kurallara göre (ücretsiz 15/1, Pro 7/3); Pro kuralı yeni testler; Pro ile kopuk serinin geri gelmesi; `rescue(...)` gerçekten seri kazandırdığında dolu, kazandırmadığında ve seri kopuk değilken `null` döner.
 - Seri kurtarma gösterim koşulları (saf fonksiyon): Pro değil, `rescue != null`, en az 3 gün, aynı kopuşta ikinci kez çıkmaz, yeni kopuşta yeniden çıkar, günde en fazla bir kendiliğinden paywall.
 - `ProController` (sahte `ProState` ile): `isPro` değişince kota, seri ve tema tepki verir; önbellek: ağ hatası önbelleği silmez, kesin `false` siler.
-- Kozmetik: Pro değilken seçili tema varsayılana döner ama seçim saklı.
+- Kozmetik: askıda; `Look` Pro olsun olmasın varsayılan görünümü verir.
 - Mevcut feed testleri kırılmamalı: kota yalnızca `FeedViewModel.requestGuide` yolunda, ve testlerde `LocalPro`/sahte denetleyici varsayılanı "kota işlemez" olabilir ya da testler kota testlerini kendi içinde kurar.
 
 ### 10.2 Arayüz ve elle test (cihazda)
-- Küçük ekran, dar ekran, büyük yazı tipi, TR ve EN dilleri (`feedback-new-game-checklist` ile aynı kontroller): paywall, rozet, tema seçici.
+- Küçük ekran, dar ekran, büyük yazı tipi, TR ve EN dilleri (`feedback-new-game-checklist` ile aynı kontroller): paywall, rozet, mağaza ikonu (seri göstergesiyle yan yana sığıyor mu).
 - Erişilebilirlik: ekran okuyucu (TalkBack/VoiceOver) paywall sırası, kapatma düğmesi, fiyat okunuşu.
 - Azaltılmış hareket açıkken kutlama ve geçişler.
 
@@ -213,8 +238,9 @@ Ses ve titreşim katmanlarındaki kalıbı izle (`LocalHaptics`, `LocalSoundEffe
 3. `GuideQuota` saf fonksiyon + testler, `FeedViewModel` kota akışı, düğme rozeti (1 gün).
 4. Paywall ekranı, profil bölümü, geri yükleme (1.5 gün).
 5. Seri koruma Pro kuralı + `DailyScreen` kilometre taşı + `DayStreaks.rescue` + seri kurtarma paywall'ı (bölüm 7.3) + testler (1 gün).
-6. Kozmetik: AMOLED ve vurgu rengi (1-1.5 gün).
-7. Sandbox'ta uçtan uca deneme (1 gün).
+6. Kozmetik: askıya alındı (23 Kasım 2026), bu adım yok; yalnızca seçici arayüzden kaldırılır (bölüm 8.5).
+7. Mağaza ikonu ve mağaza ekranı: `StoreButton`, üç ekranın üst çubuğu, seri göstergesini sola kaydırma, Pro kartı, ipucu düğmesinin mağazaya bağlanması (1 gün, bölüm 7.4).
+8. Sandbox'ta uçtan uca deneme (1 gün).
 
 ### Aşama B: İpucu paketi (hedef 4-5 gün; Aşama A'dan sonra, A mağaza incelemesindeyken başlanabilir)
 Karar: bakiye sunucuda (Supabase) tutulur; cihaz değişimi ve yeniden kurulumda kaybolmaz. Consumable'lar mağazadan "geri yükle" ile gelmez, bu yüzden bakiyenin tek doğruluk kaynağı sunucudur.
@@ -232,7 +258,7 @@ Tasarım:
 
 Ürünler ve arayüz:
 - Paketler: 20 ($0.99) ve 75 ($2.99), büyük pakette indirim net olsun. Pro sahibi bunları görmez (zaten sınırsız).
-- Pro almamış ve kotası bitmiş kullanıcıya paywall iki seçenek sunar: "Pro: sınırsız" (öne çıkan) ve "20 ipucu". Birini dayatmaz; her zaman kapatılabilir.
+- Paketler mağaza ekranında (bölüm 7.4) Pro kartının altında durur. Pro almamış ve kotası bitmiş kullanıcıya ipucu düğmesi bu ekranı açar: "Pro: sınırsız" (öne çıkan) ve "20 ipucu". Birini dayatmaz; her zaman kapatılabilir.
 - Harcama sırası: önce günlük ücretsiz 5 hak, bitince bakiye (`GuideQuota.spend`).
 - Pro'ya sonradan geçen kullanıcının bakiyesi silinmez; Pro sınırsız olduğu için harcanmaz. İade/ihtilafla Pro kapanırsa bakiye yine kullanılabilir.
 - Aşama B'yi A'dan ayırmanın nedeni: sunucu tarafı (edge function, webhook, göç, birleştirme) ayrı bir risk ve test yüzeyi; Pro'nun yayınını geciktirmesin.
@@ -242,6 +268,7 @@ Abonelik yalnızca şu şartlar sağlanınca konuşulur:
 - Sürekli değer üreten en az bir özellik çıktı: geçmiş günlük bulmaca arşivi, antrenman modu + beceri istatistikleri ("beyin profili"), özel arkadaş ligleri. Bunların sunucu maliyeti vardır; bu yüzden abonelik gerekçesi olurlar.
 - Pro sahiplerine bu özelliklerin ne olacağı en baştan kararlaştırılmış: seçenek (a) Pro'ya dahil (sevgili ama gelir kısıtı), (b) ayrı aboneliğe bağlı, Pro sahipleri için indirimli, (c) bir tutar karşılığı "yükselt". Pro'yu satın alanlara sonradan "bu da ücretli" demek güveni bozar; bu yüzden satın alma ekranında gelecekten söz edilmez ve karar şeffaf duyurulur.
 - Veri: bölüm 15'teki göstergeler Pro'nun yeterince alıcı bulduğunu ya da bulmadığını gösteriyor.
+- Arkadaş sınırı (fikir, 23 Kasım 2026): ücretsizde 5 arkadaş, Pro'da fazlası. ŞİMDİLİK YAPILMIYOR. Gerekçe: arkadaş eklemek uygulamanın büyüme döngüsü (her arkadaş yeni kullanıcı getirir) ve sınıra ilk takılan, en bağlı kullanıcıdır; "hiçbir arkadaş özelliği kilitlenmez" ilkesiyle (bölüm 2) çelişir. Pro'ya gerçek değer katan sosyal bir şey (özel lig, grup sıralaması) çıkınca, sınırı arkadaş SAYISINA değil o özelliğe bağlamak daha sağlıklı. Önce arkadaş sayısı dağılımı ölçülür (kaç kullanıcı 5'e yaklaşıyor).
 - Kendi uygulama içi tanıtım (reklam) sadece ücretsiz kullanıcıya, yalnızca "Pro" ve başka kendi uygulamaların kartı; ilk gün hiç, sonra 15-20 kaydırmada bir, bulmaca ortasında asla.
 
 ## 13. Başlamadan kontrol et
@@ -255,15 +282,17 @@ Abonelik yalnızca şu şartlar sağlanınca konuşulur:
 
 ## 14. Kabul ölçütleri
 - Ücretsiz kullanıcı günde 5 ipucu alır; 6. dokunuşta paywall açılır; ipucu bulunamadığında kota harcanmaz; arama sürerken çift dokunuş tek hak harcar.
-- Pro satın alınca ipucu sınırsız, seri koruma 4 günde 1 hak ve en fazla 3, tema seçenekleri açık, Pro rozeti görünür. Uygulama yeniden açılınca ve çevrimdışıyken de korunur.
+- Pro satın alınca ipucu sınırsız, seri koruma haftada 1 hak ve en fazla 3 (ücretsizde 15 günde 1 hak, en fazla 1), Pro rozeti görünür; görünüm ücretsizle aynı. Uygulama yeniden açılınca ve çevrimdışıyken de korunur.
 - Satın alma iptali, bekleyen ve hata durumları anlaşılır mesajla ele alınır; hiçbirinde Pro açılmaz (bekleyen sonradan onaylanırsa açılır).
 - "Satın alımı geri yükle" yeni cihazda hakkı geri getirir. Anonim hesap Apple girişiyle birleşince hak kaybolmaz. Hesap silip yeni anonim hesapta geri yükleyince hak gelir.
-- İade sonrası ipucu kotası, seri kuralları ve tema ücretsize döner; tema seçimi saklı kalır.
+- İade sonrası ipucu kotası ve seri kuralları ücretsize döner.
 - Masaüstünde (jvm) satın alım arayüzü görünmez ve çökme yok.
 - Hesap silme sonrası ipucu kotası sıfırlanarak bedava hak üretmez.
 - Paywall her zaman kapatılabilir. Kendiliğinden yalnızca seri kurtarma durumunda çıkar (7.3); ilk açılışta, bulmaca ortasında ya da bulmaca bitişinde asla.
 - Seri kopmuş ve Pro seri kazandıracaksa, bulmaca başlamadan önce kurtarma paywall'ı bir kez çıkar; kapatılırsa aynı kopuş için bir daha çıkmaz; Pro seri kazandırmıyorsa hiç çıkmaz; satın alınca seri anında geri gelir.
 - Tüm metinler İngilizce ve Türkçe, fiyatlar mağazadan yerelleştirilmiş gelir; "yenileme" ya da "deneme" ifadesi hiçbir yerde geçmez.
+- Türkiye mağazalarında Pro (ve Aşama B'de paketler) diğer ülkelerin dönüşümünden belirgin biçimde ucuzdur; fiyat elle girilmiştir, iki mağazada da test hesabıyla doğrulanır.
+- Mağaza ikonu yalnızca Ana sayfa, Akış ve Profil'de, seri göstergesinin sağında görünür; diğer ekranlarda görünmez; Pro'da gizlidir; dar ekranda ve büyük yazı tipinde seriyle birlikte taşmaz; ipucu düğmesi hak bitince aynı ekranı açar.
 - Aşama B (ayrıca): paket satın alınca bakiye sunucuda artar (webhook idempotent, çift kredi yok); harcama önce günlük ücretsiz haktan, sonra bakiyeden olur; Pro'da bakiye harcanmaz; yeniden kurulumda ve yeni cihazda bakiye durur; anonim → Apple birleşmesinde bakiye toplanarak taşınır; çevrimdışıyken bakiyeli harcama engellenir ama günlük ücretsiz haklar çalışır.
 
 ## 15. Ölçüm (karar vermek için)
@@ -272,17 +301,31 @@ Yalnızca telemetri açıkken, anonim sayımlarla:
 - Görüntüleme → satın alma dönüşümü (hedef: tek yönlü bir önsezi ölçütü olarak yüzde 1-3 aktif kullanıcı; bu tahmindir, gerçek veri gelince güncelle).
 - Ücretsiz ipucu bitimi: kaç kullanıcı günlük 5 hakkı bitiriyor. Çok az kişi bitiriyorsa limit çok cömert (3-4'e inebilir), çok kişi bitiriyorsa Pro'yu sert hissettiriyor olabilir.
 - Seri kurtarma paywall'ı: gösterim sayısı, dönüşüm, "Şimdi değil" oranı ve o paywall sonrası uygulamayı bırakma oranı. Kullanıcıyı kaçırıyorsa daralt ya da kaldır.
-- Hangi tetikleyici (ipucu / profil / seri / tema) en çok satın almaya götürüyor.
+- Hangi tetikleyici (ipucu / profil / seri / mağaza ikonu / seri kurtarma) en çok satın almaya götürüyor.
+- Ücretsiz kullanıcıların arkadaş sayısı dağılımı (arkadaş sınırı fikrini ileride değerlendirmek için, bölüm 12).
 - İade oranı.
 
 ## 16. Kararlar ve kalan açık sorular
 Karar verildi (23 Ekim 2026): fiyat $4.99, ücretsiz günlük ipucu 5, ad "BrainScroll Pro", kopuk serinin Pro ile geri gelmesi kabul (ve seri kurtarma paywall'ı eklendi, bölüm 7.3), Aşama B bakiyesi sunucuda, Family Sharing açık.
 
+Karar verildi (23 Kasım 2026, revizyon): Türkiye için ayrı, daha ucuz fiyat (kesin); seri koruma ücretsizde 15 günde 1 hak ve en fazla 1, Pro'da haftada 1 hak ve en fazla 3; Ana sayfa/Akış/Profil'de sağ üstte mağaza ikonu, ipucu paketleri ve Pro buradan; kozmetik askıya alındı (ücretsiz ve Pro aynı görünüm); arkadaş sınırı şimdilik yok.
+
 Kalan açık sorular:
-- Vurgu rengi listesi ve isimleri (Türkçe ve İngilizce). Öneri: 4 renk, `Palette` içindeki mavi, turuncu, sarı, kırmızı; yeşil varsayılan kalır.
+- Pro kullanıcıda mağaza ikonu gizli mi kalsın (öneri: evet, alınacak şey yok), yoksa "Pro aktif" ekranı için görünür mü?
+- Ücretsiz seri kuralı 7 → 15 olunca yayında kullanıcı varsa serileri kısalır; yayın öncesi mi uygulanıyor (öneri: yayından önce uygula, ek önlem gerekmez)?
+- Seri kurtarma paywall'ı yeni kural farkıyla daha sık çıkacak; ilk verilerle eşikler gözden geçirilir (bölüm 15).
+- Kozmetik askıdan ne zaman çıkar (öneri: Pro'ya veri gösteren ek değer eklenene ya da kullanıcı isteği gelene kadar bekle).
 - Seri kurtarma paywall'ı eşikleri (öneri: kurtarılacak seri en az 3 gün, kopuş başına 1 gösterim, günde en fazla 1 kendiliğinden paywall).
-- Türkiye fiyat basamağı: mağazanın otomatik dönüşümü mü, elle alt basamak mı (yayına yakın karar).
+- Türkiye fiyatının tam tutarı (Pro ve paketler için). Karar: elle ve daha ucuz; kalan: kaç TL (öneri: baz fiyatın yaklaşık yarısı alım gücüne denk gelen basamak; yayına yakın seçilir).
 - Aşama B paket miktarları ve fiyatları (öneri 20/$0.99 ve 75/$2.99).
+
+## 18. Revizyon uygulama listesi (23 Kasım 2026)
+Aşama A'nın kodlanmış hali üzerine yapılacak değişiklikler, hepsi küçük:
+1. `FreezeRule.FREE = (15, 1)`, `FreezeRule.PRO = (7, 3)`; `StreakInfoSheet`, `DailyScreen.kt` kilometre taşı ve `strings.xml` (TR/EN) metinleri güncellenir; `DayStreaksTest`, `DayStreaksProTest` ve `docs/decisions.md` Faz 6 maddesi yeni sayılara göre düzeltilir (bölüm 6).
+2. Kozmetik: `LookSection` profilden kaldırılır/gizlenir, `Look` varsayılanı uygular, `LookTest` güncellenir (bölüm 8.5).
+3. `StoreButton` bileşeni, üç ekranın üst çubuğunda seri göstergesinin sağı, seri sola kayar; mağaza ekranı (Pro kartı, Aşama B'de paketler), ipucu düğmesinin hak bitince mağazaya bağlanması, `store_icon` telemetri kaynağı (bölüm 7.4).
+4. TR fiyatı: mağaza panellerinde (kullanıcıda) elle girilir; kod değişmez.
+5. Aşama B (paketler) bu revizyonun parçası değil; mağaza ekranı paketleri alacak yeri hazır bırakır.
 
 ## 17. Başlangıç prompt'u (yeni oturum için)
 > `docs/pro-plan.md` dosyasındaki BrainScroll Pro (tek seferlik) planının Aşama A'sını uygula. Önce 13. bölümdeki kontrolleri yap, çalışma ağacındaki başka değişikliklere dokunma, commit atma. İş sırasını 11. bölümden izle; RevenueCat anahtarları ve mağaza ürün tanımları bende, onları yer tutucuyla bırak ve nereye yazılacağını söyle. Kota mantığını `markGuided` içine değil `FeedViewModel.requestGuide` yoluna koy. Bittiğinde hangi kısımların sandbox'ta denendiğini ve hangilerinin mağaza hesabı beklediğini yaz. Aşama B'ye geçme. Seri kurtarma paywall'ı (bölüm 7.3) Aşama A'nın parçasıdır.

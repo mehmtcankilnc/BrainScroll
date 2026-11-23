@@ -483,7 +483,7 @@
     <string name="streak_daily_title">Günlük seri</string>
     <string name="streak_daily_1">Her gün günün bulmacasını bitir, seri devam etsin. Kazanman ya da kaybetmen fark etmez, bitirmen yeter.</string>
     <string name="streak_daily_2">Bir günü kaçırırsan seri sıfırdan başlar.</string>
-    <string name="streak_daily_3">Üst üste her 7 günde bir seri dondurma hakkı kazanırsın. Kaçırdığın günü kendiliğinden kapatır. Aynı anda en fazla bir tane tutulur.</string>
+    <string name="streak_daily_3">Üst üste her 15 günde bir seri dondurma hakkı kazanırsın. Kaçırdığın günü kendiliğinden kapatır. Aynı anda en fazla bir tane tutulur.</string>
     <string name="streak_win_title">Bu akışta çözülen</string>
     <string name="streak_win_1">Bu akışta rehbersiz çözdüğün bulmaca sayısı, hangi oyun olursa olsun.</string>
     <string name="streak_win_2">Bir bulmacayı kaybetmek ya da yarım bırakmak sayıyı değiştirmez.</string>
@@ -896,7 +896,7 @@
     <string name="pro_badge">PRO</string>
     <string name="pro_tagline">Oyunlar her zaman ücretsiz. Pro sana kolaylık ve görünüm verir ve uygulamayı geliştirmeme destek olur.</string>
     <string name="pro_benefit_hints">Sınırsız ipucu</string>
-    <string name="pro_benefit_freeze">Daha çok seri koruma: 4 günde 1 hak, 3'e kadar saklama</string>
+    <string name="pro_benefit_freeze">Daha çok seri koruma: haftada 1 hak, 3'e kadar saklama</string>
     <string name="pro_benefit_look">Vurgu renkleri ve saf siyah tema</string>
     <string name="pro_benefit_badge">Profilinde destekçi rozeti</string>
     <string name="pro_price_caption">Tek seferlik ödeme, süresiz</string>
@@ -912,12 +912,13 @@
     <string name="pro_restore_none">Bu mağaza hesabında satın alım bulunamadı.</string>
     <string name="pro_restore_failed">Mağazaya ulaşılamadı. Sonra tekrar dene.</string>
     <string name="pro_thanks">Pro aktif, teşekkürler!</string>
-    <string name="pro_card_hint">Sınırsız ipucu, daha çok seri koruma, renkler</string>
+    <string name="pro_card_hint">Sınırsız ipucu, daha çok seri koruma</string>
     <string name="pro_active_title">Pro aktif, teşekkürler</string>
     <string name="pro_active_hint">Satın alımı geri yükle</string>
     <string name="rescue_title">Serin koptu, geri getirebilirsin.</string>
     <string name="rescue_body">Pro ile %1$d günlük serin geri gelir.</string>
-    <string name="rescue_rule">Pro, 4 günde 1 seri koruma hakkı verir.</string>
+    <string name="rescue_rule">Pro, haftada 1 seri koruma hakkı verir.</string>
+    <string name="a11y_store">Mağaza</string>
     <string name="rescue_later">Şimdi değil</string>
     <string name="rescue_done">Serin geri geldi: %1$d gün.</string>
     <string name="guide_left">Bugün %1$d ücretsiz ipucu kaldı</string>
@@ -932,8 +933,8 @@
     <string name="accent_blue">Mavi</string>
     <string name="accent_orange">Turuncu</string>
     <string name="accent_yellow">Sarı</string>
-    <string name="streak_daily_3_pro">Üst üste her 4 günde bir seri dondurma hakkı kazanırsın (Pro). Kaçırdığın günü kendiliğinden kapatır. En fazla üç tane tutulur.</string>
-    <string name="streak_pro_hint">BrainScroll Pro ile: 4 günde 1 hak, 3'e kadar saklama.</string>
+    <string name="streak_daily_3_pro">Üst üste her 7 günde bir seri dondurma hakkı kazanırsın (Pro). Kaçırdığın günü kendiliğinden kapatır. En fazla üç tane tutulur.</string>
+    <string name="streak_pro_hint">BrainScroll Pro ile: haftada 1 hak, 3'e kadar saklama.</string>
     <string name="streak_pro_button">BrainScroll Pro'ya bak</string>
     <string name="a11y_matchsticks_next">Sonraki yer</string>
     <string name="a11y_matchsticks_prev">Önceki yer</string>

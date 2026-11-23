@@ -12,10 +12,10 @@ data class DayStreak(
 /** How freezes are earned: one for every [every] days of streak, at most [max] kept. */
 data class FreezeRule(val every: Int, val max: Int) {
     companion object {
-        val FREE = FreezeRule(every = 7, max = 1)
+        val FREE = FreezeRule(every = 15, max = 1)
 
-        /** BrainScroll Pro (docs/pro-plan.md section 6). */
-        val PRO = FreezeRule(every = 4, max = 3)
+        /** BrainScroll Pro (docs/pro-plan.md section 6): one a week, up to three kept. */
+        val PRO = FreezeRule(every = 7, max = 3)
     }
 }
 
@@ -24,8 +24,8 @@ data class Rescue(val freeStreak: Int, val proStreak: Int)
 
 /**
  * Day streak with freezes. THIS IS A LOCAL DRAFT: the exact freeze rules are decided in phase 6
- * (docs/decisions.md). The draft follows the suggestion there: every 7 days of streak earn one freeze, at most
- * one is kept, and a freeze is used automatically to bridge a missed day. Pro earns them faster ([FreezeRule.PRO]).
+ * (docs/decisions.md). Every [FreezeRule.FREE] days of streak earn one freeze, at most one is kept, and a freeze
+ * is used automatically to bridge a missed day. Pro earns them faster and keeps more ([FreezeRule.PRO]).
  *
  * Days are Istanbul day indexes ([com.mehmtcan.brainscroll.time.IstanbulDay.dayIndex]). Only finishing the
  * daily puzzle matters, winning or losing, so the caller passes the days on which it was finished.

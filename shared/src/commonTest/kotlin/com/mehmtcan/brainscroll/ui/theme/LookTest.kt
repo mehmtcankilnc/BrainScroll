@@ -9,20 +9,27 @@ class LookTest {
     private val picked = Look(Accent.Blue, amoled = true)
 
     @Test
-    fun withoutProTheDefaultLookIsDrawn() {
+    fun cosmeticsAreOnHoldSoEveryoneGetsTheDefaultLook() {
+        assertEquals(false, COSMETICS_ENABLED)
+        assertEquals(Look(), picked.forPro(true))
         assertEquals(Look(), picked.forPro(false))
     }
 
     @Test
+    fun withoutProTheDefaultLookIsDrawn() {
+        assertEquals(Look(), picked.forPro(false, enabled = true))
+    }
+
+    @Test
     fun withProThePickIsDrawn() {
-        assertEquals(picked, picked.forPro(true))
+        assertEquals(picked, picked.forPro(true, enabled = true))
     }
 
     @Test
     fun thePickIsNotLostWhenProEndsAndComesBack() {
         // forPro does not change the pick: it only chooses what to draw.
         assertEquals(Accent.Blue, picked.accent)
-        assertEquals(picked, picked.forPro(false).let { picked }.forPro(true))
+        assertEquals(picked, picked.forPro(false, enabled = true).let { picked }.forPro(true, enabled = true))
     }
 
     @Test

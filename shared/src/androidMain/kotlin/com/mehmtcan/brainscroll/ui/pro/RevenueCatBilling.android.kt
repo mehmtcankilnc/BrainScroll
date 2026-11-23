@@ -87,5 +87,21 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
 // One store for the whole process: the activity can be rebuilt (rotation), the SDK must be configured once.
 private var instance: RevenueCatBilling? = null
 
+/**
+ * TEMPORARY, only to look at the store icon and the purchase screen on a phone while there is no Android key.
+ * Nothing can be bought: the price is a dash, a purchase is cancelled. Set to false (or remove) before a release.
+ */
+private const val PREVIEW_STORE_WITHOUT_KEY = false
+
+private object PreviewStoreBilling : StoreBilling {
+    override val entitlement: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun refresh() = Unit
+    override suspend fun product() = ProProduct("preview")
+    override suspend fun purchase(): PurchaseResult = PurchaseResult.Cancelled
+    override suspend fun restore(): RestoreResult = RestoreResult.NothingToRestore
+    override suspend fun identify(userId: String) = Unit
+}
+
 actual fun createStoreBilling(): StoreBilling? =
     ProConfig.ANDROID_API_KEY.takeIf { it.isNotBlank() }?.let { key -> instance ?: RevenueCatBilling(key).also { instance = it } }
+        ?: if (PREVIEW_STORE_WITHOUT_KEY) PreviewStoreBilling else null

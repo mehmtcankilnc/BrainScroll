@@ -59,7 +59,7 @@ object CrossSolver {
         for (cell in puzzle.whiteCells) {
             val bits = cand[cell]
             if (bits and (bits - 1) != 0) return null
-            out[cell] = Integer.numberOfTrailingZeros(bits)
+            out[cell] = bits.countTrailingZeroBits()
         }
         return out
     }
@@ -78,7 +78,7 @@ object CrossSolver {
         for (run in puzzle.runs) alone[run] = blockPossible(run, all) ?: return null
         fun bitsOf(run: CrossRun, cell: Int) = alone.getValue(run)[run.cells.indexOf(cell)] and all[cell]
         fun single(bits: Int) = bits != 0 && bits and (bits - 1) == 0
-        val digitOf = { bits: Int -> Integer.numberOfTrailingZeros(bits) }
+        val digitOf = { bits: Int -> bits.countTrailingZeroBits() }
 
         // 1. The last cell of a block.
         for (cell in empty) for (run in puzzle.runsOf(cell)) {
@@ -126,7 +126,7 @@ object CrossSolver {
             val remaining = k - i - 1
             var bits = masks[i] and used.inv()
             while (bits != 0) {
-                val d = Integer.numberOfTrailingZeros(bits)
+                val d = bits.countTrailingZeroBits()
                 bits = bits and (bits - 1)
                 val rest = left - d
                 if (rest < 0) break

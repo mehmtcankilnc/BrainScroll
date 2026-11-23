@@ -3,6 +3,7 @@ package com.mehmtcan.brainscroll.stats
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/** The free rule: one freeze for every 15 days of streak, at most one kept. */
 class DayStreaksTest {
 
     /** Day indexes: days 10, 11, 12, ... are consecutive days. */
@@ -47,56 +48,66 @@ class DayStreaksTest {
     }
 
     @Test
-    fun sevenDaysEarnOneFreeze() {
-        val s = DayStreaks.compute(days(1, 2, 3, 4, 5, 6, 7), today = 7)
-        assertEquals(7, s.current)
+    fun theFreeRuleIsOneFreezeEveryFifteenDays() {
+        assertEquals(FreezeRule(every = 15, max = 1), FreezeRule.FREE)
+    }
+
+    @Test
+    fun fifteenDaysEarnOneFreeze() {
+        val s = DayStreaks.compute((1L..15L).toList(), today = 15)
+        assertEquals(15, s.current)
         assertEquals(1, s.freezesAvailable)
     }
 
     @Test
+    fun fourteenDaysEarnNoFreeze() {
+        assertEquals(0, DayStreaks.compute((1L..14L).toList(), today = 14).freezesAvailable)
+    }
+
+    @Test
     fun aFreezeBridgesOneMissedDay() {
-        // 7 days earn a freeze, day 8 is missed, day 9 is finished: the streak continues.
-        val s = DayStreaks.compute(days(1, 2, 3, 4, 5, 6, 7, 9), today = 9)
-        assertEquals(8, s.current)
+        // 15 days earn a freeze, day 16 is missed, day 17 is finished: the streak continues.
+        val s = DayStreaks.compute((1L..15L).toList() + 17L, today = 17)
+        assertEquals(16, s.current)
         assertEquals(0, s.freezesAvailable)
     }
 
     @Test
     fun aFreezeCannotBridgeTwoMissedDays() {
-        val s = DayStreaks.compute(days(1, 2, 3, 4, 5, 6, 7, 10), today = 10)
+        val s = DayStreaks.compute((1L..15L).toList() + 18L, today = 18)
         assertEquals(1, s.current)
-        assertEquals(7, s.best)
+        assertEquals(15, s.best)
     }
 
     @Test
     fun aFreezeIsUsedForTheCurrentGapToo() {
-        // 7 days earn a freeze; day 8 is missed, today is 9 and still open. The freeze covers day 8.
-        val s = DayStreaks.compute(days(1, 2, 3, 4, 5, 6, 7), today = 9)
-        assertEquals(7, s.current)
+        // 15 days earn a freeze; day 16 is missed, today is 17 and still open. The freeze covers day 16.
+        val s = DayStreaks.compute((1L..15L).toList(), today = 17)
+        assertEquals(15, s.current)
         assertEquals(0, s.freezesAvailable)
     }
 
     @Test
     fun theStreakBreaksIfTheCurrentGapIsLongerThanTheFreezes() {
-        val s = DayStreaks.compute(days(1, 2, 3, 4, 5, 6, 7), today = 10)
+        val s = DayStreaks.compute((1L..15L).toList(), today = 18)
         assertEquals(0, s.current)
-        assertEquals(7, s.best)
+        assertEquals(15, s.best)
     }
 
     @Test
     fun atMostOneFreezeIsKept() {
-        // 14 days in a row would earn two freezes, but only one is kept.
-        val s = DayStreaks.compute((1L..14L).toList(), today = 14)
-        assertEquals(14, s.current)
+        // 30 days in a row would earn two freezes, but only one is kept.
+        val s = DayStreaks.compute((1L..30L).toList(), today = 30)
+        assertEquals(30, s.current)
         assertEquals(1, s.freezesAvailable)
     }
 
     @Test
     fun aUsedFreezeCanBeEarnedAgain() {
-        // Days 1..7 earn a freeze, day 8 is bridged, days 9..14 continue; the streak reaches 14 and earns again.
-        val finished = (1L..7L).toList() + (9L..15L).toList()
-        val s = DayStreaks.compute(finished, today = 15)
-        assertEquals(14, s.current)
+        // Days 1..15 earn a freeze, day 16 is bridged, days 17..31 continue; the streak reaches 30 and earns again.
+        val finished = (1L..15L).toList() + (17L..31L).toList()
+        val s = DayStreaks.compute(finished, today = 31)
+        assertEquals(30, s.current)
         assertEquals(1, s.freezesAvailable)
     }
 

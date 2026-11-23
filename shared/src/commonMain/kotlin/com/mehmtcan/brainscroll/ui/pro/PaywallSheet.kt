@@ -38,7 +38,6 @@ import brainscroll.shared.generated.resources.howto_done
 import brainscroll.shared.generated.resources.pro_benefit_badge
 import brainscroll.shared.generated.resources.pro_benefit_freeze
 import brainscroll.shared.generated.resources.pro_benefit_hints
-import brainscroll.shared.generated.resources.pro_benefit_look
 import brainscroll.shared.generated.resources.pro_buy
 import brainscroll.shared.generated.resources.pro_cancelled
 import brainscroll.shared.generated.resources.pro_failed
@@ -185,7 +184,7 @@ fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetr
                 } else {
                     BasicText(stringResource(Res.string.pro_tagline), style = type.body.copy(color = colors.textSecondary))
                 }
-                listOf(Res.string.pro_benefit_hints, Res.string.pro_benefit_freeze, Res.string.pro_benefit_look, Res.string.pro_benefit_badge).forEach { line ->
+                listOf(Res.string.pro_benefit_hints, Res.string.pro_benefit_freeze, Res.string.pro_benefit_badge).forEach { line ->
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.Top) {
                         Box(Modifier.padding(top = 7.dp).size(8.dp).background(colors.accent, CircleShape))
                         BasicText(stringResource(line), style = type.body.copy(color = colors.textPrimary), modifier = Modifier.weight(1f))

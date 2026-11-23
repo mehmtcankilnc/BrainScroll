@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.ui.howto.HowToIconButton
+import com.mehmtcan.brainscroll.ui.pro.StoreButton
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.a11y_answer_streak
 import com.mehmtcan.brainscroll.game.guide.QuotaState
@@ -133,6 +134,8 @@ fun Hud(
                 )
             }
         }
+        // The store is at the far right; the win streak sits just left of it.
+        StoreButton(wiggle = false)
     }
 }
 

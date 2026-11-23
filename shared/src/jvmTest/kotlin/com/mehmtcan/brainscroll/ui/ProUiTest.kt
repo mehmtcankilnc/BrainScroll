@@ -145,19 +145,24 @@ class ProUiTest {
     }
 
     @Test
-    fun theLookOfAFreePlayerIsAPreviewThatLooksLockedAndOffersPro() = runComposeUiTest {
+    fun theLookPickerIsOnHoldSoSettingsHaveNoColors() = runComposeUiTest {
         start(openFeed = false, store = FakeStoreBilling())
         // With the Pro card on the page the settings row is below the fold of the small screen: scroll to it.
         openTab("Profil", "Profile")
         waitForIdle()
         onAllNodesWithText(if (hasAnyText("Ayarlar")) "Ayarlar" else "Settings")[0].performScrollTo().performClick()
         waitForIdle()
-        waitUntil(timeoutMillis = 10_000) { has("accent_blue") }
-        snap("904_look_locked")
+        // Cosmetics are on hold (COSMETICS_ENABLED): the page opens, but there is no color picker on it.
+        assertTrue(!has("accent_blue"))
         assertTrue(!has("lookUsePro"))
-        onNodeWithTag("accent_blue", useUnmergedTree = true).performClick()
-        waitUntil(timeoutMillis = 10_000) { has("lookUsePro") }
-        snap("905_look_preview")
+    }
+
+    @Test
+    fun theStoreIconIsOnHomeAndProfileAndOpensThePurchaseScreen() = runComposeUiTest {
+        start(openFeed = false, store = FakeStoreBilling())
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("paywallSheet") }
     }
 
     @Test
