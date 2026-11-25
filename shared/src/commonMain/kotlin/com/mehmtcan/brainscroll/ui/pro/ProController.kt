@@ -3,7 +3,9 @@ package com.mehmtcan.brainscroll.ui.pro
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Where the last known Pro answer is kept on the device, so the app opened offline still knows the player is Pro. */
 interface ProCache {
@@ -27,9 +29,9 @@ class ProController(
     /**
      * Whether the store knows the player by the account id yet. A pack bought before that is reported to the server under the
      * store's own anonymous id, which no balance belongs to: the money would be taken and no hints given. So no pack is sold
-     * until [identify] has worked.
+     * until [identify] has worked. A store opened a moment after the app started waits a few seconds for it instead of showing no packs.
      */
-    private var identified = false
+    private val identified = MutableStateFlow(false)
 
     private val _isPro = MutableStateFlow(billing != null && cache.cached())
     override val isPro: StateFlow<Boolean> = _isPro
@@ -68,15 +70,24 @@ class ProController(
     }
 
     override suspend fun identify(userId: String) {
-        identified = false
-        runCatching { billing?.identify(userId) }.onSuccess { identified = billing != null }
+        identified.value = false
+        runCatching { billing?.identify(userId) }.onSuccess { identified.value = billing != null }
     }
 
-    override suspend fun packs(): List<HintPack> = if (!identified) emptyList() else billing?.let { runCatching { it.packs() }.getOrNull() }.orEmpty()
+    override suspend fun packs(): List<HintPack> {
+        val store = billing ?: return emptyList()
+        if (!identified.value) withTimeoutOrNull(IDENTIFY_WAIT_MILLIS) { identified.first { it } }
+        if (!identified.value) return emptyList()
+        return runCatching { store.packs() }.getOrNull().orEmpty()
+    }
 
     override suspend fun buyPack(pack: HintPack): PurchaseResult {
         val store = billing ?: return PurchaseResult.Failed("unavailable")
-        if (!identified) return PurchaseResult.Failed("not_identified")
+        if (!identified.value) return PurchaseResult.Failed("not_identified")
         return runCatching { store.buyPack(pack) }.getOrElse { PurchaseResult.Failed(it.message ?: "error") }
+    }
+
+    private companion object {
+        const val IDENTIFY_WAIT_MILLIS = 6_000L
     }
 }

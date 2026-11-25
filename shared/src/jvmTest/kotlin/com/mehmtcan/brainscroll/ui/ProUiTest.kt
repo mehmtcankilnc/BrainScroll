@@ -308,6 +308,23 @@ class ProUiTest {
     }
 
     @Test
+    fun whileTheStoreIsLoadingThePageShowsPlaceholdersThatTurnIntoThePacks() = runComposeUiTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val store = FakeStoreBilling().apply {
+            packs = listOf(pack20)
+            packsGate = gate
+        }
+        start(openFeed = false, store = store)
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("packSkeleton") }
+        assertTrue(!has("pack_brainscroll_hints_20"), "no real pack yet")
+        gate.complete(Unit)
+        waitUntil(timeoutMillis = 10_000) { has("pack_brainscroll_hints_20") }
+        assertTrue(!has("packSkeleton"), "the placeholders are gone once the packs are there")
+    }
+
+    @Test
     fun theStoreShowsNoPacksUntilTheStoreHasThem() = runComposeUiTest {
         start(openFeed = false, store = FakeStoreBilling())
         waitUntil(timeoutMillis = 10_000) { has("storeButton") }

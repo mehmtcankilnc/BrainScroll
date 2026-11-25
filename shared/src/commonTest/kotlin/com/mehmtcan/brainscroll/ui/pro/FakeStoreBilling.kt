@@ -2,6 +2,7 @@ package com.mehmtcan.brainscroll.ui.pro
 
 import com.mehmtcan.brainscroll.cloud.HintBalanceApi
 import com.mehmtcan.brainscroll.cloud.HintSpend
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -45,7 +46,13 @@ class FakeStoreBilling : StoreBilling {
         return restoreResult
     }
 
-    override suspend fun packs(): List<HintPack> = packs
+    /** While set, the store has not answered about the packs yet: [packs] waits until the test completes it. */
+    var packsGate: CompletableDeferred<Unit>? = null
+
+    override suspend fun packs(): List<HintPack> {
+        packsGate?.await()
+        return packs
+    }
 
     override suspend fun buyPack(pack: HintPack): PurchaseResult {
         packPurchases += 1

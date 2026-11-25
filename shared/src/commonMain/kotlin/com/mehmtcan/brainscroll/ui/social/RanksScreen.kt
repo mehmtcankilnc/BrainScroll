@@ -45,7 +45,11 @@ import com.mehmtcan.brainscroll.ui.components.PlayerAvatar
 import com.mehmtcan.brainscroll.ui.components.RankRow
 import com.mehmtcan.brainscroll.ui.daily.FlameIcon
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.style.TextDecoration
+import brainscroll.shared.generated.resources.report_player
 import brainscroll.shared.generated.resources.howto_done
 import brainscroll.shared.generated.resources.ranks_filters
 import com.mehmtcan.brainscroll.ui.components.ForwardChevron
@@ -219,6 +223,7 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
             Section.Streak -> streakSection(ui, viewModel)
             Section.Friends -> Unit
         }
+        if (ui.section != Section.Friends) item { ReportPlayerLink() }
     }
 }
 
@@ -238,7 +243,30 @@ fun FriendsScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Mod
     ) {
         gateItems(ui, viewModel, signIn)
         friendsSection(ui, viewModel)
+        if (ui.access == Access.Ready) item { ReportPlayerLink() }
     }
+}
+
+/**
+ * Other players see a username, so there is a plain way to report one that is not fine (App Store guideline 1.2): it opens a mail
+ * to the support address, which the player can finish with the name. The server also refuses bad words when a name is chosen.
+ */
+@Composable
+private fun ReportPlayerLink() {
+    val uri = LocalUriHandler.current
+    val colors = BrainScrollTheme.colors
+    val turkish = Locale.current.language == "tr"
+    BasicText(
+        text = stringResource(Res.string.report_player),
+        style = BrainScrollTheme.typography.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center, textDecoration = TextDecoration.Underline),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
+                uri.openUri("mailto:support@playbrainscroll.com?subject=" + if (turkish) "Oyuncu%20bildirimi" else "Player%20report")
+            }
+            .padding(vertical = Spacing.md)
+            .testTag("reportPlayer"),
+    )
 }
 
 /** Who may do what: anonymous players only look, friends need a username. */

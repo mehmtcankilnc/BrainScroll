@@ -119,13 +119,20 @@ private const val PREVIEW_STORE_WITHOUT_KEY = false
 private object PreviewStoreBilling : StoreBilling {
     override val entitlement: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
     override suspend fun refresh() = Unit
-    override suspend fun product() = ProProduct("$4.99")
+    // A pause like a real store has, so the placeholders of the store page can be looked at.
+    override suspend fun product(): ProProduct {
+        kotlinx.coroutines.delay(1_800)
+        return ProProduct("$4.99")
+    }
     override suspend fun purchase(): PurchaseResult = PurchaseResult.Cancelled
     override suspend fun restore(): RestoreResult = RestoreResult.NothingToRestore
     override suspend fun identify(userId: String) = Unit
 
     // Sample packs so the store screen can be looked at; buying is cancelled like Pro.
-    override suspend fun packs() = listOf(HintPack("brainscroll_hints_20", 20, "$0.99", 990_000), HintPack("brainscroll_hints_75", 75, "$2.99", 2_990_000))
+    override suspend fun packs(): List<HintPack> {
+        kotlinx.coroutines.delay(2_800)
+        return listOf(HintPack("brainscroll_hints_20", 20, "$0.99", 990_000), HintPack("brainscroll_hints_75", 75, "$2.99", 2_990_000))
+    }
     override suspend fun buyPack(pack: HintPack): PurchaseResult = PurchaseResult.Cancelled
 }
 

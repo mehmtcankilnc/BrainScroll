@@ -4,6 +4,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 
 /**
@@ -36,4 +37,5 @@ fun createBrainScrollSupabase(): SupabaseClient = createSupabaseClient(
         flowType = FlowType.PKCE
     }
     install(Postgrest)
+    install(Functions)
 }

@@ -123,6 +123,7 @@
     <string name="ranks_empty_friends">Sen ve arkadaşlarının burada henüz sonucu yok.</string>
     <string name="ranks_failed">Tablo yüklenemedi. Bağlantını kontrol et.</string>
     <string name="ranks_stale">Çevrimdışı. Son görüntü gösteriliyor.</string>
+    <string name="report_player">Uygunsuz bir kullanıcı adı mı gördün? Bildir</string>
     <string name="ranks_loading">Yükleniyor…</string>
     <string name="ranks_next_puzzle">Sıradaki bulmaca</string>
     <string name="ranks_your_streak">Senin serin</string>
@@ -186,7 +187,7 @@
     <string name="a11y_favorite_remove">Favorilerden çıkar</string>
     <string name="delete_account">Hesabı sil</string>
     <string name="delete_title">Hesabın silinsin mi?</string>
-    <string name="delete_text">Hesabın ve bulutta yedeklenen her şey kalıcı olarak silinir: sonuçlar, favoriler, seriler, kullanıcı adın ve arkadaşların. Bu cihazdaki ilerleme de silinir. Bu işlem geri alınamaz.</string>
+    <string name="delete_text">Hesabın ve bulutta yedeklenen her şey kalıcı olarak silinir: sonuçlar, favoriler, seriler, kullanıcı adın, arkadaşların ve satın aldığın ipuçları. Bu cihazdaki ilerleme de silinir. Bu işlem geri alınamaz.</string>
     <string name="delete_confirm">Kalıcı olarak sil</string>
     <string name="delete_cancel">Vazgeç</string>
     <string name="notice_account_deleted">Hesap silindi</string>
@@ -946,6 +947,7 @@
     <string name="pack_balance">Satın aldığın %1$d ipucun var. Önce günlük ücretsiz haklar kullanılır.</string>
     <string name="pack_caption">Satın aldığın ipuçları hesabında saklanır.</string>
     <string name="pack_adding">İpuçların ekleniyor…</string>
+    <string name="store_loading">Yükleniyor</string>
     <string name="pack_added">İpuçların eklendi.</string>
     <string name="pack_added_guest">İpuçların eklendi. Kaybetmemek için profilinden hesabını bağla.</string>
     <string name="pack_guest_note">Misafirsin: uygulamayı silersen ipuçların kaybolur.</string>

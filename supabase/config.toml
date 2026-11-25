@@ -417,3 +417,7 @@ enabled = true
 # RevenueCat calls this from outside and cannot send a Supabase token; it proves itself with the secret in handler.ts instead.
 [functions.revenuecat-webhook]
 verify_jwt = false
+
+# Only a signed-in player may call it (a player's own session token is the proof).
+[functions.apple-token]
+verify_jwt = true

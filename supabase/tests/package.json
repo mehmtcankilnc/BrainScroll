@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Checks the SQL migrations against a real Postgres engine (PGlite) without needing Docker or a Supabase project.",
   "scripts": {
-    "test": "node verify_schema.mjs && node verify_daily.mjs && node verify_daily_games.mjs && node verify_leaderboards.mjs && node verify_delete.mjs && node verify_telemetry.mjs && node verify_merge.mjs && node verify_difficulty.mjs && node verify_endless_boards.mjs && node verify_hints.mjs && node verify_webhook.mjs"
+    "test": "node verify_schema.mjs && node verify_daily.mjs && node verify_daily_games.mjs && node verify_leaderboards.mjs && node verify_delete.mjs && node verify_telemetry.mjs && node verify_merge.mjs && node verify_difficulty.mjs && node verify_endless_boards.mjs && node verify_hints.mjs && node verify_webhook.mjs && node verify_blocked_words.mjs && node verify_apple_token.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8"

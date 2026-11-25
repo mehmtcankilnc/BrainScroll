@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.account
 
+import com.mehmtcan.brainscroll.cloud.AppleTokenApi
+import com.mehmtcan.brainscroll.cloud.NoAppleTokenApi
 import com.mehmtcan.brainscroll.cloud.SupabaseConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -36,6 +38,7 @@ class SupabaseAccountService(
     private val apple: AppleSignIn?,
     private val scope: CoroutineScope,
     private val retryDelayMillis: Long = 30_000,
+    private val appleTokens: AppleTokenApi = NoAppleTokenApi,
 ) : AccountService {
 
     private val auth = client.auth
@@ -93,6 +96,8 @@ class SupabaseAccountService(
             } else {
                 signInWithAppleToken(credential)
             }
+            // The server keeps what it needs to disconnect this Apple sign-in again when the account is deleted.
+            credential.authorizationCode?.let { appleTokens.link(it) }
             _events.tryEmit(AccountEvent.SignedIn)
         }
     }
@@ -115,6 +120,13 @@ class SupabaseAccountService(
     }
 
     override suspend fun deleteAccount(): Boolean {
+        // An account that signed in with Apple must be disconnected from the app at Apple first (App Store guideline 5.1.1(v)). If that
+        // cannot be done now, nothing is deleted: the player tries again, and no account is left half connected.
+        val usesApple = auth.currentUserOrNull()?.identities.orEmpty().any { it.provider == "apple" }
+        if (usesApple && !appleTokens.revoke()) {
+            _events.tryEmit(AccountEvent.DeleteFailed)
+            return false
+        }
         try {
             client.pluginManager.getPlugin(Postgrest).rpc("delete_my_account")
         } catch (e: CancellationException) {

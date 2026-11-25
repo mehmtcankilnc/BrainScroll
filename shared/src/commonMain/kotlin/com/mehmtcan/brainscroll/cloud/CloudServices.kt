@@ -33,7 +33,7 @@ typealias CloudServicesFactory = (CoroutineScope) -> CloudServices
 fun supabaseServices(scope: CoroutineScope): CloudServices {
     val client = createBrainScrollSupabase()
     return CloudServices(
-        account = SupabaseAccountService(client, platformAppleSignIn(), scope),
+        account = SupabaseAccountService(client, platformAppleSignIn(), scope, appleTokens = SupabaseAppleTokenApi(client)),
         cloud = SupabaseCloudApi(client),
         daily = SupabaseDailyApi(client),
         social = SupabaseSocialApi(client),

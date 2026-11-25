@@ -154,6 +154,12 @@ class SocialUiTest {
     }
 
     @Test
+    fun theRanksPageHasAWayToReportAUsername() = runComposeUiTest {
+        openRanks(cloud(member = true, username = "carol"))
+        assertTrue(hasAnyText("Uygunsuz bir kullanıcı adı", "inappropriate username"), "other players' names can be reported (App Store 1.2)")
+    }
+
+    @Test
     fun theRanksPageHasNoFriendsTab() = runComposeUiTest {
         openRanks(cloud(member = true, username = "carol"))
         assertFalse(hasAnyText("Davet kodun", "Your invite code"))

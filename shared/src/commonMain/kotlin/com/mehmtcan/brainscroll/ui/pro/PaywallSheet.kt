@@ -93,6 +93,7 @@ import brainscroll.shared.generated.resources.rescue_price
 import brainscroll.shared.generated.resources.rescue_support
 import brainscroll.shared.generated.resources.store_pro_hints
 import brainscroll.shared.generated.resources.store_pro_streak
+import brainscroll.shared.generated.resources.store_loading
 import brainscroll.shared.generated.resources.store_title
 import com.mehmtcan.brainscroll.game.guide.QuotaState
 import com.mehmtcan.brainscroll.stats.Rescue
@@ -135,6 +136,8 @@ fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetr
 
     var product by remember { mutableStateOf<ProProduct?>(null) }
     var packs by remember { mutableStateOf<List<HintPack>>(emptyList()) }
+    // False until the store has answered, so the page can show placeholders instead of an empty gap.
+    var packsLoaded by remember { mutableStateOf(false) }
     val bought by pro.hints.balance.collectAsStateWithLifecycle()
     var priceFailed by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
@@ -147,6 +150,7 @@ fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetr
         priceFailed = product == null
         if (rescue == null) {
             packs = pro.packs()
+            packsLoaded = true
             pro.hints.refresh()
         }
     }
@@ -247,6 +251,7 @@ fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetr
         busy = busy,
         message = message,
         packs = packs,
+        packsLoading = rescue == null && !packsLoaded,
         bought = bought,
         quota = quota,
         isPro = isPro,
@@ -269,6 +274,8 @@ private class PaywallUi(
     val busy: Boolean,
     val message: StringResource?,
     val packs: List<HintPack>,
+    /** The packs have not been answered yet: the page shows placeholders in their place. */
+    val packsLoading: Boolean,
     val bought: Int,
     val quota: QuotaState?,
     val isPro: Boolean,
@@ -315,7 +322,7 @@ private fun ColumnScope.StorePage(ui: PaywallUi, close: () -> Unit) {
             ThanksBlock(null)
         } else {
             ProCard(ui, fit)
-            if (ui.packs.isNotEmpty()) {
+            if (ui.packs.isNotEmpty() || ui.packsLoading) {
                 val free = ui.quota?.freeLeft ?: 0
                 Row(
                     Modifier.fillMaxWidth().padding(top = Spacing.xs),
@@ -337,6 +344,12 @@ private fun ColumnScope.StorePage(ui: PaywallUi, close: () -> Unit) {
                         style = type.caption.copy(color = colors.pendingFill, textAlign = TextAlign.Center),
                         modifier = Modifier.fillMaxWidth().testTag("guestNote"),
                     )
+                }
+                if (ui.packsLoading) {
+                    Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        PackSkeleton(fit, Modifier.weight(1f))
+                        PackSkeleton(fit, Modifier.weight(1f))
+                    }
                 }
                 val saving = if (ui.packs.size > 1) packSaving(ui.packs.first(), ui.packs.last()) else null
                 ui.packs.chunked(2).forEach { line ->
@@ -424,7 +437,12 @@ private fun ProCard(ui: PaywallUi, fit: StoreFit) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
                 // The price and its caption read as one thing to a screen reader.
                 Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
-                    BasicText(ui.priceText, style = type.display.copy(color = colors.accent), modifier = Modifier.testTag("proPrice"))
+                    if (ui.product == null && !ui.priceFailed) {
+                        // The store has not told the price yet: a placeholder of the same size, not "...".
+                        Box(Modifier.padding(vertical = 4.dp).size(width = 104.dp, height = 36.dp).skeleton(Radius.pill).testTag("priceSkeleton"))
+                    } else {
+                        BasicText(ui.priceText, style = type.display.copy(color = colors.accent), modifier = Modifier.testTag("proPrice"))
+                    }
                     if (fit != StoreFit.Tight || ui.priceFailed) {
                         BasicText(
                             stringResource(if (ui.priceFailed) Res.string.pro_price_unavailable else Res.string.pro_price_caption),
@@ -454,6 +472,35 @@ private fun ProPoint(text: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(7.dp).background(colors.accent, CircleShape))
         BasicText(text, style = BrainScrollTheme.typography.body.copy(color = colors.textPrimary))
+    }
+}
+
+/** A hint pack card while the store has not answered: the same size and layout as the real card, with quiet blocks in it. */
+@Composable
+private fun PackSkeleton(fit: StoreFit, modifier: Modifier = Modifier) {
+    val colors = BrainScrollTheme.colors
+    val loading = stringResource(Res.string.store_loading)
+    val artScale = if (fit == StoreFit.Roomy) 0.86f else 0.56f
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colors.bgSurface, Radius.card)
+            .border(0.5.dp, colors.borderSubtle, Radius.card)
+            .padding(start = Spacing.sm, end = Spacing.sm, top = 16.dp, bottom = Spacing.sm)
+            .semantics(mergeDescendants = true) { contentDescription = loading }
+            .testTag("packSkeleton"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (fit != StoreFit.Tight) {
+            Box(Modifier.size(width = (112f * artScale).dp, height = (104f * artScale).dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.size((72f * artScale).dp).skeleton(CircleShape))
+            }
+        }
+        // As tall as the line of the count in the real card (the big number), so the card does not jump when the packs arrive.
+        Box(Modifier.height(44.dp), contentAlignment = Alignment.Center) { Box(Modifier.size(width = 76.dp, height = 28.dp).skeleton(Radius.pill)) }
+        Box(Modifier.height(22.dp), contentAlignment = Alignment.Center) { Box(Modifier.size(width = 84.dp, height = 16.dp).skeleton(Radius.pill)) }
+        Box(Modifier.fillMaxWidth().height(42.dp).skeleton(Radius.pill))
     }
 }
 

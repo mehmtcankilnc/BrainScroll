@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://playbrainscroll.com/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/privacy"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/privacy"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/en/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/privacy"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/privacy"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/terms</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/terms"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/terms"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/en/terms</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/terms"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/terms"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/delete-account</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/delete-account"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/delete-account"/>
+  </url>
+  <url>
+    <loc>https://playbrainscroll.com/en/delete-account</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://playbrainscroll.com/delete-account"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://playbrainscroll.com/en/delete-account"/>
+  </url>
+</urlset>

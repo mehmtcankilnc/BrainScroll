@@ -1,9 +1,11 @@
 package com.mehmtcan.brainscroll.ui.pro
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,6 +30,17 @@ class ProControllerTest {
         assertTrue(pro.packs().isEmpty(), "a pack bought under the store's anonymous id would get no hints")
         assertEquals(PurchaseResult.Failed("not_identified"), pro.buyPack(pack))
         assertEquals(0, billing.packPurchases)
+    }
+
+    @Test
+    fun aStoreOpenedBeforeTheAccountIsKnownWaitsForItInsteadOfShowingNoPacks() = runTest {
+        billing.packs = listOf(pack)
+        val pro = controller()
+        val shown = async { pro.packs() }
+        advanceTimeBy(2_000)
+        assertFalse(shown.isCompleted, "still waiting for the account")
+        pro.identify("user-1")
+        assertEquals(listOf(pack), shown.await())
     }
 
     @Test

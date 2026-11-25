@@ -75,7 +75,7 @@ private class AppleSheet(
         val credential = didCompleteWithAuthorization.credential as? ASAuthorizationAppleIDCredential
         val token = credential?.identityToken?.let(::utf8String)
         finish(
-            if (token != null) Result.success(AppleCredential(token, rawNonce))
+            if (token != null) Result.success(AppleCredential(token, rawNonce, credential.authorizationCode?.let(::utf8String)))
             else Result.failure(IllegalStateException("apple: no identity token")),
         )
     }

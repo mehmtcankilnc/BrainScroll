@@ -123,6 +123,7 @@
     <string name="ranks_empty_friends">You and your friends have no results here yet.</string>
     <string name="ranks_failed">The table can't be loaded. Check your connection.</string>
     <string name="ranks_stale">Offline. Showing the last view.</string>
+    <string name="report_player">Saw an inappropriate username? Report it</string>
     <string name="ranks_loading">Loading…</string>
     <string name="ranks_next_puzzle">Next puzzle</string>
     <string name="ranks_your_streak">Your streak</string>
@@ -186,7 +187,7 @@
     <string name="a11y_favorite_remove">Remove from favorites</string>
     <string name="delete_account">Delete account</string>
     <string name="delete_title">Delete your account?</string>
-    <string name="delete_text">This permanently deletes your account and everything backed up in the cloud: results, favorites, streaks, your username and your friends. The progress on this device is deleted too. This can't be undone.</string>
+    <string name="delete_text">This permanently deletes your account and everything backed up in the cloud: results, favorites, streaks, your username, your friends and any hints you bought. The progress on this device is deleted too. This can't be undone.</string>
     <string name="delete_confirm">Delete permanently</string>
     <string name="delete_cancel">Cancel</string>
     <string name="notice_account_deleted">Account deleted</string>
@@ -946,6 +947,7 @@
     <string name="pack_balance">You have %1$d bought hints. The free ones of the day are used first.</string>
     <string name="pack_caption">Bought hints stay with your account.</string>
     <string name="pack_adding">Adding your hints…</string>
+    <string name="store_loading">Loading</string>
     <string name="pack_added">Your hints are added.</string>
     <string name="pack_added_guest">Your hints are added. Link your account in your profile so you never lose them.</string>
     <string name="pack_guest_note">You are a guest: hints are lost if you delete the app.</string>
