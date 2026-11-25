@@ -9,6 +9,7 @@ import com.mehmtcan.brainscroll.game.wordle.Outcome
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -187,6 +188,14 @@ class FlashGameTest {
         assertEquals(pattern.drop(1), step.cells)
         game.tap(wrongTile(pattern))
         assertNull(FlashGuide.step(game.state))
+    }
+
+    @Test
+    fun theGuideHasNothingToShowBeforeTheRunIsStarted() {
+        val game = FlashGame(puzzle)
+        assertNull(FlashGuide.step(game.state))
+        game.start()
+        assertNotNull(FlashGuide.step(game.state))
     }
 
     // --- the round ---

@@ -685,10 +685,13 @@ object RectGuide {
     }
 }
 
-/** The guide of the flash grid: the tiles of the round that are not found yet light up again. [GuideStep.cells] are those tiles. */
+/**
+ * The guide of the flash grid: the tiles of the round that are not found yet light up again. [GuideStep.cells] are those tiles.
+ * Nothing before the run is started: the tiles have not been shown yet, so there is nothing to show again (like the color sequence).
+ */
 object FlashGuide {
     fun step(state: FlashState): GuideStep? {
-        if (state.status != FlashStatus.Playing) return null
+        if (state.status != FlashStatus.Playing || !state.started) return null
         val left = state.pattern.filter { it !in state.found }
         if (left.isEmpty()) return null
         return GuideStep(GuideReason.FlashPattern, left)

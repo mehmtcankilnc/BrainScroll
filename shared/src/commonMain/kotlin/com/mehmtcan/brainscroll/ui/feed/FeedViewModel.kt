@@ -463,6 +463,11 @@ class FeedViewModel(
         localToday = localDayIndex(now()),
     )
 
+    /** The tour of the home page is for a first start only: not once it was seen, and not for a player who has played already (an update). */
+    fun shouldShowHomeTour(): Boolean = !repository.homeTourSeen() && repository.history().isEmpty()
+
+    fun markHomeTourSeen() = repository.markHomeTourSeen()
+
     /** The rescue screen was shown: not again for this break, and no other paywall by itself today. */
     fun markRescueShown() {
         RescuePolicy.breakOf(dailyFinishedDays())?.let(repository::setRescueShownFor)

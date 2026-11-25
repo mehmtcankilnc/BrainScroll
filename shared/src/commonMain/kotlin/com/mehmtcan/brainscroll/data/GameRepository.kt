@@ -37,6 +37,7 @@ private const val SETTING_BEST_FLOW = "best_flow"
 private const val SETTING_GUIDE_QUOTA_DAY = "guide_quota_day"
 private const val SETTING_GUIDE_QUOTA_USED = "guide_quota_used"
 private const val SETTING_PRO_CACHED = "pro_cached"
+private const val SETTING_HOME_TOUR_SEEN = "home_tour_seen"
 private const val SETTING_HINT_BALANCE = "hint_balance_cache"
 private const val SETTING_RESCUE_SHOWN = "streak_rescue_shown"
 private const val SETTING_AUTO_PAYWALL_DAY = "auto_paywall_day"
@@ -168,6 +169,13 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore, ProCache, HintC
         }
 
     // --- Settings ---
+
+    /** The first-run tour of the home page was shown (or skipped). */
+    fun homeTourSeen(): Boolean = settings.get(SETTING_HOME_TOUR_SEEN).executeAsOneOrNull() == "1"
+
+    fun markHomeTourSeen() {
+        settings.put(SETTING_HOME_TOUR_SEEN, "1")
+    }
 
     /**
      * The languages of the word puzzles in the feed (one or more), or null if the player never chose (then the app

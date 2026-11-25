@@ -56,7 +56,8 @@ export async function handleWebhook(req: Request, deps: Deps): Promise<Response>
   if (!event || typeof event !== 'object') return json(400, { error: 'no event' })
 
   if (event.type !== 'NON_RENEWING_PURCHASE') return json(200, { status: 'ignored', reason: 'event type' })
-  const amount = PACKS[String(event.product_id ?? '')]
+  // Google Play can send the product id with the purchase option after a colon ("brainscroll_hints_20:buy"); the pack is the part before it.
+  const amount = PACKS[String(event.product_id ?? '').split(':')[0]]
   if (!amount) return json(200, { status: 'ignored', reason: 'not a hint pack' })
 
   const user = String(event.app_user_id ?? '')

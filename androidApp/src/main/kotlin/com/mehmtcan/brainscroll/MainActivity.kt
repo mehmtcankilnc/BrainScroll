@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.mehmtcan.brainscroll.account.CurrentActivity
 import com.mehmtcan.brainscroll.account.DeepLinkInbox
 
 class MainActivity : ComponentActivity() {
@@ -20,13 +21,19 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
+        CurrentActivity.set(this)
 
         // Only on a real start. After a rotation the same intent is still here, and a login code works once.
         if (savedInstanceState == null) deliverLoginLink(intent)
 
         setContent {
-            App()
+            App(intro = savedInstanceState == null)
         }
+    }
+
+    override fun onDestroy() {
+        if (CurrentActivity.get() === this) CurrentActivity.set(null)
+        super.onDestroy()
     }
 
     // singleTop: the browser brings the player back through the login link into the running activity.

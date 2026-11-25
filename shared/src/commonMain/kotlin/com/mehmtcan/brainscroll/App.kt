@@ -1,9 +1,12 @@
 package com.mehmtcan.brainscroll
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mehmtcan.brainscroll.ui.i18n.AppLanguage
@@ -22,6 +25,8 @@ import com.mehmtcan.brainscroll.game.wordle.Language
 import com.mehmtcan.brainscroll.ui.AppShell
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.daily.DailyGameViewModel
+import com.mehmtcan.brainscroll.ui.home.LocalIntro
+import com.mehmtcan.brainscroll.ui.home.SplashOverlay
 import com.mehmtcan.brainscroll.ui.daily.DailyViewModel
 import com.mehmtcan.brainscroll.ui.haptics.Haptics
 import com.mehmtcan.brainscroll.ui.haptics.LocalHaptics
@@ -57,6 +62,8 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
     store: () -> StoreBilling? = ::createStoreBilling,
     /** Whether new boards are made in the background (the app) or on the spot (tests that look at the screen right away). */
     buildInBackground: Boolean = true,
+    /** A real start of the app: the mascot's opening animation and the first-run tour. Tests leave it off so nothing covers the screen. */
+    intro: Boolean = false,
 ) {
     // Tests pass their own haptics to see when the phone would buzz.
     CompositionLocalProvider(
@@ -132,8 +139,12 @@ fun App(cloudServices: CloudServicesFactory = ::supabaseServices, haptics: Hapti
         val look by feedViewModel.look.collectAsStateWithLifecycle()
         val shown = look.forPro(isPro)
         BrainScrollTheme(highContrast = highContrast ?: rememberHighContrast(), accent = shown.accent, amoled = shown.amoled) {
-        CompositionLocalProvider(LocalSoundEffects provides sounds, LocalPro provides feedViewModel.pro) {
-            AppShell(feedViewModel, dailyViewModel, dailyGameViewModel, socialViewModel, appLanguage)
+        CompositionLocalProvider(LocalSoundEffects provides sounds, LocalPro provides feedViewModel.pro, LocalIntro provides intro) {
+            Box {
+                AppShell(feedViewModel, dailyViewModel, dailyGameViewModel, socialViewModel, appLanguage)
+                var splashDone by remember { mutableStateOf(!intro) }
+                if (!splashDone) SplashOverlay { splashDone = true }
+            }
         }
         }
     }

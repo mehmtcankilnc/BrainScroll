@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.mehmtcan.brainscroll",
       "sha256_cert_fingerprints": [
-        "28:E6:37:48:6E:EE:48:9B:F7:CF:BE:CF:A1:95:33:C2:4E:98:E4:29:4A:CE:7D:FC:A5:14:A7:5A:1A:AE:BA:33"
+        "28:E6:37:48:6E:EE:48:9B:F7:CF:BE:CF:A1:95:33:C2:4E:98:E4:29:4A:CE:7D:FC:A5:14:A7:5A:1A:AE:BA:33",
+        "96:57:7C:33:A1:70:A5:45:DE:2C:2E:56:03:CF:3D:46:A5:C9:B6:82:2C:03:06:AD:F6:48:11:54:1C:1E:97:37"
       ]
     }
   }

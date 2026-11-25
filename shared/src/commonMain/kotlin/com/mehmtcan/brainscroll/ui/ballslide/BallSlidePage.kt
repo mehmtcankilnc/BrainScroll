@@ -93,6 +93,7 @@ import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.sound.*
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -311,7 +312,7 @@ fun BallSlidePage(
                 val wallBase = ballSlideWallColor(colors)
                 val mortar = colors.bgPage.copy(alpha = 0.6f)
                 val ballColor = colors.pendingFill
-                val cue = colors.pendingFill
+                val cue = GuideColor
                 Canvas(Modifier.fillMaxSize()) {
                     val gap = CellGap.toPx() / 2f
                     val corner = CornerRadius(cellPx * 0.18f)

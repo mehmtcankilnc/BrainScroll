@@ -78,6 +78,7 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.LocalHighContrast
 import com.mehmtcan.brainscroll.ui.theme.Radius
@@ -265,10 +266,10 @@ fun ColorFlowPage(
                         }
                         drawPath(line, flowColor(color), style = Stroke(width = cellPx * 0.34f, cap = StrokeCap.Round, join = StrokeJoin.Round))
                     }
-                    // The guide: the cells to draw next light up in the color of the path.
+                    // The guide: the cells to draw next light up in the guide color.
                     if (guide != null) {
                         val a = if (reduce) 0.7f else 0.3f + 0.5f * pulse
-                        val tint = flowColor(guide.numbers.firstOrNull() ?: 0)
+                        val tint = GuideColor
                         guide.cells.forEach { c ->
                             drawCircle(tint.copy(alpha = a), cellPx * 0.2f, center(c))
                             drawCircle(Color.White.copy(alpha = a * 0.6f), cellPx * 0.2f, center(c), style = Stroke(width = cellPx * 0.04f))

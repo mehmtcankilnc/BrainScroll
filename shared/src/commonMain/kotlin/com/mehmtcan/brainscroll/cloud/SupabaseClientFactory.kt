@@ -24,6 +24,12 @@ object SupabaseConfig {
      */
     const val REDIRECT_SCHEME = "com.mehmtcan.brainscroll"
     const val REDIRECT_HOST = "login-callback"
+
+    /**
+     * The "Web application" OAuth client id of the Google Cloud project (the same one Supabase has under Authentication, Providers,
+     * Google). It is public. With it set, Android signs in with the phone's own account chooser instead of the browser.
+     */
+    const val GOOGLE_WEB_CLIENT_ID = "439494610957-dds7c6f6gojuhsugsl0r9i1vbelolq6u.apps.googleusercontent.com"
 }
 
 fun createBrainScrollSupabase(): SupabaseClient = createSupabaseClient(

@@ -90,6 +90,7 @@ import com.mehmtcan.brainscroll.ui.sound.withoutSound
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -236,7 +237,7 @@ fun UntanglePage(
         crossing = colors.error,
         node = colors.bgRaised,
         nodeEdge = colors.textPrimary,
-        guide = colors.pendingFill,
+        guide = GuideColor,
     )
     val wonPaint = UntanglePaint(colors.correctFill, colors.error, colors.bgRaised, colors.textPrimary, colors.pendingFill)
 

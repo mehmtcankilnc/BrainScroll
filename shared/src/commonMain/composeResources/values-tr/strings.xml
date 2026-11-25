@@ -84,6 +84,11 @@
     <string name="backup_done">Her şey yedeklendi</string>
     <string name="notice_signed_in">Giriş yapıldı</string>
     <string name="notice_sign_in_failed">Giriş yapılamadı, tekrar dene</string>
+    <string name="sign_in_reason_email_exists">Bu e-posta başka bir giriş yöntemiyle kayıtlı. O yöntemle giriş yapmayı dene.</string>
+    <string name="sign_in_reason_offline">Bağlantı yok. İnternetini kontrol edip tekrar dene.</string>
+    <string name="sign_in_reason_rate_limit">Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene.</string>
+    <string name="sign_in_reason_apple">Apple ile giriş tamamlanamadı. Tekrar dene.</string>
+    <string name="sign_in_reason_google">Google ile giriş tamamlanamadı. Tekrar dene.</string>
     <string name="tab_daily">Günlük</string>
     <string name="daily_title">Günün bulmacası</string>
     <string name="daily_intro">Her gün herkes için aynı kelime. Süren Başla\'ya bastığın an başlar.</string>
@@ -953,6 +958,8 @@
     <string name="pack_guest_note">Misafirsin: uygulamayı silersen ipuçların kaybolur.</string>
     <string name="trust_line_1">Abonelik değil: tek seferlik ödeme, yenilenmez.</string>
     <string name="trust_line_2">İade Apple ya da Google'dan.</string>
+    <string name="trust_line_2_apple">İade Apple'dan.</string>
+    <string name="trust_line_2_google">İade Google'dan.</string>
     <string name="pack_saving_percent">%1$s daha ucuz</string>
     <string name="pack_processing">Satın alımın işleniyor, ipuçların birazdan gelir.</string>
     <string name="look_title">Görünüm</string>
@@ -1008,7 +1015,7 @@
     <string name="favorite_codebreaker_tag">Kod Kırıcı</string>
     <string name="favorite_codebreaker_result">%1$d denemede · %2$s</string>
     <string name="guide_codebreaker_next">Şu ana kadarki bütün ipuçlarına uyan bir kod: %1$s</string>
-    <string name="codebreaker_hint">Gizli renkleri bul. Düz yeşil halka: doğru renk, doğru yer. Kesik yeşil halka: doğru renk, yanlış yer. Gri halka: kodda yok</string>
+    <string name="codebreaker_hint">Düz yeşil halka: doğru renk, doğru yer. Kesik yeşil halka: doğru renk, yanlış yer</string>
     <string name="codebreaker_won">Kod kırıldı!</string>
     <string name="codebreaker_result">%1$d denemede · %2$s</string>
     <string name="codebreaker_try">%1$d. deneme</string>
@@ -1422,4 +1429,12 @@
     <string name="ranks_caption_guesses">Önce en az tahmin, eşitlikte en kısa süre. Yardım almadan kazandığın bulmacalar sayılır.</string>
     <string name="ranks_caption_stars">Önce en çok yıldız, eşitlikte en kısa süre. Günlük bulmaca sayılır.</string>
     <string name="ranks_rounds">%1$d tur</string>
+    <string name="tour_daily_title">Günün bulmacası</string>
+    <string name="tour_daily_text">Her gün herkes için aynı yeni bir bulmaca. Her gün çözersen serin büyür.</string>
+    <string name="tour_feed_title">Senin akışın</string>
+    <string name="tour_feed_text">Hangi oyunların geleceğine sen karar verirsin. Karta dokunup oyunları aç ya da kapat, zorluğu ayarla.</string>
+    <string name="tour_next">Devam</string>
+    <string name="tour_done">Tamam</string>
+    <string name="tour_skip">Geç</string>
+    <string name="tour_step">%1$d / %2$d</string>
 </resources>

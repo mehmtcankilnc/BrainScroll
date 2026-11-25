@@ -89,6 +89,7 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -295,7 +296,7 @@ fun FruitMathPage(
                     else -> colors.streakAnswer
                 }
                 // The guide rings the last line: the values it gave are for working that one out.
-                val ring = if (guide != null && !won) Modifier.border(BorderStroke(2.5.dp, colors.pendingFill.copy(alpha = 0.35f + 0.6f * pulse)), RoundedCornerShape(10.dp)) else Modifier
+                val ring = if (guide != null && !won) Modifier.border(BorderStroke(2.5.dp, GuideColor.copy(alpha = 0.35f + 0.6f * pulse)), RoundedCornerShape(10.dp)) else Modifier
                 FruitRow(puzzle.last, shown, shownColor, sizes, rowHeight, ring)
             }
         }

@@ -30,6 +30,18 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import brainscroll.shared.generated.resources.tour_daily_text
+import brainscroll.shared.generated.resources.tour_daily_title
+import brainscroll.shared.generated.resources.tour_feed_text
+import brainscroll.shared.generated.resources.tour_feed_title
+import kotlinx.coroutines.delay
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
@@ -167,7 +179,29 @@ fun HomeScreen(
     // Starting a new feed forgets a puzzle that was left half done: ask first, but only when there is one to lose.
     val startNewFeed = { if (ready?.feed?.hasUnfinished == true) confirmNewFeed = true else onStartFeed() }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    // The first-run tour: what the daily card and the feed card are, one stop each. Only on a real first start of the app.
+    val intro = LocalIntro.current
+    var tourStep by remember { mutableStateOf<Int?>(null) }
+    var dailyBounds by remember { mutableStateOf<Rect?>(null) }
+    var feedBounds by remember { mutableStateOf<Rect?>(null) }
+    var rootOrigin by remember { mutableStateOf(Offset.Zero) }
+    val dailyInView = remember { BringIntoViewRequester() }
+    val feedInView = remember { BringIntoViewRequester() }
+    LaunchedEffect(intro) {
+        if (intro && feedViewModel.shouldShowHomeTour()) {
+            delay(TOUR_DELAY_MILLIS) // after the opening animation
+            feedViewModel.markHomeTourSeen()
+            tourStep = 0
+        }
+    }
+    LaunchedEffect(tourStep) {
+        when (tourStep) {
+            0 -> dailyInView.bringIntoView()
+            1 -> feedInView.bringIntoView()
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize().onGloballyPositioned { rootOrigin = it.positionInRoot() }) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg),
@@ -181,7 +215,9 @@ fun HomeScreen(
             onDayStreak = { streakInfo = StreakKind.Daily },
         )
 
-        DailyCard(daily.phase, daily.language, dailyGame, onOpenDaily)
+        Box(Modifier.bringIntoViewRequester(dailyInView).onGloballyPositioned { dailyBounds = it.boundsInRoot() }) {
+            DailyCard(daily.phase, daily.language, dailyGame, onOpenDaily)
+        }
 
         // One main button on the page: today's puzzle until it is done (or cannot be played), then the feed.
         val dailyDone = if (dailyGame.game == GameKind.Word) {
@@ -189,6 +225,7 @@ fun HomeScreen(
         } else {
             dailyGame.phase == DailyGamePhase.Finished
         }
+        Box(Modifier.bringIntoViewRequester(feedInView).onGloballyPositioned { feedBounds = it.boundsInRoot() }) {
         FeedCard(
             emphasized = dailyDone,
             enabled = feedViewModel.availableGames.filter { it in enabled },
@@ -198,6 +235,7 @@ fun HomeScreen(
             // A feed that was left half done can be gone on with; it is not offered when there is none.
             onContinue = onContinueFeed.takeIf { ready?.feed?.hasUnfinished == true },
         )
+        }
 
         // --- Fastest today ---
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -220,6 +258,14 @@ fun HomeScreen(
             FastestPreview(preview.rows.take(PREVIEW_ROWS), preview.loading, preview.failed, dailyGame.game)
         }
         Spacer(Modifier.height(Spacing.xl))
+    }
+    tourStep?.let { step ->
+        val inBox = { b: Rect? -> b?.translate(-rootOrigin) }
+        val stops = listOf(
+            TourStop(inBox(dailyBounds), stringResource(Res.string.tour_daily_title), stringResource(Res.string.tour_daily_text)),
+            TourStop(inBox(feedBounds), stringResource(Res.string.tour_feed_title), stringResource(Res.string.tour_feed_text)),
+        )
+        TourOverlay(stops, step, onNext = { tourStep = if (step < stops.lastIndex) step + 1 else null }, onSkip = { tourStep = null })
     }
     if (confirmNewFeed) {
         ConfirmDialog(
@@ -507,3 +553,6 @@ private fun FastestPreview(rows: List<DailyRow>, loading: Boolean, failed: Boole
         else -> BasicText(stringResource(Res.string.home_fastest_empty), style = type.body.copy(color = colors.textSoft))
     }
 }
+
+/** The tour starts a little after the opening animation is over. */
+private const val TOUR_DELAY_MILLIS = 2_300L

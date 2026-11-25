@@ -68,6 +68,8 @@ import brainscroll.shared.generated.resources.pack_saving_percent
 import brainscroll.shared.generated.resources.pack_title
 import brainscroll.shared.generated.resources.trust_line_1
 import brainscroll.shared.generated.resources.trust_line_2
+import brainscroll.shared.generated.resources.trust_line_2_apple
+import brainscroll.shared.generated.resources.trust_line_2_google
 import brainscroll.shared.generated.resources.pack_unit
 import brainscroll.shared.generated.resources.pro_cta
 import brainscroll.shared.generated.resources.pro_cancelled
@@ -394,7 +396,7 @@ private fun TrustStrip() {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         BasicText(stringResource(Res.string.trust_line_1), style = type.caption.copy(color = colors.textPrimary, textAlign = TextAlign.Center))
-        BasicText(stringResource(Res.string.trust_line_2), style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center))
+        BasicText(stringResource(when (storePlatform) { StorePlatform.Apple -> Res.string.trust_line_2_apple; StorePlatform.Google -> Res.string.trust_line_2_google; StorePlatform.None -> Res.string.trust_line_2 }), style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center))
     }
 }
 

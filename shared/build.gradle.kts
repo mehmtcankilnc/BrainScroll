@@ -60,6 +60,10 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.sqldelight.androidDriver)
             implementation(libs.purchases.kmp.core)
+            // The phone's own Google account chooser (Credential Manager), used once GOOGLE_WEB_CLIENT_ID is set.
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.playServices)
+            implementation(libs.google.googleid)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)

@@ -208,8 +208,10 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
         // The friends page leaves its section open; the tables start from the speed table again.
         if (ui.section == Section.Friends) viewModel.selectSection(Section.Speed)
     }
+    // The report link is outside the list, at the bottom of the page: a long table can never push it out of reach.
+    Column(modifier.fillMaxSize()) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.weight(1f).fillMaxWidth(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
@@ -223,7 +225,8 @@ fun RanksScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Modif
             Section.Streak -> streakSection(ui, viewModel)
             Section.Friends -> Unit
         }
-        if (ui.section != Section.Friends) item { ReportPlayerLink() }
+    }
+    if (ui.section != Section.Friends) ReportPlayerLink()
     }
 }
 
@@ -235,15 +238,17 @@ fun FriendsScreen(viewModel: SocialViewModel, signIn: RanksSignIn, modifier: Mod
         viewModel.onShown()
         viewModel.selectSection(Section.Friends)
     }
+    Column(modifier.fillMaxSize()) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.weight(1f).fillMaxWidth(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
         // More air between the invite card, the add-a-friend part and the list than the tables have.
         verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         gateItems(ui, viewModel, signIn)
         friendsSection(ui, viewModel)
-        if (ui.access == Access.Ready) item { ReportPlayerLink() }
+    }
+    if (ui.access == Access.Ready) ReportPlayerLink()
     }
 }
 
@@ -264,7 +269,7 @@ private fun ReportPlayerLink() {
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
                 uri.openUri("mailto:support@playbrainscroll.com?subject=" + if (turkish) "Oyuncu%20bildirimi" else "Player%20report")
             }
-            .padding(vertical = Spacing.md)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md)
             .testTag("reportPlayer"),
     )
 }

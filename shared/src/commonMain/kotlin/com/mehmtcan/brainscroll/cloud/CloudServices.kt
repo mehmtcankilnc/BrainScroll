@@ -5,6 +5,7 @@ import com.mehmtcan.brainscroll.account.AccountService
 import com.mehmtcan.brainscroll.account.SupabaseAccountMergeApi
 import com.mehmtcan.brainscroll.account.SupabaseAccountService
 import com.mehmtcan.brainscroll.account.platformAppleSignIn
+import com.mehmtcan.brainscroll.account.platformGoogleSignIn
 import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.daily.SupabaseDailyApi
 import com.mehmtcan.brainscroll.social.SocialApi
@@ -33,7 +34,7 @@ typealias CloudServicesFactory = (CoroutineScope) -> CloudServices
 fun supabaseServices(scope: CoroutineScope): CloudServices {
     val client = createBrainScrollSupabase()
     return CloudServices(
-        account = SupabaseAccountService(client, platformAppleSignIn(), scope, appleTokens = SupabaseAppleTokenApi(client)),
+        account = SupabaseAccountService(client, platformAppleSignIn(), scope, appleTokens = SupabaseAppleTokenApi(client), google = platformGoogleSignIn()),
         cloud = SupabaseCloudApi(client),
         daily = SupabaseDailyApi(client),
         social = SupabaseSocialApi(client),

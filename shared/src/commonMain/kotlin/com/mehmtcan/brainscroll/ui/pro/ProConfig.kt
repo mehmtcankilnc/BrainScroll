@@ -9,7 +9,7 @@ package com.mehmtcan.brainscroll.ui.pro
  * Never put the RevenueCat secret key (`sk_`) or webhook secret here.
  */
 object ProConfig {
-    const val ANDROID_API_KEY = ""
+    const val ANDROID_API_KEY = "goog_udNoKfvZwcOFOYguoQcLUvHREbI"
     const val IOS_API_KEY = "appl_UbNNlWBRAmyxVavKNPxhKkjWFnh"
 
     /** The right ("entitlement") and the product, as named in RevenueCat and in both stores (docs/pro-plan.md section 4). */

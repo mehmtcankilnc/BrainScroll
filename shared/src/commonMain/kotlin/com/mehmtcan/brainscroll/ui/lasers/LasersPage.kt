@@ -89,6 +89,7 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -332,7 +333,7 @@ fun LasersPage(
         beamCore = Color(0xFFFFE9EC),
         target = LaserTargetColor,
         emitter = GameKind.Lasers.world,
-        guide = colors.pendingFill,
+        guide = GuideColor,
     )
     val wonPaint = LaserPaint(paint.tile, paint.mirrorTile, paint.edge, paint.mirror, colors.correctFill, Color(0xFFEFFFE6), paint.target, paint.emitter, paint.guide)
 

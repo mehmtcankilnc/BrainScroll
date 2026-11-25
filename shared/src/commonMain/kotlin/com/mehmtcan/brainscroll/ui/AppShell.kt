@@ -55,6 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brainscroll.shared.generated.resources.Res
 import brainscroll.shared.generated.resources.notice_sign_in_failed
+import brainscroll.shared.generated.resources.sign_in_reason_apple
+import brainscroll.shared.generated.resources.sign_in_reason_email_exists
+import brainscroll.shared.generated.resources.sign_in_reason_google
+import brainscroll.shared.generated.resources.sign_in_reason_offline
+import brainscroll.shared.generated.resources.sign_in_reason_rate_limit
 import brainscroll.shared.generated.resources.notice_account_deleted
 import brainscroll.shared.generated.resources.notice_delete_failed
 import brainscroll.shared.generated.resources.notice_signed_in
@@ -179,7 +184,7 @@ fun AppShell(
         viewModel.accountEvents.collect { event ->
             accountNotice = when (event) {
                 AccountEvent.SignedIn -> ShellNotice(Res.string.notice_signed_in)
-                is AccountEvent.SignInFailed -> ShellNotice(Res.string.notice_sign_in_failed, detail = event.detail)
+                is AccountEvent.SignInFailed -> ShellNotice(Res.string.notice_sign_in_failed, reason = signInReason(event.detail))
                 AccountEvent.AccountDeleted -> ShellNotice(Res.string.notice_account_deleted)
                 AccountEvent.DeleteFailed -> ShellNotice(Res.string.notice_delete_failed)
             }
@@ -409,7 +414,7 @@ fun AppShell(
             accountNotice?.let { notice ->
                 val text = if (notice.name != null) stringResource(notice.text, notice.name) else stringResource(notice.text)
                 // At the bottom, just over the tab bar, as wide as the cards of the profile.
-                NoticePill(text, Modifier.align(Alignment.BottomCenter).padding(horizontal = Spacing.lg, vertical = Spacing.md).fillMaxWidth(), notice.detail, onDismiss = { accountNotice = null })
+                NoticePill(text, Modifier.align(Alignment.BottomCenter).padding(horizontal = Spacing.lg, vertical = Spacing.md).fillMaxWidth(), notice.reason?.let { stringResource(it) }, onDismiss = { accountNotice = null })
             }
         }
         if (showTabBar) {
@@ -430,46 +435,6 @@ fun AppShell(
             onCancel = { replaying = null },
         )
     }
-    // TEMPORARY: a button to look at the streak offer without a broken streak. Set PREVIEW_STREAK_OFFER to false before a release.
-    if (PREVIEW_STREAK_OFFER && paywall == null) {
-        val previewPro by viewModel.pro.isPro.collectAsStateWithLifecycle()
-        Box(Modifier.fillMaxSize()) {
-            // Opens the store whether or not the player is Pro (a Pro player has no store icon to reach it with).
-            BasicText(
-                "Mağaza (önizleme)",
-                style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.textPrimary),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 8.dp, bottom = 242.dp)
-                    .background(BrainScrollTheme.colors.bgRaised, Radius.pill)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { paywall = PaywallRequest(PaywallSource.StoreIcon) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            )
-            // Switches the whole app between a Pro and a free player, to look at the profile and the rest as each of them sees it.
-            BasicText(
-                if (previewPro) "Pro: açık (önizleme)" else "Pro: kapalı (önizleme)",
-                style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.textPrimary),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 8.dp, bottom = 196.dp)
-                    .background(BrainScrollTheme.colors.bgRaised, Radius.pill)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { viewModel.pro.previewSet(!previewPro) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            )
-            BasicText(
-                "Seri teklifi (önizleme)",
-                style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.accentOn),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 8.dp, bottom = 150.dp)
-                    .background(BrainScrollTheme.colors.accent, Radius.pill)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                        paywall = PaywallRequest(PaywallSource.StreakRescue, Rescue(freeStreak = 0, proStreak = 14))
-                    }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            )
-        }
-    }
     paywall?.let { request ->
         PaywallSheet(request.source, onClose = { paywall = null }, telemetry = viewModel.telemetry, rescue = request.rescue, quota = guideQuota, guest = (accountState as? AccountState.SignedIn)?.kind == AccountState.SignedIn.Kind.Anonymous)
     }
@@ -479,13 +444,21 @@ fun AppShell(
     }
 }
 
-/** TEMPORARY, only to look at the streak offer on a phone or emulator. Shows a small button over the app. Set to false before a release. */
-private const val PREVIEW_STREAK_OFFER = false
-
 /** What the purchase screen is open for, and for a streak rescue the streak it is about. */
 private class PaywallRequest(val source: PaywallSource, val rescue: Rescue? = null)
 
-private class ShellNotice(val text: StringResource, val name: String? = null, val detail: String? = null)
+private class ShellNotice(val text: StringResource, val name: String? = null, val reason: StringResource? = null)
+
+/** Why a sign-in failed, in words for the player. Codes without a useful explanation say nothing more than "try again". */
+private fun signInReason(code: String?): StringResource? = when {
+    code == null -> null
+    code == "email_exists" || code == "identity_already_exists" -> Res.string.sign_in_reason_email_exists
+    code == "offline" -> Res.string.sign_in_reason_offline
+    code.contains("rate_limit") -> Res.string.sign_in_reason_rate_limit
+    code.startsWith("apple error") -> Res.string.sign_in_reason_apple
+    code.startsWith("google error") -> Res.string.sign_in_reason_google
+    else -> null
+}
 
 private val INVITE_EVENTS = setOf(
     SocialEvent.Kind.InviteNeedsSignIn,

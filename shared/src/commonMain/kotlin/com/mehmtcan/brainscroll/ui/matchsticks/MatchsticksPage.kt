@@ -105,6 +105,7 @@ import com.mehmtcan.brainscroll.ui.motion.LocalReduceMotion
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -490,11 +491,11 @@ fun MatchsticksPage(
                     val a = 0.35f + 0.6f * pulse
                     if (held != guideFrom) {
                         val line = matchSlotLine(guideFrom)
-                        drawMatchStick(line, origin, unitPx, colors.pendingFill.copy(alpha = a), colors.pendingFill.copy(alpha = a))
+                        drawMatchStick(line, origin, unitPx, GuideColor.copy(alpha = a), GuideColor.copy(alpha = a))
                     } else {
                         val to = matchSlotLine(guideTo)
                         drawLine(
-                            colors.pendingFill.copy(alpha = a),
+                            GuideColor.copy(alpha = a),
                             Offset(origin.x + to[0] * unitPx, origin.y + to[1] * unitPx),
                             Offset(origin.x + to[2] * unitPx, origin.y + to[3] * unitPx),
                             strokeWidth = STICK_WIDTH * unitPx,

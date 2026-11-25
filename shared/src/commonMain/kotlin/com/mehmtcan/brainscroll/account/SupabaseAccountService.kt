@@ -13,7 +13,9 @@ import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -39,6 +41,7 @@ class SupabaseAccountService(
     private val scope: CoroutineScope,
     private val retryDelayMillis: Long = 30_000,
     private val appleTokens: AppleTokenApi = NoAppleTokenApi,
+    private val google: GoogleSignIn? = null,
 ) : AccountService {
 
     private val auth = client.auth
@@ -66,6 +69,11 @@ class SupabaseAccountService(
     }
 
     override suspend fun signInWithGoogle() {
+        val native = google
+        if (native != null) {
+            signInWithGoogleNative(native)
+            return
+        }
         guardedSignIn {
             if (isAnonymous(auth.currentUserOrNull())) {
                 auth.linkIdentity(Google) // opens the browser; the result comes back through handleCallbackUrl
@@ -90,15 +98,68 @@ class SupabaseAccountService(
                 try {
                     auth.linkIdentityWithIdToken(Apple, credential.idToken) { nonce = credential.rawNonce }
                 } catch (e: AuthRestException) {
-                    if (e.errorCode != AuthErrorCode.IdentityAlreadyExists) throw e
-                    signInWithAppleToken(credential) // this Apple account already exists: use it
+                    // This Apple account already exists (or its email belongs to an account of the player's): use that one.
+                    if (e.errorCode != AuthErrorCode.IdentityAlreadyExists && e.errorCode != AuthErrorCode.EmailExists) throw e
+                    signInWithAppleToken(credential)
                 }
             } else {
                 signInWithAppleToken(credential)
             }
-            // The server keeps what it needs to disconnect this Apple sign-in again when the account is deleted.
-            credential.authorizationCode?.let { appleTokens.link(it) }
+            refreshIdentities()
+            // The server keeps what it needs to disconnect this Apple sign-in again when the account is deleted. The sign-in has
+            // worked at this point, so a failure here is not shown (deleting the account then has nothing to disconnect).
+            try {
+                credential.authorizationCode?.let { appleTokens.link(it) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+            }
             _events.tryEmit(AccountEvent.SignedIn)
+        }
+    }
+
+    /** The phone's own account chooser: one sheet, no browser. Links a guest first; signs in to the existing account if Google's is known already. */
+    private suspend fun signInWithGoogleNative(native: GoogleSignIn) {
+        val credential = try {
+            native.requestCredential() ?: return // the player closed the sheet: nothing to report
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _events.tryEmit(AccountEvent.SignInFailed(describe(e)))
+            return
+        }
+        guardedSignIn {
+            if (isAnonymous(auth.currentUserOrNull())) {
+                try {
+                    auth.linkIdentityWithIdToken(Google, credential.idToken) { nonce = credential.rawNonce }
+                } catch (e: AuthRestException) {
+                    if (e.errorCode != AuthErrorCode.IdentityAlreadyExists && e.errorCode != AuthErrorCode.EmailExists) throw e
+                    signInWithGoogleToken(credential)
+                }
+            } else {
+                signInWithGoogleToken(credential)
+            }
+            refreshIdentities()
+            _events.tryEmit(AccountEvent.SignedIn)
+        }
+    }
+
+    private suspend fun signInWithGoogleToken(credential: GoogleCredential) {
+        auth.signInWith(IDToken) {
+            idToken = credential.idToken
+            provider = Google
+            nonce = credential.rawNonce
+        }
+    }
+
+    /** The link answer can still list the old (anonymous) identities: ask the server who the player is now, so the app shows the account right away. */
+    private suspend fun refreshIdentities() {
+        try {
+            auth.retrieveUserForCurrentSession(updateSession = true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Signed in all the same; the next token refresh brings the identities.
         }
     }
 
@@ -150,7 +211,7 @@ class SupabaseAccountService(
     override suspend fun handleCallbackUrl(url: String) {
         val callback = parseCallbackUrl(url, SupabaseConfig.REDIRECT_SCHEME, SupabaseConfig.REDIRECT_HOST) ?: return
         when {
-            callback.errorCode == CallbackUrl.IDENTITY_ALREADY_EXISTS ->
+            callback.errorCode == CallbackUrl.IDENTITY_ALREADY_EXISTS || callback.errorCode == CallbackUrl.EMAIL_EXISTS ->
                 // The Google account is somebody else's already: sign in to it instead of linking.
                 guardedSignIn { auth.signInWith(Google) }
             callback.isError -> _events.tryEmit(AccountEvent.SignInFailed(callback.errorCode ?: callback.error))
@@ -175,6 +236,7 @@ class SupabaseAccountService(
 /** A short, safe-to-show description of why a sign-in failed: the server's error code if there is one. */
 internal fun describe(e: Throwable): String {
     val text = when (e) {
+        is HttpRequestException, is HttpRequestTimeoutException -> "offline"
         is AuthRestException -> e.errorCode?.value ?: e.error
         else -> e.message?.lineSequence()?.firstOrNull() ?: e::class.simpleName
     }

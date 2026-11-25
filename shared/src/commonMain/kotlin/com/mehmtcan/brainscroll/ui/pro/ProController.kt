@@ -43,11 +43,6 @@ class ProController(
         }
     }
 
-    /** TEMPORARY, for the preview buttons: shows the app as Pro or not, without touching the store or the saved answer. */
-    fun previewSet(pro: Boolean) {
-        _isPro.value = pro
-    }
-
     private fun apply(pro: Boolean) {
         _isPro.value = pro
         cache.setCached(pro)

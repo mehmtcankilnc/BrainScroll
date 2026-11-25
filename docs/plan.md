@@ -107,7 +107,7 @@ Amaç: Uygulamayı hissettiren ve herkes için kullanılabilir hâle getirmek. *
 Faz 8'den çıkarıldı (2026-10-07), vakti gelince ayrı faz olarak ele alınır.
 - [ ] Mağaza varlıkları: ikon, ekran görüntüleri, açıklamalar (TR/EN), gizlilik beyanı
 - [ ] Supabase plan kararı (duraklatma riski), yedekleme
-- [ ] Android: `assetlinks.json` içine Play imza sertifikasının SHA-256 parmak izi
+- [x] Android: `assetlinks.json` içine Play imza sertifikasının SHA-256 parmak izi eklendi (26 Kasım 2026, siteyi deploy etmek gerekir)
 - [ ] Apple ile giriş yapmış hesap silinirken Apple belirtecini iptal et (Edge Function + Apple anahtarı; App Store kuralı)
 - [ ] App Store ve Google Play gönderimi
 **Çıkış:** Mağazalarda yayında v1.0.
@@ -118,7 +118,7 @@ Faz 8'den çıkarıldı (2026-10-07), vakti gelince ayrı faz olarak ele alını
 - [x] **iPad ve yön** (25 Kasım 2026): proje yalnızca iPhone (`TARGETED_DEVICE_FAMILY = 1`) ve iPhone'da yalnızca dikey. iPad ekran görüntüsü gerekmez. Android'e dokunulmadı.
 - [x] **Kullanıcı adı denetimi (Kural 1.2)** (25 Kasım 2026): sunucuda zaten yasaklı kelime filtresi vardı (`username_blocked`, rakam hilelerini de çözer); `20261125120000_more_blocked_words.sql` listeyi genişletti (`verify_blocked_words.mjs`), sıralama ve arkadaşlar sayfasının altına "Uygunsuz bir kullanıcı adı mı gördün? Bildir" bağlantısı eklendi (e-postaya açılır, `theRanksPageHasAWayToReportAUsername`). **Migration henüz canlıya itilmedi.**
 - [ ] App Store Connect: ad, alt başlık, anahtar kelimeler, açıklama (TR/EN), ekran görüntüleri, yaş sınıfı, gizlilik etiketleri, destek/gizlilik/pazarlama adresleri, inceleme notu, üç uygulama içi ürünü sürüme bağlama, fiyat ve ülkeler, sürüm yayın şekli.
-- [ ] Gönderimden önce geçici kod temizliği: `PREVIEW_STREAK_OFFER`, `PREVIEW_STORE_WITHOUT_KEY` (Android anahtar gelene kadar kalabilir), `ProController.previewSet`.
+- [x] Geçici önizleme kodları kaldırıldı (`PREVIEW_STREAK_OFFER`, `PREVIEW_STORE_WITHOUT_KEY`, `ProController.previewSet`). Android'de anahtar yoksa mağaza hiç görünmez.
 
 ## Faz 9 - Hafıza eşleştirme ve karışık akış
 Amaç: İkinci oyun ve akışın çok oyunlu hale gelmesi. Kararlar `docs/decisions.md` "Hafıza eşleştirme ve karışık akış".

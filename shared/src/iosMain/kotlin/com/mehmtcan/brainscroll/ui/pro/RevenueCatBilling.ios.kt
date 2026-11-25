@@ -87,7 +87,7 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
         val amounts = ProConfig.HINT_PACKS.toMap()
         val found = purchases.awaitGetProducts(amounts.keys.toList())
         // In the order of ProConfig (smallest first), and only the ones the store really has.
-        return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id == id }?.let { it to hints } }
+        return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id.substringBefore(':') == id }?.let { it to hints } }
     }
 
     override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted, product.price.amountMicros) }

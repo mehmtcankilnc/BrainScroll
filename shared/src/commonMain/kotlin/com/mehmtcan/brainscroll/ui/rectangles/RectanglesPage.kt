@@ -98,6 +98,7 @@ import com.mehmtcan.brainscroll.ui.haptics.OutcomeHaptics
 import com.mehmtcan.brainscroll.ui.motion.bounceIn
 import com.mehmtcan.brainscroll.ui.motion.rememberJustFinished
 import com.mehmtcan.brainscroll.ui.motion.rememberSettledStatus
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -305,7 +306,7 @@ fun RectanglesPage(
         preview = colors.textPrimary,
         rejected = colors.error,
         won = colors.correctFill,
-        guide = colors.pendingFill,
+        guide = GuideColor,
     )
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current

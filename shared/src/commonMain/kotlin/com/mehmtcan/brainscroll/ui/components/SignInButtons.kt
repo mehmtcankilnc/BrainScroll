@@ -37,9 +37,12 @@ private val GoogleFill = Color(0xFF131314)
 private val GoogleEdge = Color(0xFF8E918F)
 private val GoogleInk = Color(0xFFE3E3E3)
 
-/** "Sign in with Apple", in Apple's look for a dark screen: a filled white button. Put it first. */
+/**
+ * The drawn version of the Apple button, for the platforms that are not Apple's own. On iOS the app shows the button of the system
+ * instead (see AppleSignInButton): Apple's guidelines ask for its own logo artwork, which a drawn mark is not.
+ */
 @Composable
-fun AppleSignInButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun DrawnAppleSignInButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     ProviderButton(
         text = text,
         onClick = onClick,

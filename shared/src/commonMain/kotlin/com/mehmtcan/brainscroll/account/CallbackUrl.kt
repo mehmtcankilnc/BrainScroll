@@ -17,6 +17,9 @@ data class CallbackUrl(
     companion object {
         /** The server's code for "this Google/Apple account already belongs to another user". */
         const val IDENTITY_ALREADY_EXISTS = "identity_already_exists"
+
+        /** The server's code for "this email is used by another account already" (the player's own, with another sign-in method). */
+        const val EMAIL_EXISTS = "email_exists"
     }
 }
 

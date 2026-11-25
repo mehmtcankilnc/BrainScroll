@@ -28,6 +28,8 @@ async function signingKey(pem: string): Promise<CryptoKey> {
   // The secret may have been stored with the line breaks written as \n.
   const body = pem.replace(/\\n/g, '\n').replace(/-----(BEGIN|END) PRIVATE KEY-----/g, '').replace(/\s+/g, '')
   const der = Uint8Array.from(atob(body), (c) => c.charCodeAt(0))
+  // A P-256 key in PKCS#8 is 138 bytes. Much less means the secret lost lines when it was set; say so in the log (never the key itself).
+  if (der.length < 130) throw new Error(`APPLE_PRIVATE_KEY is ${der.length} bytes, a key is about 138: the secret was probably cut`)
   return await crypto.subtle.importKey('pkcs8', der, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'])
 }
 

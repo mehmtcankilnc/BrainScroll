@@ -55,6 +55,13 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Select the newest Xcode
+        # Apple wants uploads built with the newest SDK (ITMS-90725); the runner's default Xcode can be older than the newest installed one.
+        run: |
+          latest=$(ls -d /Applications/Xcode_[0-9]*.app | grep -v -i -E 'beta|rc|rc' | sort -V | tail -1)
+          echo "Using $latest"
+          sudo xcode-select -s "$latest"
+
       - name: Show Xcode version
         run: xcodebuild -version
 
@@ -102,6 +109,13 @@ jobs:
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
+
+      - name: Select the newest Xcode
+        # Apple wants uploads built with the newest SDK (ITMS-90725); the runner's default Xcode can be older than the newest installed one.
+        run: |
+          latest=$(ls -d /Applications/Xcode_[0-9]*.app | grep -v -i -E 'beta|rc|rc' | sort -V | tail -1)
+          echo "Using $latest"
+          sudo xcode-select -s "$latest"
 
       - name: Write App Store Connect API key
         run: |

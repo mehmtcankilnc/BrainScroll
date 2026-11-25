@@ -122,8 +122,9 @@ class AccountUiTest {
 
         cloud.account.events.tryEmit(AccountEvent.SignInFailed("apple error 1000"))
         waitUntil(timeoutMillis = 5_000) { hasAnyText("Giriş yapılamadı", "sign in, try again") }
-        // The small print tells what went wrong, so a failure can be diagnosed from a screenshot.
-        assertTrue(hasAnyText("apple error 1000"))
+        // The small print says what went wrong in words, never as a code.
+        assertTrue(hasAnyText("Apple ile giriş tamamlanamadı", "Apple sign-in didn't finish"))
+        assertTrue(!hasAnyText("apple error 1000"))
         snap("12_sign_in_failed")
 
         // The x closes it.

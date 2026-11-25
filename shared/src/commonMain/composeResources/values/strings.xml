@@ -84,6 +84,11 @@
     <string name="backup_done">Everything is backed up</string>
     <string name="notice_signed_in">Signed in</string>
     <string name="notice_sign_in_failed">Couldn't sign in, try again</string>
+    <string name="sign_in_reason_email_exists">This email already belongs to an account with another sign-in method. Sign in with that one.</string>
+    <string name="sign_in_reason_offline">No connection. Check your internet and try again.</string>
+    <string name="sign_in_reason_rate_limit">Too many attempts. Wait a little and try again.</string>
+    <string name="sign_in_reason_apple">Apple sign-in didn't finish. Try again.</string>
+    <string name="sign_in_reason_google">Google sign-in didn't finish. Try again.</string>
     <string name="tab_daily">Daily</string>
     <string name="daily_title">Today's puzzle</string>
     <string name="daily_intro">The same word for everyone, every day. Your time starts the moment you press Start.</string>
@@ -953,6 +958,8 @@
     <string name="pack_guest_note">You are a guest: hints are lost if you delete the app.</string>
     <string name="trust_line_1">Not a subscription: one payment, nothing renews.</string>
     <string name="trust_line_2">Refunds via Apple or Google.</string>
+    <string name="trust_line_2_apple">Refunds via Apple.</string>
+    <string name="trust_line_2_google">Refunds via Google.</string>
     <string name="pack_saving_percent">%1$s cheaper</string>
     <string name="pack_processing">Your purchase is being processed. The hints will arrive shortly.</string>
     <string name="look_title">Look</string>
@@ -1008,7 +1015,7 @@
     <string name="favorite_codebreaker_tag">Code Breaker</string>
     <string name="favorite_codebreaker_result">%1$d tries · %2$s</string>
     <string name="guide_codebreaker_next">A code that fits every clue so far: %1$s</string>
-    <string name="codebreaker_hint">Find the hidden colours. Solid green ring: right colour, right place. Dashed green ring: right colour, wrong place. Grey ring: not in the code</string>
+    <string name="codebreaker_hint">Solid green ring: right colour, right place. Dashed green ring: right colour, wrong place</string>
     <string name="codebreaker_won">Code cracked!</string>
     <string name="codebreaker_result">%1$d tries · %2$s</string>
     <string name="codebreaker_try">Try %1$d</string>
@@ -1422,4 +1429,12 @@
     <string name="ranks_caption_guesses">Fewest guesses first, then the shortest time. Puzzles you won without help count.</string>
     <string name="ranks_caption_stars">Most stars first, then the shortest time. The daily puzzle counts.</string>
     <string name="ranks_rounds">%1$d rounds</string>
+    <string name="tour_daily_title">Today's puzzle</string>
+    <string name="tour_daily_text">A new puzzle every day, the same for everyone. Solve it daily to grow your streak.</string>
+    <string name="tour_feed_title">Your feed</string>
+    <string name="tour_feed_text">You choose which games show up. Tap the card to turn games on or off and set the difficulty.</string>
+    <string name="tour_next">Next</string>
+    <string name="tour_done">Got it</string>
+    <string name="tour_skip">Skip</string>
+    <string name="tour_step">%1$d of %2$d</string>
 </resources>

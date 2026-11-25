@@ -88,6 +88,7 @@ import com.mehmtcan.brainscroll.ui.sound.LocalSoundEffects
 import com.mehmtcan.brainscroll.ui.sound.NONOGRAM_FILL_VOLUME
 import com.mehmtcan.brainscroll.ui.sound.Sfx
 import com.mehmtcan.brainscroll.ui.sound.withoutSound
+import com.mehmtcan.brainscroll.ui.theme.GuideColor
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
 import com.mehmtcan.brainscroll.ui.theme.Radius
 import com.mehmtcan.brainscroll.ui.theme.Spacing
@@ -288,11 +289,12 @@ fun FlashGridPage(
                             }
                             // The tiles that were lit and not found when the run ended are marked, so the player sees what was missed.
                             val missedOutline = state.status == FlashStatus.Lost && inPattern && !isFound
-                            val guided = guide != null && !over && index in guide.cells
+                            // Only once the flash is over and it is the player's turn to guess: before that the hint would show the answer.
+                            val guided = guide != null && !over && phase == Phase.Guess && index in guide.cells
                             val label = tileLabel(index, n) + (if (isFound) ", $foundText" else "")
                             var modifierTile = Modifier.size(tile).background(fill, shape)
                             if (missedOutline) modifierTile = modifierTile.border(BorderStroke(3.dp, lit), shape)
-                            if (guided) modifierTile = modifierTile.border(BorderStroke(3.dp, colors.pendingFill.copy(alpha = 0.35f + 0.6f * pulse)), shape)
+                            if (guided) modifierTile = modifierTile.border(BorderStroke(3.dp, GuideColor.copy(alpha = 0.35f + 0.6f * pulse)), shape)
                             Box(
                                 modifier = modifierTile
                                     .testTag("flashTile$index")

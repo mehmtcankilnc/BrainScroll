@@ -8,6 +8,6 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "BrainScroll",
     ) {
-        App()
+        App(intro = true)
     }
 }

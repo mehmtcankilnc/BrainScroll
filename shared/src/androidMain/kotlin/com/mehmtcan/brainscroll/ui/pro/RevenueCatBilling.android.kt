@@ -87,7 +87,7 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
         val amounts = ProConfig.HINT_PACKS.toMap()
         val found = purchases.awaitGetProducts(amounts.keys.toList())
         // In the order of ProConfig (smallest first), and only the ones the store really has.
-        return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id == id }?.let { it to hints } }
+        return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id.substringBefore(':') == id }?.let { it to hints } }
     }
 
     override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted, product.price.amountMicros) }
@@ -110,32 +110,5 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
 // One store for the whole process: the activity can be rebuilt (rotation), the SDK must be configured once.
 private var instance: RevenueCatBilling? = null
 
-/**
- * TEMPORARY, only to look at the store icon and the purchase screen on a phone while there is no Android key.
- * Nothing can be bought: the price is a dash, a purchase is cancelled. Set to false (or remove) before a release.
- */
-private const val PREVIEW_STORE_WITHOUT_KEY = false
-
-private object PreviewStoreBilling : StoreBilling {
-    override val entitlement: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
-    override suspend fun refresh() = Unit
-    // A pause like a real store has, so the placeholders of the store page can be looked at.
-    override suspend fun product(): ProProduct {
-        kotlinx.coroutines.delay(1_800)
-        return ProProduct("$4.99")
-    }
-    override suspend fun purchase(): PurchaseResult = PurchaseResult.Cancelled
-    override suspend fun restore(): RestoreResult = RestoreResult.NothingToRestore
-    override suspend fun identify(userId: String) = Unit
-
-    // Sample packs so the store screen can be looked at; buying is cancelled like Pro.
-    override suspend fun packs(): List<HintPack> {
-        kotlinx.coroutines.delay(2_800)
-        return listOf(HintPack("brainscroll_hints_20", 20, "$0.99", 990_000), HintPack("brainscroll_hints_75", 75, "$2.99", 2_990_000))
-    }
-    override suspend fun buyPack(pack: HintPack): PurchaseResult = PurchaseResult.Cancelled
-}
-
 actual fun createStoreBilling(): StoreBilling? =
     ProConfig.ANDROID_API_KEY.takeIf { it.isNotBlank() }?.let { key -> instance ?: RevenueCatBilling(key).also { instance = it } }
-        ?: if (PREVIEW_STORE_WITHOUT_KEY) PreviewStoreBilling else null
