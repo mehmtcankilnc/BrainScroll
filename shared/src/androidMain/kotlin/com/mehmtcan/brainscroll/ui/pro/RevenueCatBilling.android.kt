@@ -90,7 +90,7 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
         return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id == id }?.let { it to hints } }
     }
 
-    override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted) }
+    override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted, product.price.amountMicros) }
 
     override suspend fun buyPack(pack: HintPack): PurchaseResult {
         val product = packProducts().firstOrNull { it.first.id == pack.id }?.first ?: return PurchaseResult.Failed("product_not_found")
@@ -119,13 +119,13 @@ private const val PREVIEW_STORE_WITHOUT_KEY = false
 private object PreviewStoreBilling : StoreBilling {
     override val entitlement: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
     override suspend fun refresh() = Unit
-    override suspend fun product() = ProProduct("preview")
+    override suspend fun product() = ProProduct("$4.99")
     override suspend fun purchase(): PurchaseResult = PurchaseResult.Cancelled
     override suspend fun restore(): RestoreResult = RestoreResult.NothingToRestore
     override suspend fun identify(userId: String) = Unit
 
     // Sample packs so the store screen can be looked at; buying is cancelled like Pro.
-    override suspend fun packs() = listOf(HintPack("brainscroll_hints_20", 20, "preview"), HintPack("brainscroll_hints_75", 75, "preview"))
+    override suspend fun packs() = listOf(HintPack("brainscroll_hints_20", 20, "$0.99", 990_000), HintPack("brainscroll_hints_75", 75, "$2.99", 2_990_000))
     override suspend fun buyPack(pack: HintPack): PurchaseResult = PurchaseResult.Cancelled
 }
 

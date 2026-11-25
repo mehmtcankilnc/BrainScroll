@@ -132,13 +132,16 @@ class SocialUiTest {
         }
         openRanks(cloud)
         // A series: the rounds are the big number, the time the small one; the chips of the levels are there.
-        onAllNodesWithText("Küp Katlama").onFirst().performScrollTo().performClick()
+        // The computer running the tests may speak either language, so look for the name in both.
+        val cubeFolding = listOf("Küp Katlama", "Cube Folding").first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
+        onAllNodesWithText(cubeFolding).onFirst().performScrollTo().performClick()
         waitForText("8 tur", "8 rounds")
         snap("470_ranks_series_table")
         assertTrue(hasAnyText("01:39"))
         assertTrue(hasAnyText("Önce en çok geçilen tur", "Most rounds cleared first"), "the caption says what the table is ranked by")
         assertTrue(hasAnyText("Orta", "Medium") && hasAnyText("Zor", "Hard") && hasAnyText("Kolay", "Easy"))
-        onAllNodesWithText("Zor").onFirst().performClick()
+        val hard = listOf("Zor", "Hard").first { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
+        onAllNodesWithText(hard).onFirst().performClick()
         waitUntil(timeoutMillis = 5_000) { cloud.social.lastDifficulty == Difficulty.Hard }
 
         // A game played for time: the time is the big number, the moves the small one.

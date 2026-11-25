@@ -947,6 +947,11 @@
     <string name="pack_caption">Bought hints stay with your account.</string>
     <string name="pack_adding">Adding your hints…</string>
     <string name="pack_added">Your hints are added.</string>
+    <string name="pack_added_guest">Your hints are added. Link your account in your profile so you never lose them.</string>
+    <string name="pack_guest_note">You are a guest: hints are lost if you delete the app.</string>
+    <string name="trust_line_1">Not a subscription: one payment, nothing renews.</string>
+    <string name="trust_line_2">Refunds via Apple or Google.</string>
+    <string name="pack_saving_percent">%1$s cheaper</string>
     <string name="pack_processing">Your purchase is being processed. The hints will arrive shortly.</string>
     <string name="look_title">Look</string>
     <string name="look_accent">Accent color</string>

@@ -14,7 +14,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,11 +58,16 @@ import brainscroll.shared.generated.resources.guide_left
 import brainscroll.shared.generated.resources.guide_left_bonus
 import brainscroll.shared.generated.resources.howto_done
 import brainscroll.shared.generated.resources.pack_added
+import brainscroll.shared.generated.resources.pack_added_guest
 import brainscroll.shared.generated.resources.pack_adding
 import brainscroll.shared.generated.resources.pack_best
+import brainscroll.shared.generated.resources.pack_guest_note
 import brainscroll.shared.generated.resources.pack_item_a11y
 import brainscroll.shared.generated.resources.pack_processing
+import brainscroll.shared.generated.resources.pack_saving_percent
 import brainscroll.shared.generated.resources.pack_title
+import brainscroll.shared.generated.resources.trust_line_1
+import brainscroll.shared.generated.resources.trust_line_2
 import brainscroll.shared.generated.resources.pack_unit
 import brainscroll.shared.generated.resources.pro_cta
 import brainscroll.shared.generated.resources.pro_cancelled
@@ -117,7 +126,7 @@ import org.jetbrains.compose.resources.stringResource
  * Prices are what the store says for the player's country. The restore, terms and privacy links are on both.
  */
 @Composable
-fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetry, modifier: Modifier = Modifier, rescue: Rescue? = null, quota: QuotaState? = null) {
+fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetry, modifier: Modifier = Modifier, rescue: Rescue? = null, quota: QuotaState? = null, guest: Boolean = false) {
     val pro = LocalPro.current
     val isPro by pro.isPro.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -194,7 +203,11 @@ fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetr
                         haptics.perform(HapticKind.Success)
                         // The store only took the payment: the server adds the hints a few seconds later (the webhook).
                         message = Res.string.pack_adding
-                        message = if (pro.hints.awaitCredit(before)) Res.string.pack_added else Res.string.pack_processing
+                        message = when {
+                            !pro.hints.awaitCredit(before) -> Res.string.pack_processing
+                            guest -> Res.string.pack_added_guest
+                            else -> Res.string.pack_added
+                        }
                     }
                     PurchaseResult.Cancelled -> {
                         telemetry.event(TelemetryEvent.PurchaseCancelled, item)
@@ -237,11 +250,12 @@ fun PaywallSheet(source: PaywallSource, onClose: () -> Unit, telemetry: Telemetr
         bought = bought,
         quota = quota,
         isPro = isPro,
+        guest = guest,
         buy = buy,
         buyPack = buyPack,
         restore = restore,
         privacy = { uri.openUri(if (Locale.current.language == "tr") ProConfig.PRIVACY_URL_TR else ProConfig.PRIVACY_URL_EN) },
-        terms = { uri.openUri(ProConfig.TERMS_URL) },
+        terms = { uri.openUri(if (Locale.current.language == "tr") ProConfig.TERMS_URL_TR else ProConfig.TERMS_URL_EN) },
     )
     SlidePage(onDismiss = onClose, modifier = modifier, tag = "paywallSheet") { close ->
         if (rescue != null) RescuePage(ui, rescue, close) else StorePage(ui, close)
@@ -258,6 +272,8 @@ private class PaywallUi(
     val bought: Int,
     val quota: QuotaState?,
     val isPro: Boolean,
+    /** A guest account: what it buys stays with this phone's guest, so the store says so. */
+    val guest: Boolean,
     val buy: () -> Unit,
     val buyPack: (HintPack) -> Unit,
     val restore: () -> Unit,
@@ -283,28 +299,57 @@ private fun ColumnScope.StorePage(ui: PaywallUi, close: () -> Unit) {
         )
         if (ui.bought > 0) HintChip(ui.bought, Modifier.align(Alignment.CenterEnd))
     }
+    // Everything a buyer decides on (both prices) is meant to be on screen at once on any phone, so the page fits itself to the room it
+    // has: bigger pictures where there is space, no pictures on a small screen. The scroll is only a way out for a very large font.
+    BoxWithConstraints(Modifier.weight(1f)) {
+    val fit = when {
+        maxHeight < 470.dp -> StoreFit.Tight
+        maxHeight >= 600.dp -> StoreFit.Roomy
+        else -> StoreFit.Normal
+    }
     Column(
-        modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         if (ui.isPro) {
             ThanksBlock(null)
         } else {
-            ProCard(ui)
+            ProCard(ui, fit)
             if (ui.packs.isNotEmpty()) {
-                BasicText(
-                    stringResource(Res.string.pack_title),
-                    style = type.heading.copy(color = colors.textPrimary),
-                    modifier = Modifier.padding(top = Spacing.sm).semantics { heading() },
-                )
                 val free = ui.quota?.freeLeft ?: 0
-                if (free > 0) BasicText(stringResource(Res.string.guide_left, free), style = type.label.copy(color = colors.textSecondary))
+                Row(
+                    Modifier.fillMaxWidth().padding(top = Spacing.xs),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    BasicText(
+                        stringResource(Res.string.pack_title),
+                        style = type.heading.copy(color = colors.textPrimary),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    if (free > 0) {
+                        BasicText(stringResource(Res.string.guide_left, free), style = type.caption.copy(color = colors.textSecondary))
+                    }
+                }
+                if (ui.guest) {
+                    BasicText(
+                        stringResource(Res.string.pack_guest_note),
+                        style = type.caption.copy(color = colors.pendingFill, textAlign = TextAlign.Center),
+                        modifier = Modifier.fillMaxWidth().testTag("guestNote"),
+                    )
+                }
+                val saving = if (ui.packs.size > 1) packSaving(ui.packs.first(), ui.packs.last()) else null
                 ui.packs.chunked(2).forEach { line ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    // A little room above: the tag of the best pack sits on the top edge of its card.
+                    Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         line.forEach { pack ->
+                            val best = ui.packs.size > 1 && pack == ui.packs.last()
                             PackCard(
                                 pack,
-                                best = ui.packs.size > 1 && pack == ui.packs.last(),
+                                best = best,
+                                saving = saving.takeIf { best },
+                                savingSlot = saving != null,
+                                fit = fit,
                                 enabled = !ui.busy,
                                 onClick = { ui.buyPack(pack) },
                                 modifier = Modifier.weight(1f),
@@ -316,51 +361,90 @@ private fun ColumnScope.StorePage(ui: PaywallUi, close: () -> Unit) {
             }
         }
     }
+    }
+    if (!ui.isPro) TrustStrip()
     if (ui.isPro) AppButton(stringResource(Res.string.howto_done), onClick = close, primary = true)
     Footer(ui)
 }
 
-/** The main offer of the store: the mascot, the two things Pro is for, the price and the buy button. */
+/**
+ * The buyer's worries in two short lines that are always on screen, pinned above the footer: nothing renews, refunds go through
+ * the store. Only things that are true today: no ratings or reviews are shown until there are real ones (docs/pro-plan.md section 20).
+ */
 @Composable
-private fun ProCard(ui: PaywallUi) {
+private fun TrustStrip() {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
-    // The mascot stands over the top edge of the card instead of sitting inside it: the card starts below its head.
-    Box(Modifier.fillMaxWidth().padding(top = 44.dp)) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.bgSurface, Radius.card)
-            .border(1.5.dp, colors.accent, Radius.card)
-            .padding(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs).semantics(mergeDescendants = true) {}.testTag("trustNotes"),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.Top) {
-            Spacer(Modifier.width(100.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                BasicText(stringResource(Res.string.pro_title), style = type.title.copy(color = colors.textPrimary))
-                ProPoint(stringResource(Res.string.store_pro_hints))
-                ProPoint(stringResource(Res.string.store_pro_streak))
+        BasicText(stringResource(Res.string.trust_line_1), style = type.caption.copy(color = colors.textPrimary, textAlign = TextAlign.Center))
+        BasicText(stringResource(Res.string.trust_line_2), style = type.caption.copy(color = colors.textSecondary, textAlign = TextAlign.Center))
+    }
+}
+
+/** How much room the store page has: [Tight] drops the pictures, [Roomy] draws them big. */
+private enum class StoreFit { Tight, Normal, Roomy }
+
+/** The main offer of the store: the mascot, the two things Pro is for, the price and the buy button. */
+@Composable
+private fun ProCard(ui: PaywallUi, fit: StoreFit) {
+    val colors = BrainScrollTheme.colors
+    val type = BrainScrollTheme.typography
+    // The mascot is drawn at 120 dp and shown smaller where there is less room, so the card stays low.
+    val mascotScale = when (fit) { StoreFit.Tight -> 0.46f; StoreFit.Normal -> 0.74f; StoreFit.Roomy -> 1f }
+    val overhang = when (fit) { StoreFit.Tight -> 0.dp; StoreFit.Normal -> 30.dp; StoreFit.Roomy -> 44.dp }
+    val mascotBox = (120f * mascotScale).dp
+    // On a normal or roomy screen the mascot stands over the top edge of the card; on a small one it sits beside the title.
+    Box(Modifier.fillMaxWidth().padding(top = overhang)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(colors.bgSurface, Radius.card)
+                .border(1.5.dp, colors.accent, Radius.card)
+                .padding(if (fit == StoreFit.Tight) Spacing.sm else Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.Top) {
+                if (fit == StoreFit.Tight) {
+                    Box(Modifier.size(mascotBox + 8.dp), contentAlignment = Alignment.Center) {
+                        ProMascot(Modifier.requiredSize(120.dp).graphicsLayer { scaleX = mascotScale; scaleY = mascotScale })
+                    }
+                } else {
+                    Spacer(Modifier.width(if (fit == StoreFit.Roomy) 100.dp else 84.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    BasicText(stringResource(Res.string.pro_title), style = type.title.copy(color = colors.textPrimary))
+                    ProPoint(stringResource(Res.string.store_pro_hints))
+                    ProPoint(stringResource(Res.string.store_pro_streak))
+                }
             }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-            // The price and its caption read as one thing to a screen reader.
-            Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
-                BasicText(ui.priceText, style = type.display.copy(color = colors.accent), modifier = Modifier.testTag("proPrice"))
-                BasicText(
-                    stringResource(if (ui.priceFailed) Res.string.pro_price_unavailable else Res.string.pro_price_caption),
-                    style = type.label.copy(color = colors.textSecondary),
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                // The price and its caption read as one thing to a screen reader.
+                Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+                    BasicText(ui.priceText, style = type.display.copy(color = colors.accent), modifier = Modifier.testTag("proPrice"))
+                    if (fit != StoreFit.Tight || ui.priceFailed) {
+                        BasicText(
+                            stringResource(if (ui.priceFailed) Res.string.pro_price_unavailable else Res.string.pro_price_caption),
+                            style = type.caption.copy(color = colors.textSecondary),
+                        )
+                    }
+                }
+                AppButton(
+                    text = stringResource(if (ui.busy) Res.string.pro_working else Res.string.pro_cta),
+                    onClick = ui.buy,
+                    primary = true,
+                    modifier = Modifier.width(140.dp).testTag("proBuy"),
                 )
             }
-            AppButton(
-                text = stringResource(if (ui.busy) Res.string.pro_working else Res.string.pro_cta),
-                onClick = ui.buy,
-                primary = true,
-                modifier = Modifier.width(140.dp).testTag("proBuy"),
-            )
         }
-    }
-    ProMascot(Modifier.align(Alignment.TopStart).offset(x = 4.dp, y = (-44).dp))
+        if (fit != StoreFit.Tight) {
+            Box(Modifier.align(Alignment.TopStart).offset(x = 2.dp, y = -overhang).size(mascotBox), contentAlignment = Alignment.Center) {
+                ProMascot(Modifier.requiredSize(120.dp).graphicsLayer { scaleX = mascotScale; scaleY = mascotScale })
+            }
+        }
     }
 }
 
@@ -373,48 +457,93 @@ private fun ProPoint(text: String) {
     }
 }
 
-/** One hint pack as a card: the bulbs grow with the pack, the count, and the price as a button. The whole card buys. */
+/**
+ * One hint pack as a card: the bulbs, the count, and the price as a button. The best pack has a yellow edge and a tag, shows the
+ * price it would have at the small pack's price crossed out next to its real price, and how much cheaper it is. The whole card buys.
+ */
 @Composable
-private fun PackCard(pack: HintPack, best: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun PackCard(
+    pack: HintPack,
+    best: Boolean,
+    saving: PackSaving?,
+    savingSlot: Boolean,
+    fit: StoreFit,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
     val description = stringResource(Res.string.pack_item_a11y, pack.hints, pack.priceText)
-    Column(
-        modifier = modifier
-            .heightIn(min = 208.dp)
-            .background(colors.bgSurface, Radius.card)
-            .border(0.5.dp, colors.borderSubtle, Radius.card)
-            .clickable(enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
-            .padding(Spacing.md)
-            .semantics(mergeDescendants = true) { contentDescription = description }
-            .testTag("pack_${pack.id}"),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        // A slot of the same height on every card, so the numbers line up whether a card has the tag or not.
-        Box(Modifier.height(22.dp), contentAlignment = Alignment.Center) {
-            if (best) {
-                BasicText(
-                    stringResource(Res.string.pack_best),
-                    style = type.caption.copy(color = colors.pendingOn),
-                    modifier = Modifier.background(colors.pendingFill, Radius.pill).padding(horizontal = Spacing.sm, vertical = 2.dp),
-                )
-            }
-        }
-        PackArt(pack.hints)
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            BasicText(pack.hints.toString(), style = type.display.copy(color = colors.textPrimary))
-            BasicText(stringResource(Res.string.pack_unit), style = type.label.copy(color = colors.textSecondary))
-        }
-        BasicText(
-            pack.priceText,
-            style = type.label.copy(color = colors.textPrimary, textAlign = TextAlign.Center),
+    Box(modifier) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 40.dp)
-                .background(colors.bgRaised, Radius.pill)
-                .padding(vertical = 10.dp),
-        )
+                .background(colors.bgSurface, Radius.card)
+                .border(if (best) 1.5.dp else 0.5.dp, if (best) colors.pendingFill else colors.borderSubtle, Radius.card)
+                .clickable(enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick)
+                .padding(start = Spacing.sm, end = Spacing.sm, top = 16.dp, bottom = Spacing.sm)
+                .semantics(mergeDescendants = true) { contentDescription = description }
+                .testTag("pack_${pack.id}"),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // The art is drawn at 112 x 104 dp and shown smaller where there is less room; on a small screen it is left out.
+            if (fit != StoreFit.Tight) {
+                val artScale = if (fit == StoreFit.Roomy) 0.86f else 0.56f
+                Box(Modifier.size(width = (112f * artScale).dp, height = (104f * artScale).dp), contentAlignment = Alignment.Center) {
+                    PackArt(pack.hints, Modifier.requiredSize(112.dp, 104.dp).graphicsLayer { scaleX = artScale; scaleY = artScale })
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                BasicText(pack.hints.toString(), style = type.display.copy(color = colors.textPrimary))
+                BasicText(stringResource(Res.string.pack_unit), style = type.label.copy(color = colors.textSecondary), modifier = Modifier.padding(bottom = 5.dp))
+            }
+            // The same height on every card when one of them has something to say, so the price buttons line up.
+            if (savingSlot) {
+                Box(Modifier.height(22.dp), contentAlignment = Alignment.Center) {
+                    if (saving != null) {
+                        BasicText(
+                            stringResource(Res.string.pack_saving_percent, if (Locale.current.language == "tr") "%${saving.percent}" else "${saving.percent}%"),
+                            style = type.caption.copy(color = colors.accent, textAlign = TextAlign.Center),
+                            modifier = Modifier
+                                .background(colors.accent.copy(alpha = 0.18f), Radius.pill)
+                                .padding(horizontal = 10.dp, vertical = 2.dp)
+                                .testTag("packSavingPercent"),
+                        )
+                    }
+                }
+            }
+            val ink = if (best) colors.accentOn else colors.textPrimary
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(42.dp)
+                    .background(if (best) colors.accent else colors.bgRaised, Radius.pill),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (saving != null) {
+                    BasicText(
+                        saving.fullPriceText,
+                        style = type.caption.copy(color = ink.copy(alpha = 0.62f), textDecoration = TextDecoration.LineThrough),
+                        modifier = Modifier.padding(end = 6.dp).testTag("packSavingFull"),
+                    )
+                }
+                BasicText(pack.priceText, style = type.heading.copy(color = ink))
+            }
+        }
+        if (best) {
+            BasicText(
+                stringResource(Res.string.pack_best),
+                style = type.caption.copy(color = colors.pendingOn),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-11).dp)
+                    .background(colors.pendingFill, Radius.pill)
+                    .padding(horizontal = Spacing.sm, vertical = 2.dp),
+            )
+        }
     }
 }
 

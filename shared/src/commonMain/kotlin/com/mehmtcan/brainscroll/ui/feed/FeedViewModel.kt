@@ -698,7 +698,21 @@ class FeedViewModel(
         // Pro changed (bought, restored, refunded): the free steps, the streak and the look follow.
         viewModelScope.launch { pro.isPro.drop(1).collect { refreshQuota(); refreshProfile() } }
         // The purchase follows the player when the account changes (guest to Apple sign-in, a new guest after deleting).
-        viewModelScope.launch { signedInUser.filterNotNull().distinctUntilChanged().collect { pro.identify(it); pro.hints.refresh() } }
+        // Signing in with Google or Apple also brings Pro back by itself, after the store knows the account: the store keeps Pro with
+        // the store account, not with ours, so a returning player (new phone, signed out and in again) is asked once, quietly,
+        // without the Restore button. A guest is not asked: a fresh guest on a phone that bought Pro before would otherwise take
+        // Pro without paying for anything.
+        viewModelScope.launch {
+            account.state
+                .map { (it as? AccountState.SignedIn)?.takeIf { s -> s.userId.isNotEmpty() } }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { signedIn ->
+                    pro.identify(signedIn.userId)
+                    pro.hints.refresh()
+                    if (signedIn.kind != AccountState.SignedIn.Kind.Anonymous && !pro.isPro.value) pro.restore()
+                }
+        }
         // The bought hints changed (a pack arrived, one was spent): the badge follows.
         viewModelScope.launch { pro.hints.balance.drop(1).collect { refreshQuota() } }
         startBuilder()

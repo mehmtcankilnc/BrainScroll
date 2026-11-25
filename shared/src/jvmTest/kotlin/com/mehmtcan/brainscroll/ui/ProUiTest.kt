@@ -16,11 +16,14 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import com.mehmtcan.brainscroll.account.AccountState
+import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.ui.pro.FakeHintBalanceApi
 import com.mehmtcan.brainscroll.ui.pro.FakeStoreBilling
 import com.mehmtcan.brainscroll.ui.pro.HintPack
 import com.mehmtcan.brainscroll.ui.pro.PurchaseResult
+import com.mehmtcan.brainscroll.ui.pro.RestoreResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -255,6 +258,53 @@ class ProUiTest {
         waitUntil(timeoutMillis = 10_000) { has("proMessage") }
         assertTrue(!has("packBalance"))
         assertEquals(0, cloud.hints.balance)
+    }
+
+    @Test
+    fun aGuestIsToldThatBoughtHintsStayWithTheGuestAccount() = runComposeUiTest {
+        val cloud = TestCloud() // a fresh test run is a guest
+        val store = FakeStoreBilling().apply {
+            packs = listOf(pack20)
+            onPackBought = { cloud.hints.balance += it.hints }
+        }
+        start(cloud = cloud, openFeed = false, store = store)
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("pack_brainscroll_hints_20") }
+        assertTrue(has("guestNote"), "the guest is told before buying")
+        assertTrue(has("trustNotes"), "the buyer's four questions are answered on the page")
+        onNodeWithTag("pack_brainscroll_hints_20", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("packBalance") }
+        assertTrue(has("proMessage"), "and reminded to link the account after buying")
+    }
+
+    @Test
+    fun theBigPackSaysWhyItIsCheaperWithTheStorePrices() = runComposeUiTest {
+        val store = FakeStoreBilling().apply {
+            packs = listOf(HintPack("brainscroll_hints_20", 20, "39,99₺", 39_990_000), HintPack("brainscroll_hints_75", 75, "99,99₺", 99_990_000))
+        }
+        start(openFeed = false, store = store)
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("pack_brainscroll_hints_75") }
+        assertTrue(has("packSavingFull"), "what 75 would cost at the small pack's price")
+        assertTrue(has("packSavingPercent"))
+        assertEquals(1, onAllNodesWithTag("packSavingFull", useUnmergedTree = true).fetchSemanticsNodes().size, "only the big pack says it")
+    }
+
+    @Test
+    fun aPlayerWithAGoogleOrAppleAccountGetsNoGuestNote() = runComposeUiTest {
+        val cloud = TestCloud(account = FakeAccountService(AccountState.SignedIn("named-user", AccountState.SignedIn.Kind.Apple, "a@example.com")))
+        // Signing in asks the store to restore Pro: here the account has bought nothing before.
+        val store = FakeStoreBilling().apply {
+            packs = listOf(pack20)
+            restoreResult = RestoreResult.NothingToRestore
+        }
+        start(cloud = cloud, openFeed = false, store = store)
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("pack_brainscroll_hints_20") }
+        assertTrue(!has("guestNote"))
     }
 
     @Test

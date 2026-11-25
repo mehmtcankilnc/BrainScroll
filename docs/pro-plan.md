@@ -339,5 +339,22 @@ Aşama A'nın kodlanmış hali üzerine yapılacak değişiklikler, hepsi küç�
 4. TR fiyatı: mağaza panellerinde (kullanıcıda) elle girilir; kod değişmez.
 5. Aşama B (paketler) bu revizyonun parçası değil; mağaza ekranı paketleri alacak yeri hazır bırakır.
 
+## 19. Play Store'a çıkarken yasal metinlerde yapılacaklar (25 Kasım 2026'da not edildi)
+Şu an `site/terms.html`, `site/privacy.html` (ve `en/` karşılıkları) iOS odaklı yazıldı. Android'i açarken sırayla:
+1. **Hesap silme adresi (zorunlu).** Google Play, uygulama içi hesap silmenin yanında, uygulamayı yüklemeden de hesabın silinmesini isteyebileceğin bir web adresi ister (Play Console > Veri güvenliği formundaki "hesap silme URL'si"). Şimdi yalnızca uygulama içi düğme ve e-posta var. `site/delete-account.html` (TR/EN) yazılmalı: nasıl silinir, hangi veri silinir (ipucu bakiyesi dahil), süre. Gizlilik sayfası bölüm 5 bu adrese bağlanmalı.
+2. **Veri güvenliği formu gizlilik sayfasıyla birebir uyumlu olmalı.** Formda toplanan veriler: hesap kimliği, oyun sonuçları, kullanıcı adı, satın alma geçmişi (ipucu bakiyesi, işlem numaraları), anonim kullanım sayıları ve çökme raporları. "Üçüncü taraflarla paylaşım": Supabase, RevenueCat, Google (giriş). Uyumsuzluk, uygulamanın reddine yol açar.
+3. **Gizlilik politikası, Play Console'a girilecek adres:** `https://playbrainscroll.com/en/privacy` (ve TR adresi). Sayfa herkese açık ve giriş istemez olmalı (şu an öyle).
+4. **Terms bölüm 2:** Google Play ifadesi zaten var ("Google Play koşulları da geçerlidir"). Yayından sonra Google Play'in kendi ödeme ve iade koşulları açıkça anılabilir. Play'in tüketici iade süreleri Apple'dan farklıdır; bölüm 5'teki "Google Play'de sipariş geçmişinden" cümlesi kontrol edilmeli.
+5. **Terms bölüm 4:** Satın alma sağlayıcısı olarak "Apple veya Google" zaten yazılı. Google Play faturalama için ek bir cümle gerekmez, ancak Play'de ipucu paketlerinin "tüketilebilir ürün" olarak tanımlandığı ve satın alındıktan sonra onaylandığı (RevenueCat bunu yapar) doğrulanmalı.
+6. **Hedef kitle ve yaş:** Play Console'da hedef yaş grubu seçilir. Gizlilik sayfası "13 yaş altına yönelik değil" diyor; Console'daki hedef yaş buna uymalı (18 yaş ve üstü ya da 13+ seçilmeli, "çocuklara yönelik" seçilirse Aileler politikası devreye girer ve gizlilik metni değişmek zorunda kalır).
+7. **Uygulama bağlantısı doğrulaması:** `site/.well-known/assetlinks.json` şimdilik yalnızca debug imzasını içeriyor. Play uygulama imzası (Play Console > Uygulama bütünlüğü) SHA-256 parmak izi eklenmeli, yoksa davet bağlantıları Android'de uygulamayı açmaz.
+8. **Ana sayfa:** "Yakında Google Play'de" rozeti gerçek mağaza bağlantısına çevrilir; SSS'deki "Hangi cihazlarda" yanıtı güncellenir.
+9. **Tarih:** Metinler değişince iki dildeki "Son güncelleme" tarihi de değiştirilir.
+
+## 20. Mağaza ekranında güven bölümü (25 Kasım 2026)
+Paketlerin altına dört kısa güvence eklendi (`TrustNotes` in `PaywallSheet.kt`): ipucu ne yapar, abonelik değil (yenilenmez, habersiz ücret yok), vazgeçersen iade Apple/Google'dan, veri güvende (kart bilgisi görülmez, veri satılmaz). Hepsi bugün doğru olan şeyler; metinler `trust_*` dizgilerinde. Gizlilik ve Koşullar bağlantıları zaten ekranın altında.
+- **Yorum ve puan şimdilik gösterilmiyor, uydurma gösterilmeyecek.** Yayında gerçek puan olmadığı için bir sayı ya da yorum yazmak yanıltıcı olur. Yayından sonra mağazanın gerçek puanı ve gerçek yorumlarından kısa alıntılar (yorum sahibinin izniyle) bir `ProConfig.RATING` gibi bir değerden okunup, yalnızca gerçek bir değer varsa gösterilebilir. Karar için ölçüt: en az yüz gerçek puan ve 4,5 üzeri ortalama. Değeri elle güncellemek gerekir, bayat kalmasın diye aylık kontrol notu düş.
+- **Seri kurtarma ekranı** bu bölümü almadı (yer dar). "Tek seferlik ödeme" etiketi orada var; istenirse bir satır eklenir.
+
 ## 17. Başlangıç prompt'u (yeni oturum için)
 > `docs/pro-plan.md` dosyasındaki BrainScroll Pro (tek seferlik) planının Aşama A'sını uygula. Önce 13. bölümdeki kontrolleri yap, çalışma ağacındaki başka değişikliklere dokunma, commit atma. İş sırasını 11. bölümden izle; RevenueCat anahtarları ve mağaza ürün tanımları bende, onları yer tutucuyla bırak ve nereye yazılacağını söyle. Kota mantığını `markGuided` içine değil `FeedViewModel.requestGuide` yoluna koy. Bittiğinde hangi kısımların sandbox'ta denendiğini ve hangilerinin mağaza hesabı beklediğini yaz. Aşama B'ye geçme. Seri kurtarma paywall'ı (bölüm 7.3) Aşama A'nın parçasıdır.

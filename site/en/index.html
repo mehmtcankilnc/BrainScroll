@@ -3,61 +3,216 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BrainScroll: swipe, solve, keep your streak</title>
-  <meta name="description" content="BrainScroll puts quick brain games in a scrollable feed: word puzzles, Sudoku, memory match and chess puzzles.">
+  <title>BrainScroll: scroll, solve, keep the streak</title>
+  <meta name="description" content="BrainScroll: over 30 short brain games in a scrollable feed, plus a daily puzzle, streaks and leaderboards.">
   <meta name="theme-color" content="#121212">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="alternate" hreflang="tr" href="/">
+  <link rel="preload" href="/fonts/nunito-bold.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/home.css">
+  <script>document.documentElement.className += " js";</script>
 </head>
-<body>
-  <div class="wrap">
-    <header class="site">
-      <a class="brand" href="/en/"><img src="/favicon.svg" alt="" width="32" height="32">BrainScroll</a>
+<body class="home">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="sh-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></symbol>
+<symbol id="sh-square" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="currentColor"/></symbol>
+<symbol id="sh-triangle" viewBox="0 0 24 24"><path d="M12 3.5 L21 20 H3 Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+<symbol id="sh-diamond" viewBox="0 0 24 24"><path d="M12 2.5 L21.5 12 L12 21.5 L2.5 12 Z" fill="currentColor"/></symbol>
+<symbol id="sh-star" viewBox="0 0 24 24"><path d="M12 2.8 L14.8 9 L21.5 9.6 L16.4 14 L18 20.6 L12 17 L6 20.6 L7.6 14 L2.5 9.6 L9.2 9 Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></symbol>
+<symbol id="sh-plus" viewBox="0 0 24 24"><path d="M9.5 3.5 H14.5 V9.5 H20.5 V14.5 H14.5 V20.5 H9.5 V14.5 H3.5 V9.5 H9.5 Z" fill="currentColor"/></symbol>
+</defs></svg>
+<div class="ambient" aria-hidden="true"></div>
+<div class="wrap">
+  <header class="site">
+    <a class="brand" href="/en/"><img src="/favicon.svg" alt="" width="32" height="32">BrainScroll</a>
+    <div class="nav-right">
+      <a class="nav-link" href="#try">Try it</a>
+      <a class="nav-link" href="#how">How it works</a>
       <nav class="lang" aria-label="Language"><a href="/" hreflang="tr" lang="tr">Türkçe</a></nav>
-    </header>
+    </div>
+  </header>
 
-    <main>
-      <section class="hero">
-        <img class="mascot" src="/favicon.svg" alt="BrainScroll brain mascot" width="128" height="128">
-        <h1>Swipe, solve, keep your streak</h1>
-        <p class="lead">Quick brain games in a scrollable feed. Solve one, swipe to the next.</p>
-        <span class="pill">Coming soon</span>
-      </section>
-
-      <section aria-labelledby="games">
-        <h2 id="games">Games</h2>
-        <ul class="games">
-          <li>Word puzzle</li>
-          <li>Sudoku</li>
-          <li>Memory match</li>
-          <li>Chess puzzle</li>
-        </ul>
-      </section>
-
-      <section aria-labelledby="features">
-        <h2 id="features">What's inside</h2>
-        <ul class="plain">
-          <li>A daily puzzle and an endless feed of games</li>
-          <li>Day streaks and correct-answer streaks</li>
-          <li>Accuracy and completion stats</li>
-          <li>Favorites and leaderboards with your friends</li>
-        </ul>
-      </section>
-
-      <section aria-labelledby="support">
-        <h2 id="support">Support</h2>
-        <div class="card">
-          <p>Questions, feedback or a data request? Write to us:</p>
-          <p><a href="mailto:support@playbrainscroll.com">support@playbrainscroll.com</a></p>
+  <main>
+    <section class="hero-grid" data-world="#7ed957">
+      <div class="hero-text">
+        <h1 class="rv">Scroll, solve, keep the streak</h1>
+        <p class="lead rv" style="--d:.08s">Over 30 short brain games in one feed. Solve one, scroll to the next.</p>
+        <div class="hero-cta rv" style="--d:.16s">
+          <span class="badge-soon">Coming soon to the App Store and Google Play</span>
+          <a class="link-quiet" href="#how">How it works</a>
         </div>
-      </section>
-    </main>
+      </div>
+      <div class="hero-stage rv" style="--d:.1s">
+        <div class="mascot-wrap hero-mascot"><svg class="mascot-svg" viewBox="0 0 120 120" data-face="smile" role="img" aria-label="BrainScroll">
+  <g fill="#7ED957">
+    <circle cx="40" cy="50" r="18"/><circle cx="34" cy="70" r="16"/><circle cx="52" cy="36" r="16"/>
+    <circle cx="80" cy="50" r="18"/><circle cx="86" cy="70" r="16"/><circle cx="68" cy="36" r="16"/>
+    <circle cx="50" cy="80" r="15"/><circle cx="70" cy="80" r="15"/><circle cx="60" cy="58" r="24"/>
+  </g>
+  <g fill="none" stroke="#4FA82E" stroke-width="3.5" stroke-linecap="round">
+    <path d="M38 50 Q44 45 49 51"/><path d="M82 50 Q76 45 71 51"/><path d="M40 72 Q46 67 51 73"/><path d="M80 72 Q74 67 69 73"/>
+  </g>
+  <path d="M60 34 C55 42 63 48 60 54" fill="none" stroke="#4FA82E" stroke-width="4" stroke-linecap="round"/>
+  <g class="eye eye-l"><circle cx="48" cy="62" r="8" fill="#fff"/><g class="pupil"><circle cx="49.5" cy="63.5" r="4" fill="#121212"/><circle cx="51" cy="62" r="1.3" fill="#fff"/></g></g>
+  <g class="eye eye-r"><circle cx="72" cy="62" r="8" fill="#fff"/><g class="pupil"><circle cx="73.5" cy="63.5" r="4" fill="#121212"/><circle cx="75" cy="62" r="1.3" fill="#fff"/></g></g>
+  <path class="wink-arc" d="M65 63 Q72 57 79 63" fill="none" stroke="#10240A" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="m-smile" d="M52 77 Q60 86 68 77" fill="none" stroke="#10240A" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="m-joy" d="M50 76 Q60 96 70 76 Q60 79 50 76 Z" fill="#10240A" stroke="#10240A" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse class="tongue" cx="60" cy="86" rx="5" ry="3" fill="#FF7A8A"/>
+  <ellipse class="m-wow" cx="60" cy="82" rx="5" ry="6.5" fill="#10240A"/>
+  <circle cx="40" cy="73" r="5" fill="#FF9F43" fill-opacity=".55"/><circle cx="80" cy="73" r="5" fill="#FF9F43" fill-opacity=".55"/>
+  
+</svg></div>
+        <div class="phone" aria-label="BrainScroll feed preview">
+          <div class="phone-notch"></div>
+          <div class="phone-status"><span>9:41</span><span></span></div>
+          <div class="feed" id="feed" title="">
+            <div class="feed-track"><div class="feed-card" style="--c:#E0B23A"><svg class="art" viewBox="0 0 202 202" aria-hidden="true"><rect width="202" height="202" rx="20" fill="#121212"/><rect x="6" y="6" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="22" cy="22" r="5" fill="#121212"/><rect x="44" y="6" width="32" height="32" rx="9" fill="#242424"/><circle cx="60" cy="22" r="5" fill="#3a3a3a"/><rect x="82" y="6" width="32" height="32" rx="9" fill="#242424"/><circle cx="98" cy="22" r="5" fill="#3a3a3a"/><rect x="120" y="6" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="136" cy="22" r="5" fill="#121212"/><rect x="158" y="6" width="32" height="32" rx="9" fill="#242424"/><circle cx="174" cy="22" r="5" fill="#3a3a3a"/><rect x="6" y="44" width="32" height="32" rx="9" fill="#242424"/><circle cx="22" cy="60" r="5" fill="#3a3a3a"/><rect x="44" y="44" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="60" cy="60" r="5" fill="#121212"/><rect x="82" y="44" width="32" height="32" rx="9" fill="#242424"/><circle cx="98" cy="60" r="5" fill="#3a3a3a"/><rect x="120" y="44" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="136" cy="60" r="5" fill="#121212"/><rect x="158" y="44" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="174" cy="60" r="5" fill="#121212"/><rect x="6" y="82" width="32" height="32" rx="9" fill="#242424"/><circle cx="22" cy="98" r="5" fill="#3a3a3a"/><rect x="44" y="82" width="32" height="32" rx="9" fill="#242424"/><circle cx="60" cy="98" r="5" fill="#3a3a3a"/><rect x="82" y="82" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="98" cy="98" r="5" fill="#121212"/><rect x="120" y="82" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="136" cy="98" r="5" fill="#121212"/><rect x="158" y="82" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="174" cy="98" r="5" fill="#121212"/><rect x="6" y="120" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="22" cy="136" r="5" fill="#121212"/><rect x="44" y="120" width="32" height="32" rx="9" fill="#242424"/><circle cx="60" cy="136" r="5" fill="#3a3a3a"/><rect x="82" y="120" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="98" cy="136" r="5" fill="#121212"/><rect x="120" y="120" width="32" height="32" rx="9" fill="#242424"/><circle cx="136" cy="136" r="5" fill="#3a3a3a"/><rect x="158" y="120" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="174" cy="136" r="5" fill="#121212"/><rect x="6" y="158" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="22" cy="174" r="5" fill="#121212"/><rect x="44" y="158" width="32" height="32" rx="9" fill="#FFC93C"/><circle cx="60" cy="174" r="5" fill="#121212"/><rect x="82" y="158" width="32" height="32" rx="9" fill="#242424"/><circle cx="98" cy="174" r="5" fill="#3a3a3a"/><rect x="120" y="158" width="32" height="32" rx="9" fill="#242424"/><circle cx="136" cy="174" r="5" fill="#3a3a3a"/><rect x="158" y="158" width="32" height="32" rx="9" fill="#242424"/><circle cx="174" cy="174" r="5" fill="#3a3a3a"/></svg><div class="feed-name">Lights out</div><div class="feed-meta">Every tap flips its neighbors too</div></div><div class="feed-card" style="--c:#E0568F"><svg class="art" viewBox="0 0 202 202" aria-hidden="true"><rect x="8" y="8" width="58" height="58" rx="14" fill="#262626" stroke="#3a3a3a" stroke-width="2"/><rect x="28" y="28" width="18" height="18" rx="5" fill="#3a3a3a"/><rect x="74" y="8" width="58" height="58" rx="14" fill="#202020" stroke="#E0568F" stroke-width="3"/><circle cx="103" cy="37" r="13" fill="#E0568F"/><rect x="140" y="8" width="58" height="58" rx="14" fill="#262626" stroke="#3a3a3a" stroke-width="2"/><rect x="160" y="28" width="18" height="18" rx="5" fill="#3a3a3a"/><rect x="8" y="74" width="58" height="58" rx="14" fill="#202020" stroke="#FFC93C" stroke-width="3"/><rect x="25" y="91" width="24" height="24" rx="4" fill="#FFC93C"/><rect x="74" y="74" width="58" height="58" rx="14" fill="#262626" stroke="#3a3a3a" stroke-width="2"/><rect x="94" y="94" width="18" height="18" rx="5" fill="#3a3a3a"/><rect x="140" y="74" width="58" height="58" rx="14" fill="#202020" stroke="#7ED957" stroke-width="3"/><path d="M169 89 L183 115 L155 115 Z" fill="#7ED957" stroke="#7ED957" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="140" width="58" height="58" rx="14" fill="#262626" stroke="#3a3a3a" stroke-width="2"/><rect x="28" y="160" width="18" height="18" rx="5" fill="#3a3a3a"/><rect x="74" y="140" width="58" height="58" rx="14" fill="#262626" stroke="#3a3a3a" stroke-width="2"/><rect x="94" y="160" width="18" height="18" rx="5" fill="#3a3a3a"/><rect x="140" y="140" width="58" height="58" rx="14" fill="#202020" stroke="#E0568F" stroke-width="3"/><circle cx="169" cy="169" r="13" fill="#E0568F"/></svg><div class="feed-name">Memory match</div><div class="feed-meta">Find the matching pairs</div></div><div class="feed-card" style="--c:#2FA8C9"><svg class="art" viewBox="0 0 202 180" aria-hidden="true"><path d="M12 20 V150 a14 14 0 0 0 28 0 V20" fill="none" stroke="#4a4a4a" stroke-width="3" stroke-linecap="round"/><rect x="16" y="136" width="20" height="24" rx="8" fill="#4DB8FF"/><rect x="16" y="108" width="20" height="24" rx="8" fill="#FFC93C"/><rect x="16" y="80" width="20" height="24" rx="8" fill="#4DB8FF"/><path d="M50 20 V150 a14 14 0 0 0 28 0 V20" fill="none" stroke="#4a4a4a" stroke-width="3" stroke-linecap="round"/><rect x="54" y="136" width="20" height="24" rx="8" fill="#FFC93C"/><rect x="54" y="108" width="20" height="24" rx="8" fill="#4DB8FF"/><rect x="54" y="80" width="20" height="24" rx="8" fill="#FFC93C"/><rect x="54" y="52" width="20" height="24" rx="8" fill="#E0568F"/><path d="M88 20 V150 a14 14 0 0 0 28 0 V20" fill="none" stroke="#4a4a4a" stroke-width="3" stroke-linecap="round"/><rect x="92" y="136" width="20" height="24" rx="8" fill="#E0568F"/><rect x="92" y="108" width="20" height="24" rx="8" fill="#7ED957"/><path d="M126 20 V150 a14 14 0 0 0 28 0 V20" fill="none" stroke="#4a4a4a" stroke-width="3" stroke-linecap="round"/><rect x="130" y="136" width="20" height="24" rx="8" fill="#7ED957"/><rect x="130" y="108" width="20" height="24" rx="8" fill="#E0568F"/><rect x="130" y="80" width="20" height="24" rx="8" fill="#7ED957"/><path d="M164 20 V150 a14 14 0 0 0 28 0 V20" fill="none" stroke="#4a4a4a" stroke-width="3" stroke-linecap="round"/></svg><div class="feed-name">Color tubes</div><div class="feed-meta">One color in every tube</div></div><div class="feed-card" style="--c:#5B7BE0"><svg class="art" viewBox="0 0 202 202" aria-hidden="true"><rect width="202" height="202" rx="20" fill="#121212"/><rect x="6" y="6" width="58" height="58" rx="12" fill="#232733"/><text x="35" y="46" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="700" font-size="30" fill="#fff">5</text><rect x="70" y="6" width="58" height="58" rx="12" fill="#232733"/><rect x="134" y="6" width="58" height="58" rx="12" fill="#232733"/><text x="163" y="46" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="700" font-size="30" fill="#fff">3</text><rect x="6" y="70" width="58" height="58" rx="12" fill="#232733"/><rect x="70" y="70" width="58" height="58" rx="12" fill="#5B7BE0"/><text x="99" y="110" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="700" font-size="30" fill="#fff">8</text><rect x="134" y="70" width="58" height="58" rx="12" fill="#232733"/><text x="163" y="110" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="700" font-size="30" fill="#fff">4</text><rect x="6" y="134" width="58" height="58" rx="12" fill="#232733"/><text x="35" y="174" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="700" font-size="30" fill="#fff">1</text><rect x="70" y="134" width="58" height="58" rx="12" fill="#232733"/><rect x="134" y="134" width="58" height="58" rx="12" fill="#232733"/><text x="163" y="174" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="700" font-size="30" fill="#fff">6</text></svg><div class="feed-name">Sudoku</div><div class="feed-meta">1–9 in every row and column</div></div></div>
+          </div>
+          <div class="feed-dots"><button type="button" aria-label="Game 1" aria-current="true"></button><button type="button" aria-label="Game 2" aria-current="false"></button><button type="button" aria-label="Game 3" aria-current="false"></button><button type="button" aria-label="Game 4" aria-current="false"></button></div>
+          <div class="phone-tabs"><span>Home</span><span>Feed</span><span>Profile</span></div>
+        </div>
+      </div>
+    </section>
 
-    <footer class="site">
-      <span>&copy; 2026 Mehmetcan Kılınç</span>
-      <a href="/en/privacy">Privacy policy</a>
-    </footer>
-  </div>
+    <section class="block" data-world="#7a63e8" aria-labelledby="games-h">
+      <h2 id="games-h" class="rv">One scroll, one more game.</h2>
+      <p class="sec-copy rv" style="--d:.08s">Every game has its own color and its own rules. The rules are short, and so are the games.</p>
+      <div class="marquee rv" style="--d:.14s">
+        <ul><li style="--c:#7A63E8">Word puzzle</li><li style="--c:#E0568F">Memory match</li><li style="--c:#2FA8C9">Color tubes</li><li style="--c:#D9694A">Minesweeper</li><li style="--c:#5B7BE0">Sudoku</li><li style="--c:#E0B23A">Lights out</li><li style="--c:#9A6BE0">Sliding puzzle</li><li style="--c:#E08A3A">Target number</li><li style="--c:#3AA89A">Pipes</li><li style="--c:#4FB3F0">One Line</li><li style="--c:#B0753F">Tower of Hanoi</li><li style="--c:#C45BD6">Queens</li><li style="--c:#6FA83A">Tents</li><li style="--c:#3AA0E0">Arrow Escape</li><li style="--c:#3AC4A0">Axis Sum</li><li style="--c:#5BC0E0">Ball Slide</li><li style="--c:#E05B9A">Color Flow</li><li style="--c:#B7C93C">Matchsticks</li><li style="--c:#FF4F6D">Laser Mirrors</li><li style="--c:#7A63E8">Word puzzle</li><li style="--c:#E0568F">Memory match</li><li style="--c:#2FA8C9">Color tubes</li><li style="--c:#D9694A">Minesweeper</li><li style="--c:#5B7BE0">Sudoku</li><li style="--c:#E0B23A">Lights out</li><li style="--c:#9A6BE0">Sliding puzzle</li><li style="--c:#E08A3A">Target number</li><li style="--c:#3AA89A">Pipes</li><li style="--c:#4FB3F0">One Line</li><li style="--c:#B0753F">Tower of Hanoi</li><li style="--c:#C45BD6">Queens</li><li style="--c:#6FA83A">Tents</li><li style="--c:#3AA0E0">Arrow Escape</li><li style="--c:#3AC4A0">Axis Sum</li><li style="--c:#5BC0E0">Ball Slide</li><li style="--c:#E05B9A">Color Flow</li><li style="--c:#B7C93C">Matchsticks</li><li style="--c:#FF4F6D">Laser Mirrors</li></ul>
+        <ul class="rev"><li style="--c:#5BD6C9">Untangle</li><li style="--c:#FF8A4C">Fruit Equations</li><li style="--c:#8A7BE0">Mini Nonogram</li><li style="--c:#4F8FE0">Jigsaw Sudoku</li><li style="--c:#D65B5B">Block Out</li><li style="--c:#D0A03A">Topic Groups</li><li style="--c:#B07CFF">Code Breaker</li><li style="--c:#6FD672">Rectangles</li><li style="--c:#FFD84F">Flash Grid</li><li style="--c:#8E9BFF">Lone Number</li><li style="--c:#FF9E80">Zeros &amp; Ones</li><li style="--c:#F5C26B">Light Up</li><li style="--c:#7FD6C2">Greater Less</li><li style="--c:#C89F6A">Fences</li><li style="--c:#6ACFD8">Mirror</li><li style="--c:#F28CB5">Odd One Out</li><li style="--c:#9BD36A">Cross Sums</li><li style="--c:#B48CF2">Color Sequence</li><li style="--c:#FF9F5A">Cube Folding</li><li style="--c:#5BD6C9">Untangle</li><li style="--c:#FF8A4C">Fruit Equations</li><li style="--c:#8A7BE0">Mini Nonogram</li><li style="--c:#4F8FE0">Jigsaw Sudoku</li><li style="--c:#D65B5B">Block Out</li><li style="--c:#D0A03A">Topic Groups</li><li style="--c:#B07CFF">Code Breaker</li><li style="--c:#6FD672">Rectangles</li><li style="--c:#FFD84F">Flash Grid</li><li style="--c:#8E9BFF">Lone Number</li><li style="--c:#FF9E80">Zeros &amp; Ones</li><li style="--c:#F5C26B">Light Up</li><li style="--c:#7FD6C2">Greater Less</li><li style="--c:#C89F6A">Fences</li><li style="--c:#6ACFD8">Mirror</li><li style="--c:#F28CB5">Odd One Out</li><li style="--c:#9BD36A">Cross Sums</li><li style="--c:#B48CF2">Color Sequence</li><li style="--c:#FF9F5A">Cube Folding</li></ul>
+      </div>
+    </section>
+
+    <section class="block" id="try" data-world="#2fa8c9" aria-labelledby="try-h">
+      <h2 id="try-h" class="rv">Try it right here.</h2>
+      <p class="sec-copy rv" style="--d:.08s">Nothing to install. Two games, right on this page.</p>
+      <div class="demos">
+        <div class="demo rv" id="memory" style="--c:#e0568f" data-win="You found them all in {n} moves." data-card="Card">
+          <div class="demo-head"><h3>Memory match</h3><span>Moves: <span class="demo-stat">0</span></span></div>
+          <p class="demo-how">Flip the cards and find the matching pairs.</p>
+          <div class="mem-grid"></div>
+          <div class="demo-foot"><p class="demo-msg" role="status" aria-live="polite"></p><button type="button" class="btn-ghost">Play again</button></div>
+        </div>
+        <div class="demo rv" id="tubes" style="--c:#2fa8c9;--d:.1s" data-win="All sorted in {n} moves." data-tube="Tube">
+          <div class="demo-head"><h3>Color tubes</h3><span>Moves: <span class="demo-stat">0</span></span></div>
+          <p class="demo-how">Tap a tube, then the tube to pour into. Keep one color in every tube.</p>
+          <div class="tubes"></div>
+          <div class="demo-foot"><p class="demo-msg" role="status" aria-live="polite"></p><button type="button" class="btn-ghost">Shuffle again</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="how" data-world="#e0568f" aria-labelledby="how-h">
+      <h2 id="how-h" class="rv">Three steps, that&#x27;s all.</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-text rv"><p class="step-word" style="--c:#8f7cf0">Scroll</p><p class="sec-copy">A game opens in the feed. When you finish it, scroll to the next one. No menus to dig through.</p></div>
+          <div class="step-art rv" style="--c:#7a63e8;--d:.1s"><div class="swipe" aria-hidden="true"><i></i><i></i><i></i><b></b></div></div>
+        </div>
+        <div class="step">
+          <div class="step-text rv"><p class="step-word" style="--c:#7ed957">Solve</p><p class="sec-copy">The games are short. If you get stuck, the guide shows the next right step.</p></div>
+          <div class="step-art rv" style="--c:#7ed957;--d:.1s"><div class="solve" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i><i style="--i:12"></i><i style="--i:13"></i><i style="--i:14"></i><i style="--i:15"></i></div></div>
+        </div>
+        <div class="step">
+          <div class="step-text rv"><p class="step-word" style="--c:#ff9f43">Keep the streak</p><p class="sec-copy">Play every day and your streak grows. The daily puzzle is the same for everyone, so you can compare with your friends.</p></div>
+          <div class="step-art rv" style="--c:#ff9f43;--d:.1s"><div class="streak-art" aria-hidden="true"><div class="streak-days"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i></div><div class="streak-count"><svg class="flame" viewBox="0 0 40 52" aria-hidden="true"><path d="M20 2 C22 14 36 20 36 34 C36 44 29 50 20 50 C11 50 4 44 4 34 C4 26 9 22 12 16 C13 22 16 24 18 24 C18 16 17 8 20 2 Z" fill="#FF9F43"/><path d="M20 24 C21 31 28 33 28 39 C28 44 24 47 20 47 C16 47 12 44 12 39 C12 33 18 31 20 24 Z" fill="#FFD27A"/></svg><span>7</span></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-world="#4fb3f0" aria-labelledby="daily-h">
+      <div class="daily">
+        <div class="rv">
+          <h2 id="daily-h">The same puzzle for everyone, every day.</h2>
+          <p class="sec-copy">The daily puzzle is new every day. Solve it, see your time on the leaderboard, add your friends.</p>
+          <ul class="daily-list" style="--c:#4fb3f0"><li>One table to race everyone, and your friends</li><li>Your day streak grows every day you play</li><li>You can play without an account; link Google or Apple only if you want to carry your progress</li></ul>
+        </div>
+        <div class="daily-board rv" style="--d:.1s" aria-hidden="true">
+          <div class="line-board">
+            <span class="n">1</span><span></span><span></span>
+            <span></span><span></span><span class="n">2</span>
+            <span></span><span></span><span class="n">3</span>
+            <svg class="line-path" viewBox="0 0 300 300"><path pathLength="1" d="M47 47 L47 150 L47 253 L150 253 L150 150 L150 47 L253 47 L253 150 L253 253"/></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-world="#ffc93c" aria-labelledby="pro-h">
+      <div class="pro">
+        <div class="rv">
+          <h2 id="pro-h">A nudge when you&#x27;re stuck.</h2>
+          <p class="sec-copy">3 free hints every day. If you need more there are two ways, and both are optional. No subscription.</p>
+          <ul class="tiers"><li><b>Free</b><span>3 hints every day.</span></li><li><b>Hint packs</b><span>Add them whenever you like and use as many as you need.</span></li><li><b>BrainScroll Pro</b><span>One-time payment. Unlimited hints and stronger streak protection.</span></li></ul>
+        </div>
+        <div class="pro-art rv" style="--d:.1s">
+          <div class="pro-glow"></div>
+          <div class="pro-mascot"><div class="mascot-wrap "><svg class="mascot-svg" viewBox="0 0 120 120" data-face="wink" role="img" aria-label="BrainScroll">
+  <g fill="#7ED957">
+    <circle cx="40" cy="50" r="18"/><circle cx="34" cy="70" r="16"/><circle cx="52" cy="36" r="16"/>
+    <circle cx="80" cy="50" r="18"/><circle cx="86" cy="70" r="16"/><circle cx="68" cy="36" r="16"/>
+    <circle cx="50" cy="80" r="15"/><circle cx="70" cy="80" r="15"/><circle cx="60" cy="58" r="24"/>
+  </g>
+  <g fill="none" stroke="#4FA82E" stroke-width="3.5" stroke-linecap="round">
+    <path d="M38 50 Q44 45 49 51"/><path d="M82 50 Q76 45 71 51"/><path d="M40 72 Q46 67 51 73"/><path d="M80 72 Q74 67 69 73"/>
+  </g>
+  <path d="M60 34 C55 42 63 48 60 54" fill="none" stroke="#4FA82E" stroke-width="4" stroke-linecap="round"/>
+  <g class="eye eye-l"><circle cx="48" cy="62" r="8" fill="#fff"/><g class="pupil"><circle cx="49.5" cy="63.5" r="4" fill="#121212"/><circle cx="51" cy="62" r="1.3" fill="#fff"/></g></g>
+  <g class="eye eye-r"><circle cx="72" cy="62" r="8" fill="#fff"/><g class="pupil"><circle cx="73.5" cy="63.5" r="4" fill="#121212"/><circle cx="75" cy="62" r="1.3" fill="#fff"/></g></g>
+  <path class="wink-arc" d="M65 63 Q72 57 79 63" fill="none" stroke="#10240A" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="m-smile" d="M52 77 Q60 86 68 77" fill="none" stroke="#10240A" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="m-joy" d="M50 76 Q60 96 70 76 Q60 79 50 76 Z" fill="#10240A" stroke="#10240A" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse class="tongue" cx="60" cy="86" rx="5" ry="3" fill="#FF7A8A"/>
+  <ellipse class="m-wow" cx="60" cy="82" rx="5" ry="6.5" fill="#10240A"/>
+  <circle cx="40" cy="73" r="5" fill="#FF9F43" fill-opacity=".55"/><circle cx="80" cy="73" r="5" fill="#FF9F43" fill-opacity=".55"/>
+  <g transform="translate(60,12) rotate(-8)"><path d="M-24 14 L-27 -12 L-13 0 L0 -18 L13 0 L27 -12 L24 14 Z" fill="#FFC93C" stroke="#C9971A" stroke-width="2" stroke-linejoin="round"/><rect x="-24" y="10" width="48" height="7" rx="3" fill="#C9971A"/><circle cx="-27" cy="-13" r="3.6" fill="#fff"/><circle cx="0" cy="-19" r="3.6" fill="#fff"/><circle cx="27" cy="-13" r="3.6" fill="#fff"/></g>
+</svg></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-world="#7ed957" aria-labelledby="faq-h">
+      <h2 id="faq-h" class="rv">Frequently asked</h2>
+      <div class="faq rv" style="--d:.08s"><details><summary>Is it free?</summary><p>Yes, every game is free. Hint packs and BrainScroll Pro are optional. We don't show third-party ads.</p></details><details><summary>Do I need an account?</summary><p>No. You play as soon as you open the app. You can link your account with Google or Apple to carry your progress across devices and to appear on leaderboards.</p></details><details><summary>Is BrainScroll Pro a subscription?</summary><p>No. It's a one-time payment: it doesn't renew and there is nothing to cancel.</p></details><details><summary>Which devices?</summary><p>We are building it for iPhone (App Store) and Android (Google Play). iPhone comes first.</p></details><details><summary>What happens to my data?</summary><p>We collect only what we need to run the app, and we never sell it. Details are in the <a href="/en/privacy">privacy policy</a>.</p></details></div>
+    </section>
+
+    <section class="block final" data-world="#7ed957" aria-labelledby="final-h">
+      <div class="final-mascot rv"><div class="mascot-wrap "><svg class="mascot-svg" viewBox="0 0 120 120" data-face="joy" role="img" aria-label="BrainScroll">
+  <g fill="#7ED957">
+    <circle cx="40" cy="50" r="18"/><circle cx="34" cy="70" r="16"/><circle cx="52" cy="36" r="16"/>
+    <circle cx="80" cy="50" r="18"/><circle cx="86" cy="70" r="16"/><circle cx="68" cy="36" r="16"/>
+    <circle cx="50" cy="80" r="15"/><circle cx="70" cy="80" r="15"/><circle cx="60" cy="58" r="24"/>
+  </g>
+  <g fill="none" stroke="#4FA82E" stroke-width="3.5" stroke-linecap="round">
+    <path d="M38 50 Q44 45 49 51"/><path d="M82 50 Q76 45 71 51"/><path d="M40 72 Q46 67 51 73"/><path d="M80 72 Q74 67 69 73"/>
+  </g>
+  <path d="M60 34 C55 42 63 48 60 54" fill="none" stroke="#4FA82E" stroke-width="4" stroke-linecap="round"/>
+  <g class="eye eye-l"><circle cx="48" cy="62" r="8" fill="#fff"/><g class="pupil"><circle cx="49.5" cy="63.5" r="4" fill="#121212"/><circle cx="51" cy="62" r="1.3" fill="#fff"/></g></g>
+  <g class="eye eye-r"><circle cx="72" cy="62" r="8" fill="#fff"/><g class="pupil"><circle cx="73.5" cy="63.5" r="4" fill="#121212"/><circle cx="75" cy="62" r="1.3" fill="#fff"/></g></g>
+  <path class="wink-arc" d="M65 63 Q72 57 79 63" fill="none" stroke="#10240A" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="m-smile" d="M52 77 Q60 86 68 77" fill="none" stroke="#10240A" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="m-joy" d="M50 76 Q60 96 70 76 Q60 79 50 76 Z" fill="#10240A" stroke="#10240A" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse class="tongue" cx="60" cy="86" rx="5" ry="3" fill="#FF7A8A"/>
+  <ellipse class="m-wow" cx="60" cy="82" rx="5" ry="6.5" fill="#10240A"/>
+  <circle cx="40" cy="73" r="5" fill="#FF9F43" fill-opacity=".55"/><circle cx="80" cy="73" r="5" fill="#FF9F43" fill-opacity=".55"/>
+  
+</svg></div></div>
+      <h2 id="final-h" class="rv" style="--d:.06s">One game, one scroll away.</h2>
+      <p class="sec-copy rv" style="--d:.1s">The app is coming to the App Store and Google Play very soon. Questions or ideas? Write to us.</p>
+      <div class="hero-cta rv" style="--d:.14s">
+        <span class="badge-soon">Coming soon to the App Store and Google Play</span>
+        <a class="link-quiet" href="mailto:support@playbrainscroll.com">support@playbrainscroll.com</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site">
+    <span>&copy; 2026 Mehmetcan Kılınç</span>
+    <span><a href="/en/privacy">Privacy policy</a> &nbsp;·&nbsp; <a href="/en/terms">Terms of use</a></span>
+  </footer>
+</div>
+<script src="/home.js" defer></script>
 </body>
 </html>

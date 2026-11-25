@@ -1,6 +1,8 @@
 package com.mehmtcan.brainscroll.ui
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.mehmtcan.brainscroll.account.AccountState
+import com.mehmtcan.brainscroll.account.FakeAccountService
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.data.prepareDatabase
 import com.mehmtcan.brainscroll.db.BrainScrollDatabase
@@ -13,6 +15,7 @@ import com.mehmtcan.brainscroll.stats.Rescue
 import com.mehmtcan.brainscroll.time.IstanbulDay
 import com.mehmtcan.brainscroll.ui.feed.FeedViewModel
 import com.mehmtcan.brainscroll.ui.pro.FakeStoreBilling
+import com.mehmtcan.brainscroll.ui.pro.RestoreResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -26,6 +29,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -48,12 +52,12 @@ class FeedViewModelProTest {
         return GameRepository(BrainScrollDatabase(driver))
     }
 
-    private fun TestScope.viewModel(repository: GameRepository, store: FakeStoreBilling? = billing): FeedViewModel =
+    private fun TestScope.viewModel(repository: GameRepository, store: FakeStoreBilling? = billing, cloud: TestCloud = TestCloud()): FeedViewModel =
         FeedViewModel(
             repository = repository,
             deviceLanguage = Language.EN,
             now = { now },
-            cloudServices = TestCloud().factory,
+            cloudServices = cloud.factory,
             games = listOf(GameKind.Word),
             billing = store,
             buildInBackground = false,
@@ -130,5 +134,57 @@ class FeedViewModelProTest {
     fun theAccountIsHandedToTheStore() = runTest {
         viewModel(repository())
         assertEquals(listOf("test-user"), billing.identified)
+    }
+
+    private fun named(kind: AccountState.SignedIn.Kind) =
+        TestCloud(account = FakeAccountService(AccountState.SignedIn("named-user", kind, "a@example.com")))
+
+    @Test
+    fun signingInWithAppleBringsProBackWithoutTheRestoreButton() = runTest {
+        billing.restoreResult = RestoreResult.Restored
+        val vm = viewModel(repository(), cloud = named(AccountState.SignedIn.Kind.Apple))
+        assertEquals(listOf("named-user"), billing.identified, "the store knows the account first")
+        assertEquals(1, billing.restores)
+        assertTrue(vm.pro.isPro.value)
+    }
+
+    @Test
+    fun aSignInWhereThereIsNothingToRestoreStaysFree() = runTest {
+        billing.restoreResult = RestoreResult.NothingToRestore
+        val vm = viewModel(repository(), cloud = named(AccountState.SignedIn.Kind.Google))
+        assertEquals(1, billing.restores)
+        assertFalse(vm.pro.isPro.value)
+    }
+
+    @Test
+    fun aGuestIsNeverRestored() = runTest {
+        billing.restoreResult = RestoreResult.Restored
+        val vm = viewModel(repository())
+        assertEquals(0, billing.restores, "a fresh guest must not take Pro without paying")
+        assertFalse(vm.pro.isPro.value)
+    }
+
+    @Test
+    fun aPlayerWhoIsAlreadyProIsNotAskedAgain() = runTest {
+        val cloud = TestCloud()
+        val vm = viewModel(repository(), cloud = cloud)
+        billing.updates.emit(true) // the store already says Pro
+        advanceUntilIdle()
+        assertTrue(vm.pro.isPro.value)
+        cloud.account.state.value = AccountState.SignedIn("test-user", AccountState.SignedIn.Kind.Apple, "a@example.com")
+        advanceUntilIdle()
+        assertEquals(0, billing.restores)
+    }
+
+    @Test
+    fun aGuestWhoSignsInIsRestoredThen() = runTest {
+        billing.restoreResult = RestoreResult.Restored
+        val cloud = TestCloud()
+        val vm = viewModel(repository(), cloud = cloud)
+        assertEquals(0, billing.restores)
+        cloud.account.state.value = AccountState.SignedIn("test-user", AccountState.SignedIn.Kind.Apple, "a@example.com")
+        advanceUntilIdle()
+        assertEquals(1, billing.restores)
+        assertTrue(vm.pro.isPro.value)
     }
 }

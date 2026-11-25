@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 data class ProProduct(val priceText: String)
 
 /** A hint pack the store sells: [hints] of them for [priceText] (as the store formats it for the player's country). */
-data class HintPack(val id: String, val hints: Int, val priceText: String)
+data class HintPack(val id: String, val hints: Int, val priceText: String, val priceMicros: Long = 0)
 
 sealed interface PurchaseResult {
     data object Success : PurchaseResult

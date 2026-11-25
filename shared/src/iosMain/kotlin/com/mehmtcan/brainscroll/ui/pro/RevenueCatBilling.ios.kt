@@ -90,7 +90,7 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
         return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id == id }?.let { it to hints } }
     }
 
-    override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted) }
+    override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted, product.price.amountMicros) }
 
     override suspend fun buyPack(pack: HintPack): PurchaseResult {
         val product = packProducts().firstOrNull { it.first.id == pack.id }?.first ?: return PurchaseResult.Failed("product_not_found")

@@ -38,7 +38,12 @@ class FakeStoreBilling : StoreBilling {
         return purchaseResult
     }
 
-    override suspend fun restore(): RestoreResult = restoreResult
+    var restores = 0
+
+    override suspend fun restore(): RestoreResult {
+        restores += 1
+        return restoreResult
+    }
 
     override suspend fun packs(): List<HintPack> = packs
 

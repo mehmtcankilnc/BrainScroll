@@ -22,13 +22,11 @@ object ProConfig {
      */
     val HINT_PACKS: List<Pair<String, Int>> = listOf("brainscroll_hints_20" to 20, "brainscroll_hints_75" to 75)
 
-    /** The privacy pages of the site, in Turkish and in English. There is no separate terms page yet (the store's own terms apply). */
+    /** The privacy pages of the site, in Turkish and in English. */
     const val PRIVACY_URL_TR = "https://playbrainscroll.com/privacy.html"
     const val PRIVACY_URL_EN = "https://playbrainscroll.com/en/privacy.html"
 
-    /**
-     * The terms of use. There is no page of our own yet: Apple's standard license agreement applies to every app on the App Store
-     * unless the app has its own, so this is the honest link for now. Replace it when a terms page exists on the site.
-     */
-    const val TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+    /** The terms of use pages of the site (live since 25 November 2026), in Turkish and in English. */
+    const val TERMS_URL_TR = "https://playbrainscroll.com/terms.html"
+    const val TERMS_URL_EN = "https://playbrainscroll.com/en/terms.html"
 }

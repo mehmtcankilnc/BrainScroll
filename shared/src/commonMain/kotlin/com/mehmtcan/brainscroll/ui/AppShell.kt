@@ -86,6 +86,7 @@ import brainscroll.shared.generated.resources.tab_feed
 import brainscroll.shared.generated.resources.tab_home
 import brainscroll.shared.generated.resources.tab_profile
 import com.mehmtcan.brainscroll.account.AccountEvent
+import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.ui.components.ChevronButton
 import com.mehmtcan.brainscroll.ui.components.NoticePill
 import brainscroll.shared.generated.resources.confirm_cancel
@@ -470,7 +471,7 @@ fun AppShell(
         }
     }
     paywall?.let { request ->
-        PaywallSheet(request.source, onClose = { paywall = null }, telemetry = viewModel.telemetry, rescue = request.rescue, quota = guideQuota)
+        PaywallSheet(request.source, onClose = { paywall = null }, telemetry = viewModel.telemetry, rescue = request.rescue, quota = guideQuota, guest = (accountState as? AccountState.SignedIn)?.kind == AccountState.SignedIn.Kind.Anonymous)
     }
     OverlayLayers(overlayHost)
     }

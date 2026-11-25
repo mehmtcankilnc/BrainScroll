@@ -947,6 +947,11 @@
     <string name="pack_caption">Satın aldığın ipuçları hesabında saklanır.</string>
     <string name="pack_adding">İpuçların ekleniyor…</string>
     <string name="pack_added">İpuçların eklendi.</string>
+    <string name="pack_added_guest">İpuçların eklendi. Kaybetmemek için profilinden hesabını bağla.</string>
+    <string name="pack_guest_note">Misafirsin: uygulamayı silersen ipuçların kaybolur.</string>
+    <string name="trust_line_1">Abonelik değil: tek seferlik ödeme, yenilenmez.</string>
+    <string name="trust_line_2">İade Apple ya da Google'dan.</string>
+    <string name="pack_saving_percent">%1$s daha ucuz</string>
     <string name="pack_processing">Satın alımın işleniyor, ipuçların birazdan gelir.</string>
     <string name="look_title">Görünüm</string>
     <string name="look_accent">Vurgu rengi</string>
