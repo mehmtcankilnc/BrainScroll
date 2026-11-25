@@ -356,8 +356,8 @@ private fun NextPuzzleCountdown(state: DailyState) {
 
 /** Small flame for the day streak, drawn as a path so it follows the token color. */
 @Composable
-internal fun FlameIcon(color: Color, iconSize: Dp = 14.dp) {
-    Canvas(Modifier.size(iconSize)) {
+internal fun FlameIcon(color: Color, iconSize: Dp = 14.dp, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(iconSize)) {
         val w = size.width
         val h = size.height
         // A flame with a tongue on its left side, and a lighter heart, so it does not read as a drop of water.

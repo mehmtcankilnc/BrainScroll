@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.mehmtcan.brainscroll.App
+import com.mehmtcan.brainscroll.ui.pro.FakeHintBalanceApi
 import com.mehmtcan.brainscroll.ui.pro.StoreBilling
 import com.mehmtcan.brainscroll.account.AccountState
 import com.mehmtcan.brainscroll.account.FakeAccountMergeApi
@@ -70,8 +71,9 @@ internal class TestCloud(
     val social: FakeSocialApi = FakeSocialApi(),
     val telemetry: FakeTelemetryApi = FakeTelemetryApi(),
     val merge: FakeAccountMergeApi = FakeAccountMergeApi(),
+    val hints: FakeHintBalanceApi = FakeHintBalanceApi(),
 ) {
-    val factory: CloudServicesFactory = { CloudServices(account, api, daily, social, telemetry, merge) }
+    val factory: CloudServicesFactory = { CloudServices(account, api, daily, social, telemetry, merge, hints) }
 
     init {
         // The fake cloud stores data under the account of the "session": make it the same one as the fake account.

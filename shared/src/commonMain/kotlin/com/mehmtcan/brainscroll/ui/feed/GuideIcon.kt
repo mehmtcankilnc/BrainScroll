@@ -25,6 +25,8 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.graphics.graphicsLayer
 import brainscroll.shared.generated.resources.guide_button
 import brainscroll.shared.generated.resources.guide_left
+import brainscroll.shared.generated.resources.guide_left_both
+import brainscroll.shared.generated.resources.guide_left_bonus
 import brainscroll.shared.generated.resources.guide_left_none
 import com.mehmtcan.brainscroll.game.guide.QuotaState
 import com.mehmtcan.brainscroll.ui.theme.BrainScrollTheme
@@ -39,10 +41,15 @@ fun GuideIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, quota: Q
     val colors = BrainScrollTheme.colors
     // With a quota the bulb says how many free steps are left, and goes dim at none (still a button: it opens the purchase screen).
     val showQuota = quota != null && !quota.unlimited
-    val left = quota?.freeLeft ?: 0
+    val free = quota?.freeLeft ?: 0
+    val bought = quota?.bonusLeft ?: 0
+    // The badge counts the free steps and the bought hints together: both are one more step the bulb can give.
+    val left = free + bought
     val description = when {
         showQuota && left == 0 -> stringResource(Res.string.guide_left_none)
-        showQuota -> stringResource(Res.string.guide_left, left)
+        showQuota && bought == 0 -> stringResource(Res.string.guide_left, free)
+        showQuota && free == 0 -> stringResource(Res.string.guide_left_bonus, bought)
+        showQuota -> stringResource(Res.string.guide_left_both, free, bought)
         else -> stringResource(Res.string.guide_button)
     }
     Box(

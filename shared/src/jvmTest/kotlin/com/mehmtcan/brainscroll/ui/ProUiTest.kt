@@ -17,7 +17,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.mehmtcan.brainscroll.game.GameKind
+import com.mehmtcan.brainscroll.ui.pro.FakeHintBalanceApi
 import com.mehmtcan.brainscroll.ui.pro.FakeStoreBilling
+import com.mehmtcan.brainscroll.ui.pro.HintPack
 import com.mehmtcan.brainscroll.ui.pro.PurchaseResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,8 +32,8 @@ class ProUiTest {
     // The badge sits inside the clickable bulb, whose semantics are merged: look at the unmerged tree.
     private fun ComposeUiTest.has(tag: String) = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
-    private fun ComposeUiTest.openLightsFeed(store: FakeStoreBilling?) {
-        start(openFeed = false, games = listOf(GameKind.Lights), store = store)
+    private fun ComposeUiTest.openLightsFeed(store: FakeStoreBilling?, cloud: TestCloud = TestCloud()) {
+        start(cloud = cloud, openFeed = false, games = listOf(GameKind.Lights), store = store)
         openTab("Akış", "Feed")
         waitUntil(timeoutMillis = 10_000) { has("lightCell") }
     }
@@ -50,9 +52,9 @@ class ProUiTest {
     }
 
     @Test
-    fun theFifthStepIsFreeAndTheSixthOpensThePurchaseScreen() = runComposeUiTest {
+    fun theThirdStepIsFreeAndTheFourthOpensThePurchaseScreen() = runComposeUiTest {
         openLightsFeed(FakeStoreBilling())
-        repeat(5) { useOneGuideStep() }
+        repeat(3) { useOneGuideStep() }
         mainClock.advanceTimeBy(500)
         snap("900_guide_out_of_steps")
         assertTrue(has("guideBadge"), "the bulb shows how many free steps are left")
@@ -72,24 +74,24 @@ class ProUiTest {
     fun theSameStepAskedForAgainCostsNothing() = runComposeUiTest {
         // The word puzzle is where it was seen: one step is one free step, however often the player opens it again.
         start(openFeed = true, store = FakeStoreBilling())
-        onNodeWithTag("guideButton").assertContentDescriptionContains("5", substring = true)
+        onNodeWithTag("guideButton").assertContentDescriptionContains("3", substring = true)
         onNodeWithTag("guideButton").performClick()
         waitUntil(timeoutMillis = 10_000) { has("guideBanner") }
         onAllNodesWithTag("guideClose")[0].performClick()
         waitUntil(timeoutMillis = 10_000) { !has("guideBanner") }
-        onNodeWithTag("guideButton").assertContentDescriptionContains("4", substring = true)
+        onNodeWithTag("guideButton").assertContentDescriptionContains("2", substring = true)
         onNodeWithTag("guideButton").performClick()
         waitUntil(timeoutMillis = 10_000) { has("guideBanner") }
         onAllNodesWithTag("guideClose")[0].performClick()
         waitUntil(timeoutMillis = 10_000) { !has("guideBanner") }
-        onNodeWithTag("guideButton").assertContentDescriptionContains("4", substring = true)
+        onNodeWithTag("guideButton").assertContentDescriptionContains("2", substring = true)
     }
 
     @Test
     fun buyingProFromThePurchaseScreenGivesUnlimitedSteps() = runComposeUiTest {
         val store = FakeStoreBilling()
         openLightsFeed(store)
-        repeat(5) { useOneGuideStep() }
+        repeat(3) { useOneGuideStep() }
         onNodeWithTag("guideButton").performClick()
         waitUntil(timeoutMillis = 10_000) { has("paywallSheet") }
         onNodeWithTag("proBuy").performClick()
@@ -108,7 +110,7 @@ class ProUiTest {
     fun aCancelledPurchaseKeepsTheScreenOpenAndUnlocksNothing() = runComposeUiTest {
         val store = FakeStoreBilling().apply { purchaseResult = PurchaseResult.Cancelled }
         openLightsFeed(store)
-        repeat(5) { useOneGuideStep() }
+        repeat(3) { useOneGuideStep() }
         onNodeWithTag("guideButton").performClick()
         waitUntil(timeoutMillis = 10_000) { has("paywallSheet") }
         onNodeWithTag("proBuy").performClick()
@@ -120,7 +122,7 @@ class ProUiTest {
     fun aPendingPurchaseUnlocksWhenItIsApprovedLater() = runComposeUiTest {
         val store = FakeStoreBilling().apply { purchaseResult = PurchaseResult.Pending }
         openLightsFeed(store)
-        repeat(5) { useOneGuideStep() }
+        repeat(3) { useOneGuideStep() }
         onNodeWithTag("guideButton").performClick()
         waitUntil(timeoutMillis = 10_000) { has("paywallSheet") }
         onNodeWithTag("proBuy").performClick()
@@ -174,6 +176,94 @@ class ProUiTest {
         openTab("Profil", "Profile")
         waitForIdle()
         assertTrue(!has("proCard"))
+    }
+
+    // --- hint packs (docs/pro-plan.md section 11) ---
+
+    private val pack20 = HintPack("brainscroll_hints_20", 20, "$0.99")
+
+    @Test
+    fun aBoughtHintPaysForAStepWhenTheFreeOnesAreGone() = runComposeUiTest {
+        val cloud = TestCloud(hints = FakeHintBalanceApi(balance = 2))
+        openLightsFeed(FakeStoreBilling(), cloud)
+        waitUntil(timeoutMillis = 10_000) { has("guideBadge") }
+        repeat(3) { useOneGuideStep() }
+        assertEquals(2, cloud.hints.balance, "the free steps come first")
+        useOneGuideStep()
+        assertTrue(!has("paywallSheet"), "a bought hint opens no purchase screen")
+        assertEquals(1, cloud.hints.balance, "one bought hint was spent on the server")
+    }
+
+    @Test
+    fun withoutAConnectionABoughtHintGivesNoStepAndSpendsNothing() = runComposeUiTest {
+        val cloud = TestCloud(hints = FakeHintBalanceApi(balance = 2))
+        openLightsFeed(FakeStoreBilling(), cloud)
+        waitUntil(timeoutMillis = 10_000) { has("guideBadge") }
+        repeat(3) { useOneGuideStep() }
+        cloud.hints.offline = true
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { cloud.hints.spendCalls >= 1 }
+        waitForIdle()
+        assertTrue(!has("guideBanner"), "no step without the server's yes")
+        assertTrue(!has("paywallSheet"))
+        assertEquals(2, cloud.hints.balance)
+    }
+
+    @Test
+    fun aStaleNumberOpensThePurchaseScreenWhenTheServerHasNone() = runComposeUiTest {
+        val cloud = TestCloud(hints = FakeHintBalanceApi(balance = 2))
+        openLightsFeed(FakeStoreBilling(), cloud)
+        waitUntil(timeoutMillis = 10_000) { has("guideBadge") }
+        repeat(3) { useOneGuideStep() }
+        cloud.hints.balance = 0 // spent on another phone
+        onNodeWithTag("guideButton").performClick()
+        waitUntil(timeoutMillis = 10_000) { has("paywallSheet") }
+        assertTrue(!has("guideBanner"))
+    }
+
+    @Test
+    fun aPackBoughtInTheStoreArrivesFromTheServer() = runComposeUiTest {
+        val cloud = TestCloud()
+        val store = FakeStoreBilling().apply {
+            packs = listOf(pack20)
+            onPackBought = { cloud.hints.balance += it.hints } // the webhook
+        }
+        start(cloud = cloud, openFeed = false, store = store)
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("pack_brainscroll_hints_20") }
+        assertTrue(!has("packBalance"), "no hints bought yet")
+        onNodeWithTag("pack_brainscroll_hints_20", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("packBalance") }
+        assertEquals(1, store.packPurchases)
+        assertEquals(20, cloud.hints.balance)
+        assertTrue(!has("proThanks"), "a pack is not Pro")
+    }
+
+    @Test
+    fun aCancelledPackPurchaseAddsNothing() = runComposeUiTest {
+        val cloud = TestCloud()
+        val store = FakeStoreBilling().apply {
+            packs = listOf(pack20)
+            packResult = PurchaseResult.Cancelled
+        }
+        start(cloud = cloud, openFeed = false, store = store)
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("pack_brainscroll_hints_20") }
+        onNodeWithTag("pack_brainscroll_hints_20", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("proMessage") }
+        assertTrue(!has("packBalance"))
+        assertEquals(0, cloud.hints.balance)
+    }
+
+    @Test
+    fun theStoreShowsNoPacksUntilTheStoreHasThem() = runComposeUiTest {
+        start(openFeed = false, store = FakeStoreBilling())
+        waitUntil(timeoutMillis = 10_000) { has("storeButton") }
+        onNodeWithTag("storeButton", useUnmergedTree = true).performClick()
+        waitUntil(timeoutMillis = 10_000) { has("proPrice") }
+        assertTrue(!has("pack_brainscroll_hints_20"))
     }
 
     /**

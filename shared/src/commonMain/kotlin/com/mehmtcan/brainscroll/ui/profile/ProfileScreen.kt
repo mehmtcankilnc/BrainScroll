@@ -149,6 +149,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.mehmtcan.brainscroll.telemetry.NoTelemetry
 import com.mehmtcan.brainscroll.telemetry.Telemetry
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mehmtcan.brainscroll.ui.pro.LocalPro
+import brainscroll.shared.generated.resources.pro_badge
+import brainscroll.shared.generated.resources.profile_get_pro
 import com.mehmtcan.brainscroll.ui.pro.PaywallSource
 import com.mehmtcan.brainscroll.ui.pro.StoreButton
 import com.mehmtcan.brainscroll.ui.theme.Accent
@@ -369,7 +373,7 @@ fun ProfileScreen(
                 )
                 StoreButton()
             }
-            ProfileHeader(account, username)
+            ProfileHeader(account, username, onPro)
             if (!named) SignInCard(offline = account !is AccountState.SignedIn) {
                 when {
                     // Where Apple is offered too (iOS) there is a choice to make: the sheet. Where only Google is, go straight to it.
@@ -426,7 +430,6 @@ fun ProfileScreen(
                 ProfileRow(LineIcon.People, stringResource(Res.string.ranks_friends), stringResource(Res.string.profile_friends_hint)) { onOpen(ProfileTarget.Friends) }
                 ProfileRow(LineIcon.Gear, stringResource(Res.string.profile_settings), stringResource(Res.string.profile_settings_hint), last = true) { onOpen(ProfileTarget.Settings) }
             }
-            ProCard(onPro, telemetry)
             Spacer(Modifier.height(Spacing.xl))
         }
         when (streakInfo) {
@@ -450,9 +453,11 @@ fun ProfileScreen(
  * plain person and a line about the progress.
  */
 @Composable
-private fun ProfileHeader(account: AccountState, username: String?) {
+private fun ProfileHeader(account: AccountState, username: String?, onPro: (PaywallSource) -> Unit) {
     val colors = BrainScrollTheme.colors
     val type = BrainScrollTheme.typography
+    val pro = LocalPro.current
+    val isPro by pro.isPro.collectAsStateWithLifecycle()
     val signedIn = account as? AccountState.SignedIn
     val named = signedIn != null && signedIn.kind != AccountState.SignedIn.Kind.Anonymous
     val provider = when {
@@ -467,19 +472,26 @@ private fun ProfileHeader(account: AccountState, username: String?) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        if (named) {
-            PlayerAvatar(name, 64.dp)
-        } else {
-            Box(Modifier.size(64.dp).background(colors.bgRaised, CircleShape), contentAlignment = Alignment.Center) {
-                LineIcon(LineIcon.Person, colors.textSoft, size = 32.dp)
+        val avatar: @Composable () -> Unit = {
+            if (named) {
+                PlayerAvatar(name, 64.dp)
+            } else {
+                Box(Modifier.size(64.dp).background(colors.bgRaised, CircleShape), contentAlignment = Alignment.Center) {
+                    LineIcon(LineIcon.Person, colors.textSoft, size = 32.dp)
+                }
             }
         }
+        // A Pro player's avatar has a golden ring and a crown.
+        if (pro.available && isPro) ProAvatarFrame(avatar) else avatar()
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             BasicText(name, style = type.title.copy(color = colors.textPrimary), maxLines = 2, overflow = TextOverflow.Ellipsis)
             BasicText(
                 text = if (named) provider else stringResource(Res.string.profile_guest_subtitle),
                 style = type.body.copy(color = colors.textSoft),
             )
+            // Pro, right under the name: a golden PRO pill for a Pro player, a green "Get Pro" pill that opens the store for the others.
+            // Not drawn where nothing can be bought (desktop, no store keys).
+            if (pro.available) ProPill(isPro, onOpen = { onPro(PaywallSource.Profile) }, modifier = Modifier.padding(top = Spacing.sm))
         }
     }
 }

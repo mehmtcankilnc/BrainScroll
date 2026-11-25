@@ -17,7 +17,7 @@ data class QuotaState(val freeLeft: Int, val bonusLeft: Int, val unlimited: Bool
  * not today counts as nothing spent, so the new day needs no write to start.
  */
 object GuideQuota {
-    const val FREE_PER_DAY = 5
+    const val FREE_PER_DAY = 3
 
     fun state(today: Long, stored: GuideUse, pro: Boolean, bonus: Int = 0): QuotaState {
         val used = if (stored.day == today) stored.used else 0

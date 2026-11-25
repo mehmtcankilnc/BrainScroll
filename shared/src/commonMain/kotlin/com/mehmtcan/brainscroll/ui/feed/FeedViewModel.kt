@@ -15,6 +15,7 @@ import com.mehmtcan.brainscroll.telemetry.TelemetryEvent
 import com.mehmtcan.brainscroll.telemetry.TelemetryRecorder
 import com.mehmtcan.brainscroll.social.parseInviteCode
 import com.mehmtcan.brainscroll.cloud.CloudServicesFactory
+import com.mehmtcan.brainscroll.cloud.HintSpend
 import com.mehmtcan.brainscroll.daily.DailyApi
 import com.mehmtcan.brainscroll.data.GameRepository
 import com.mehmtcan.brainscroll.game.wordle.EndlessFeed
@@ -155,6 +156,7 @@ import com.mehmtcan.brainscroll.game.guide.QuotaState
 import com.mehmtcan.brainscroll.time.localDayIndex
 import com.mehmtcan.brainscroll.ui.theme.Accent
 import com.mehmtcan.brainscroll.ui.theme.Look
+import com.mehmtcan.brainscroll.ui.pro.HintWallet
 import com.mehmtcan.brainscroll.ui.pro.PaywallSource
 import com.mehmtcan.brainscroll.ui.pro.ProController
 import com.mehmtcan.brainscroll.ui.pro.StoreBilling
@@ -297,8 +299,11 @@ class FeedViewModel(
      */
     private val buildInBackground: Boolean = true,
 ) : ViewModel(), FeedActions {
-    /** BrainScroll Pro. The quota, the streak rule and the look all ask it. */
-    val pro = ProController(billing, repository, viewModelScope)
+    /** The things that talk to the network. Above [pro]: the bought hints need the server to read and spend them. */
+    private val services = cloudServices(viewModelScope)
+
+    /** BrainScroll Pro and the bought hints. The quota, the streak rule and the look all ask it. */
+    val pro = ProController(billing, repository, viewModelScope, HintWallet(services.hints, repository))
 
     /** Every game of this build, in feed order. The player can switch some of them off ([enabledGames]). */
     val availableGames: List<GameKind> = games
@@ -361,7 +366,7 @@ class FeedViewModel(
     /** No limit for Pro, and none where nothing can be bought (desktop, no store keys): a limit with no way out would be a wall. */
     private fun unlimitedGuide(): Boolean = pro.isPro.value || !pro.available
 
-    private fun readQuota(): QuotaState = GuideQuota.state(localDayIndex(now()), repository.guideUse(), unlimitedGuide())
+    private fun readQuota(): QuotaState = GuideQuota.state(localDayIndex(now()), repository.guideUse(), unlimitedGuide(), bonus = pro.hints.balance.value)
 
     private val _quota = MutableStateFlow(readQuota())
 
@@ -372,6 +377,11 @@ class FeedViewModel(
     fun refreshQuota() {
         _quota.value = readQuota()
     }
+
+    private val _guideNeedsConnection = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** A bought hint cannot be spent without the server, and there is no connection: the screen says so. */
+    val guideNeedsConnection: SharedFlow<Unit> = _guideNeedsConnection
 
     private val _paywallRequests = MutableSharedFlow<PaywallSource>(extraBufferCapacity = 1)
 
@@ -411,7 +421,25 @@ class FeedViewModel(
                     _guideNothing.tryEmit(Unit)
                     return@launch
                 }
-                repository.setGuideUse(GuideQuota.spend(localDayIndex(now()), repository.guideUse(), unlimitedGuide()))
+                val today = localDayIndex(now())
+                if (!unlimitedGuide() && GuideQuota.state(today, repository.guideUse(), pro = false).freeLeft == 0) {
+                    // The free steps are gone: this one is paid with a bought hint, and only the server can say yes (a hint is
+                    // never given without it). Nothing is shown when it does not.
+                    when (pro.hints.spend()) {
+                        is HintSpend.Spent -> Unit
+                        HintSpend.Empty -> {
+                            _quota.value = readQuota()
+                            _paywallRequests.tryEmit(PaywallSource.Guide)
+                            return@launch
+                        }
+                        HintSpend.Offline -> {
+                            _guideNeedsConnection.tryEmit(Unit)
+                            return@launch
+                        }
+                    }
+                } else {
+                    repository.setGuideUse(GuideQuota.spend(today, repository.guideUse(), unlimitedGuide()))
+                }
                 _quota.value = readQuota()
                 f.markGuided(index)
                 publish()
@@ -458,7 +486,6 @@ class FeedViewModel(
 
     // --- Account and cloud backup ---
 
-    private val services = cloudServices(viewModelScope)
     private val account = services.account
 
     val accountState: StateFlow<AccountState> = account.state
@@ -671,7 +698,9 @@ class FeedViewModel(
         // Pro changed (bought, restored, refunded): the free steps, the streak and the look follow.
         viewModelScope.launch { pro.isPro.drop(1).collect { refreshQuota(); refreshProfile() } }
         // The purchase follows the player when the account changes (guest to Apple sign-in, a new guest after deleting).
-        viewModelScope.launch { signedInUser.filterNotNull().distinctUntilChanged().collect { pro.identify(it) } }
+        viewModelScope.launch { signedInUser.filterNotNull().distinctUntilChanged().collect { pro.identify(it); pro.hints.refresh() } }
+        // The bought hints changed (a pack arrived, one was spent): the badge follows.
+        viewModelScope.launch { pro.hints.balance.drop(1).collect { refreshQuota() } }
         startBuilder()
         viewModelScope.launch { loadFeed() }
         viewModelScope.launch { account.state.collect { handleMerge(it) } }
@@ -1630,6 +1659,7 @@ class FeedViewModel(
         when (services.merge.complete(ticket.token)) {
             MergeResult.Done -> {
                 repository.clearMergeTicket()
+                pro.hints.refresh() // the hints of the guest account are now in this one
                 requestSyncIfNeeded()
             }
             MergeResult.Invalid -> repository.clearMergeTicket()

@@ -82,6 +82,29 @@ internal class RevenueCatBilling(apiKey: String) : StoreBilling {
     override suspend fun identify(userId: String) {
         if (purchases.appUserID != userId) updates.emit(purchases.awaitLogIn(userId).customerInfo.isPro())
     }
+
+    private suspend fun packProducts(): List<Pair<StoreProduct, Int>> {
+        val amounts = ProConfig.HINT_PACKS.toMap()
+        val found = purchases.awaitGetProducts(amounts.keys.toList())
+        // In the order of ProConfig (smallest first), and only the ones the store really has.
+        return ProConfig.HINT_PACKS.mapNotNull { (id, hints) -> found.firstOrNull { it.id == id }?.let { it to hints } }
+    }
+
+    override suspend fun packs(): List<HintPack> = packProducts().map { (product, hints) -> HintPack(product.id, hints, product.price.formatted) }
+
+    override suspend fun buyPack(pack: HintPack): PurchaseResult {
+        val product = packProducts().firstOrNull { it.first.id == pack.id }?.first ?: return PurchaseResult.Failed("product_not_found")
+        return try {
+            purchases.awaitPurchase(product)
+            PurchaseResult.Success
+        } catch (e: PurchasesTransactionException) {
+            when {
+                e.userCancelled -> PurchaseResult.Cancelled
+                e.code == PurchasesErrorCode.PaymentPendingError -> PurchaseResult.Pending
+                else -> PurchaseResult.Failed(e.code.name)
+            }
+        }
+    }
 }
 
 // One store for the whole process: the activity can be rebuilt (rotation), the SDK must be configured once.
@@ -100,6 +123,10 @@ private object PreviewStoreBilling : StoreBilling {
     override suspend fun purchase(): PurchaseResult = PurchaseResult.Cancelled
     override suspend fun restore(): RestoreResult = RestoreResult.NothingToRestore
     override suspend fun identify(userId: String) = Unit
+
+    // Sample packs so the store screen can be looked at; buying is cancelled like Pro.
+    override suspend fun packs() = listOf(HintPack("brainscroll_hints_20", 20, "preview"), HintPack("brainscroll_hints_75", 75, "preview"))
+    override suspend fun buyPack(pack: HintPack): PurchaseResult = PurchaseResult.Cancelled
 }
 
 actual fun createStoreBilling(): StoreBilling? =

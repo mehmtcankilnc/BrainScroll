@@ -34,7 +34,7 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 | Özellik | Ücretsiz | Pro |
 |---|---|---|
 | Oyunlar, günlük bulmaca, favoriler, sıralamalar, arkadaşlar, zorluk seviyeleri | Hepsi | Hepsi |
-| İpucu (guide) | Günde 5 | Sınırsız |
+| İpucu (guide) | Günde 3 | Sınırsız |
 | Seri koruma | 15 günde 1 hak, en fazla 1 saklanır | Haftada (7 günde) 1 hak, en fazla 3 saklanır |
 | Görünüm | Varsayılan görünüm | Aynı varsayılan görünüm (kozmetik askıda) |
 | Rozet | Yok | Profilde "Pro" rozeti |
@@ -50,7 +50,7 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 - Entitlement (hak): tek bir `pro` (RevenueCat kullanılırsa). İpucu paketleri entitlement değildir.
 - Apple: "Aile Paylaşımı" (Family Sharing) AÇIK (karar verildi). Not: App Store Connect'te bir ürün için Family Sharing açıldıktan sonra kapatılamaz; açarak oluştur. Google Play'de aile kitaplığı uygulama/oyun satın alımları için ayrı bir geliştirici ayarıdır, Play Console'da ilgili seçeneği aç. RevenueCat, aile üyesine paylaşılan hakkı otomatik tanır; sandbox'ta test et.
 - Aile paylaşımı yüzünden bir mağaza hesabı birden fazla uygulama hesabında Pro'yu tetikleyebilir; bu istenen davranış, ek önlem yok.
-- Türkiye fiyatı (karar, 23 Kasım 2026): Türkiye'de Pro ve ipucu paketleri için ayrı, daha düşük fiyat kullanılır. App Store Connect'te ürünün fiyat programında Türkiye'yi elle ayarla (baz ülke fiyatından bağımsız); Play Console'da ürünün ülke bazlı fiyatında Türkiye'yi elle gir. Hedef: alım gücüne göre yaklaşık yarı fiyat; tam tutar yayına yakın seçilir (bölüm 16). Paket fiyatları (Aşama B) için de aynı kural. Fiyat kodda sabit değildir, mağazadan gelir, bu yüzden kod değişmez.
+- Türkiye fiyatı (karar, 23 Kasım 2026): Türkiye'de Pro ve ipucu paketleri için ayrı, daha düşük fiyat kullanılır. App Store Connect'te ürünün fiyat programında Türkiye'yi elle ayarla (baz ülke fiyatından bağımsız); Play Console'da ürünün ülke bazlı fiyatında Türkiye'yi elle gir. Karar (24 Kasım 2026): Pro için Türkiye'de 129,99₺, diğer tüm ülkelerde $4,99 (mağazanın o ülke basamağı). İki mağazada da elle girilir. Paketler için de aynı kural: Türkiye'de 20'lik 39,99₺ ve 75'lik 99,99₺, diğer ülkelerde $0,99 ve $2,99 (karar, 24 Kasım 2026). Fiyat kodda sabit değildir, mağazadan gelir, bu yüzden kod değişmez.
 - Çeviriler: İngilizce ve Türkçe başlık ve açıklama. Paywall'daki fiyat mağazadan gelen yerelleştirilmiş fiyattır, elle yazılmaz.
 - Yenileme, deneme, iptal metni YOK; bunlar tek seferlik üründe yanıltıcı olur. Metin açıkça "Tek seferlik ödeme, süresiz" der.
 
@@ -62,7 +62,7 @@ Ayrı bir oturumda uygulanmak üzere yazıldı. Bu belge 22 Ekim 2026'da `docs/p
 - Test etkisi: `markGuided` birçok testte doğrudan çağrılıyor (`FeedPersistenceTest`, `EndlessFeedTest`, `LevelsOf*Test` vb.). Kota mantığını `markGuided` içine KOYMA; yalnızca `FeedViewModel.requestGuide` çevresine koy. Böylece mevcut testler kırılmaz.
 
 ### 5.2 Kurallar
-- Ücretsiz kullanıcı: yerel günde 5 ipucu (`GuideQuota.FREE_PER_DAY = 5`, tek yerde sabit). Pro: sınırsız. Aşama B'den sonra: önce günlük ücretsiz hak harcanır, bitince satın alınmış paket bakiyesinden düşer.
+- Ücretsiz kullanıcı: yerel günde 3 ipucu (`GuideQuota.FREE_PER_DAY = 3`, 24 Kasım 2026'da 5'ten düşürüldü, tek yerde sabit). Pro: sınırsız. Aşama B'den sonra: önce günlük ücretsiz hak harcanır, bitince satın alınmış paket bakiyesinden düşer.
 - Kota yalnızca gerçek bir adım gösterildiği noktada (yani `markGuided` çağrısının hemen yanında, `step != null` dalında) düşer. `guideNothing` kota harcamaz.
 - Sıra önemli: kota kontrolü adım aranmadan ÖNCE yapılır (hak yoksa paywall açılır, boşuna arama yapılmaz), düşüş adım bulunduktan SONRA yapılır. Arama sırasında kullanıcı çift dokunursa iki arama ve iki düşüş olmasın: arama sürerken ikinci dokunuş yok sayılır (mevcut `viewModelScope.launch` için bir "arıyor" bayrağı ekle).
 - Aynı sayfada aynı bulmaca için ikinci ipucu da bir hak harcar. Ekran yeniden çizildiği için aynı `GuideState` yeniden gösterilirse hak düşmez (düşüş yalnızca `requestGuide` içinde olur, gösterim sırasında değil).
@@ -259,9 +259,23 @@ Tasarım:
 Ürünler ve arayüz:
 - Paketler: 20 ($0.99) ve 75 ($2.99), büyük pakette indirim net olsun. Pro sahibi bunları görmez (zaten sınırsız).
 - Paketler mağaza ekranında (bölüm 7.4) Pro kartının altında durur. Pro almamış ve kotası bitmiş kullanıcıya ipucu düğmesi bu ekranı açar: "Pro: sınırsız" (öne çıkan) ve "20 ipucu". Birini dayatmaz; her zaman kapatılabilir.
-- Harcama sırası: önce günlük ücretsiz 5 hak, bitince bakiye (`GuideQuota.spend`).
+- Harcama sırası: önce günlük ücretsiz 3 hak, bitince bakiye (`GuideQuota.spend`).
 - Pro'ya sonradan geçen kullanıcının bakiyesi silinmez; Pro sınırsız olduğu için harcanmaz. İade/ihtilafla Pro kapanırsa bakiye yine kullanılabilir.
 - Aşama B'yi A'dan ayırmanın nedeni: sunucu tarafı (edge function, webhook, göç, birleştirme) ayrı bir risk ve test yüzeyi; Pro'nun yayınını geciktirmesin.
+
+### Aşama B: kodlandı (24 Kasım 2026), cihazda ve mağazada denenmedi
+Kodlanan ve yerelde (PGlite, `commonTest`, `jvmTest`) test edilen:
+- Sunucu: `supabase/migrations/20261125090000_hint_balance.sql`. Tablolar `hint_balance` ve `hint_credit` (tekil; plandaki `hint_credits` yerine). Uygulama tablolara doğrudan erişmez, yalnızca `my_hint_balance()` (oku) ve `spend_hint()` (bir düş, bakiye yoksa NULL) çağırır. `credit_hints(user, işlem, miktar)` yalnızca service role (webhook) içindir; aynı işlem kimliği ikinci kez gelirse `duplicate` döner, bakiye artmaz. `complete_account_merge` yeniden tanımlandı: anonim hesabın bakiyesi toplanarak taşınır, `hint_credit` satırları da taşınır (birleşmeden sonra gelen tekrar bildirimi çift kredi yapmasın). Hesap silinince ikisi de silinir.
+- Webhook: `supabase/functions/revenuecat-webhook/` (`handler.ts` saf kurallar, `index.ts` Deno bağlantısı). Yalnızca `NON_RENEWING_PURCHASE` ve `brainscroll_hints_20` / `brainscroll_hints_75` ürünleri işlenir; Pro satın alımı, iade ve test olayları yok sayılır. Veritabanı hatasında 500 döner, RevenueCat yeniden dener (kredi idempotent). İade edilen paketin ipuçları geri alınmaz (harcanmış olabilir; kabul edilir). Hesap kimliği (`app_user_id`) UUID değilse (RevenueCat anonim kimliği) yok sayılır; bu yüzden uygulama, mağaza hesabı tanıyana kadar paket satmaz (`ProController.identified`).
+- Uygulama: `HintBalanceApi` (Supabase RPC), `HintWallet` (bakiye, önbellek, `awaitCredit`: satın alımdan sonra 2 sn aralıkla en çok 20 sn bekler), `ProState.packs()/buyPack()`, mağaza ekranında paket satırları (`PaywallSheet`; Pro kartının altında, kurtarma ekranında yok), rozet ücretsiz ve satın alınmış ipuçlarının toplamını gösterir. Harcama sırası: önce günlük ücretsiz hak (yerel), bitince bakiye (sunucu). Bakiyeli ipucu adım bulunduktan sonra sunucuda düşülür; sunucu "yok" derse mağaza ekranı açılır, bağlantı yoksa "internet gerekiyor" uyarısı çıkar ve ipucu verilmez.
+- Ürün kimlikleri `ProConfig.HINT_PACKS` ve `handler.ts` içinde aynıdır; biri değişirse öteki de değişmeli. Mağazada paket tanımlı değilse mağaza ekranında paket bölümü hiç görünmez (Aşama B "karanlık" yayınlanabilir).
+
+Senin yapacakların (sırayla):
+1. `npx supabase db push` (yeni göç). Ardından `supabase/tests` içinde `node verify_hints.mjs` ve `node verify_webhook.mjs`.
+2. Rastgele uzun bir gizli değer üret ve ayarla: `npx supabase secrets set REVENUECAT_WEBHOOK_SECRET=<değer>`; `npx supabase functions deploy revenuecat-webhook` (JWT doğrulaması `config.toml` içinde kapalı, kimlik doğrulamayı işlev kendisi yapar).
+3. App Store Connect'te iki tüketilebilir (consumable) ürün: `brainscroll_hints_20` ve `brainscroll_hints_75` (fiyatlar bölüm 16'da kesin: 20'lik $0,99 ve Türkiye'de elle 39,99₺; 75'lik $2,99 ve Türkiye'de elle 99,99₺). RevenueCat'te iki ürünü ekle (entitlement bağlama gerekmez).
+4. RevenueCat > Integrations > Webhooks: adres `https://lxrfnaxecvofmgkdtvrn.supabase.co/functions/v1/revenuecat-webhook`, Authorization başlığı = 2. adımdaki değer, hem sandbox hem production olayları açık.
+5. Sandbox'ta dene: paket al, bakiye birkaç saniyede gelsin; uygulamayı sil/kur, bakiye dursun; misafir hesapla paket al, sonra Apple girişiyle birleştir, bakiye taşınsın; uçak modunda bakiyeli ipucu "internet gerekiyor" desin.
 
 ## 12. Sonraya (abonelik yeniden değerlendirme ölçütleri)
 Abonelik yalnızca şu şartlar sağlanınca konuşulur:
@@ -281,7 +295,7 @@ Abonelik yalnızca şu şartlar sağlanınca konuşulur:
 - Aşama B için: `supabase/functions/` klasörü şu an yok (yalnızca `migrations`, `tests`, `config.toml`). Edge function kurulumu ve `supabase secrets` ilk kez yapılacak; Supabase CLI sürümünü ve proje bağlantısını doğrula.
 
 ## 14. Kabul ölçütleri
-- Ücretsiz kullanıcı günde 5 ipucu alır; 6. dokunuşta paywall açılır; ipucu bulunamadığında kota harcanmaz; arama sürerken çift dokunuş tek hak harcar.
+- Ücretsiz kullanıcı günde 3 ipucu alır; 4. dokunuşta paywall açılır; ipucu bulunamadığında kota harcanmaz; arama sürerken çift dokunuş tek hak harcar.
 - Pro satın alınca ipucu sınırsız, seri koruma haftada 1 hak ve en fazla 3 (ücretsizde 15 günde 1 hak, en fazla 1), Pro rozeti görünür; görünüm ücretsizle aynı. Uygulama yeniden açılınca ve çevrimdışıyken de korunur.
 - Satın alma iptali, bekleyen ve hata durumları anlaşılır mesajla ele alınır; hiçbirinde Pro açılmaz (bekleyen sonradan onaylanırsa açılır).
 - "Satın alımı geri yükle" yeni cihazda hakkı geri getirir. Anonim hesap Apple girişiyle birleşince hak kaybolmaz. Hesap silip yeni anonim hesapta geri yükleyince hak gelir.
@@ -306,18 +320,16 @@ Yalnızca telemetri açıkken, anonim sayımlarla:
 - İade oranı.
 
 ## 16. Kararlar ve kalan açık sorular
-Karar verildi (23 Ekim 2026): fiyat $4.99, ücretsiz günlük ipucu 5, ad "BrainScroll Pro", kopuk serinin Pro ile geri gelmesi kabul (ve seri kurtarma paywall'ı eklendi, bölüm 7.3), Aşama B bakiyesi sunucuda, Family Sharing açık.
+Karar verildi (23 Ekim 2026): fiyat $4.99, ücretsiz günlük ipucu 5 (24 Kasım 2026'da 3'e düşürüldü), ad "BrainScroll Pro", kopuk serinin Pro ile geri gelmesi kabul (ve seri kurtarma paywall'ı eklendi, bölüm 7.3), Aşama B bakiyesi sunucuda, Family Sharing açık.
 
 Karar verildi (23 Kasım 2026, revizyon): Türkiye için ayrı, daha ucuz fiyat (kesin); seri koruma ücretsizde 15 günde 1 hak ve en fazla 1, Pro'da haftada 1 hak ve en fazla 3; Ana sayfa/Akış/Profil'de sağ üstte mağaza ikonu, ipucu paketleri ve Pro buradan; kozmetik askıya alındı (ücretsiz ve Pro aynı görünüm); arkadaş sınırı şimdilik yok.
 
-Kalan açık sorular:
-- Pro kullanıcıda mağaza ikonu gizli mi kalsın (öneri: evet, alınacak şey yok), yoksa "Pro aktif" ekranı için görünür mü?
-- Ücretsiz seri kuralı 7 → 15 olunca yayında kullanıcı varsa serileri kısalır; yayın öncesi mi uygulanıyor (öneri: yayından önce uygula, ek önlem gerekmez)?
-- Seri kurtarma paywall'ı yeni kural farkıyla daha sık çıkacak; ilk verilerle eşikler gözden geçirilir (bölüm 15).
-- Kozmetik askıdan ne zaman çıkar (öneri: Pro'ya veri gösteren ek değer eklenene ya da kullanıcı isteği gelene kadar bekle).
-- Seri kurtarma paywall'ı eşikleri (öneri: kurtarılacak seri en az 3 gün, kopuş başına 1 gösterim, günde en fazla 1 kendiliğinden paywall).
-- Türkiye fiyatının tam tutarı (Pro ve paketler için). Karar: elle ve daha ucuz; kalan: kaç TL (öneri: baz fiyatın yaklaşık yarısı alım gücüne denk gelen basamak; yayına yakın seçilir).
-- Aşama B paket miktarları ve fiyatları (öneri 20/$0.99 ve 75/$2.99).
+Karar verildi (24 Kasım 2026), bu bölümdeki açık soruların hepsi kapandı:
+- Pro kullanıcıda mağaza ikonu gizli kalır (alınacak bir şey yok; durum profildeki altın PRO hapında görünür).
+- Ücretsiz seri kuralı 7 → 15: yayından önce uygulanır, ek önlem yok. Şu an yalnızca test kullanıcıları var, serilerinin kısalması sorun değil.
+- Seri kurtarma ekranının sıklığı ve eşikleri yayından sonraki ilk verilerle (bölüm 15) gözden geçirilir; şimdi değişmez. Eşikler aynen kalır: kurtarılacak seri en az 3 gün, kopuş başına 1 gösterim, günde en fazla 1 kendiliğinden paywall.
+- Kozmetik askıda kalır (ücretsiz ve Pro aynı görünüm).
+- Fiyatlar: Pro Türkiye'de 129,99₺, diğer ülkelerde $4,99. Paketler: 20 ipucu $0,99 (Türkiye 39,99₺), 75 ipucu $2,99 (Türkiye 99,99₺). Büyük paket ipucu başına belirgin ucuz: 39,99₺/20 = 2,00₺, 99,99₺/75 = 1,33₺.
 
 ## 18. Revizyon uygulama listesi (23 Kasım 2026)
 Aşama A'nın kodlanmış hali üzerine yapılacak değişiklikler, hepsi küçük:

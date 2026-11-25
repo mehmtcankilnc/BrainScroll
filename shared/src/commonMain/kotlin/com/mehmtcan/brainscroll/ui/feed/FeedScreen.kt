@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import com.mehmtcan.brainscroll.ui.theme.Spacing
+import brainscroll.shared.generated.resources.guide_needs_connection
 import brainscroll.shared.generated.resources.guide_none
 import brainscroll.shared.generated.resources.feed_puzzle_number
 import androidx.compose.ui.platform.testTag
@@ -164,6 +165,7 @@ private fun FeedContent(feed: FeedSnapshot, favoriteIds: Set<String>, viewModel:
     val guideState by viewModel.guide.collectAsStateWithLifecycle()
     val guide = guideState?.takeIf { it.page.withoutClock() == current.withoutClock() }?.step
     LaunchedEffect(viewModel) { viewModel.guideNothing.collect { show(Res.string.guide_none) } }
+    LaunchedEffect(viewModel) { viewModel.guideNeedsConnection.collect { show(Res.string.guide_needs_connection) } }
     val currentWord = current as? RoundSnapshot
 
     // Rejected guesses show a message. The tick makes the same error show again. (Only word puzzles have guesses.)

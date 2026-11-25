@@ -1,5 +1,7 @@
 package com.mehmtcan.brainscroll.ui.pro
 
+import com.mehmtcan.brainscroll.cloud.HintBalanceApi
+import com.mehmtcan.brainscroll.cloud.HintSpend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -17,6 +19,14 @@ class FakeStoreBilling : StoreBilling {
     val identified = mutableListOf<String>()
     var purchases = 0
 
+    /** What the store sells besides Pro; empty means the packs are not set up in the store. */
+    var packs: List<HintPack> = emptyList()
+    var packResult: PurchaseResult = PurchaseResult.Success
+    var packPurchases = 0
+
+    /** Runs when a pack purchase went through, like the webhook adding the hints on the server. */
+    var onPackBought: (HintPack) -> Unit = {}
+
     override suspend fun refresh() {
         updates.emit(refreshAnswer ?: error("offline"))
     }
@@ -30,6 +40,14 @@ class FakeStoreBilling : StoreBilling {
 
     override suspend fun restore(): RestoreResult = restoreResult
 
+    override suspend fun packs(): List<HintPack> = packs
+
+    override suspend fun buyPack(pack: HintPack): PurchaseResult {
+        packPurchases += 1
+        if (packResult == PurchaseResult.Success) onPackBought(pack)
+        return packResult
+    }
+
     override suspend fun identify(userId: String) {
         if (identifyFails) error("offline")
         identified += userId
@@ -40,5 +58,28 @@ class MemoryProCache(var value: Boolean = false) : ProCache {
     override fun cached() = value
     override fun setCached(pro: Boolean) {
         value = pro
+    }
+}
+
+class MemoryHintCache(var value: Int = 0) : HintCache {
+    override fun cachedHints() = value
+    override fun setCachedHints(count: Int) {
+        value = count
+    }
+}
+
+/** The server's hint balance as the test wants it: [balance] is what is stored, [offline] makes every call fail. */
+class FakeHintBalanceApi(var balance: Int = 0, var offline: Boolean = false) : HintBalanceApi {
+    var spendCalls = 0
+
+    override suspend fun balance(): Int? = if (offline) null else balance
+
+    override suspend fun spend(): HintSpend {
+        spendCalls += 1
+        return when {
+            offline -> HintSpend.Offline
+            balance <= 0 -> HintSpend.Empty
+            else -> HintSpend.Spent(--balance)
+        }
     }
 }

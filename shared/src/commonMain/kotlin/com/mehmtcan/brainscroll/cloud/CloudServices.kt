@@ -22,6 +22,8 @@ class CloudServices(
     val social: SocialApi,
     val telemetry: TelemetryApi,
     val merge: AccountMergeApi,
+    /** The bought hints (hint packs). Tests and previews leave it out: no balance, nothing to spend. */
+    val hints: HintBalanceApi = NoHintBalanceApi,
 )
 
 /** Builds the services. The scope is the one the account service uses for its background work. */
@@ -37,5 +39,6 @@ fun supabaseServices(scope: CoroutineScope): CloudServices {
         social = SupabaseSocialApi(client),
         telemetry = SupabaseTelemetryApi(client),
         merge = SupabaseAccountMergeApi(client),
+        hints = SupabaseHintBalanceApi(client),
     )
 }

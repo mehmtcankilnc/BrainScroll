@@ -19,6 +19,55 @@ class ProControllerTest {
     private fun TestScope.controller(store: StoreBilling? = billing) =
         ProController(store, cache, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
 
+    private val pack = HintPack("brainscroll_hints_20", 20, "$0.99")
+
+    @Test
+    fun noPackIsSoldBeforeTheStoreKnowsTheAccount() = runTest {
+        billing.packs = listOf(pack)
+        val pro = controller()
+        assertTrue(pro.packs().isEmpty(), "a pack bought under the store's anonymous id would get no hints")
+        assertEquals(PurchaseResult.Failed("not_identified"), pro.buyPack(pack))
+        assertEquals(0, billing.packPurchases)
+    }
+
+    @Test
+    fun aPackIsSoldOnceTheAccountIsIdentified() = runTest {
+        billing.packs = listOf(pack)
+        val pro = controller()
+        pro.identify("user-1")
+        assertEquals(listOf(pack), pro.packs())
+        assertEquals(PurchaseResult.Success, pro.buyPack(pack))
+        assertEquals(1, billing.packPurchases)
+        assertFalse(pro.isPro.value, "a hint pack is not Pro")
+    }
+
+    @Test
+    fun aFailedIdentifyKeepsThePacksOff() = runTest {
+        billing.packs = listOf(pack)
+        billing.identifyFails = true
+        val pro = controller()
+        pro.identify("user-1")
+        assertTrue(pro.packs().isEmpty())
+        assertEquals(PurchaseResult.Failed("not_identified"), pro.buyPack(pack))
+    }
+
+    @Test
+    fun theStoreAnswersOfAPackPurchaseArePassedOn() = runTest {
+        billing.packResult = PurchaseResult.Cancelled
+        val pro = controller()
+        pro.identify("user-1")
+        assertEquals(PurchaseResult.Cancelled, pro.buyPack(pack))
+        billing.packResult = PurchaseResult.Pending
+        assertEquals(PurchaseResult.Pending, pro.buyPack(pack))
+    }
+
+    @Test
+    fun withoutAStoreThereIsNoPack() = runTest {
+        val pro = controller(store = null)
+        assertTrue(pro.packs().isEmpty())
+        assertEquals(PurchaseResult.Failed("unavailable"), pro.buyPack(pack))
+    }
+
     @Test
     fun startsFromTheCachedAnswer() = runTest {
         cache.value = true

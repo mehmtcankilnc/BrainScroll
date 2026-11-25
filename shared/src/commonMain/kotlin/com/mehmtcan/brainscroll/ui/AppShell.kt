@@ -201,6 +201,7 @@ fun AppShell(
     // so its background can reach the screen edges and sit under the home indicator.
     // What the profile pages show. They are pages over the tabs, so the state is read here.
     val profileState by viewModel.profile.collectAsStateWithLifecycle()
+    val guideQuota by viewModel.quota.collectAsStateWithLifecycle()
     val accountState by viewModel.accountState.collectAsStateWithLifecycle()
     val sharing by viewModel.telemetry.enabled.collectAsStateWithLifecycle()
     val soundOn by viewModel.soundEnabled.collectAsStateWithLifecycle()
@@ -428,14 +429,57 @@ fun AppShell(
             onCancel = { replaying = null },
         )
     }
+    // TEMPORARY: a button to look at the streak offer without a broken streak. Set PREVIEW_STREAK_OFFER to false before a release.
+    if (PREVIEW_STREAK_OFFER && paywall == null) {
+        val previewPro by viewModel.pro.isPro.collectAsStateWithLifecycle()
+        Box(Modifier.fillMaxSize()) {
+            // Opens the store whether or not the player is Pro (a Pro player has no store icon to reach it with).
+            BasicText(
+                "Mağaza (önizleme)",
+                style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.textPrimary),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 8.dp, bottom = 242.dp)
+                    .background(BrainScrollTheme.colors.bgRaised, Radius.pill)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { paywall = PaywallRequest(PaywallSource.StoreIcon) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+            // Switches the whole app between a Pro and a free player, to look at the profile and the rest as each of them sees it.
+            BasicText(
+                if (previewPro) "Pro: açık (önizleme)" else "Pro: kapalı (önizleme)",
+                style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.textPrimary),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 8.dp, bottom = 196.dp)
+                    .background(BrainScrollTheme.colors.bgRaised, Radius.pill)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { viewModel.pro.previewSet(!previewPro) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+            BasicText(
+                "Seri teklifi (önizleme)",
+                style = BrainScrollTheme.typography.caption.copy(color = BrainScrollTheme.colors.accentOn),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 8.dp, bottom = 150.dp)
+                    .background(BrainScrollTheme.colors.accent, Radius.pill)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        paywall = PaywallRequest(PaywallSource.StreakRescue, Rescue(freeStreak = 0, proStreak = 14))
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
+    }
     paywall?.let { request ->
-        PaywallSheet(request.source, onClose = { paywall = null }, telemetry = viewModel.telemetry, rescue = request.rescue)
+        PaywallSheet(request.source, onClose = { paywall = null }, telemetry = viewModel.telemetry, rescue = request.rescue, quota = guideQuota)
     }
     OverlayLayers(overlayHost)
     }
     }
     }
 }
+
+/** TEMPORARY, only to look at the streak offer on a phone or emulator. Shows a small button over the app. Set to false before a release. */
+private const val PREVIEW_STREAK_OFFER = false
 
 /** What the purchase screen is open for, and for a streak rescue the streak it is about. */
 private class PaywallRequest(val source: PaywallSource, val rescue: Rescue? = null)

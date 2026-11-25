@@ -73,8 +73,8 @@ class FeedViewModelProTest {
     private val brokenStreak get() = (today - 16..today - 3).toList()
 
     @Test
-    fun theFreePlayerStartsWithFiveStepsAndTheDesktopHasNoLimit() = runTest {
-        assertEquals(5, viewModel(repository()).quota.value.freeLeft)
+    fun theFreePlayerStartsWithThreeStepsAndTheDesktopHasNoLimit() = runTest {
+        assertEquals(3, viewModel(repository()).quota.value.freeLeft)
         assertTrue(viewModel(repository(), store = null).quota.value.unlimited, "nothing to buy, so no wall")
     }
 

@@ -21,6 +21,12 @@ interface StoreBilling {
 
     /** The account of the app changed (guest, or signed in). The purchase follows the player to the new id. */
     suspend fun identify(userId: String)
+
+    /** The hint packs (consumables), smallest first. Empty when the store does not have them yet. */
+    suspend fun packs(): List<HintPack> = emptyList()
+
+    /** Buys a pack. The store only takes the payment; the server adds the hints (the RevenueCat webhook). */
+    suspend fun buyPack(pack: HintPack): PurchaseResult = PurchaseResult.Failed("unavailable")
 }
 
 /** The store of this platform, or null when there is none (desktop) or no key was put in [ProConfig]. */

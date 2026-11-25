@@ -7,6 +7,7 @@ import com.mehmtcan.brainscroll.db.In_progress_round
 import com.mehmtcan.brainscroll.game.Difficulty
 import com.mehmtcan.brainscroll.game.GameKind
 import com.mehmtcan.brainscroll.game.guide.GuideUse
+import com.mehmtcan.brainscroll.ui.pro.HintCache
 import com.mehmtcan.brainscroll.ui.pro.ProCache
 import com.mehmtcan.brainscroll.ui.theme.Accent
 import com.mehmtcan.brainscroll.game.wordle.FeedStore
@@ -36,6 +37,7 @@ private const val SETTING_BEST_FLOW = "best_flow"
 private const val SETTING_GUIDE_QUOTA_DAY = "guide_quota_day"
 private const val SETTING_GUIDE_QUOTA_USED = "guide_quota_used"
 private const val SETTING_PRO_CACHED = "pro_cached"
+private const val SETTING_HINT_BALANCE = "hint_balance_cache"
 private const val SETTING_RESCUE_SHOWN = "streak_rescue_shown"
 private const val SETTING_AUTO_PAYWALL_DAY = "auto_paywall_day"
 private const val SETTING_THEME_ACCENT = "theme_accent"
@@ -45,7 +47,7 @@ private const val SETTING_THEME_AMOLED = "theme_amoled"
  * Reads and writes everything the app keeps on the device. It is the only place that knows the tables;
  * the rest of the app works with plain Kotlin types ([FinishedRound], [StoredRound]).
  */
-class GameRepository(database: BrainScrollDatabase) : FeedStore, ProCache {
+class GameRepository(database: BrainScrollDatabase) : FeedStore, ProCache, HintCache {
     private val db = database
     private val results = database.gameResultQueries
     private val progress = database.inProgressRoundQueries
@@ -233,6 +235,16 @@ class GameRepository(database: BrainScrollDatabase) : FeedStore, ProCache {
 
     override fun setCached(pro: Boolean) {
         settings.put(SETTING_PRO_CACHED, if (pro) "1" else "0")
+    }
+
+    /**
+     * The last bought-hint balance the server told, only for showing a number. Not kept when the account is deleted: the hints
+     * went with it. Spending never trusts this, the server decides (docs/pro-plan.md section 11).
+     */
+    override fun cachedHints(): Int = settings.get(SETTING_HINT_BALANCE).executeAsOneOrNull()?.toIntOrNull() ?: 0
+
+    override fun setCachedHints(count: Int) {
+        settings.put(SETTING_HINT_BALANCE, count.toString())
     }
 
     /** The break (the last day finished before it) the streak rescue paywall was shown for. */

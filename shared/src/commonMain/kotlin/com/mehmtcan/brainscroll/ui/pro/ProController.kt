@@ -20,8 +20,16 @@ class ProController(
     private val billing: StoreBilling?,
     private val cache: ProCache,
     scope: CoroutineScope,
+    override val hints: HintWallet = HintWallet.None,
 ) : ProState {
     override val available: Boolean get() = billing != null
+
+    /**
+     * Whether the store knows the player by the account id yet. A pack bought before that is reported to the server under the
+     * store's own anonymous id, which no balance belongs to: the money would be taken and no hints given. So no pack is sold
+     * until [identify] has worked.
+     */
+    private var identified = false
 
     private val _isPro = MutableStateFlow(billing != null && cache.cached())
     override val isPro: StateFlow<Boolean> = _isPro
@@ -31,6 +39,11 @@ class ProController(
             scope.launch { billing.entitlement.collect(::apply) }
             scope.launch { runCatching { billing.refresh() } }
         }
+    }
+
+    /** TEMPORARY, for the preview buttons: shows the app as Pro or not, without touching the store or the saved answer. */
+    fun previewSet(pro: Boolean) {
+        _isPro.value = pro
     }
 
     private fun apply(pro: Boolean) {
@@ -55,6 +68,15 @@ class ProController(
     }
 
     override suspend fun identify(userId: String) {
-        runCatching { billing?.identify(userId) }
+        identified = false
+        runCatching { billing?.identify(userId) }.onSuccess { identified = billing != null }
+    }
+
+    override suspend fun packs(): List<HintPack> = if (!identified) emptyList() else billing?.let { runCatching { it.packs() }.getOrNull() }.orEmpty()
+
+    override suspend fun buyPack(pack: HintPack): PurchaseResult {
+        val store = billing ?: return PurchaseResult.Failed("unavailable")
+        if (!identified) return PurchaseResult.Failed("not_identified")
+        return runCatching { store.buyPack(pack) }.getOrElse { PurchaseResult.Failed(it.message ?: "error") }
     }
 }
